@@ -20,6 +20,7 @@ export class HandlerError extends Data.TaggedError("HandlerError")<{
 
 export interface HandlerInput<M extends SidecarMethod> {
   emit: (chunk: SidecarStream<M>) => Effect.Effect<void>;
+  log: (message: string) => Effect.Effect<void>;
   params: SidecarParams<M>;
 }
 
@@ -31,6 +32,7 @@ export type Handlers = { [M in SidecarMethod]: Handler<M> };
 
 type ErasedHandler = (input: {
   emit: (chunk: never) => Effect.Effect<void>;
+  log: (message: string) => Effect.Effect<void>;
   params: never;
 }) => Effect.Effect<unknown, HandlerError>;
 
@@ -125,6 +127,7 @@ function serve(
 
     return yield* erased[method]({
       emit: (chunk) => channel.send({ data: chunk, id, type: "stream" }),
+      log: channel.log,
       params: decoded as never,
     });
   }).pipe(

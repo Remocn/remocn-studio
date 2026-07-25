@@ -1,14 +1,18 @@
 "use client";
 
-import { createContext, use } from "react";
+import { createContext, use, useMemo } from "react";
+import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
+import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
 import {
   type ProjectFolder,
   useProjectFolder,
 } from "@/hooks/use-project-folder";
 
-const StudioContext = createContext<ProjectFolder | null>(null);
+export type Studio = ClaudeModel & ProjectFolder;
 
-export function useStudio(): ProjectFolder {
+const StudioContext = createContext<Studio | null>(null);
+
+export function useStudio(): Studio {
   const value = use(StudioContext);
   if (!value) {
     throw new Error("useStudio must be called inside <StudioProvider>.");
@@ -17,11 +21,15 @@ export function useStudio(): ProjectFolder {
 }
 
 export function StudioProvider({ children }: { children: React.ReactNode }) {
-  const folder = useProjectFolder();
+  const settings = useHydratedSettings();
+  const folder = useProjectFolder(settings);
+  const model = useClaudeModel(settings);
+
+  const studio = useMemo(() => ({ ...folder, ...model }), [folder, model]);
 
   if (!folder.isReady) {
     return <div className="h-full bg-background" data-tauri-drag-region />;
   }
 
-  return <StudioContext value={folder}>{children}</StudioContext>;
+  return <StudioContext value={studio}>{children}</StudioContext>;
 }

@@ -4,6 +4,7 @@ import type { LayoutStorage } from "react-resizable-panels";
 
 const SETTINGS_FILE = "settings.json";
 const PROJECT_FOLDER_KEY = "projectFolder";
+const CLAUDE_MODEL_KEY = "claudeModel";
 const LAYOUT_KEY_PREFIX = "layout:";
 
 const cache = new Map<string, string>();
@@ -13,6 +14,7 @@ const openStore = Effect.runSync(
 );
 
 export interface StudioSettings {
+  claudeModel: string | null;
   projectFolder: string | null;
 }
 
@@ -26,7 +28,10 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
         cache.set(key, value);
       }
     }
-    return { projectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null };
+    return {
+      claudeModel: cache.get(CLAUDE_MODEL_KEY) ?? null,
+      projectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
+    };
   })
 );
 
@@ -40,10 +45,34 @@ function persist(key: string, value: string): Effect.Effect<void> {
   );
 }
 
+function forget(key: string): Effect.Effect<void> {
+  return Effect.ignore(
+    openStore.pipe(
+      Effect.flatMap((opened) => Effect.tryPromise(() => opened.delete(key)))
+    )
+  );
+}
+
 export function saveProjectFolder(folder: string): Effect.Effect<void> {
   return Effect.sync(() => {
     cache.set(PROJECT_FOLDER_KEY, folder);
   }).pipe(Effect.andThen(persist(PROJECT_FOLDER_KEY, folder)));
+}
+
+export function saveClaudeModel(model: string | null): Effect.Effect<void> {
+  return Effect.sync(() => {
+    if (model === null) {
+      cache.delete(CLAUDE_MODEL_KEY);
+      return;
+    }
+    cache.set(CLAUDE_MODEL_KEY, model);
+  }).pipe(
+    Effect.andThen(
+      model === null
+        ? forget(CLAUDE_MODEL_KEY)
+        : persist(CLAUDE_MODEL_KEY, model)
+    )
+  );
 }
 
 export const layoutStorage: LayoutStorage = {

@@ -3,8 +3,7 @@
 import { Effect } from "effect";
 import { useCallback, useMemo, useState } from "react";
 import { useFolderPicker } from "@/hooks/use-folder-picker";
-import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
-import { saveProjectFolder } from "@/lib/studio/settings";
+import { type StudioSettings, saveProjectFolder } from "@/lib/studio/settings";
 
 const PICKER_TITLE = "Open Remotion project";
 
@@ -15,8 +14,9 @@ export interface ProjectFolder {
   projectFolder: string | null;
 }
 
-export function useProjectFolder(): ProjectFolder {
-  const settings = useHydratedSettings();
+export function useProjectFolder(
+  settings: StudioSettings | null
+): ProjectFolder {
   const { error, pick } = useFolderPicker(PICKER_TITLE);
   const [chosen, setChosen] = useState<string | null>(null);
 
