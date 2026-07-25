@@ -1,6 +1,6 @@
 import { type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 3;
+export const SIDECAR_PROTOCOL = 4;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -12,6 +12,7 @@ export const CANCELLED = "cancelled";
 const RequestId = Schema.NonEmptyString;
 
 export const METHOD_NAMES = [
+  "claude.permission",
   "claude.prompt",
   "sidecar.emit",
   "sidecar.info",
@@ -96,6 +97,17 @@ export const ClaudeFailure = Schema.Struct({
   message: Schema.String,
 });
 
+export const PermissionReason = Schema.Literals(["bash", "outside", "tool"]);
+
+export const PermissionDecision = Schema.Literals(["allow", "always", "deny"]);
+
+export const PermissionParams = Schema.Struct({
+  decision: PermissionDecision,
+  id: Schema.NonEmptyString,
+});
+
+export const PermissionAnswer = Schema.Struct({ matched: Schema.Boolean });
+
 export const ClaudeEvent = Schema.Union([
   Schema.Struct({
     model: Schema.String,
@@ -126,6 +138,13 @@ export const ClaudeEvent = Schema.Union([
     message: Schema.String,
     type: Schema.Literal("notice"),
   }),
+  Schema.Struct({
+    id: Schema.String,
+    input: Schema.Unknown,
+    name: Schema.String,
+    reason: PermissionReason,
+    type: Schema.Literal("permission"),
+  }),
 ]);
 
 export const PromptResult = Schema.Struct({
@@ -136,6 +155,10 @@ export const PromptResult = Schema.Struct({
 
 export type PromptParams = (typeof PromptParams)["Type"];
 export type EffortLevel = (typeof EffortLevel)["Type"];
+export type PermissionReason = (typeof PermissionReason)["Type"];
+export type PermissionDecision = (typeof PermissionDecision)["Type"];
+export type PermissionParams = (typeof PermissionParams)["Type"];
+export type PermissionAnswer = (typeof PermissionAnswer)["Type"];
 export type ImageMediaType = (typeof ImageMediaType)["Type"];
 export type PromptAttachment = (typeof PromptAttachment)["Type"];
 export type ContextUsage = (typeof ContextUsage)["Type"];
@@ -145,6 +168,11 @@ export type ClaudeEvent = (typeof ClaudeEvent)["Type"];
 export type PromptResult = (typeof PromptResult)["Type"];
 
 export const SIDECAR_METHODS = {
+  "claude.permission": {
+    params: PermissionParams,
+    result: PermissionAnswer,
+    stream: Schema.Never,
+  },
   "claude.prompt": {
     params: PromptParams,
     result: PromptResult,

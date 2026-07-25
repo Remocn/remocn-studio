@@ -6,6 +6,7 @@ import {
 } from "@/shared/ipc";
 import { eventsOf } from "./claude/events";
 import { failureFromText, failureOf } from "./claude/failure";
+import { makeGate, permissionGuard } from "./claude/gate";
 import { messages } from "./claude/session";
 import type { Handlers } from "./host";
 
@@ -28,17 +29,27 @@ const TOKENS = [
 const MAX_COUNT = 500;
 const MAX_DELAY_MS = 2000;
 
+const gate = makeGate();
+
 export const handlers: Handlers = {
+  "claude.permission": ({ params }) =>
+    Effect.map(gate.answer(params.id, params.decision), (matched) => ({
+      matched,
+    })),
+
   "claude.prompt": ({ emit, log, params }) =>
     Effect.gen(function* () {
+      const turnId = yield* Effect.sync(() => crypto.randomUUID());
       const sessionId = yield* Ref.make(params.sessionId);
       const failure = yield* Ref.make<ClaudeFailure | null>(null);
       const context = yield* Ref.make<ContextUsage | null>(null);
 
       yield* Stream.runForEach(
         messages(params, {
+          canUseTool: permissionGuard({ cwd: params.cwd, emit, gate, turnId }),
           log: (line) => Effect.runSync(log(line)),
           onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
+          onStop: () => Effect.runSync(gate.abandon(turnId)),
         }),
         (message) =>
           Effect.gen(function* () {
@@ -59,7 +70,8 @@ export const handlers: Handlers = {
             failure,
             (current) => current ?? failureFromText(error.message)
           )
-        )
+        ),
+        Effect.onExit(() => gate.abandon(turnId))
       );
 
       return {

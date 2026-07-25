@@ -64,6 +64,7 @@ async function renderComposer(onSubmit = vi.fn()) {
           context={{ maxTokens: 200_000, totalTokens: 50_000 }}
           disabled={false}
           isRunning={false}
+          isWaiting={false}
           onStop={vi.fn()}
           onSubmit={onSubmit}
         />

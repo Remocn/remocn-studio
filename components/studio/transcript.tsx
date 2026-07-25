@@ -15,14 +15,16 @@ export function Transcript({
   entries,
   error,
   isRunning,
+  isWaiting,
 }: {
   cwd: string | null;
   entries: TurnEntry[];
   error: string | null;
   isRunning: boolean;
+  isWaiting: boolean;
 }) {
   const last = entries.at(-1) ?? null;
-  const isThinking = isRunning && last?.kind !== "assistant";
+  const isThinking = isRunning && !isWaiting && last?.kind !== "assistant";
 
   return (
     <>

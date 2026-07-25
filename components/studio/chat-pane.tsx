@@ -21,6 +21,7 @@ import { Composer } from "./composer";
 import { LogoMark } from "./logo-mark";
 import { MarkdownProvider } from "./markdown";
 import { Pane, PaneBody, PaneHeader, PaneTitle } from "./pane";
+import { PermissionCard } from "./permission-card";
 import { useStudio } from "./studio-provider";
 import { Transcript } from "./transcript";
 
@@ -71,6 +72,7 @@ function Conversation({
                     entries={turn.entries}
                     error={turn.error}
                     isRunning={turn.isRunning}
+                    isWaiting={turn.permission !== null}
                   />
                 ) : (
                   <ChatEmptyState hasProjectFolder={cwd !== null} />
@@ -82,10 +84,23 @@ function Conversation({
         </MessageScrollerProvider>
       </MarkdownProvider>
 
+      {turn.permission === null ? null : (
+        <div className="mb-2 shrink-0 px-4 pt-1">
+          <div className="mx-auto w-full max-w-2xl">
+            <PermissionCard
+              cwd={cwd}
+              onAnswer={turn.answer}
+              permission={turn.permission}
+            />
+          </div>
+        </div>
+      )}
+
       <Composer
         context={turn.context}
         disabled={cwd === null}
         isRunning={turn.isRunning}
+        isWaiting={turn.permission !== null}
         onStop={turn.stop}
         onSubmit={turn.send}
       />
