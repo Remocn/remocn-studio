@@ -317,11 +317,19 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
         Err(reason) => return stillborn(reason),
     };
 
+    let preview_entry = match spawn::resolve_preview_entry(&inner.app) {
+        Ok(path) => Some(path),
+        Err(reason) => {
+            inner.log.host(format!("preview is unavailable: {reason}"));
+            None
+        }
+    };
+
     inner
         .log
         .host(format!("starting {} {}", bun.display(), script.display()));
 
-    let mut child = match spawn::launch(&bun, &script, &data_dir) {
+    let mut child = match spawn::launch(&bun, &script, &data_dir, preview_entry.as_deref()) {
         Ok(child) => child,
         Err(reason) => return stillborn(reason),
     };

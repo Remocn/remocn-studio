@@ -4,15 +4,19 @@ import { HOST_PID_ENV } from "@/shared/ipc";
 const POLL_MS = 2000;
 const SIGNALS = ["SIGTERM", "SIGINT", "SIGHUP"] as const;
 
-export const untilOrphaned: Effect.Effect<string> = Effect.suspend(() => {
-  const host = Number.parseInt(process.env[HOST_PID_ENV] ?? "", 10);
+export function untilGone(variable: string): Effect.Effect<string> {
+  return Effect.suspend(() => {
+    const host = Number.parseInt(process.env[variable] ?? "", 10);
 
-  if (!(Number.isInteger(host) && host > 0)) {
-    return Effect.never;
-  }
+    if (!(Number.isInteger(host) && host > 0)) {
+      return Effect.never;
+    }
 
-  return poll(host).pipe(Effect.as(`host ${host} is gone`));
-});
+    return poll(host).pipe(Effect.as(`host ${host} is gone`));
+  });
+}
+
+export const untilOrphaned: Effect.Effect<string> = untilGone(HOST_PID_ENV);
 
 export const untilSignalled: Effect.Effect<string> = Effect.callback<string>(
   (resume) => {

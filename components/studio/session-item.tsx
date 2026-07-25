@@ -22,40 +22,41 @@ export function SessionItem({
 }) {
   return (
     <div className="group/session relative">
-      <button
+      <Button
         aria-current={isActive ? "true" : undefined}
         className={cn(
-          "flex w-full flex-row items-start gap-0.5 rounded-lg px-2 py-1.5 text-left outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-3 focus-visible:ring-ring/30",
+          "flex w-full flex-row text-left",
           isActive && "bg-sidebar-accent"
         )}
         onClick={onSelect}
         type="button"
         value={session.id}
+        variant="ghost"
       >
         <span className="w-full truncate pr-7 text-sidebar-foreground text-sm">
           {session.title}
         </span>
-      </button>
+      </Button>
 
       {isThinking ? (
         <DotmSquare1
           ariaLabel={`${session.title} is running`}
-          className="pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2 text-primary transition-opacity group-hover/session:opacity-0"
+          className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-primary transition-opacity group-hover/session:opacity-0"
           dotSize={2}
           size={16}
         />
-      ) : null}
-
-      <Button
-        aria-label={`Delete ${session.title}`}
-        className="absolute top-1/2 right-1 -translate-y-1/2 opacity-0 focus-visible:opacity-100 group-hover/session:opacity-100"
-        onClick={onRemove}
-        size="icon-xs"
-        value={session.id}
-        variant="ghost"
-      >
-        <Trash2Icon />
-      </Button>
+      ) : (
+        <Button
+          aria-label={`Delete ${session.title}`}
+          className="absolute top-1/2 right-1 -translate-y-1/2 opacity-0 focus-visible:opacity-100 group-hover/session:opacity-100"
+          onClick={onRemove}
+          size="icon-xs"
+          value={session.id}
+          variant="ghost"
+        >
+          <Trash2Icon />
+        </Button>
+      )}
     </div>
   );
 }

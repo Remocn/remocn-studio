@@ -1,12 +1,13 @@
 import { type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 5;
+export const SIDECAR_PROTOCOL = 6;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
 
 export const HOST_PID_ENV = "REMOCN_STUDIO_HOST_PID";
 export const DATA_DIR_ENV = "REMOCN_STUDIO_DATA_DIR";
+export const PREVIEW_ENTRY_ENV = "REMOCN_STUDIO_PREVIEW_ENTRY";
 
 export const CANCELLED = "cancelled";
 
@@ -18,6 +19,7 @@ export const METHOD_NAMES = [
   "history.blocks",
   "history.remove",
   "history.sessions",
+  "preview.start",
   "sidecar.emit",
   "sidecar.info",
 ] as const;
@@ -228,6 +230,31 @@ export type ClaudeFailure = (typeof ClaudeFailure)["Type"];
 export type ClaudeEvent = (typeof ClaudeEvent)["Type"];
 export type PromptResult = (typeof PromptResult)["Type"];
 
+export const PreviewParams = Schema.Struct({
+  folder: Schema.NonEmptyString,
+});
+
+export const PreviewEvent = Schema.Union([
+  Schema.Struct({
+    percent: Schema.Int,
+    type: Schema.Literal("building"),
+  }),
+  Schema.Struct({
+    type: Schema.Literal("ready"),
+    url: Schema.NonEmptyString,
+  }),
+  Schema.Struct({
+    message: Schema.String,
+    type: Schema.Literal("failed"),
+  }),
+]);
+
+export const PreviewResult = Schema.Struct({ reason: Schema.String });
+
+export type PreviewParams = (typeof PreviewParams)["Type"];
+export type PreviewEvent = (typeof PreviewEvent)["Type"];
+export type PreviewResult = (typeof PreviewResult)["Type"];
+
 export const SIDECAR_METHODS = {
   "claude.permission": {
     params: PermissionParams,
@@ -253,6 +280,11 @@ export const SIDECAR_METHODS = {
     params: Schema.Null,
     result: Schema.Array(HistorySession),
     stream: Schema.Never,
+  },
+  "preview.start": {
+    params: PreviewParams,
+    result: PreviewResult,
+    stream: PreviewEvent,
   },
   "sidecar.emit": { params: EmitParams, result: EmitResult, stream: EmitChunk },
   "sidecar.info": {
