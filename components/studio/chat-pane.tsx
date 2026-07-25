@@ -41,6 +41,7 @@ export function ChatPane() {
     openedSession,
     projectFolder,
     rememberSession,
+    reportThinking,
     sessionKey,
   } = useStudio();
 
@@ -63,6 +64,7 @@ export function ChatPane() {
           key={sessionKey}
           model={claudeModel}
           onSession={rememberSession}
+          onThinking={reportThinking}
           sdkSessionId={openedSession?.sdkSessionId ?? null}
           transcriptError={history.error}
         />
@@ -100,6 +102,7 @@ function Conversation({
   initial,
   model,
   onSession,
+  onThinking,
   sdkSessionId,
   transcriptError,
 }: {
@@ -109,6 +112,7 @@ function Conversation({
   initial: readonly TranscriptEntry[];
   model: string | null;
   onSession: (session: HistorySession) => void;
+  onThinking: (isThinking: boolean) => void;
   sdkSessionId: string | null;
   transcriptError: string | null;
 }) {
@@ -119,6 +123,7 @@ function Conversation({
     initial,
     model,
     onSession,
+    onThinking,
     sdkSessionId,
   });
 

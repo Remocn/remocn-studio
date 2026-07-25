@@ -31,6 +31,7 @@ export interface TurnSettings {
   initial: readonly TranscriptEntry[];
   model: string | null;
   onSession: (session: HistorySession) => void;
+  onThinking: (isThinking: boolean) => void;
   sdkSessionId: string | null;
 }
 
@@ -52,6 +53,7 @@ export function useClaudeTurn({
   initial,
   model,
   onSession,
+  onThinking,
   sdkSessionId,
 }: TurnSettings): ClaudeTurn {
   const [entries, setEntries] = useState(initial);
@@ -169,6 +171,13 @@ export function useClaudeTurn({
   );
 
   useEffect(() => stop, [stop]);
+
+  const isThinking = isRunning && permissions.length === 0;
+
+  useEffect(() => {
+    onThinking(isThinking);
+    return () => onThinking(false);
+  }, [isThinking, onThinking]);
 
   return useMemo(
     () => ({

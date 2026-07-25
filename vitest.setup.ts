@@ -14,6 +14,20 @@ globalThis.ResizeObserver ??= InertObserver as unknown as typeof ResizeObserver;
 globalThis.IntersectionObserver ??=
   InertObserver as unknown as typeof IntersectionObserver;
 
+// jsdom ships no `matchMedia`, and anything that respects
+// `prefers-reduced-motion` calls it during mount — the Dot Matrix loader does.
+// The stub always answers "no preference", which is the branch worth testing.
+globalThis.matchMedia ??= ((media: string) => ({
+  addEventListener: () => undefined,
+  addListener: () => undefined,
+  dispatchEvent: () => false,
+  matches: false,
+  media,
+  onchange: null,
+  removeEventListener: () => undefined,
+  removeListener: () => undefined,
+})) as typeof matchMedia;
+
 // jsdom is not a Tauri webview: there is no `window.__TAURI_INTERNALS__`, so any
 // `invoke()` reaching the real transport throws. Tests that render components
 // touching IPC must install a fake with `mockIPC(...)` from

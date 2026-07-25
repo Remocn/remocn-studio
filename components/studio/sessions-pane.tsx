@@ -31,6 +31,7 @@ export function SessionsPane() {
   const {
     activeSession,
     isLoadingSessions,
+    isThinking,
     onRemoveSession,
     onSelectSession,
     openFolder,
@@ -70,6 +71,7 @@ export function SessionsPane() {
           activeId={activeSession?.id ?? null}
           error={sessionsError}
           isLoading={isLoadingSessions}
+          isThinking={isThinking}
           onOpenFolder={openFolder}
           onRemove={onRemoveSession}
           onRetry={reloadSessions}
@@ -86,6 +88,7 @@ function SessionsBody({
   activeId,
   error,
   isLoading,
+  isThinking,
   onOpenFolder,
   onRemove,
   onRetry,
@@ -96,6 +99,7 @@ function SessionsBody({
   activeId: string | null;
   error: string | null;
   isLoading: boolean;
+  isThinking: boolean;
   onOpenFolder: () => Promise<void>;
   onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
   onRetry: () => void;
@@ -136,6 +140,7 @@ function SessionsBody({
           <li key={session.id}>
             <SessionItem
               isActive={session.id === activeId}
+              isThinking={isThinking && session.id === activeId}
               now={now}
               onRemove={onRemove}
               onSelect={onSelect}
