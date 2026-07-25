@@ -30,7 +30,9 @@
     "active": true,
     "targets": "all",
     "resources": {
-      "../sidecar-dist/main.js": "sidecar/main.js"
+      "../sidecar-dist/main.js": "sidecar/main.js",
+      "../preview/entry.tsx": "preview/entry.tsx",
+      "../preview/hot.ts": "preview/hot.ts"
     },
     "icon": [
       "icons/32x32.png",

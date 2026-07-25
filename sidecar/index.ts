@@ -6,8 +6,10 @@ import { openHistory } from "./history/sqlite";
 import { HistoryStore } from "./history/store";
 import { runHost } from "./host";
 import { untilOrphaned, untilSignalled } from "./lifecycle";
+import { runPreviewHost } from "./preview/host";
+import { PREVIEW_HOST_FLAG } from "./preview/supervisor";
 
-const main = Effect.gen(function* () {
+const sidecar = Effect.gen(function* () {
   const channel = yield* SidecarChannel;
 
   yield* channel.log(`listening on stdio, protocol ${SIDECAR_PROTOCOL}`);
@@ -22,6 +24,10 @@ const main = Effect.gen(function* () {
 
   yield* channel.log(reason);
 }).pipe(Effect.scoped, Effect.provide(layerProcess));
+
+const main = process.argv.includes(PREVIEW_HOST_FLAG)
+  ? runPreviewHost
+  : sidecar;
 
 const exit = await Effect.runPromiseExit(main);
 

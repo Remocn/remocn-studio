@@ -365,6 +365,64 @@ turn and arrives in the webview as the `history` chunk at the head of that turn'
 stream, which is why the list can show a brand-new session without a round trip
 and without racing the turn that created it.
 
+### The preview
+
+The pane runs **the project's own Remotion bundler with our entry instead of the Studio UI**.
+Neither branch of #226 survived contact with a real project: a Vite host builds
+`remocn-demo` without an error and emits 3 CSS class selectors where Remotion's
+bundler emits 742, because `enableTailwind` is a splice of webpack *loaders*
+(`style-loader`, `css-loader`, `@remotion/tailwind-v4`'s `@tailwindcss/webpack`)
+and Vite cannot run those — it silently falls through to the project's
+`postcss.config.mjs`, a different Tailwind with different source detection. And
+Plan B was never necessary, because Remotion's webpack entry is an array whose
+last element is a parameter:
+
+```js
+entry: [ fast-refresh, setup-environment, userDefinedComponent, react-shim, entry ]
+```
+
+`@remotion/studio/previewEntry` is only `Internals.waitForRoot((Root) => render(<Studio …/>))`.
+Studio is a UI on top of the bundler, not part of it. `preview/entry.tsx` takes that
+slot and mounts `<Player>` instead, so the pane is ours and the pixels are Remotion's.
+
+- **Everything is resolved from the project**, never bundled here:
+  `BundlerInternals.webpackConfig` *and* `webpack` itself come from the project's
+  `@remotion/bundler`, the override from its `remotion.config.ts` via
+  `ConfigInternals.getWebpackOverrideFn()`, and the entry point from the CLI's own
+  `findEntryPoint` (reached through `@remotion/cli/package.json`, since the exports map
+  blocks the deep path) with `ENTRY_CANDIDATES` as the fallback. `@remotion/player` is
+  always present — it is a dependency of `@remotion/cli` and of `@remotion/studio`.
+- **The opened folder is not the Remotion root.** `remotionRootOf` climbs to the nearest
+  `package.json` first, exactly as the CLI does, and the host `chdir`s there — otherwise
+  opening `src/demos/some-scene` reports "no Remotion entry point" for a folder that is
+  part of a perfectly good project. Entry candidates are searched from that root, never
+  from the folder the user happened to pick.
+- **`webpackOverride` can be async.** `remocn-demo`'s is. Not awaiting it puts a `Promise`
+  into the config, which fails without a useful message.
+- **The host is a child process with `cwd` set to the project**, because config files
+  routinely resolve paths against `process.cwd()` — Remotion's own loader does
+  `process.chdir(remotionRoot)` for the same reason. `sidecar/index.ts` re-execs itself
+  with `--preview-host`, so there is one bundle and one Tauri resource rather than two.
+- **One host at a time, keyed by project** (see #235): sessions in one project compile a
+  byte-identical bundle, so a host per session is two compilers on one tree. A full
+  compile of `remocn-demo` costs ~7 s and peaks at 1.67 GB, and the webpack filesystem
+  cache does not help, so hosts are not kept warm. A stopped host loses nothing: the next
+  start compiles from disk, and a host left running would rebuild on every agent edit for
+  a pane nobody is watching.
+- **The base config already pins `react`, `react-dom/client`, `remotion` and
+  `@remotion/studio` to absolute paths**, which is why `preview/entry.tsx` can live
+  outside the project at all. `@remotion/player` is the one alias we add.
+- `preview/` is **excluded from `tsconfig.json`**: it imports `remotion` and
+  `@remotion/player`, which are deliberately not dependencies here. The linter still
+  covers it, and `lib/studio/preview.test.ts` decodes the exact message the entry posts,
+  which is the only guard against that boundary drifting.
+- The stream is the lifetime: `preview.start` is a long-lived request and stopping it is
+  a fiber interrupt, which drops the `acquireRelease` that owns the child. There is no
+  `preview.stop`.
+- **`building` after `ready` is normal** — `ProgressPlugin` reports 100% after the first
+  compile finishes. `usePreview` ignores progress once served, or the pane would replace
+  a live player with a spinner.
+
 ## Layout
 
 Flat root, no monorepo — per #218.
@@ -375,9 +433,11 @@ components/ui/        shadcn/ui primitives (Base UI–backed)
 components/studio/    app-level components (panes, title bar, sidecar status)
 hooks/                all behaviour: no logic inline in components
 lib/                  cn helper, error formatting, lib/studio/* clients
+preview/              the entry the *project's* webpack compiles instead of Studio's UI
 shared/               ipc.ts: the typed contract; transcript.ts: the one fold
 sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
 sidecar/history/      driver seam, migrations, store, per-turn recorder
+sidecar/preview/      the --preview-host child: project resolution, webpack watch, server
 src-tauri/            Rust core (Tauri v2), including the sidecar supervisor
 public/               static assets
 ```

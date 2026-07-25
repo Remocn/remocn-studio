@@ -11,6 +11,7 @@ import { messages } from "./claude/session";
 import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
 import { HandlerError, type Handlers } from "./host";
+import { previewEvents } from "./preview/supervisor";
 
 const TOKENS = [
   "Streaming",
@@ -112,6 +113,12 @@ export const handlers: Handlers<HistoryStore> = {
   "history.sessions": () =>
     Effect.flatMap(HistoryStore, (store) => store.sessions).pipe(
       Effect.mapError(unstored)
+    ),
+
+  "preview.start": ({ emit, log, params }) =>
+    Stream.runForEach(previewEvents(params.folder, log), emit).pipe(
+      Effect.as({ reason: "the preview host stopped" }),
+      Effect.mapError((error) => new HandlerError({ message: error.message }))
     ),
 
   "sidecar.emit": ({ emit, params }) =>

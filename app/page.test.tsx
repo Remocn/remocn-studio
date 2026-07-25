@@ -46,6 +46,9 @@ function mockStudio(
         if (method === "history.remove") {
           return { removed: true };
         }
+        if (method === "preview.start") {
+          return new Promise(() => undefined);
+        }
         throw new Error(`unexpected sidecar method: ${method}`);
       }
       throw new Error(`unexpected command: ${cmd}`);

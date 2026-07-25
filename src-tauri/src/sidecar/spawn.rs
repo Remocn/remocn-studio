@@ -9,7 +9,7 @@ use std::{
 use tauri::{AppHandle, Manager};
 use tokio::process::{Child, Command};
 
-use crate::ipc::{DATA_DIR_ENV, HOST_PID_ENV};
+use crate::ipc::{DATA_DIR_ENV, HOST_PID_ENV, PREVIEW_ENTRY_ENV};
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
 const FALLBACK_DIRS: [&str; 5] = [
@@ -59,6 +59,23 @@ pub fn resolve_script(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|err| format!("the app bundle has no sidecar: {err}"))
 }
 
+#[cfg(debug_assertions)]
+pub fn resolve_preview_entry(_app: &AppHandle) -> Result<PathBuf, String> {
+    let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../preview/entry.tsx");
+    source
+        .canonicalize()
+        .map_err(|err| format!("no preview entry at {}: {err}", source.display()))
+}
+
+#[cfg(not(debug_assertions))]
+pub fn resolve_preview_entry(app: &AppHandle) -> Result<PathBuf, String> {
+    use tauri::path::BaseDirectory;
+
+    app.path()
+        .resolve("preview/entry.tsx", BaseDirectory::Resource)
+        .map_err(|err| format!("the app bundle has no preview entry: {err}"))
+}
+
 pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app
         .path()
@@ -71,8 +88,17 @@ pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
-pub fn launch(bun: &Path, script: &Path, data_dir: &Path) -> Result<Child, String> {
+pub fn launch(
+    bun: &Path,
+    script: &Path,
+    data_dir: &Path,
+    preview_entry: Option<&Path>,
+) -> Result<Child, String> {
     let mut command = Command::new(bun);
+
+    if let Some(entry) = preview_entry {
+        command.env(PREVIEW_ENTRY_ENV, entry);
+    }
 
     command
         .arg(script)
