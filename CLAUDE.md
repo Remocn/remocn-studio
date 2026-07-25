@@ -309,6 +309,62 @@ event.
   `--font-geist-mono`) and are self-hosted into the export at build time. Note
   this means **`bun run build` needs network on a cold cache.**
 
+### History
+
+Sessions and transcripts live in **our own SQLite**, opened by the sidecar with
+`bun:sqlite` — not in the Claude Code transcript files, whose format is not a
+public contract and would break the left pane on any CLI update. Only
+`sdk_session_id` is kept, and only so the SDK can `resume`.
+
+- **The sidecar owns it, because the sidecar is where the events are.** Writing
+  from the webview would mean a Tauri IPC round trip per text delta; here it is
+  a function call on the same object that just emitted the chunk. `bun:sqlite`
+  also costs nothing to add — it is part of the runtime the sidecar already is,
+  where `tauri-plugin-sql` would have pulled sqlx into the Rust build and put raw
+  SQL in the webview. Accepted cost: the pane needs the sidecar up, which every
+  other part of the app already does.
+- **The database file is the core's decision, not the sidecar's.** Rust resolves
+  `app_data_dir()`, creates it and passes it as `REMOCN_STUDIO_DATA_DIR`, next to
+  `REMOCN_STUDIO_HOST_PID`. Run by hand without it, the sidecar falls back to a
+  temp dir and says so on stderr.
+- **A block is a transcript entry, and there is exactly one fold.**
+  `shared/transcript.ts` holds `fold`; the webview runs it to render the live
+  stream and `sidecar/history/recorder.ts` runs the *same* function to decide
+  what to store. The recorder writes only the entries whose identity changed —
+  `fold` is immutable, so that is at most one row per event. Two folds that had
+  to agree would drift; this one cannot.
+- **`id` is not stored.** The row is `(session_id, ordinal, kind, payload)` and
+  the id is rebuilt on load as `block-<ordinal>`, so a session loaded from disk
+  and a turn folded live can never collide on a React key.
+- **A crash costs the in-flight block and nothing else.** Every event upserts its
+  row as it arrives (`ON CONFLICT (session_id, ordinal)`), in WAL with
+  `synchronous = NORMAL` — a force-quit cannot lose a committed row, and the next
+  turn resumes numbering from `MAX(ordinal) + 1`.
+- **History never fails a turn.** `recording()` swallows and logs every store
+  error and hands back an inert recorder, the same way the context-window reading
+  does; a database that cannot be opened at all yields `broken()`, whose methods
+  all fail with the reason, so Claude still works and the pane says why it is
+  empty. The `history.*` methods report their errors normally.
+- **Migrations are `PRAGMA user_version`** against `MIGRATIONS` in
+  `sidecar/history/migrations.ts` — one array entry per version, applied in one
+  transaction. The schema *will* change; adding an entry is the whole ceremony.
+- **`bun:sqlite` cannot be imported by the test suite** — Vitest's workers run
+  under Node, which has no `bun:` loader — so the store is written against a
+  three-method `SqlDriver`. Production binds it to `bun:sqlite` in
+  `sidecar/history/sqlite.ts` (imported only from `index.ts`); the tests bind it
+  to `node:sqlite` and exercise the real SQL. Those suites need
+  `// @vitest-environment node`: the default jsdom environment refuses to bundle
+  Node built-ins, and `vitest.setup.ts` skips its DOM teardown when there is no
+  `window`.
+
+The pane on top of it: sessions newest first, selecting one loads its blocks and
+rebinds the agent to *that* session's folder, and switching stops the running
+turn — the chat pane is keyed on a token that only an explicit select or New
+changes, so a remount is the interrupt. A session row is created by the first
+turn and arrives in the webview as the `history` chunk at the head of that turn's
+stream, which is why the list can show a brand-new session without a round trip
+and without racing the turn that created it.
+
 ## Layout
 
 Flat root, no monorepo — per #218.
@@ -319,8 +375,9 @@ components/ui/        shadcn/ui primitives (Base UI–backed)
 components/studio/    app-level components (panes, title bar, sidecar status)
 hooks/                all behaviour: no logic inline in components
 lib/                  cn helper, error formatting, lib/studio/* clients
-shared/ipc.ts         one typed message contract for Rust ↔ webview ↔ sidecar
-sidecar/              bun: frame loop, method handlers; later Agent SDK, Vite, export
+shared/               ipc.ts: the typed contract; transcript.ts: the one fold
+sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
+sidecar/history/      driver seam, migrations, store, per-turn recorder
 src-tauri/            Rust core (Tauri v2), including the sidecar supervisor
 public/               static assets
 ```

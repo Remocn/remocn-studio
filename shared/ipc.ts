@@ -1,11 +1,12 @@
 import { type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 4;
+export const SIDECAR_PROTOCOL = 5;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
 
 export const HOST_PID_ENV = "REMOCN_STUDIO_HOST_PID";
+export const DATA_DIR_ENV = "REMOCN_STUDIO_DATA_DIR";
 
 export const CANCELLED = "cancelled";
 
@@ -14,6 +15,9 @@ const RequestId = Schema.NonEmptyString;
 export const METHOD_NAMES = [
   "claude.permission",
   "claude.prompt",
+  "history.blocks",
+  "history.remove",
+  "history.sessions",
   "sidecar.emit",
   "sidecar.info",
 ] as const;
@@ -75,10 +79,63 @@ export const PromptParams = Schema.Struct({
   attachments: Schema.Array(PromptAttachment),
   cwd: Schema.NonEmptyString,
   effort: Schema.NullOr(EffortLevel),
+  historyId: Schema.NullOr(Schema.NonEmptyString),
   model: Schema.NullOr(Schema.NonEmptyString),
   prompt: Schema.String,
   sessionId: Schema.NullOr(Schema.NonEmptyString),
 });
+
+export const ActivityState = Schema.Literals(["done", "failed", "running"]);
+
+export const TranscriptEntry = Schema.Union([
+  Schema.Struct({
+    attachments: Schema.Array(PromptAttachment),
+    id: Schema.String,
+    kind: Schema.Literal("user"),
+    text: Schema.String,
+  }),
+  Schema.Struct({
+    id: Schema.String,
+    kind: Schema.Literal("assistant"),
+    text: Schema.String,
+  }),
+  Schema.Struct({
+    id: Schema.String,
+    input: Schema.Unknown,
+    kind: Schema.Literal("activity"),
+    name: Schema.String,
+    result: Schema.NullOr(Schema.String),
+    state: ActivityState,
+  }),
+  Schema.Struct({
+    id: Schema.String,
+    kind: Schema.Literal("notice"),
+    text: Schema.String,
+  }),
+]);
+
+export const HistorySession = Schema.Struct({
+  createdAt: Schema.Int,
+  folder: Schema.String,
+  id: Schema.NonEmptyString,
+  sdkSessionId: Schema.NullOr(Schema.String),
+  title: Schema.String,
+  updatedAt: Schema.Int,
+});
+
+export const HistorySessionRef = Schema.Struct({
+  sessionId: Schema.NonEmptyString,
+});
+
+export const HistoryRemoved = Schema.Struct({ removed: Schema.Boolean });
+
+export type ActivityState = (typeof ActivityState)["Type"];
+export type TranscriptEntry = (typeof TranscriptEntry)["Type"];
+export type ActivityEntry = Extract<TranscriptEntry, { kind: "activity" }>;
+export type UserEntry = Extract<TranscriptEntry, { kind: "user" }>;
+export type HistorySession = (typeof HistorySession)["Type"];
+export type HistorySessionRef = (typeof HistorySessionRef)["Type"];
+export type HistoryRemoved = (typeof HistoryRemoved)["Type"];
 
 export const ContextUsage = Schema.Struct({
   maxTokens: Schema.Int,
@@ -113,6 +170,10 @@ export const ClaudeEvent = Schema.Union([
     model: Schema.String,
     sessionId: Schema.String,
     type: Schema.Literal("session"),
+  }),
+  Schema.Struct({
+    session: HistorySession,
+    type: Schema.Literal("history"),
   }),
   Schema.Struct({
     text: Schema.String,
@@ -177,6 +238,21 @@ export const SIDECAR_METHODS = {
     params: PromptParams,
     result: PromptResult,
     stream: ClaudeEvent,
+  },
+  "history.blocks": {
+    params: HistorySessionRef,
+    result: Schema.Array(TranscriptEntry),
+    stream: Schema.Never,
+  },
+  "history.remove": {
+    params: HistorySessionRef,
+    result: HistoryRemoved,
+    stream: Schema.Never,
+  },
+  "history.sessions": {
+    params: Schema.Null,
+    result: Schema.Array(HistorySession),
+    stream: Schema.Never,
   },
   "sidecar.emit": { params: EmitParams, result: EmitResult, stream: EmitChunk },
   "sidecar.info": {

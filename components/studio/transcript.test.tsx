@@ -7,7 +7,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
-import type { TurnEntry } from "@/hooks/use-claude-turn";
+import type { TranscriptEntry } from "@/shared/ipc";
 
 const CWD = "/Users/me/projects/my-video";
 
@@ -21,7 +21,7 @@ const ANSWER = [
   "```",
 ].join("\n");
 
-function edit(index: number): TurnEntry {
+function edit(index: number): TranscriptEntry {
   return {
     id: `edit-${index}`,
     input: {
@@ -36,7 +36,7 @@ function edit(index: number): TurnEntry {
   };
 }
 
-const ENTRIES: TurnEntry[] = [
+const ENTRIES: TranscriptEntry[] = [
   {
     attachments: [],
     id: "user-0",
@@ -58,7 +58,7 @@ const ENTRIES: TurnEntry[] = [
 ];
 
 function renderTranscript(
-  entries: TurnEntry[],
+  entries: TranscriptEntry[],
   isRunning = false,
   isWaiting = false
 ) {

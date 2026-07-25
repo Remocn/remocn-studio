@@ -2,6 +2,8 @@ import { Cause, Effect, Exit } from "effect";
 import { SIDECAR_PROTOCOL } from "@/shared/ipc";
 import { layerProcess, SidecarChannel } from "./channel";
 import { handlers } from "./handlers";
+import { openHistory } from "./history/sqlite";
+import { HistoryStore } from "./history/store";
 import { runHost } from "./host";
 import { untilOrphaned, untilSignalled } from "./lifecycle";
 
@@ -10,11 +12,13 @@ const main = Effect.gen(function* () {
 
   yield* channel.log(`listening on stdio, protocol ${SIDECAR_PROTOCOL}`);
 
+  const history = yield* openHistory(channel.log);
+
   const reason = yield* Effect.raceAll([
     runHost(handlers).pipe(Effect.as("the host closed stdin")),
     untilOrphaned,
     untilSignalled,
-  ]);
+  ]).pipe(Effect.provideService(HistoryStore, history));
 
   yield* channel.log(reason);
 }).pipe(Effect.scoped, Effect.provide(layerProcess));

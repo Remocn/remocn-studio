@@ -12,6 +12,7 @@ function params(shape: Partial<PromptParams>): PromptParams {
     attachments: [],
     cwd: "/tmp/project",
     effort: null,
+    historyId: null,
     model: null,
     prompt: "",
     sessionId: null,

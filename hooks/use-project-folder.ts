@@ -10,8 +10,9 @@ const PICKER_TITLE = "Open Remotion project";
 export interface ProjectFolder {
   folderError: string | null;
   isReady: boolean;
-  openFolder: () => Promise<void>;
+  pickFolder: () => Promise<string | null>;
   projectFolder: string | null;
+  setProjectFolder: (folder: string) => void;
 }
 
 export function useProjectFolder(
@@ -20,22 +21,27 @@ export function useProjectFolder(
   const { error, pick } = useFolderPicker(PICKER_TITLE);
   const [chosen, setChosen] = useState<string | null>(null);
 
-  const openFolder = useCallback(async () => {
-    const folder = await pick();
-    if (folder === null) {
-      return;
-    }
+  const setProjectFolder = useCallback((folder: string) => {
     setChosen(folder);
     Effect.runFork(saveProjectFolder(folder));
-  }, [pick]);
+  }, []);
+
+  const pickFolder = useCallback(async () => {
+    const folder = await pick();
+    if (folder !== null) {
+      setProjectFolder(folder);
+    }
+    return folder;
+  }, [pick, setProjectFolder]);
 
   return useMemo(
     () => ({
       folderError: error,
       isReady: settings !== null,
-      openFolder,
+      pickFolder,
       projectFolder: chosen ?? settings?.projectFolder ?? null,
+      setProjectFolder,
     }),
-    [chosen, error, openFolder, settings]
+    [chosen, error, pickFolder, setProjectFolder, settings]
   );
 }

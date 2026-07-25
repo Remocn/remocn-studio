@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ActivityLine } from "@/components/studio/activity-line";
-import type { ActivityEntry } from "@/hooks/use-claude-turn";
+import type { ActivityEntry } from "@/shared/ipc";
 
 const CWD = "/Users/me/projects/my-video";
 const MORE_LINES = /Show \d+ more/;
