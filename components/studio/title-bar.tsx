@@ -1,0 +1,67 @@
+"use client";
+
+import { DownloadIcon, FolderOpenIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { folderName } from "@/lib/studio/paths";
+import { useStudio } from "./studio-provider";
+
+export function TitleBar() {
+  const { folderError, openFolder, projectFolder } = useStudio();
+
+  return (
+    <header
+      className="flex h-11 shrink-0 items-center gap-2 border-b bg-sidebar pr-2 pl-(--titlebar-leading-inset)"
+      data-tauri-drag-region
+    >
+      <div className="flex min-w-0 flex-1 items-center" data-tauri-drag-region>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-invalid={folderError !== null}
+                className="min-w-0 max-w-full"
+                onClick={openFolder}
+                size="sm"
+                variant="ghost"
+              />
+            }
+          >
+            <FolderOpenIcon data-icon="inline-start" />
+            <span className="truncate">
+              {projectFolder ? folderName(projectFolder) : "Open folder"}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent align="start" side="bottom">
+            <span className="break-all">
+              {folderError ?? projectFolder ?? "Choose a Remotion project"}
+            </span>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      <div className="flex shrink-0 items-center" data-tauri-drag-region>
+        {projectFolder ? (
+          <Badge className="font-mono" variant="outline">
+            Main
+          </Badge>
+        ) : null}
+      </div>
+
+      <div
+        className="flex min-w-0 flex-1 items-center justify-end"
+        data-tauri-drag-region
+      >
+        <Button disabled size="sm" variant="outline">
+          <DownloadIcon data-icon="inline-start" />
+          Export
+        </Button>
+      </div>
+    </header>
+  );
+}
