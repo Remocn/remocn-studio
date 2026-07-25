@@ -14,7 +14,7 @@ const CWD = "/Users/me/projects/my-video";
 const ANSWER = [
   "## Done",
   "",
-  "- wrote the scene",
+  "- wrote the scene with `useCurrentFrame`",
   "",
   "```tsx",
   "const frame = useCurrentFrame();",
@@ -112,6 +112,16 @@ describe("Transcript", () => {
     expect(screen.getByRole("heading", { name: "Done" })).toBeVisible();
     expect(screen.getByRole("listitem")).toHaveTextContent("wrote the scene");
     expect(screen.queryByText("## Done")).not.toBeInTheDocument();
+  });
+
+  it("leaves inline code where the reveal animation can reach it", () => {
+    const { container } = renderTranscript(ENTRIES);
+
+    const inline = container.querySelector(".markdown-stream :not(pre) > code");
+    const block = container.querySelector(".markdown-stream pre > code");
+
+    expect(inline).toHaveTextContent("useCurrentFrame");
+    expect(block).toHaveTextContent("useCurrentFrame()");
   });
 
   it("keeps the user's own words verbatim", () => {

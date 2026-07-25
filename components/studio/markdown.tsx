@@ -38,7 +38,7 @@ export function Markdown({
     <Streamdown
       animated={ANIMATION}
       className={cn(
-        "space-y-3 text-sm leading-relaxed [&_pre]:text-xs",
+        "markdown-stream space-y-3 text-sm leading-relaxed [&_pre]:text-xs",
         className
       )}
       isAnimating={isStreaming}

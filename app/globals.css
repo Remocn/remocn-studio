@@ -154,6 +154,16 @@
 }
 
 @layer base {
+  /* Streamdown's animate plugin skips every text node inside `code`, `pre`,
+     `svg`, `math` and `annotation`, so an inline code span pops in with no fade
+     while the words around it are still arriving. Give it the same reveal; the
+     duration mirrors `ANIMATION` in components/studio/markdown.tsx. */
+  .markdown-stream :not(pre) > code {
+    animation: sd-fadeIn 260ms var(--sd-easing, ease) both;
+  }
+}
+
+@layer base {
   :root {
     --titlebar-leading-inset: 5rem;
   }
