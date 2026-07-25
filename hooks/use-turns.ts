@@ -4,6 +4,7 @@ import { Effect, Fiber } from "effect";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { causeMessage } from "@/lib/error-message";
 import { answerPermission, promptClaude } from "@/lib/studio/claude";
+import { loadTranscript } from "@/lib/studio/history";
 import type { PermissionAction } from "@/lib/studio/permission";
 import type { SidecarError } from "@/lib/studio/sidecar";
 import { IDLE_TURN, type TurnState } from "@/lib/studio/turns";
@@ -12,7 +13,6 @@ import type {
   HistorySession,
   PromptAttachment,
   PromptResult,
-  TranscriptEntry,
 } from "@/shared/ipc";
 import { appendUser, fold } from "@/shared/transcript";
 
@@ -32,12 +32,8 @@ export interface Turns {
     action: PermissionAction
   ) => void;
   hasRunningTurns: boolean;
+  loadTurn: (session: HistorySession) => void;
   markOpen: (historyId: string | null) => void;
-  seedTurn: (
-    historyId: string,
-    entries: readonly TranscriptEntry[],
-    sdkSessionId: string | null
-  ) => void;
   sendTurn: (input: StartTurn) => void;
   stopTurn: (historyId: string) => void;
   turns: ReadonlyMap<string, TurnState>;
@@ -75,16 +71,40 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
     [update]
   );
 
-  const seedTurn = useCallback(
-    (
-      historyId: string,
-      entries: readonly TranscriptEntry[],
-      sdkSessionId: string | null
-    ) => {
-      if (snapshot.current.has(historyId)) {
+  const loadTurn = useCallback(
+    (session: HistorySession) => {
+      if (snapshot.current.has(session.id)) {
         return;
       }
-      update(historyId, (turn) => ({ ...turn, entries, sdkSessionId }));
+
+      update(session.id, (turn) => ({
+        ...turn,
+        isLoading: true,
+        sdkSessionId: session.sdkSessionId,
+      }));
+
+      Effect.runFork(
+        loadTranscript(session.id).pipe(
+          Effect.tap((entries) =>
+            Effect.sync(() =>
+              update(session.id, (turn) => ({
+                ...turn,
+                entries: [...entries, ...turn.entries],
+                isLoading: false,
+              }))
+            )
+          ),
+          Effect.catch((failure) =>
+            Effect.sync(() =>
+              update(session.id, (turn) => ({
+                ...turn,
+                error: failure.message,
+                isLoading: false,
+              }))
+            )
+          )
+        )
+      );
     },
     [update]
   );
@@ -233,12 +253,12 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
     () => ({
       answerTurn,
       hasRunningTurns,
+      loadTurn,
       markOpen,
-      seedTurn,
       sendTurn,
       stopTurn,
       turns,
     }),
-    [answerTurn, hasRunningTurns, markOpen, seedTurn, sendTurn, stopTurn, turns]
+    [answerTurn, hasRunningTurns, loadTurn, markOpen, sendTurn, stopTurn, turns]
   );
 }

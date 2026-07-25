@@ -2,13 +2,31 @@ import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type StartTurn, useTurns } from "@/hooks/use-turns";
-import type { PromptResult } from "@/shared/ipc";
+import type {
+  HistorySession,
+  PromptResult,
+  TranscriptEntry,
+} from "@/shared/ipc";
 
 const DONE: PromptResult = {
   context: null,
   failure: null,
   sessionId: "sdk-1",
 };
+
+const STORED: HistorySession = {
+  createdAt: 0,
+  id: "a",
+  projectId: "project-1",
+  sdkSessionId: "sdk-9",
+  title: "A promo",
+  updatedAt: 0,
+};
+
+const BLOCKS: TranscriptEntry[] = [
+  { attachments: [], id: "block-0", kind: "user", text: "make a title card" },
+  { id: "block-1", kind: "assistant", text: "Building it now." },
+];
 
 function turn(historyId: string, prompt = "make a title card"): StartTurn {
   return {
@@ -21,10 +39,11 @@ function turn(historyId: string, prompt = "make a title card"): StartTurn {
   };
 }
 
-function harness() {
+function harness(options: { holdBlocks?: boolean } = {}) {
   const inflight = new Map<string, (result: PromptResult) => void>();
   const cancelled: string[] = [];
   const byHistory = new Map<string, string>();
+  const blocks: ((entries: TranscriptEntry[]) => void)[] = [];
 
   mockIPC((cmd, payload) => {
     if (cmd === "sidecar_request") {
@@ -39,6 +58,14 @@ function harness() {
           inflight.set(call.id, resolve);
         });
       }
+      if (call.method === "history.blocks") {
+        if (options.holdBlocks !== true) {
+          return BLOCKS;
+        }
+        return new Promise<TranscriptEntry[]>((resolve) => {
+          blocks.push(resolve);
+        });
+      }
       throw new Error(`unexpected method: ${call.method}`);
     }
     if (cmd === "sidecar_cancel") {
@@ -50,6 +77,14 @@ function harness() {
 
   return {
     cancelled,
+    deliverBlocks: async () => {
+      await act(async () => {
+        for (const resolve of blocks) {
+          resolve(BLOCKS);
+        }
+        await Promise.resolve();
+      });
+    },
     finish: async (historyId: string) => {
       const id = byHistory.get(historyId) ?? "";
       await act(async () => {
@@ -67,6 +102,57 @@ afterEach(() => {
 });
 
 describe("useTurns", () => {
+  it("puts a stored session's blocks on screen when it is opened", async () => {
+    harness();
+    const { result } = renderHook(() => useTurns(vi.fn()));
+
+    act(() => {
+      result.current.loadTurn(STORED);
+    });
+
+    await waitFor(() => {
+      expect(result.current.turns.get("a")?.isLoading).toBe(false);
+    });
+    expect(result.current.turns.get("a")?.entries).toEqual(BLOCKS);
+    expect(result.current.turns.get("a")?.sdkSessionId).toBe("sdk-9");
+  });
+
+  it("loads a session's blocks once, however often it is opened", async () => {
+    const ipc = harness({ holdBlocks: true });
+    const { result } = renderHook(() => useTurns(vi.fn()));
+
+    act(() => {
+      result.current.loadTurn(STORED);
+      result.current.loadTurn(STORED);
+    });
+    await ipc.deliverBlocks();
+
+    await waitFor(() => {
+      expect(result.current.turns.get("a")?.entries).toHaveLength(2);
+    });
+  });
+
+  it("keeps a turn started mid-load below the blocks it was loading", async () => {
+    const ipc = harness({ holdBlocks: true });
+    const { result } = renderHook(() => useTurns(vi.fn()));
+
+    act(() => {
+      result.current.loadTurn(STORED);
+    });
+    act(() => {
+      result.current.sendTurn(turn("a", "now in red"));
+    });
+    await ipc.deliverBlocks();
+
+    await waitFor(() => {
+      expect(result.current.turns.get("a")?.entries).toHaveLength(3);
+    });
+    expect(result.current.turns.get("a")?.entries.at(-1)).toMatchObject({
+      kind: "user",
+      text: "now in red",
+    });
+  });
+
   it("keeps a turn running while another session is on screen", async () => {
     const ipc = harness();
     const { result } = renderHook(() => useTurns(vi.fn()));

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo } from "react";
-import { useSessionTranscript } from "@/hooks/use-session-transcript";
 import type { Turns } from "@/hooks/use-turns";
 import type { PermissionAction } from "@/lib/studio/permission";
 import {
@@ -48,11 +47,7 @@ export function useOpenTurn({
   turns,
 }: OpenTurnSettings): OpenTurn {
   const openId = session?.id ?? draftId;
-  const known = turns.turns.has(openId);
-  const stored = session !== null && !known ? session.id : null;
-  const history = useSessionTranscript(stored);
-
-  const { answerTurn, markOpen, seedTurn, sendTurn, stopTurn } = turns;
+  const { answerTurn, loadTurn, markOpen, sendTurn, stopTurn } = turns;
   const turn: TurnState = turns.turns.get(openId) ?? IDLE_TURN;
 
   useEffect(() => {
@@ -60,17 +55,10 @@ export function useOpenTurn({
   }, [markOpen, openId]);
 
   useEffect(() => {
-    if (stored === null || history.isLoading) {
-      return;
+    if (session !== null) {
+      loadTurn(session);
     }
-    seedTurn(stored, history.entries, session?.sdkSessionId ?? null);
-  }, [
-    history.entries,
-    history.isLoading,
-    seedTurn,
-    session?.sdkSessionId,
-    stored,
-  ]);
+  }, [loadTurn, session]);
 
   const send = useCallback(
     (prompt: string, attachments: readonly PromptAttachment[] = []) => {
@@ -102,14 +90,14 @@ export function useOpenTurn({
       answer,
       context: turn.context,
       entries: turn.entries,
-      isLoadingTranscript: history.isLoading,
+      isLoadingTranscript: turn.isLoading,
       isRunning: turn.isRunning,
       openId,
       permission: turn.permissions[0] ?? null,
       send,
       stop,
-      turnError: turn.error ?? history.error,
+      turnError: turn.error,
     }),
-    [answer, history.error, history.isLoading, openId, send, stop, turn]
+    [answer, openId, send, stop, turn]
   );
 }

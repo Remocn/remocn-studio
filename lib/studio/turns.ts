@@ -17,6 +17,7 @@ export interface TurnState {
   context: ContextUsage | null;
   entries: readonly TranscriptEntry[];
   error: string | null;
+  isLoading: boolean;
   isRunning: boolean;
   permissions: readonly PendingPermission[];
   sdkSessionId: string | null;
@@ -27,6 +28,7 @@ export const IDLE_TURN: TurnState = {
   context: null,
   entries: [],
   error: null,
+  isLoading: false,
   isRunning: false,
   permissions: [],
   sdkSessionId: null,
