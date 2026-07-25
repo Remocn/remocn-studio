@@ -56,6 +56,10 @@ The lockfile is `bun.lock`; use bun.
 - `bun run test` — Vitest, single run. `test:watch` and `test:coverage` also exist.
 - `bun run build` — Next static export into `out/`. Needs network on a cold cache
   (fonts are self-hosted at build time).
+- `bun run sidecar:build` — bundle `sidecar/` into `sidecar-dist/main.js`, which
+  ships as a Tauri resource. **Only release builds need this** — in debug the
+  core runs `sidecar/index.ts` from the repo, so there is nothing to rebuild.
+  `bun tauri build` runs it via `tauri:before-build`.
 - `bun tauri build` — unsigned `.app` bundle. `--no-bundle` compiles without
   packaging; `--bundles app` skips the DMG.
 - `bunx shadcn@latest add <component>` — add UI components (config in
@@ -148,27 +152,116 @@ production — **there is no Node server at runtime**. Therefore:
 - **Dark-first**, and deliberately not following the OS: `components/theme-provider.tsx`
   sets `defaultTheme="dark"`, `enableSystem={false}`.
 - `cn()` in `lib/utils.ts` (clsx + tailwind-merge) composes all classNames.
-- Path alias `@/*` maps to the repo root.
+- Path alias `@/*` maps to the repo root. Bun honours it too, so `sidecar/` code
+  imports `@/shared/ipc` the same way the webview does.
+
+### Effect
+
+Effect is how effects are expressed here — not an option to justify per case.
+`effect@4.0.0-beta.101`; read `agent-patterns/effect-schema.md` before any Schema
+code, because v4 rewrote Schema and v3 knowledge is wrong rather than stale.
+
+- **`lib/**` returns `Effect`, hooks run it.** Every effectful function fails with
+  a `Data.TaggedError` (`SidecarError`, `ShellError`, `ChannelError`,
+  `HandlerError`), built in the `catch` of `Effect.tryPromise`. Never let a bare
+  `UnknownException` reach a hook: `Effect.runPromise` then rejects with a
+  `FiberFailure` whose message hides the real text, and for the sidecar that text
+  *is* the feature — "the sidecar is not running" has to reach the UI.
+- **Hooks surface failures as values.** `useAsyncAction` runs
+  `Effect.runPromiseExit` and renders `causeMessage(exit.cause)`;
+  `Cause.hasInterruptsOnly` returns `null` there, so a deliberate cancel is not
+  an error.
+- **Cancellation is interruption.** `useSidecarEmitter` keeps a `Fiber`, not a
+  request id, and `Effect.onInterrupt` sends the cancel frame. Subscriptions are
+  `Effect.acquireRelease` inside `Effect.scoped`, forked once and interrupted on
+  unmount, so the unlisten is structural rather than bookkeeping.
+- **Effect v4 names that differ from muscle memory**: `Effect.callback` (not
+  `async`), `Effect.result` (not `either`), `Effect.catch` (not `catchAll`),
+  `Schema.decodeUnknownEffect`/`Exit` (not `decodeUnknown`).
+- **The one place not to modernise** is `useHydratedSettings`. `lib/studio/settings.ts`
+  memoises the store handle with `Effect.cached`, and interrupting *any* caller of a
+  cached effect caches the interrupt exit, so every later caller fails forever. That
+  hook drops late results with a closure flag on purpose; a fiber interrupt there
+  hangs the boot screen in `next dev` only, because of StrictMode's double mount.
+
+### The sidecar
+
+One bun process, owned by the Rust core, supervised in `src-tauri/src/sidecar/`.
+The webview never talks to it directly: it goes through Tauri commands
+(`sidecar_request` / `sidecar_cancel` / `sidecar_status` / `sidecar_restart`) and
+gets streams back over `tauri::ipc::Channel` and status over a `sidecar://status`
+event.
+
+- **stdio, not a port.** Frames are newline-delimited JSON on stdin/stdout;
+  **stderr is the log** and the core copies it, line by line, into
+  `~/Library/Logs/com.remocn.remocn-studio/sidecar.log`. Anything the sidecar
+  writes to stdout that is not a frame breaks the protocol, so use `log()`.
+  Ports come later and per-service (the Vite preview reports its own).
+- **`shared/ipc.ts` is the only contract**, written as Effect `Schema` and
+  mirrored by serde in `src-tauri/src/ipc.rs`. `SIDECAR_METHODS` holds a schema
+  per method for params, result and stream chunk; the TS types are derived from
+  those with `["Type"]`, so `requestSidecar` and the handler map are typed from
+  one place and every boundary is *decoded*, not cast. Bump `SIDECAR_PROTOCOL`
+  when frames change — a mismatch is logged, not fatal.
+  - The wire discriminator is `type`, not Schema's default `_tag`, so the frames
+    are `Schema.Union`s of `Schema.Struct`s with a `Schema.Literal` tag. Keep it
+    that way: the Rust `#[serde(tag = "type")]` mirror depends on it.
+  - Decoders are `Exit`-based and hoisted to module scope. `Exit` *is* an
+    `Effect` in v4, so the same decoder works inside `Effect.flatMap` and in a
+    synchronous Tauri `Channel` callback — where decoding must stay sync, or
+    forked fibers would reorder stream chunks.
+  - The request envelope keeps `method` as a plain string and `dispatch` decodes
+    it separately. If the envelope rejected unknown methods, a bad method would
+    be dropped as unparseable and the caller would wait forever instead of
+    getting `there is no method called …`.
+- **bun comes from the user's machine**, resolved from `$REMOCN_STUDIO_BUN`,
+  `~/.bun/bin`, `$PATH`, then the usual Homebrew/`/usr/local` locations. A
+  GUI-launched app gets a minimal `PATH`, which is why the fallback list exists.
+  The app does **not** bundle a bun runtime — #218 already requires the user to
+  have bun and a logged-in Claude Code.
+- **Where the script comes from differs by profile**: debug resolves
+  `../sidecar/index.ts` from `CARGO_MANIFEST_DIR` (edit and restart, no build
+  step), release resolves the bundled `sidecar/main.js` from the resource dir.
+  The release bundle is **minified with no sourcemap** — bundling Effect makes
+  the map 4.16 MB of mostly third-party sources, and dev already runs from
+  source where traces are exact. 0.51 MB shipped, against 26 KB before Effect.
+- **Inside the sidecar, everything is Effect.** `SidecarChannel` is a
+  `Context.Service` over stdio (`sidecar/channel.ts`), so tests provide a
+  `PassThrough` instead of the process. In-flight requests live in a `FiberMap`
+  keyed by request id: `cancel` is `FiberMap.remove` (a fiber interrupt) and
+  stdin EOF closes the scope, which interrupts every request at once. Each
+  request replies exactly once from an `Effect.onExit` finalizer, so a cancelled
+  or crashed handler still answers — a plain `SIGTERM` now gets a `cancelled`
+  frame out before the process exits. There is no `AbortController` anywhere:
+  `Effect.sleep` is interruptible on its own.
+- **Nothing is orphaned.** The child is spawned into its own process group, so
+  quitting signals the whole group — enough to take down `claude` and Vite later.
+  Belt and braces on the child's side: the sidecar exits when stdin hits EOF (the
+  parent's pipe closes even on `SIGKILL`) and polls `REMOCN_STUDIO_HOST_PID`
+  every 2s.
+- **Crashes restart, with a visible gap.** Four attempts with exponential
+  backoff; every in-flight request is failed with the reason rather than left
+  hanging, and after four the phase is `down` until someone hits Restart.
+  A request made while the sidecar is still starting waits for `ready` (20s cap)
+  instead of failing.
 - Fonts come from `next/font/google` (Manrope → `--font-manrope`, Geist Mono →
   `--font-geist-mono`) and are self-hosted into the export at build time. Note
   this means **`bun run build` needs network on a cold cache.**
 
 ## Layout
 
+Flat root, no monorepo — per #218.
+
 ```
 app/                  Next App Router (layout, page, globals.css)
 components/ui/        shadcn/ui primitives (Base UI–backed)
-components/           app-level components (theme-provider, later: studio panes)
-lib/utils.ts          cn helper
-src-tauri/            Rust core (Tauri v2)
-public/               static assets
-```
-
-Planned, per #218 — keep the flat root, no monorepo:
-
-```
-sidecar/              bun: Agent SDK host, Vite preview server, export
+components/studio/    app-level components (panes, title bar, sidecar status)
+hooks/                all behaviour: no logic inline in components
+lib/                  cn helper, error formatting, lib/studio/* clients
 shared/ipc.ts         one typed message contract for Rust ↔ webview ↔ sidecar
+sidecar/              bun: frame loop, method handlers; later Agent SDK, Vite, export
+src-tauri/            Rust core (Tauri v2), including the sidecar supervisor
+public/               static assets
 ```
 
 ## Vendored Repositories

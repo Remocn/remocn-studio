@@ -1,17 +1,31 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import Page from "@/app/page";
 
 const PICKED_FOLDER = "/Users/me/projects/my-video";
 
+const SIDECAR_READY = {
+  attempt: 0,
+  detail: null,
+  logPath: "/tmp/sidecar.log",
+  phase: "ready",
+  pid: 1234,
+};
+
 function mockFolderPicker(result: string | null) {
-  mockIPC((cmd) => {
-    if (cmd === "plugin:dialog|open") {
-      return result;
-    }
-    throw new Error(`unexpected command: ${cmd}`);
-  });
+  mockIPC(
+    (cmd) => {
+      if (cmd === "plugin:dialog|open") {
+        return result;
+      }
+      if (cmd === "sidecar_status") {
+        return SIDECAR_READY;
+      }
+      throw new Error(`unexpected command: ${cmd}`);
+    },
+    { shouldMockEvents: true }
+  );
 }
 
 async function renderShell() {
@@ -24,6 +38,10 @@ function openFolderButtons() {
 }
 
 describe("app shell", () => {
+  beforeEach(() => {
+    mockFolderPicker(null);
+  });
+
   it("renders the three panes", async () => {
     await renderShell();
 

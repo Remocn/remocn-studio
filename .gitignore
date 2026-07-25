@@ -19,6 +19,9 @@ next-env.d.ts
 # tsc --noEmit with "incremental": true
 *.tsbuildinfo
 
+# `bun run sidecar:build` output, bundled into the app as a Tauri resource
+sidecar-dist
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
