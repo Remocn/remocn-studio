@@ -4,15 +4,12 @@ import { Trash2Icon } from "lucide-react";
 import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { DotmSquare1 } from "@/components/ui/dotm-square-1";
-import { baseName } from "@/lib/studio/paths";
-import { relativeTime } from "@/lib/studio/time";
 import { cn } from "@/lib/utils";
 import type { HistorySession } from "@/shared/ipc";
 
 export function SessionItem({
   isActive,
   isThinking,
-  now,
   onRemove,
   onSelect,
   session,
@@ -39,7 +36,6 @@ export function SessionItem({
         <span className="w-full truncate pr-7 text-sidebar-foreground text-sm">
           {session.title}
         </span>
-
       </button>
 
       {isThinking ? (
