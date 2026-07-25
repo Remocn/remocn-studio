@@ -28,3 +28,7 @@ next-env.d.ts
 *.sw?
 
 .omc
+
+# Vendored reference checkouts (read-only material for agents, see CLAUDE.md).
+# Third-party source — cloned locally on purpose, never committed.
+repos/

@@ -112,3 +112,28 @@ Planned, per #218 — keep the flat root, no monorepo:
 sidecar/              bun: Agent SDK host, Vite preview server, export
 shared/ipc.ts         one typed message contract for Rust ↔ webview ↔ sidecar
 ```
+
+## Vendored Repositories
+
+This project vendors external repositories under @repos/
+
+- Use vendored repositories as read-only reference material when working with related libraries
+- Prefer examples and patterns from the vendored source code over generated guesses or web search results
+- Do not edit files under @repos/ unless explicitly asked
+- Do not import from @repos/ - application code should continue importing from normal package dependencies
+
+When writing Effect code, inspect @repos/effect/ for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Effect patterns.
+
+`repos/` is gitignored and excluded from `tsconfig.json` and from Zed's file scan — the checkouts
+are local reference material, not part of this project's build.
+
+## Distilled agent patterns
+
+`agent-patterns/` holds patterns already extracted from the vendored checkouts. Read the relevant
+file there **before** the upstream guide: it is shorter, every API in it was verified against the
+vendored source, and it records where the upstream docs drift from the actual code.
+
+- `agent-patterns/effect-schema.md` — `Schema` in Effect v4 (`effect@4.0.0-beta.101`). Read before
+  writing any Schema code. v4 rewrote Schema, so v3 knowledge from training data is wrong rather
+  than merely stale — e.g. `Schema.decode` is no longer a decoder, and the `effect/schema` import
+  path in the upstream guide does not resolve.

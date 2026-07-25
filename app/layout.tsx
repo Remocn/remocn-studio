@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Manrope } from "next/font/google";
+import { Geist_Mono, Manrope, Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
+
+const manropeHeading = Manrope({subsets:['latin'],variable:'--font-heading'});
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -27,7 +31,7 @@ export default function RootLayout({
   return (
     // `suppressHydrationWarning` is required by next-themes: it writes the
     // theme class onto <html> before React hydrates.
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable, manropeHeading.variable)}>
       <body className={cn(manrope.variable, geistMono.variable, "antialiased")}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
