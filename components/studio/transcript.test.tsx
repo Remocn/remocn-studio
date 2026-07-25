@@ -57,7 +57,11 @@ const ENTRIES: TurnEntry[] = [
   { id: "assistant-0", kind: "assistant", text: ANSWER },
 ];
 
-function renderTranscript(entries: TurnEntry[], isRunning = false) {
+function renderTranscript(
+  entries: TurnEntry[],
+  isRunning = false,
+  isWaiting = false
+) {
   return render(
     <MessageScrollerProvider>
       <MessageScroller>
@@ -68,6 +72,7 @@ function renderTranscript(entries: TurnEntry[], isRunning = false) {
               entries={entries}
               error={null}
               isRunning={isRunning}
+              isWaiting={isWaiting}
             />
           </MessageScrollerContent>
         </MessageScrollerViewport>
@@ -148,6 +153,12 @@ describe("Transcript", () => {
     expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
   });
 
+  it("waits on an approval rather than claiming to be thinking", () => {
+    renderTranscript(ENTRIES.slice(0, 1), true, true);
+
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+  });
+
   it("reports a turn that failed outright", () => {
     render(
       <MessageScrollerProvider>
@@ -159,6 +170,7 @@ describe("Transcript", () => {
                 entries={[]}
                 error="the sidecar is not running"
                 isRunning={false}
+                isWaiting={false}
               />
             </MessageScrollerContent>
           </MessageScrollerViewport>

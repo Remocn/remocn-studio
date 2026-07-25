@@ -119,6 +119,24 @@ describe("runHost", () => {
     await host.finished;
   });
 
+  it("answers a permission card nobody is waiting on", async () => {
+    const host = harness();
+
+    host.push(
+      request("perm-1", "claude.permission", { decision: "allow", id: "gone" })
+    );
+    await settled();
+
+    expect(host.sent).toContainEqual({
+      data: { matched: false },
+      id: "perm-1",
+      type: "result",
+    });
+
+    host.close();
+    await host.finished;
+  });
+
   it("reports a method it does not have", async () => {
     const host = harness();
 

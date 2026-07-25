@@ -1,4 +1,5 @@
 import {
+  type CanUseTool,
   type Options,
   type Query,
   query,
@@ -20,8 +21,10 @@ interface Turn {
 }
 
 export interface TurnCallbacks {
+  readonly canUseTool: CanUseTool;
   readonly log: (line: string) => void;
   readonly onContext: (usage: ContextUsage) => void;
+  readonly onStop: () => void;
 }
 
 export function messages(
@@ -29,11 +32,11 @@ export function messages(
   callbacks: TurnCallbacks
 ): Stream.Stream<SDKMessage, ClaudeError> {
   return Stream.suspend(() => {
-    const turn = open(params, callbacks.log);
+    const turn = open(params, callbacks);
     let finished = false;
 
     return Stream.fromAsyncIterable(
-      stoppable(turn, () => finished),
+      stoppable(turn, callbacks, () => finished),
       (cause) => new ClaudeError({ message: errorMessage(cause) })
     ).pipe(
       Stream.tap((message) =>
@@ -69,7 +72,7 @@ function context(
   );
 }
 
-function open(params: PromptParams, log: (line: string) => void): Turn {
+function open(params: PromptParams, callbacks: TurnCallbacks): Turn {
   const input = Promise.withResolvers<void>();
 
   const prompt = (async function* () {
@@ -85,17 +88,18 @@ function open(params: PromptParams, log: (line: string) => void): Turn {
 
   return {
     close: () => input.resolve(),
-    session: query({ options: optionsOf(params, log), prompt }),
+    session: query({ options: optionsOf(params, callbacks), prompt }),
   };
 }
 
-function optionsOf(params: PromptParams, log: (line: string) => void): Options {
+function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
   return {
+    canUseTool: callbacks.canUseTool,
     cwd: params.cwd,
     includePartialMessages: true,
-    permissionMode: "acceptEdits",
+    permissionMode: "default",
     settingSources: ["project"],
-    stderr: (data) => log(`claude: ${data.trimEnd()}`),
+    stderr: (data) => callbacks.log(`claude: ${data.trimEnd()}`),
     ...(params.effort === null ? {} : { effort: params.effort }),
     ...(params.model === null ? {} : { model: params.model }),
     ...(params.sessionId === null ? {} : { resume: params.sessionId }),
@@ -104,6 +108,7 @@ function optionsOf(params: PromptParams, log: (line: string) => void): Options {
 
 function stoppable(
   turn: Turn,
+  callbacks: TurnCallbacks,
   finished: () => boolean
 ): AsyncIterable<SDKMessage> {
   const iterator = turn.session[Symbol.asyncIterator]();
@@ -113,6 +118,7 @@ function stoppable(
       next: () => iterator.next(),
       return: async () => {
         if (!finished()) {
+          callbacks.onStop();
           await turn.session.interrupt().catch(ignore);
         }
         turn.close();

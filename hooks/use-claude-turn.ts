@@ -3,12 +3,14 @@
 import { Effect, Fiber } from "effect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { causeMessage } from "@/lib/error-message";
-import { promptClaude } from "@/lib/studio/claude";
+import { answerPermission, promptClaude } from "@/lib/studio/claude";
+import type { PermissionAction } from "@/lib/studio/permission";
 import type { SidecarError } from "@/lib/studio/sidecar";
 import type {
   ClaudeEvent,
   ContextUsage,
   EffortLevel,
+  PermissionReason,
   PromptAttachment,
   PromptResult,
 } from "@/shared/ipc";
@@ -37,6 +39,13 @@ export type TurnEntry =
   | { id: string; kind: "assistant"; text: string }
   | { id: string; kind: "notice"; text: string };
 
+export interface PendingPermission {
+  id: string;
+  input: unknown;
+  name: string;
+  reason: PermissionReason;
+}
+
 export interface TurnSettings {
   cwd: string | null;
   effort: EffortLevel | null;
@@ -44,10 +53,12 @@ export interface TurnSettings {
 }
 
 export interface ClaudeTurn {
+  answer: (id: string, action: PermissionAction) => void;
   context: ContextUsage | null;
   entries: TurnEntry[];
   error: string | null;
   isRunning: boolean;
+  permission: PendingPermission | null;
   send: (prompt: string, attachments?: readonly PromptAttachment[]) => void;
   sessionId: string | null;
   stop: () => void;
@@ -59,6 +70,7 @@ export function useClaudeTurn({
   model,
 }: TurnSettings): ClaudeTurn {
   const [entries, setEntries] = useState<TurnEntry[]>([]);
+  const [permissions, setPermissions] = useState<PendingPermission[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -71,6 +83,28 @@ export function useClaudeTurn({
       Effect.runFork(Fiber.interrupt(fiber));
     }
   }, []);
+
+  const answer = useCallback(
+    (id: string, action: PermissionAction) => {
+      if (action === "cancel") {
+        stop();
+        return;
+      }
+
+      setPermissions((current) =>
+        current.filter((pending) => pending.id !== id)
+      );
+
+      Effect.runFork(
+        answerPermission({ decision: action, id }).pipe(
+          Effect.catch((failure) =>
+            Effect.sync(() => setError(failure.message))
+          )
+        )
+      );
+    },
+    [stop]
+  );
 
   const send = useCallback(
     (prompt: string, attachments: readonly PromptAttachment[] = []) => {
@@ -99,6 +133,18 @@ export function useClaudeTurn({
             setSessionId(event.sessionId);
             return;
           }
+          if (event.type === "permission") {
+            setPermissions((current) => [
+              ...current,
+              {
+                id: event.id,
+                input: event.input,
+                name: event.name,
+                reason: event.reason,
+              },
+            ]);
+            return;
+          }
           setEntries((current) => fold(current, event));
         }
       ).pipe(
@@ -106,6 +152,7 @@ export function useClaudeTurn({
           Effect.sync(() => {
             inflight.current = null;
             setIsRunning(false);
+            setPermissions([]);
 
             if (exit._tag === "Failure") {
               setError(causeMessage(exit.cause));
@@ -131,8 +178,28 @@ export function useClaudeTurn({
   useEffect(() => stop, [stop]);
 
   return useMemo(
-    () => ({ context, entries, error, isRunning, send, sessionId, stop }),
-    [context, entries, error, isRunning, send, sessionId, stop]
+    () => ({
+      answer,
+      context,
+      entries,
+      error,
+      isRunning,
+      permission: permissions[0] ?? null,
+      send,
+      sessionId,
+      stop,
+    }),
+    [
+      answer,
+      context,
+      entries,
+      error,
+      isRunning,
+      permissions,
+      send,
+      sessionId,
+      stop,
+    ]
   );
 }
 

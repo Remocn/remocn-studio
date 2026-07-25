@@ -56,12 +56,14 @@ export function Composer({
   context,
   disabled,
   isRunning,
+  isWaiting,
   onStop,
   onSubmit,
 }: {
   context: ContextUsage | null;
   disabled: boolean;
   isRunning: boolean;
+  isWaiting: boolean;
   onStop: () => void;
   onSubmit: (text: string, attachments: readonly PromptAttachment[]) => void;
 }) {
@@ -69,7 +71,8 @@ export function Composer({
     useStudio();
   const composer = useComposer(onSubmit);
   const sidecar = useSidecar();
-  const cannotSend = disabled || sidecar.phase === "down";
+  const isLocked = disabled || isWaiting;
+  const cannotSend = isLocked || sidecar.phase === "down";
 
   return (
     <div className="shrink-0 px-4 pb-4">
@@ -86,10 +89,14 @@ export function Composer({
 
           <InputGroupTextarea
             aria-label="Message Claude"
-            disabled={disabled}
+            disabled={isLocked}
             onChange={composer.onChange}
             onKeyDown={composer.onKeyDown}
-            placeholder="Describe the scene you want to build…"
+            placeholder={
+              isWaiting
+                ? "Answer the approval request to continue…"
+                : "Describe the scene you want to build…"
+            }
             rows={2}
             value={composer.value}
           />
@@ -100,7 +107,7 @@ export function Composer({
                 render={
                   <InputGroupButton
                     aria-label="Add to this message"
-                    disabled={disabled}
+                    disabled={isLocked}
                     size="icon-xs"
                     variant="ghost"
                   />

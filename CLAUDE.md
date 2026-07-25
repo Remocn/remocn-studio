@@ -248,6 +248,33 @@ event.
   the turn closes it**, because afterwards there is no session left to ask. It is
   wrapped in a timeout and ignored on failure — a missing reading hides the meter,
   it never fails the turn.
+- **Permissions are a `canUseTool` gate, not a permission mode.** The turn runs on
+  `permissionMode: "default"` so every call reaches `sidecar/claude/gate.ts`.
+  `review()` in `sidecar/claude/permission.ts` resolves each path field — symlinks
+  and `..` included, walking up to the nearest existing ancestor so a file that is
+  about to be created still resolves — and auto-allows the file tools when
+  everything lands inside `params.cwd`. Bash always asks; so does a tool with no
+  path rule.
+  - **The ask is a stream chunk of the turn** (`ClaudeEvent` `permission`), not a
+    notification, so it belongs to the turn that raised it and dies with it. The
+    answer is a *separate* `claude.permission` request, which works because
+    `dispatch` forks each request into a `FiberMap` rather than serving them in
+    order.
+  - The card renders **above the composer, not in the transcript** — an approval
+    is a thing to answer, not a thing that happened. `useClaudeTurn` keeps the
+    asks in a queue and hands out the head, because one assistant message can
+    raise several tool calls at once. The composer is locked while one is up, and
+    answering removes it: what the tool then did is already the activity line's
+    job to say.
+  - The gate is a module singleton in `sidecar/handlers.ts`; `makeGate()` exists so
+    tests get their own. It holds a `Deferred` per pending ask and a `Set` of
+    remembered signatures — session-scoped by being process-scoped, never written
+    to disk.
+  - **Cards settle before the interrupt is awaited.** `stoppable()` calls
+    `onStop` — `gate.abandon(turnId)`, synchronously — *before*
+    `session.interrupt()`, because that call can only be answered by a CLI that is
+    not blocked on a permission prompt. `Effect.onExit` around the stream repeats
+    the abandon for every other way a turn can end.
 - **bun comes from the user's machine**, resolved from `$REMOCN_STUDIO_BUN`,
   `~/.bun/bin`, `$PATH`, then the usual Homebrew/`/usr/local` locations. A
   GUI-launched app gets a minimal `PATH`, which is why the fallback list exists.
