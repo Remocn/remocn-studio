@@ -4,7 +4,7 @@ import { memo } from "react";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Message, MessageContent } from "@/components/ui/message";
 import { MessageScrollerItem } from "@/components/ui/message-scroller";
-import type { TurnEntry } from "@/hooks/use-claude-turn";
+import type { TranscriptEntry } from "@/shared/ipc";
 import { ActivityLine } from "./activity-line";
 import { AttachmentRow } from "./attachment-row";
 import { Markdown } from "./markdown";
@@ -18,7 +18,7 @@ export function Transcript({
   isWaiting,
 }: {
   cwd: string | null;
-  entries: TurnEntry[];
+  entries: readonly TranscriptEntry[];
   error: string | null;
   isRunning: boolean;
   isWaiting: boolean;
@@ -64,7 +64,7 @@ function EntryBlock({
   isStreaming,
 }: {
   cwd: string | null;
-  entry: TurnEntry;
+  entry: TranscriptEntry;
   isStreaming: boolean;
 }) {
   if (entry.kind === "user") {

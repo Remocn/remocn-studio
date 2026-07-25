@@ -34,7 +34,16 @@
       // reappears on the next component install. 90 of the 93 findings on first
       // run were in this set. Formatting stays ON so the tree is consistent;
       // only the linter is off.
-      "includes": ["components/ui/**", "hooks/use-mobile.ts"],
+      //
+      // `lib/dotmatrix-*` is generated too, and lands outside `components/ui/`
+      // only because the Dot Matrix registry declares its shared runtime as
+      // `registry:lib`, which the CLI resolves through the `lib` alias.
+      "includes": [
+        "components/ui/**",
+        "hooks/use-mobile.ts",
+        "lib/dotmatrix-core.tsx",
+        "lib/dotmatrix-hooks.ts"
+      ],
       // Linter off, formatter on. `recommended: false` does not work as a
       // blanket here: the ultracite presets enable rules by name, so they
       // survive it and the a11y/style findings come straight back.

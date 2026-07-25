@@ -2,8 +2,10 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import Page from "@/app/page";
+import type { HistorySession } from "@/shared/ipc";
 
 const PICKED_FOLDER = "/Users/me/projects/my-video";
+const SESSION_ROW = /^A promo for the launch/;
 
 const SIDECAR_READY = {
   attempt: 0,
@@ -13,14 +15,38 @@ const SIDECAR_READY = {
   pid: 1234,
 };
 
-function mockFolderPicker(result: string | null) {
+const STORED_SESSION: HistorySession = {
+  createdAt: 1_700_000_000_000,
+  folder: PICKED_FOLDER,
+  id: "session-1",
+  sdkSessionId: "sdk-1",
+  title: "A promo for the launch",
+  updatedAt: 1_700_000_000_000,
+};
+
+function mockStudio(
+  options: { folder?: string | null; sessions?: HistorySession[] } = {}
+) {
   mockIPC(
-    (cmd) => {
+    (cmd, payload) => {
       if (cmd === "plugin:dialog|open") {
-        return result;
+        return options.folder ?? null;
       }
       if (cmd === "sidecar_status") {
         return SIDECAR_READY;
+      }
+      if (cmd === "sidecar_request") {
+        const { method } = payload as { method: string };
+        if (method === "history.sessions") {
+          return options.sessions ?? [];
+        }
+        if (method === "history.blocks") {
+          return [];
+        }
+        if (method === "history.remove") {
+          return { removed: true };
+        }
+        throw new Error(`unexpected sidecar method: ${method}`);
       }
       throw new Error(`unexpected command: ${cmd}`);
     },
@@ -39,7 +65,7 @@ function openFolderButtons() {
 
 describe("app shell", () => {
   beforeEach(() => {
-    mockFolderPicker(null);
+    mockStudio();
   });
 
   it("renders the three panes", async () => {
@@ -62,12 +88,12 @@ describe("app shell", () => {
   it("says every pane is empty when no folder is open", async () => {
     await renderShell();
 
-    expect(screen.getAllByText("No folder open")).toHaveLength(3);
+    expect(await screen.findAllByText("No folder open")).toHaveLength(3);
     expect(openFolderButtons()).toHaveLength(2);
   });
 
   it("shows the chosen folder in the title bar", async () => {
-    mockFolderPicker(PICKED_FOLDER);
+    mockStudio({ folder: PICKED_FOLDER });
     await renderShell();
 
     fireEvent.click(openFolderButtons()[0]);
@@ -77,11 +103,65 @@ describe("app shell", () => {
   });
 
   it("keeps the empty states when the picker is dismissed", async () => {
-    mockFolderPicker(null);
+    mockStudio({ folder: null });
     await renderShell();
 
     fireEvent.click(openFolderButtons()[0]);
 
     expect(await screen.findAllByText("No folder open")).toHaveLength(3);
+  });
+
+  it("lists stored sessions and opens the one that is clicked", async () => {
+    mockStudio({ sessions: [STORED_SESSION] });
+    await renderShell();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: SESSION_ROW,
+      })
+    );
+
+    expect(await screen.findByText("my-video")).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "A promo for the launch" })
+    ).toBeVisible();
+  });
+
+  it("drops a deleted session and puts the chat back on a new one", async () => {
+    mockStudio({ sessions: [STORED_SESSION] });
+    await renderShell();
+    fireEvent.click(await screen.findByRole("button", { name: SESSION_ROW }));
+    await screen.findByRole("heading", { name: "A promo for the launch" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete A promo for the launch" })
+    );
+
+    expect(
+      screen.queryByRole("button", { name: SESSION_ROW })
+    ).not.toBeInTheDocument();
+    expect(await screen.findByText("No sessions yet")).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "New session" })
+    ).toBeVisible();
+  });
+
+  it("says so when the history cannot be read", async () => {
+    mockIPC(
+      (cmd) => {
+        if (cmd === "sidecar_status") {
+          return SIDECAR_READY;
+        }
+        if (cmd === "sidecar_request") {
+          throw new Error("the sidecar is not running");
+        }
+        throw new Error(`unexpected command: ${cmd}`);
+      },
+      { shouldMockEvents: true }
+    );
+    await renderShell();
+
+    expect(await screen.findByText("History is unavailable")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
   });
 });

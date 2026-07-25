@@ -6,10 +6,10 @@ use std::{
     process::Stdio,
 };
 
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::process::{Child, Command};
 
-use crate::ipc::HOST_PID_ENV;
+use crate::ipc::{DATA_DIR_ENV, HOST_PID_ENV};
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
 const FALLBACK_DIRS: [&str; 5] = [
@@ -52,20 +52,33 @@ pub fn resolve_script(_app: &AppHandle) -> Result<PathBuf, String> {
 
 #[cfg(not(debug_assertions))]
 pub fn resolve_script(app: &AppHandle) -> Result<PathBuf, String> {
-    use tauri::{path::BaseDirectory, Manager};
+    use tauri::path::BaseDirectory;
 
     app.path()
         .resolve("sidecar/main.js", BaseDirectory::Resource)
         .map_err(|err| format!("the app bundle has no sidecar: {err}"))
 }
 
-pub fn launch(bun: &Path, script: &Path) -> Result<Child, String> {
+pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| format!("there is no app data directory: {err}"))?;
+
+    std::fs::create_dir_all(&dir)
+        .map_err(|err| format!("could not create {}: {err}", dir.display()))?;
+
+    Ok(dir)
+}
+
+pub fn launch(bun: &Path, script: &Path, data_dir: &Path) -> Result<Child, String> {
     let mut command = Command::new(bun);
 
     command
         .arg(script)
         .env("PATH", child_path(bun))
         .env(HOST_PID_ENV, std::process::id().to_string())
+        .env(DATA_DIR_ENV, data_dir)
         .kill_on_drop(true)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

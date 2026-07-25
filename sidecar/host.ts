@@ -24,21 +24,21 @@ export interface HandlerInput<M extends SidecarMethod> {
   params: SidecarParams<M>;
 }
 
-export type Handler<M extends SidecarMethod> = (
+export type Handler<M extends SidecarMethod, R = never> = (
   input: HandlerInput<M>
-) => Effect.Effect<SidecarResult<M>, HandlerError>;
+) => Effect.Effect<SidecarResult<M>, HandlerError, R>;
 
-export type Handlers = { [M in SidecarMethod]: Handler<M> };
+export type Handlers<R = never> = { [M in SidecarMethod]: Handler<M, R> };
 
-type ErasedHandler = (input: {
+type ErasedHandler<R> = (input: {
   emit: (chunk: never) => Effect.Effect<void>;
   log: (message: string) => Effect.Effect<void>;
   params: never;
-}) => Effect.Effect<unknown, HandlerError>;
+}) => Effect.Effect<unknown, HandlerError, R>;
 
 type Inflight = FiberMap.FiberMap<string>;
 
-export function runHost(handlers: Handlers) {
+export function runHost<R>(handlers: Handlers<R>) {
   return Effect.gen(function* () {
     const channel = yield* SidecarChannel;
     const inflight: Inflight = yield* FiberMap.make<string>();
@@ -55,8 +55,8 @@ export function runHost(handlers: Handlers) {
   });
 }
 
-function handleLine(
-  handlers: Handlers,
+function handleLine<R>(
+  handlers: Handlers<R>,
   channel: Channel,
   inflight: Inflight,
   line: string
@@ -79,8 +79,8 @@ function handleLine(
   });
 }
 
-function dispatch(
-  handlers: Handlers,
+function dispatch<R>(
+  handlers: Handlers<R>,
   channel: Channel,
   inflight: Inflight,
   frame: SidecarRequestFrame
@@ -113,14 +113,14 @@ function dispatch(
   });
 }
 
-function serve(
-  handlers: Handlers,
+function serve<R>(
+  handlers: Handlers<R>,
   channel: Channel,
   id: string,
   method: SidecarMethod,
   params: unknown
 ) {
-  const erased = handlers as unknown as Record<string, ErasedHandler>;
+  const erased = handlers as unknown as Record<string, ErasedHandler<R>>;
 
   return Effect.gen(function* () {
     const decoded = yield* codecsFor(method).params(params);

@@ -8,7 +8,9 @@ import { eventsOf } from "./claude/events";
 import { failureFromText, failureOf } from "./claude/failure";
 import { makeGate, permissionGuard } from "./claude/gate";
 import { messages } from "./claude/session";
-import type { Handlers } from "./host";
+import { recording } from "./history/recorder";
+import { type HistoryError, HistoryStore } from "./history/store";
+import { HandlerError, type Handlers } from "./host";
 
 const TOKENS = [
   "Streaming",
@@ -31,7 +33,10 @@ const MAX_DELAY_MS = 2000;
 
 const gate = makeGate();
 
-export const handlers: Handlers = {
+const unstored = (error: HistoryError) =>
+  new HandlerError({ message: error.message });
+
+export const handlers: Handlers<HistoryStore> = {
   "claude.permission": ({ params }) =>
     Effect.map(gate.answer(params.id, params.decision), (matched) => ({
       matched,
@@ -43,6 +48,12 @@ export const handlers: Handlers = {
       const sessionId = yield* Ref.make(params.sessionId);
       const failure = yield* Ref.make<ClaudeFailure | null>(null);
       const context = yield* Ref.make<ContextUsage | null>(null);
+
+      const store = yield* HistoryStore;
+      const recorder = yield* recording(store, params, log);
+      if (recorder.session !== null) {
+        yield* emit({ session: recorder.session, type: "history" });
+      }
 
       yield* Stream.runForEach(
         messages(params, {
@@ -62,7 +73,11 @@ export const handlers: Handlers = {
               yield* Ref.set(failure, found);
             }
 
-            yield* Effect.forEach(eventsOf(message), emit, { discard: true });
+            yield* Effect.forEach(
+              eventsOf(message),
+              (event) => Effect.andThen(emit(event), recorder.event(event)),
+              { discard: true }
+            );
           })
       ).pipe(
         Effect.catch((error) =>
@@ -80,6 +95,24 @@ export const handlers: Handlers = {
         sessionId: yield* Ref.get(sessionId),
       };
     }),
+
+  "history.blocks": ({ params }) =>
+    Effect.flatMap(HistoryStore, (store) =>
+      store.blocks(params.sessionId)
+    ).pipe(Effect.mapError(unstored)),
+
+  "history.remove": ({ params }) =>
+    Effect.flatMap(HistoryStore, (store) =>
+      store.remove(params.sessionId)
+    ).pipe(
+      Effect.map((removed) => ({ removed })),
+      Effect.mapError(unstored)
+    ),
+
+  "history.sessions": () =>
+    Effect.flatMap(HistoryStore, (store) => store.sessions).pipe(
+      Effect.mapError(unstored)
+    ),
 
   "sidecar.emit": ({ emit, params }) =>
     Effect.gen(function* () {

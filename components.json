@@ -22,6 +22,7 @@
     "hooks": "@/hooks"
   },
   "registries": {
+    "@dotmatrix": "https://dotmatrix.zzzzshawn.cloud/r/{name}.json",
     "@remocn": "https://remocn.dev/r/{name}.json"
   }
 }

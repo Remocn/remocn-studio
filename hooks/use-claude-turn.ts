@@ -7,37 +7,15 @@ import { answerPermission, promptClaude } from "@/lib/studio/claude";
 import type { PermissionAction } from "@/lib/studio/permission";
 import type { SidecarError } from "@/lib/studio/sidecar";
 import type {
-  ClaudeEvent,
   ContextUsage,
   EffortLevel,
+  HistorySession,
   PermissionReason,
   PromptAttachment,
   PromptResult,
+  TranscriptEntry,
 } from "@/shared/ipc";
-
-export type ActivityState = "done" | "failed" | "running";
-
-export interface ActivityEntry {
-  id: string;
-  input: unknown;
-  kind: "activity";
-  name: string;
-  result: string | null;
-  state: ActivityState;
-}
-
-export interface UserEntry {
-  attachments: readonly PromptAttachment[];
-  id: string;
-  kind: "user";
-  text: string;
-}
-
-export type TurnEntry =
-  | ActivityEntry
-  | UserEntry
-  | { id: string; kind: "assistant"; text: string }
-  | { id: string; kind: "notice"; text: string };
+import { appendUser, fold } from "@/shared/transcript";
 
 export interface PendingPermission {
   id: string;
@@ -49,31 +27,41 @@ export interface PendingPermission {
 export interface TurnSettings {
   cwd: string | null;
   effort: EffortLevel | null;
+  historyId: string | null;
+  initial: readonly TranscriptEntry[];
   model: string | null;
+  onSession: (session: HistorySession) => void;
+  onThinking: (isThinking: boolean) => void;
+  sdkSessionId: string | null;
 }
 
 export interface ClaudeTurn {
   answer: (id: string, action: PermissionAction) => void;
   context: ContextUsage | null;
-  entries: TurnEntry[];
+  entries: readonly TranscriptEntry[];
   error: string | null;
   isRunning: boolean;
   permission: PendingPermission | null;
   send: (prompt: string, attachments?: readonly PromptAttachment[]) => void;
-  sessionId: string | null;
   stop: () => void;
 }
 
 export function useClaudeTurn({
   cwd,
   effort,
+  historyId,
+  initial,
   model,
+  onSession,
+  onThinking,
+  sdkSessionId,
 }: TurnSettings): ClaudeTurn {
-  const [entries, setEntries] = useState<TurnEntry[]>([]);
+  const [entries, setEntries] = useState(initial);
   const [permissions, setPermissions] = useState<PendingPermission[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState(sdkSessionId);
+  const [storedId, setStoredId] = useState(historyId);
   const [context, setContext] = useState<ContextUsage | null>(null);
   const inflight = useRef<Fiber.Fiber<PromptResult, SidecarError> | null>(null);
 
@@ -116,21 +104,28 @@ export function useClaudeTurn({
 
       setError(null);
       setIsRunning(true);
-      setEntries((current) => [
-        ...current,
-        {
-          attachments,
-          id: `user-${current.length}`,
-          kind: "user",
-          text: trimmed,
-        },
-      ]);
+      setEntries((current) =>
+        appendUser(current, { attachments, text: trimmed })
+      );
 
       const turn = promptClaude(
-        { attachments, cwd, effort, model, prompt: trimmed, sessionId },
+        {
+          attachments,
+          cwd,
+          effort,
+          historyId: storedId,
+          model,
+          prompt: trimmed,
+          sessionId,
+        },
         (event) => {
           if (event.type === "session") {
             setSessionId(event.sessionId);
+            return;
+          }
+          if (event.type === "history") {
+            setStoredId(event.session.id);
+            onSession(event.session);
             return;
           }
           if (event.type === "permission") {
@@ -172,10 +167,17 @@ export function useClaudeTurn({
 
       inflight.current = Effect.runFork(turn);
     },
-    [cwd, effort, model, sessionId]
+    [cwd, effort, model, onSession, sessionId, storedId]
   );
 
   useEffect(() => stop, [stop]);
+
+  const isThinking = isRunning && permissions.length === 0;
+
+  useEffect(() => {
+    onThinking(isThinking);
+    return () => onThinking(false);
+  }, [isThinking, onThinking]);
 
   return useMemo(
     () => ({
@@ -186,73 +188,8 @@ export function useClaudeTurn({
       isRunning,
       permission: permissions[0] ?? null,
       send,
-      sessionId,
       stop,
     }),
-    [
-      answer,
-      context,
-      entries,
-      error,
-      isRunning,
-      permissions,
-      send,
-      sessionId,
-      stop,
-    ]
+    [answer, context, entries, error, isRunning, permissions, send, stop]
   );
-}
-
-function fold(entries: TurnEntry[], event: ClaudeEvent): TurnEntry[] {
-  if (event.type === "text") {
-    return appendText(entries, event.text);
-  }
-
-  if (event.type === "tool_use") {
-    return [
-      ...entries,
-      {
-        id: event.id,
-        input: event.input,
-        kind: "activity",
-        name: event.name,
-        result: null,
-        state: "running",
-      },
-    ];
-  }
-
-  if (event.type === "tool_result") {
-    return entries.map((entry) =>
-      entry.kind === "activity" && entry.id === event.id
-        ? {
-            ...entry,
-            result: event.text,
-            state: event.isError ? "failed" : "done",
-          }
-        : entry
-    );
-  }
-
-  if (event.type === "notice") {
-    return [
-      ...entries,
-      { id: `notice-${entries.length}`, kind: "notice", text: event.message },
-    ];
-  }
-
-  return entries;
-}
-
-function appendText(entries: TurnEntry[], text: string): TurnEntry[] {
-  const last = entries.at(-1);
-
-  if (last?.kind === "assistant") {
-    return [...entries.slice(0, -1), { ...last, text: last.text + text }];
-  }
-
-  return [
-    ...entries,
-    { id: `assistant-${entries.length}`, kind: "assistant", text },
-  ];
 }

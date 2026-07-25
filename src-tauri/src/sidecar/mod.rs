@@ -312,11 +312,16 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
         Err(reason) => return stillborn(reason),
     };
 
+    let data_dir = match spawn::resolve_data_dir(&inner.app) {
+        Ok(path) => path,
+        Err(reason) => return stillborn(reason),
+    };
+
     inner
         .log
         .host(format!("starting {} {}", bun.display(), script.display()));
 
-    let mut child = match spawn::launch(&bun, &script) {
+    let mut child = match spawn::launch(&bun, &script, &data_dir) {
         Ok(child) => child,
         Err(reason) => return stillborn(reason),
     };

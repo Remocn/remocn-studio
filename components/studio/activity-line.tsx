@@ -2,10 +2,10 @@
 
 import { ChevronRightIcon } from "lucide-react";
 import { useMemo } from "react";
-import type { ActivityEntry, ActivityState } from "@/hooks/use-claude-turn";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { toolDetail, toolFailure, toolTarget } from "@/lib/studio/activity";
 import { cn } from "@/lib/utils";
+import type { ActivityEntry, ActivityState } from "@/shared/ipc";
 import { ActivityDetail } from "./activity-detail";
 
 const DOTS: Record<ActivityState, string> = {

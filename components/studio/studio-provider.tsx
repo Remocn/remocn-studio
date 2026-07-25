@@ -4,12 +4,9 @@ import { createContext, use, useMemo } from "react";
 import { type ClaudeEffort, useClaudeEffort } from "@/hooks/use-claude-effort";
 import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
-import {
-  type ProjectFolder,
-  useProjectFolder,
-} from "@/hooks/use-project-folder";
+import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
 
-export type Studio = ClaudeEffort & ClaudeModel & ProjectFolder;
+export type Studio = ClaudeEffort & ClaudeModel & Workspace;
 
 const StudioContext = createContext<Studio | null>(null);
 
@@ -23,16 +20,16 @@ export function useStudio(): Studio {
 
 export function StudioProvider({ children }: { children: React.ReactNode }) {
   const settings = useHydratedSettings();
-  const folder = useProjectFolder(settings);
+  const workspace = useWorkspace(settings);
   const model = useClaudeModel(settings);
   const effort = useClaudeEffort(settings);
 
   const studio = useMemo(
-    () => ({ ...folder, ...model, ...effort }),
-    [effort, folder, model]
+    () => ({ ...workspace, ...model, ...effort }),
+    [effort, model, workspace]
   );
 
-  if (!folder.isReady) {
+  if (!workspace.isReady) {
     return <div className="h-full bg-background" data-tauri-drag-region />;
   }
 
