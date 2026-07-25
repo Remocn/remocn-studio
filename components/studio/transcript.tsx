@@ -8,6 +8,7 @@ import type { TurnEntry } from "@/hooks/use-claude-turn";
 import { ActivityLine } from "./activity-line";
 import { AttachmentRow } from "./attachment-row";
 import { Markdown } from "./markdown";
+import { Thinking } from "./thinking";
 
 export function Transcript({
   cwd,
@@ -20,7 +21,8 @@ export function Transcript({
   error: string | null;
   isRunning: boolean;
 }) {
-  const lastId = entries.at(-1)?.id ?? null;
+  const last = entries.at(-1) ?? null;
+  const isThinking = isRunning && last?.kind !== "assistant";
 
   return (
     <>
@@ -29,10 +31,16 @@ export function Transcript({
           <Entry
             cwd={cwd}
             entry={entry}
-            isStreaming={isRunning && entry.id === lastId}
+            isStreaming={isRunning && entry.id === last?.id}
           />
         </MessageScrollerItem>
       ))}
+
+      {isThinking ? (
+        <MessageScrollerItem>
+          <Thinking />
+        </MessageScrollerItem>
+      ) : null}
 
       {error === null ? null : (
         <MessageScrollerItem>

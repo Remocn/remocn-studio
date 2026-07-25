@@ -169,7 +169,6 @@ export function Composer({
         >
           <ComposerStatus
             error={composer.attachments.error}
-            isRunning={isRunning}
             sidecar={sidecar}
           />
         </p>
@@ -233,11 +232,9 @@ function labelOf(
 
 function ComposerStatus({
   error,
-  isRunning,
   sidecar,
 }: {
   error: string | null;
-  isRunning: boolean;
   sidecar: Sidecar;
 }) {
   if (error !== null) {
@@ -269,10 +266,5 @@ function ComposerStatus({
     );
   }
 
-  return isRunning ? (
-    <span className="flex items-center gap-2">
-      <Spinner className="size-3" />
-      Working…
-    </span>
-  ) : null;
+  return null;
 }

@@ -189,4 +189,13 @@
   [data-selectable] {
     user-select: text;
   }
+  /* Opting back in also has to look like it: the shell sets `cursor: default`
+     everywhere, so selectable text would still read as inert chrome. Controls
+     inside keep the arrow. */
+  [data-selectable] {
+    cursor: auto;
+  }
+  [data-selectable] :is(a, button, [role="button"], [role="menuitem"]) {
+    cursor: default;
+  }
 }

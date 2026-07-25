@@ -97,7 +97,7 @@ export function watchSidecarStatus(
 ): Effect.Effect<void, SidecarError, Scope.Scope> {
   return Effect.acquireRelease(
     subscribe(SIDECAR_STATUS_EVENT, decodeSidecarStatus, onStatus),
-    (unlisten) => Effect.sync(unlisten)
+    (unlisten) => Effect.ignore(Effect.try(() => unlisten()))
   ).pipe(Effect.asVoid);
 }
 
@@ -106,6 +106,6 @@ export function watchSidecarNotifications(
 ): Effect.Effect<void, SidecarError, Scope.Scope> {
   return Effect.acquireRelease(
     subscribe(SIDECAR_NOTIFY_EVENT, decodeSidecarNotification, onNotify),
-    (unlisten) => Effect.sync(unlisten)
+    (unlisten) => Effect.ignore(Effect.try(() => unlisten()))
   ).pipe(Effect.asVoid);
 }

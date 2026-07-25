@@ -57,7 +57,7 @@ const ENTRIES: TurnEntry[] = [
   { id: "assistant-0", kind: "assistant", text: ANSWER },
 ];
 
-function renderTranscript(entries: TurnEntry[]) {
+function renderTranscript(entries: TurnEntry[], isRunning = false) {
   return render(
     <MessageScrollerProvider>
       <MessageScroller>
@@ -67,7 +67,7 @@ function renderTranscript(entries: TurnEntry[]) {
               cwd={CWD}
               entries={entries}
               error={null}
-              isRunning={false}
+              isRunning={isRunning}
             />
           </MessageScrollerContent>
         </MessageScrollerViewport>
@@ -128,6 +128,24 @@ describe("Transcript", () => {
     renderTranscript(ENTRIES);
 
     expect(screen.getByText("Build me a title card")).toBeVisible();
+  });
+
+  it("says it is thinking, in the transcript, while a turn waits", () => {
+    renderTranscript(ENTRIES.slice(0, 1), true);
+
+    expect(screen.getByText("Thinking…")).toBeVisible();
+  });
+
+  it("stops saying it once the answer is streaming", () => {
+    renderTranscript(ENTRIES, true);
+
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+  });
+
+  it("says nothing when no turn is running", () => {
+    renderTranscript(ENTRIES.slice(0, 1));
+
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
   });
 
   it("reports a turn that failed outright", () => {

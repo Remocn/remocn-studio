@@ -61,7 +61,10 @@ function Conversation({
         <MessageScrollerProvider>
           <MessageScroller>
             <MessageScrollerViewport aria-label="Conversation">
-              <MessageScrollerContent className="mx-auto w-full max-w-2xl gap-3 px-4 py-6">
+              <MessageScrollerContent
+                className="mx-auto w-full max-w-2xl gap-3 px-4 py-6"
+                data-selectable
+              >
                 {hasTranscript ? (
                   <Transcript
                     cwd={cwd}
