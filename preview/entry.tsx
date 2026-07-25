@@ -43,7 +43,7 @@ function Preview({ Root }: { readonly Root: React.FC }) {
 
 function Stage() {
   const { compositions } = useContext(Internals.CompositionManager);
-  const picked = pick(compositions);
+  const picked = pick(compositions, preferredId());
 
   useEffect(() => {
     window.parent.postMessage(describe(picked, compositions.length), "*");
@@ -72,11 +72,16 @@ function Stage() {
   );
 }
 
+function preferredId(): string | null {
+  return (window as unknown as { remocn_preferred: string | null })
+    .remocn_preferred;
+}
+
 function describe(picked: ReturnType<typeof pick>, total: number) {
   if (picked === null) {
     return {
       compositionId: null,
-      isFallback: false,
+      reason: "none",
       source: MESSAGE_SOURCE,
       total,
       unmeasured: false,
@@ -85,7 +90,7 @@ function describe(picked: ReturnType<typeof pick>, total: number) {
 
   return {
     compositionId: picked.id,
-    isFallback: picked.isFallback,
+    reason: picked.reason,
     source: MESSAGE_SOURCE,
     total,
     unmeasured: picked.metadata === null,
@@ -102,19 +107,29 @@ interface AnyComposition {
   width: number | undefined;
 }
 
-function pick(compositions: AnyComposition[]) {
+function pick(compositions: AnyComposition[], preferred: string | null) {
   if (compositions.length === 0) {
     return null;
   }
 
-  const main = compositions.find((composition) => composition.id === MAIN_ID);
-  const chosen = main ?? compositions[0];
+  const byFolder =
+    preferred === null
+      ? undefined
+      : compositions.find((composition) => composition.id === preferred);
 
-  return {
-    id: chosen.id,
-    isFallback: main === undefined,
-    metadata: measured(chosen),
-  };
+  if (byFolder !== undefined) {
+    return { id: byFolder.id, metadata: measured(byFolder), reason: "folder" };
+  }
+
+  const main = compositions.find((composition) => composition.id === MAIN_ID);
+
+  if (main !== undefined) {
+    return { id: main.id, metadata: measured(main), reason: "main" };
+  }
+
+  const [first] = compositions;
+
+  return { id: first.id, metadata: measured(first), reason: "first" };
 }
 
 function measured(composition: AnyComposition) {

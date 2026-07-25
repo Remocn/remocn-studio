@@ -1,6 +1,7 @@
 const CONTAINER = "__remotion-studio-container";
 
 export interface PageOptions {
+  preferred: string | null;
   publicPath: string;
   staticBase: string;
   title: string;
@@ -8,6 +9,7 @@ export interface PageOptions {
 
 export function previewPage(options: PageOptions): string {
   const globals = {
+    remocn_preferred: options.preferred,
     remotion_audioEnabled: true,
     remotion_audioLatencyHint: "playback",
     remotion_envVariables: "{}",

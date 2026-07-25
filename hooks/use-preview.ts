@@ -119,7 +119,11 @@ function hintOf(message: PreviewMessage | null): string | null {
     return `${message.compositionId} computes its metadata, which the preview cannot resolve yet.`;
   }
 
-  if (message.isFallback) {
+  if (message.reason === "folder") {
+    return `Playing ${message.compositionId}, matched from the folder you opened.`;
+  }
+
+  if (message.reason === "first") {
     return `No composition called Main, so ${message.compositionId} is playing.`;
   }
 

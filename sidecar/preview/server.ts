@@ -47,6 +47,7 @@ export interface PreviewServer {
 
 export interface ServerOptions {
   outDir: string;
+  preferred: string | null;
   publicDir: string;
   staticBase: string;
   title: string;
@@ -121,6 +122,7 @@ function handle(
 
   if (pathname === "/" || pathname === "/index.html") {
     const body = previewPage({
+      preferred: options.preferred,
       publicPath: "/",
       staticBase: options.staticBase,
       title: options.title,

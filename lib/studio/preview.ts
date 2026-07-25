@@ -9,9 +9,11 @@ import type { PreviewEvent, PreviewParams, PreviewResult } from "@/shared/ipc";
 
 export const PREVIEW_MESSAGE_SOURCE = "remocn-preview";
 
+export const PreviewPick = Schema.Literals(["first", "folder", "main", "none"]);
+
 export const PreviewMessage = Schema.Struct({
   compositionId: Schema.NullOr(Schema.String),
-  isFallback: Schema.Boolean,
+  reason: PreviewPick,
   source: Schema.Literal(PREVIEW_MESSAGE_SOURCE),
   total: Schema.Int,
   unmeasured: Schema.Boolean,

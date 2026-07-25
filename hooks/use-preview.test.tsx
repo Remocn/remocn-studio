@@ -104,19 +104,7 @@ describe("usePreview", () => {
     mockPreview();
     const { result } = renderHook(() => usePreview(FOLDER));
 
-    act(() => {
-      window.dispatchEvent(
-        new MessageEvent("message", {
-          data: {
-            compositionId: "Intro",
-            isFallback: true,
-            source: "remocn-preview",
-            total: 2,
-            unmeasured: false,
-          },
-        })
-      );
-    });
+    announce({ compositionId: "Intro", reason: "first" });
 
     await waitFor(() => {
       expect(result.current.hint).toBe(
@@ -124,4 +112,45 @@ describe("usePreview", () => {
       );
     });
   });
+
+  it("says when the composition came from the folder that was opened", async () => {
+    mockPreview();
+    const { result } = renderHook(() => usePreview(FOLDER));
+
+    announce({ compositionId: "introducing-opus-5", reason: "folder" });
+
+    await waitFor(() => {
+      expect(result.current.hint).toBe(
+        "Playing introducing-opus-5, matched from the folder you opened."
+      );
+    });
+  });
+
+  it("stays quiet when Main is what is playing", async () => {
+    mockPreview();
+    const { result } = renderHook(() => usePreview(FOLDER));
+
+    announce({ compositionId: "Main", reason: "main" });
+
+    await waitFor(() => {
+      expect(result.current.preview.phase).toBe("building");
+    });
+
+    expect(result.current.hint).toBeNull();
+  });
 });
+
+function announce(pick: { compositionId: string; reason: string }) {
+  act(() => {
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: {
+          ...pick,
+          source: "remocn-preview",
+          total: 2,
+          unmeasured: false,
+        },
+      })
+    );
+  });
+}

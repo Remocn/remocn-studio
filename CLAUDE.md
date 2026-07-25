@@ -397,6 +397,13 @@ slot and mounts `<Player>` instead, so the pane is ours and the pixels are Remot
   opening `src/demos/some-scene` reports "no Remotion entry point" for a folder that is
   part of a perfectly good project. Entry candidates are searched from that root, never
   from the folder the user happened to pick.
+- **Which composition plays** is `folder → Main → first`, and the folder wins because it is
+  the only thing the user actually pointed at: opening `src/demos/introducing-opus-5` in a
+  project with forty compositions and no `Main` should not play `transition-lab`. The
+  basename of the opened folder travels to the page as `window.remocn_preferred` and the
+  entry prefers a composition with that id. The rule is strictly additive — no match means
+  the `Main`-then-first order of #226 is unchanged — and the pane always says which of the
+  three happened, so the pick is never silent.
 - **`webpackOverride` can be async.** `remocn-demo`'s is. Not awaiting it puts a `Promise`
   into the config, which fails without a useful message.
 - **The host is a child process with `cwd` set to the project**, because config files

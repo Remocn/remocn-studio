@@ -56,12 +56,16 @@ export const runPreviewHost: Effect.Effect<void> = Effect.gen(function* () {
   const opened = process.cwd();
   const root = remotionRootOf(opened);
 
-  if (root !== opened) {
+  const preferred = root === opened ? null : path.basename(opened);
+
+  if (preferred !== null) {
     yield* Effect.sync(() => process.chdir(root));
-    yield* log(`preview root for ${opened} resolved to ${root}`);
+    yield* log(
+      `preview root for ${opened} resolved to ${root}, preferring composition ${preferred}`
+    );
   }
 
-  yield* boot(root).pipe(
+  yield* boot(root, preferred).pipe(
     Effect.catch((error) =>
       Effect.andThen(
         log(`preview host failed: ${error.message}`),
@@ -80,7 +84,7 @@ export const runPreviewHost: Effect.Effect<void> = Effect.gen(function* () {
   yield* log(`preview host stopping: ${reason}`);
 }).pipe(Effect.scoped);
 
-function boot(root: string) {
+function boot(root: string, preferred: string | null) {
   return Effect.gen(function* () {
     const entry = process.env[PREVIEW_ENTRY_ENV];
     const outDir = process.env[PREVIEW_OUT_ENV];
@@ -103,6 +107,7 @@ function boot(root: string) {
 
     const server = yield* serve({
       outDir,
+      preferred,
       publicDir: path.join(root, "public"),
       staticBase,
       title: path.basename(root),
