@@ -5,6 +5,7 @@ import { type EffortLevel, isEffortLevel } from "@/shared/ipc";
 
 const SETTINGS_FILE = "settings.json";
 const PROJECT_FOLDER_KEY = "projectFolder";
+const EXPANDED_PROJECTS_KEY = "expandedProjects";
 const CLAUDE_MODEL_KEY = "claudeModel";
 const CLAUDE_EFFORT_KEY = "claudeEffort";
 const LAYOUT_KEY_PREFIX = "layout:";
@@ -18,6 +19,7 @@ const openStore = Effect.runSync(
 export interface StudioSettings {
   claudeEffort: EffortLevel | null;
   claudeModel: string | null;
+  expandedProjects: readonly string[];
   legacyProjectFolder: string | null;
 }
 
@@ -34,6 +36,7 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
     return {
       claudeEffort: effortOf(cache.get(CLAUDE_EFFORT_KEY)),
       claudeModel: cache.get(CLAUDE_MODEL_KEY) ?? null,
+      expandedProjects: idsOf(cache.get(EXPANDED_PROJECTS_KEY)),
       legacyProjectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
     };
   })
@@ -41,6 +44,21 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
 
 function effortOf(value: string | undefined): EffortLevel | null {
   return isEffortLevel(value) ? value : null;
+}
+
+function idsOf(value: string | undefined): readonly string[] {
+  if (value === undefined) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((id) => typeof id === "string")
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 function persist(key: string, value: string): Effect.Effect<void> {
@@ -64,6 +82,12 @@ function forget(key: string): Effect.Effect<void> {
 export const forgetProjectFolder: Effect.Effect<void> = Effect.sync(() => {
   cache.delete(PROJECT_FOLDER_KEY);
 }).pipe(Effect.andThen(forget(PROJECT_FOLDER_KEY)));
+
+export function saveExpandedProjects(
+  ids: readonly string[]
+): Effect.Effect<void> {
+  return remember(EXPANDED_PROJECTS_KEY, JSON.stringify(ids));
+}
 
 export function saveClaudeModel(model: string | null): Effect.Effect<void> {
   return remember(CLAUDE_MODEL_KEY, model);

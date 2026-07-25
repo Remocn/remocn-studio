@@ -16,7 +16,9 @@ import { useStudio } from "./studio-provider";
 
 export function PreviewPane() {
   const { activeProject } = useStudio();
-  const { hint, preview, restart } = usePreview(activeProject?.id ?? null);
+  const { hint, preview, restart } = usePreview(
+    activeProject === null || activeProject.missing ? null : activeProject.id
+  );
 
   return (
     <Pane>

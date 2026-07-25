@@ -52,6 +52,21 @@ export function renameProject(
   });
 }
 
+export function relocateProject(
+  projectId: string,
+  path: string
+): Effect.Effect<Project, SidecarError> {
+  return Effect.gen(function* () {
+    const id = yield* newRequestId;
+
+    return yield* requestSidecar({
+      id,
+      method: "project.relocate",
+      params: { path, projectId },
+    });
+  });
+}
+
 export function removeProject(
   projectId: string
 ): Effect.Effect<boolean, SidecarError> {

@@ -16,6 +16,7 @@ const PICKER_TITLE = "Open Remotion project";
 export interface StudioProjects {
   activeProject: Project | null;
   folderError: string | null;
+  forgetProject: (projectId: string) => void;
   isLoadingProjects: boolean;
   isReady: boolean;
   openFolder: () => Promise<Project | null>;
@@ -23,6 +24,7 @@ export interface StudioProjects {
   projectsError: string | null;
   reloadProjects: () => void;
   rememberProject: (project: Project) => void;
+  replaceProject: (project: Project) => void;
   selectProject: (projectId: string) => void;
 }
 
@@ -39,6 +41,17 @@ export function useProjects(settings: StudioSettings | null): StudioProjects {
       ...current.filter((row) => row.id !== project.id),
     ]);
     setActiveId(project.id);
+  }, []);
+
+  const replaceProject = useCallback((project: Project) => {
+    setProjects((current) =>
+      current.map((row) => (row.id === project.id ? project : row))
+    );
+  }, []);
+
+  const forgetProject = useCallback((projectId: string) => {
+    setProjects((current) => current.filter((row) => row.id !== projectId));
+    setActiveId((current) => (current === projectId ? null : current));
   }, []);
 
   const reloadProjects = useCallback(() => {
@@ -106,6 +119,7 @@ export function useProjects(settings: StudioSettings | null): StudioProjects {
     () => ({
       activeProject: projects.find((row) => row.id === activeId) ?? null,
       folderError: error,
+      forgetProject,
       isLoadingProjects,
       isReady,
       openFolder,
@@ -113,11 +127,13 @@ export function useProjects(settings: StudioSettings | null): StudioProjects {
       projectsError,
       reloadProjects,
       rememberProject,
+      replaceProject,
       selectProject: setActiveId,
     }),
     [
       activeId,
       error,
+      forgetProject,
       isLoadingProjects,
       isReady,
       openFolder,
@@ -125,6 +141,7 @@ export function useProjects(settings: StudioSettings | null): StudioProjects {
       projectsError,
       reloadProjects,
       rememberProject,
+      replaceProject,
     ]
   );
 }

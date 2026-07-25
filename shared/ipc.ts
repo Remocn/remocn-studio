@@ -23,6 +23,7 @@ export const METHOD_NAMES = [
   "project.create",
   "project.list",
   "project.open",
+  "project.relocate",
   "project.remove",
   "project.rename",
   "sidecar.emit",
@@ -171,6 +172,11 @@ export const ProjectName = Schema.Struct({
   projectId: Schema.NonEmptyString,
 });
 
+export const ProjectMove = Schema.Struct({
+  path: Schema.NonEmptyString,
+  projectId: Schema.NonEmptyString,
+});
+
 export const ProjectRemoved = Schema.Struct({ removed: Schema.Boolean });
 
 export const ContextUsage = Schema.Struct({
@@ -263,6 +269,7 @@ export type ProjectRef = (typeof ProjectRef)["Type"];
 export type ProjectPath = (typeof ProjectPath)["Type"];
 export type ProjectDraft = (typeof ProjectDraft)["Type"];
 export type ProjectName = (typeof ProjectName)["Type"];
+export type ProjectMove = (typeof ProjectMove)["Type"];
 export type ProjectRemoved = (typeof ProjectRemoved)["Type"];
 export type ContextUsage = (typeof ContextUsage)["Type"];
 export type ClaudeFailureKind = (typeof ClaudeFailureKind)["Type"];
@@ -338,6 +345,11 @@ export const SIDECAR_METHODS = {
   },
   "project.open": {
     params: ProjectPath,
+    result: Project,
+    stream: Schema.Never,
+  },
+  "project.relocate": {
+    params: ProjectMove,
     result: Project,
     stream: Schema.Never,
   },

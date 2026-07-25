@@ -1,6 +1,7 @@
 "use client";
 
 import { FolderOpenIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyDescription,
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/message-scroller";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useClaudeTurn } from "@/hooks/use-claude-turn";
+import { useLocateProject } from "@/hooks/use-locate-project";
 import { useSessionTranscript } from "@/hooks/use-session-transcript";
 import type {
   EffortLevel,
@@ -41,12 +43,17 @@ export function ChatPane() {
     claudeEffort,
     claudeModel,
     openedSession,
+    relocateProject,
     rememberSession,
     reportThinking,
     sessionKey,
   } = useStudio();
 
   const history = useSessionTranscript(openedSession?.id ?? null);
+  const { locate } = useLocateProject(
+    activeProject?.id ?? null,
+    relocateProject
+  );
 
   return (
     <Pane>
@@ -63,7 +70,9 @@ export function ChatPane() {
           historyId={openedSession?.id ?? null}
           initial={history.entries}
           key={sessionKey}
+          missing={activeProject?.missing ?? false}
           model={claudeModel}
+          onLocate={locate}
           onSession={rememberSession}
           onThinking={reportThinking}
           projectId={activeProject?.id ?? null}
@@ -102,7 +111,9 @@ function Conversation({
   effort,
   historyId,
   initial,
+  missing,
   model,
+  onLocate,
   onSession,
   onThinking,
   projectId,
@@ -113,7 +124,9 @@ function Conversation({
   effort: EffortLevel | null;
   historyId: string | null;
   initial: readonly TranscriptEntry[];
+  missing: boolean;
   model: string | null;
+  onLocate: () => void;
   onSession: (session: HistorySession) => void;
   onThinking: (isThinking: boolean) => void;
   projectId: string | null;
@@ -162,6 +175,19 @@ function Conversation({
         </MessageScrollerProvider>
       </MarkdownProvider>
 
+      {missing ? (
+        <div className="mb-2 shrink-0 px-4 pt-1">
+          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-2">
+            <p className="min-w-0 break-all text-muted-foreground text-xs">
+              {cwd} is not on disk anymore.
+            </p>
+            <Button onClick={onLocate} size="sm" variant="outline">
+              Locate…
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {turn.permission === null ? null : (
         <div className="mb-2 shrink-0 px-4 pt-1">
           <div className="mx-auto w-full max-w-2xl">
@@ -176,7 +202,7 @@ function Conversation({
 
       <Composer
         context={turn.context}
-        disabled={projectId === null}
+        disabled={projectId === null || missing}
         isRunning={turn.isRunning}
         isWaiting={turn.permission !== null}
         onStop={turn.stop}

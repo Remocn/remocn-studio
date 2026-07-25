@@ -10,6 +10,10 @@ export interface ProjectStore {
   readonly find: (id: string) => Effect.Effect<Project, HistoryError>;
   readonly list: Effect.Effect<readonly Project[], HistoryError>;
   readonly open: (path: string) => Effect.Effect<Project, HistoryError>;
+  readonly relocate: (
+    id: string,
+    path: string
+  ) => Effect.Effect<Project, HistoryError>;
   readonly remove: (id: string) => Effect.Effect<boolean, HistoryError>;
   readonly rename: (
     id: string,
@@ -73,6 +77,37 @@ export function make(driver: SqlDriver): ProjectStore {
         return yield* only(rows, `${canonical} could not be opened`);
       }),
 
+    relocate: (id, path) =>
+      Effect.gen(function* () {
+        const now = yield* Clock.currentTimeMillis;
+        const canonical = canonicalPath(path);
+
+        const taken = yield* attempt(() =>
+          driver.all("SELECT name FROM project WHERE path = ? AND id <> ?", [
+            canonical,
+            id,
+          ])
+        );
+
+        const other = taken.at(0);
+        if (other !== undefined) {
+          return yield* Effect.fail(
+            new HistoryError({
+              message: `${canonical} is already open as ${String(other.name)}`,
+            })
+          );
+        }
+
+        yield* attempt(() =>
+          driver.run(
+            "UPDATE project SET path = ?, updated_at = ? WHERE id = ?",
+            [canonical, now, id]
+          )
+        );
+
+        return yield* read(id);
+      }),
+
     remove: (id) =>
       attempt(() => driver.run("DELETE FROM project WHERE id = ?", [id])).pipe(
         Effect.map((changes) => changes > 0)
@@ -101,6 +136,7 @@ export function broken(message: string): ProjectStore {
     find: () => fail,
     list: fail,
     open: () => fail,
+    relocate: () => fail,
     remove: () => fail,
     rename: () => fail,
   };

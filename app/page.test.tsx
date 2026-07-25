@@ -93,7 +93,7 @@ describe("app shell", () => {
   it("renders the three panes", async () => {
     await renderShell();
 
-    expect(screen.getByRole("heading", { name: "Sessions" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Projects" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Chat" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Preview" })).toBeVisible();
   });
@@ -107,10 +107,11 @@ describe("app shell", () => {
     ).toHaveAttribute("data-selectable");
   });
 
-  it("says every pane is empty when no folder is open", async () => {
+  it("says every pane is empty when no project is open", async () => {
     await renderShell();
 
-    expect(await screen.findAllByText("No folder open")).toHaveLength(3);
+    expect(await screen.findByText("No projects yet")).toBeVisible();
+    expect(screen.getAllByText("No folder open")).toHaveLength(2);
     expect(openFolderButtons()).toHaveLength(2);
   });
 
@@ -120,8 +121,9 @@ describe("app shell", () => {
 
     fireEvent.click(openFolderButtons()[0]);
 
-    expect(await screen.findByText("my-video")).toBeVisible();
+    expect(await screen.findAllByText("my-video")).toHaveLength(2);
     expect(screen.queryByText("No folder open")).not.toBeInTheDocument();
+    expect(screen.queryByText("No projects yet")).not.toBeInTheDocument();
   });
 
   it("keeps the empty states when the picker is dismissed", async () => {
@@ -130,7 +132,8 @@ describe("app shell", () => {
 
     fireEvent.click(openFolderButtons()[0]);
 
-    expect(await screen.findAllByText("No folder open")).toHaveLength(3);
+    expect(await screen.findByText("No projects yet")).toBeVisible();
+    expect(screen.getAllByText("No folder open")).toHaveLength(2);
   });
 
   it("lists stored sessions and opens the one that is clicked", async () => {
@@ -143,7 +146,7 @@ describe("app shell", () => {
       })
     );
 
-    expect(await screen.findByText("my-video")).toBeVisible();
+    expect(await screen.findAllByText("my-video")).toHaveLength(2);
     expect(
       await screen.findByRole("heading", { name: "A promo for the launch" })
     ).toBeVisible();
@@ -165,6 +168,19 @@ describe("app shell", () => {
     expect(await screen.findByText("No sessions yet")).toBeVisible();
     expect(
       await screen.findByRole("heading", { name: "New session" })
+    ).toBeVisible();
+  });
+
+  it("offers both ways to add a project", async () => {
+    await renderShell();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add a project" }));
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Open folder…" })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("menuitem", { name: "New project…" })
     ).toBeVisible();
   });
 

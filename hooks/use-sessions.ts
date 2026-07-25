@@ -8,6 +8,7 @@ import type { HistorySession } from "@/shared/ipc";
 
 export interface StudioSessions {
   activeSession: HistorySession | null;
+  forgetSessionsOf: (projectId: string) => void;
   isLoadingSessions: boolean;
   isThinking: boolean;
   onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -72,6 +73,25 @@ export function useSessions(): StudioSessions {
     setActiveId((current) => current ?? session.id);
   }, []);
 
+  const forgetSessionsOf = useCallback(
+    (projectId: string) => {
+      const open = sessions.some(
+        (row) =>
+          row.projectId === projectId &&
+          (row.id === activeId || row.id === openedId)
+      );
+
+      setSessions((current) =>
+        current.filter((row) => row.projectId !== projectId)
+      );
+
+      if (open) {
+        startSession();
+      }
+    },
+    [activeId, openedId, sessions, startSession]
+  );
+
   const onRemoveSession = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
       const id = event.currentTarget.value;
@@ -95,6 +115,7 @@ export function useSessions(): StudioSessions {
   return useMemo(
     () => ({
       activeSession: sessions.find((row) => row.id === activeId) ?? null,
+      forgetSessionsOf,
       isLoadingSessions,
       isThinking,
       onRemoveSession,
@@ -110,6 +131,7 @@ export function useSessions(): StudioSessions {
     }),
     [
       activeId,
+      forgetSessionsOf,
       isLoadingSessions,
       isThinking,
       onRemoveSession,

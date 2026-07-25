@@ -173,6 +173,11 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
       Effect.mapError(unstored)
     ),
 
+  "project.relocate": ({ params }) =>
+    Effect.flatMap(ProjectStore, (projects) =>
+      projects.relocate(params.projectId, params.path)
+    ).pipe(Effect.mapError(unstored)),
+
   "project.remove": ({ params }) =>
     Effect.flatMap(ProjectStore, (projects) =>
       projects.remove(params.projectId)
