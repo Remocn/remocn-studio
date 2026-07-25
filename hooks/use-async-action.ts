@@ -1,25 +1,27 @@
 "use client";
 
+import { Effect, Exit } from "effect";
 import { useCallback, useState } from "react";
-import { errorMessage } from "@/lib/error-message";
+import { causeMessage } from "@/lib/error-message";
 
 export interface AsyncAction {
   error: string | null;
-  run: <T>(action: () => Promise<T>) => Promise<T | null>;
+  run: <A, E>(effect: Effect.Effect<A, E>) => Promise<A | null>;
 }
 
 export function useAsyncAction(): AsyncAction {
   const [error, setError] = useState<string | null>(null);
 
-  const run = useCallback(async <T>(action: () => Promise<T>) => {
-    try {
-      const result = await action();
+  const run = useCallback(async <A, E>(effect: Effect.Effect<A, E>) => {
+    const exit = await Effect.runPromiseExit(effect);
+
+    if (Exit.isSuccess(exit)) {
       setError(null);
-      return result;
-    } catch (cause) {
-      setError(errorMessage(cause));
-      return null;
+      return exit.value;
     }
+
+    setError(causeMessage(exit.cause));
+    return null;
   }, []);
 
   return { error, run };

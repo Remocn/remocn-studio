@@ -1,5 +1,6 @@
 "use client";
 
+import { Effect } from "effect";
 import { useCallback, useMemo, useState } from "react";
 import { useFolderPicker } from "@/hooks/use-folder-picker";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
@@ -25,7 +26,7 @@ export function useProjectFolder(): ProjectFolder {
       return;
     }
     setChosen(folder);
-    saveProjectFolder(folder);
+    Effect.runFork(saveProjectFolder(folder));
   }, [pick]);
 
   return useMemo(

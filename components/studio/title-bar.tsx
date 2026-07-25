@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { folderName } from "@/lib/studio/paths";
+import { SidecarStatus } from "./sidecar-status";
 import { useStudio } from "./studio-provider";
 
 export function TitleBar() {
@@ -54,9 +55,11 @@ export function TitleBar() {
       </div>
 
       <div
-        className="flex min-w-0 flex-1 items-center justify-end"
+        className="flex min-w-0 flex-1 items-center justify-end gap-2"
         data-tauri-drag-region
       >
+        <SidecarStatus />
+
         <Button disabled size="sm" variant="outline">
           <DownloadIcon data-icon="inline-start" />
           Export

@@ -30,24 +30,26 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
   })
 );
 
-function write(key: string, value: string): void {
-  cache.set(key, value);
-  Effect.runFork(
-    Effect.ignore(
-      openStore.pipe(
-        Effect.flatMap((store) =>
-          Effect.tryPromise(() => store.set(key, value))
-        )
+function persist(key: string, value: string): Effect.Effect<void> {
+  return Effect.ignore(
+    openStore.pipe(
+      Effect.flatMap((opened) =>
+        Effect.tryPromise(() => opened.set(key, value))
       )
     )
   );
 }
 
-export function saveProjectFolder(folder: string): void {
-  write(PROJECT_FOLDER_KEY, folder);
+export function saveProjectFolder(folder: string): Effect.Effect<void> {
+  return Effect.sync(() => {
+    cache.set(PROJECT_FOLDER_KEY, folder);
+  }).pipe(Effect.andThen(persist(PROJECT_FOLDER_KEY, folder)));
 }
 
 export const layoutStorage: LayoutStorage = {
   getItem: (key) => cache.get(LAYOUT_KEY_PREFIX + key) ?? null,
-  setItem: (key, value) => write(LAYOUT_KEY_PREFIX + key, value),
+  setItem: (key, value) => {
+    cache.set(LAYOUT_KEY_PREFIX + key, value);
+    Effect.runFork(persist(LAYOUT_KEY_PREFIX + key, value));
+  },
 };
