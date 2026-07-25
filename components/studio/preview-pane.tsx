@@ -15,9 +15,13 @@ import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { useStudio } from "./studio-provider";
 
 export function PreviewPane() {
-  const { activeProject } = useStudio();
+  const { activeProject, scaffolds } = useStudio();
+  const isReady =
+    activeProject !== null &&
+    !activeProject.missing &&
+    !scaffolds.has(activeProject.id);
   const { hint, preview, restart } = usePreview(
-    activeProject === null || activeProject.missing ? null : activeProject.id
+    isReady ? activeProject.id : null
   );
 
   return (
