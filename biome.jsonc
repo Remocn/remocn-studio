@@ -55,6 +55,18 @@
       // duplicate JSX attribute silently discards the earlier one, so the first
       // block was dead code in each file.
       "linter": { "enabled": false }
+    },
+    {
+      // The project template is authored in Remotion's idiom, not ours: every
+      // Remotion project on earth has `src/Root.tsx`, because that is what
+      // `create-video` writes and what its docs assume. Renaming it to
+      // `root.tsx` would make a scaffolded project look wrong to anyone who has
+      // seen another one. Formatting stays on; this is the only rule that has
+      // an opinion the template cannot follow.
+      "includes": ["templates/**"],
+      "linter": {
+        "rules": { "style": { "useFilenamingConvention": "off" } }
+      }
     }
   ]
 }

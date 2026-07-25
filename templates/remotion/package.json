@@ -1,0 +1,23 @@
+{
+  "name": "remotion-project",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "render": "remotion render Main out/video.mp4",
+    "studio": "remotion studio"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.481",
+    "@remotion/cli": "4.0.481",
+    "@remotion/player": "4.0.481",
+    "@remotion/renderer": "4.0.481",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.481"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "~5.8.3"
+  }
+}

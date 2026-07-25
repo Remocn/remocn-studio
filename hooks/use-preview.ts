@@ -24,7 +24,7 @@ const IDLE: Preview = { phase: "idle" };
 
 type Running = Fiber.Fiber<unknown, unknown>;
 
-export function usePreview(folder: string | null): PreviewControl {
+export function usePreview(projectId: string | null): PreviewControl {
   const [preview, setPreview] = useState<Preview>(IDLE);
   const [message, setMessage] = useState<PreviewMessage | null>(null);
   const running = useRef<Running | null>(null);
@@ -43,7 +43,7 @@ export function usePreview(folder: string | null): PreviewControl {
     setPreview({ percent: 0, phase: "building" });
 
     running.current = Effect.runFork(
-      startPreview({ folder: target }, (event) => {
+      startPreview({ projectId: target }, (event) => {
         if (event.type === "building") {
           if (!served) {
             setPreview({ percent: event.percent, phase: "building" });
@@ -68,16 +68,16 @@ export function usePreview(folder: string | null): PreviewControl {
   }, []);
 
   useEffect(() => {
-    if (folder === null) {
+    if (projectId === null) {
       setMessage(null);
       setPreview(IDLE);
       return;
     }
 
-    launch(folder);
+    launch(projectId);
 
     return stop;
-  }, [folder, launch, stop]);
+  }, [launch, projectId, stop]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -96,10 +96,10 @@ export function usePreview(folder: string | null): PreviewControl {
 
   const restart = useCallback(() => {
     stop();
-    if (folder !== null) {
-      launch(folder);
+    if (projectId !== null) {
+      launch(projectId);
     }
-  }, [folder, launch, stop]);
+  }, [launch, projectId, stop]);
 
   const hint = useMemo(() => hintOf(message), [message]);
 

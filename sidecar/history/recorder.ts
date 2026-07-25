@@ -33,8 +33,8 @@ export function recording(
   return Effect.gen(function* () {
     const session = yield* tolerate(
       store.open({
-        folder: params.cwd,
         id: params.historyId,
+        projectId: params.projectId,
         title: titleOf(params),
       })
     );

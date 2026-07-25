@@ -1,7 +1,7 @@
 use serde_json::Value;
-use tauri::{ipc::Channel, State};
+use tauri::{ipc::Channel, AppHandle, State};
 
-use crate::{ipc::SidecarStatus, sidecar::Sidecar};
+use crate::{confirm_quit, ipc::SidecarStatus, sidecar::Sidecar};
 
 #[tauri::command]
 pub async fn sidecar_request(
@@ -27,4 +27,10 @@ pub fn sidecar_status(sidecar: State<'_, Sidecar>) -> SidecarStatus {
 #[tauri::command]
 pub fn sidecar_restart(sidecar: State<'_, Sidecar>) {
     sidecar.restart();
+}
+
+#[tauri::command]
+pub fn quit_studio(app: AppHandle) {
+    confirm_quit();
+    app.exit(0);
 }

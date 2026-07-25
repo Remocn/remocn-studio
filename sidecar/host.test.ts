@@ -5,12 +5,16 @@ import { describe, expect, it, vi } from "vitest";
 import { SIDECAR_PROTOCOL, type SidecarFrame } from "@/shared/ipc";
 import { make, SidecarChannel } from "@/sidecar/channel";
 import { handlers } from "@/sidecar/handlers";
+import {
+  broken as brokenProjects,
+  ProjectStore,
+} from "@/sidecar/history/projects";
 import { broken, HistoryStore } from "@/sidecar/history/store";
 import { type Handlers, runHost } from "@/sidecar/host";
 
 const FLUSH_MS = 80;
 
-function harness(overrides?: Partial<Handlers<HistoryStore>>) {
+function harness(overrides?: Partial<Handlers<HistoryStore | ProjectStore>>) {
   const input = new PassThrough();
   const sent: SidecarFrame[] = [];
   const logged: string[] = [];
@@ -27,6 +31,10 @@ function harness(overrides?: Partial<Handlers<HistoryStore>>) {
       Effect.provideService(
         HistoryStore,
         broken("history is not open in this harness")
+      ),
+      Effect.provideService(
+        ProjectStore,
+        brokenProjects("history is not open in this harness")
       )
     )
   );

@@ -10,7 +10,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { layoutStorage } from "@/lib/studio/settings";
 import { ChatPane } from "./chat-pane";
 import { PreviewPane } from "./preview-pane";
-import { SessionsPane } from "./sessions-pane";
+import { ProjectsPane } from "./projects-pane";
+import { QuitGuard } from "./quit-guard";
 import { StudioProvider } from "./studio-provider";
 import { TitleBar } from "./title-bar";
 
@@ -21,6 +22,7 @@ export function AppShell() {
     <StudioProvider>
       <TooltipProvider delay={500}>
         <ShellLayout />
+        <QuitGuard />
       </TooltipProvider>
     </StudioProvider>
   );
@@ -45,11 +47,11 @@ function ShellLayout() {
         <ResizablePanel
           defaultSize="240px"
           groupResizeBehavior="preserve-pixel-size"
-          id="sessions"
+          id="projects"
           maxSize="380px"
           minSize="200px"
         >
-          <SessionsPane />
+          <ProjectsPane />
         </ResizablePanel>
 
         <ResizableHandle />

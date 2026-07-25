@@ -1,6 +1,5 @@
 "use client";
 
-import type { PendingPermission } from "@/hooks/use-claude-turn";
 import { usePermissionCard } from "@/hooks/use-permission-card";
 import { toolTarget } from "@/lib/studio/activity";
 import {
@@ -8,6 +7,7 @@ import {
   permissionChoices,
   permissionTitle,
 } from "@/lib/studio/permission";
+import type { PendingPermission } from "@/lib/studio/turns";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 export function PermissionCard({

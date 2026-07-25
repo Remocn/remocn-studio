@@ -7,6 +7,7 @@ import {
   type Decoded,
   decodeSidecarNotification,
   decodeSidecarStatus,
+  QUIT_REQUESTED_EVENT,
   SIDECAR_NOTIFY_EVENT,
   SIDECAR_STATUS_EVENT,
   type SidecarMethod,
@@ -76,6 +77,9 @@ export const fetchSidecarStatus: Effect.Effect<SidecarStatus, SidecarError> =
 export const restartSidecar: Effect.Effect<void, SidecarError> =
   command<void>("sidecar_restart");
 
+export const quitStudio: Effect.Effect<void, SidecarError> =
+  command<void>("quit_studio");
+
 const subscribe = <A>(
   event: string,
   decode: (input: unknown) => Decoded<A>,
@@ -105,6 +109,18 @@ export function watchSidecarStatus(
 ): Effect.Effect<void, SidecarError, Scope.Scope> {
   return Effect.acquireRelease(
     subscribe(SIDECAR_STATUS_EVENT, decodeSidecarStatus, onStatus),
+    unsubscribe
+  ).pipe(Effect.asVoid);
+}
+
+export function watchQuitRequests(
+  onQuit: () => void
+): Effect.Effect<void, SidecarError, Scope.Scope> {
+  return Effect.acquireRelease(
+    Effect.tryPromise({
+      catch: fail,
+      try: () => listen(QUIT_REQUESTED_EVENT, () => onQuit()),
+    }),
     unsubscribe
   ).pipe(Effect.asVoid);
 }

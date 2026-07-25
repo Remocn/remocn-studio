@@ -325,11 +325,27 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
         }
     };
 
+    let template_dir = match spawn::resolve_template_dir(&inner.app) {
+        Ok(path) => Some(path),
+        Err(reason) => {
+            inner
+                .log
+                .host(format!("new projects are unavailable: {reason}"));
+            None
+        }
+    };
+
     inner
         .log
         .host(format!("starting {} {}", bun.display(), script.display()));
 
-    let mut child = match spawn::launch(&bun, &script, &data_dir, preview_entry.as_deref()) {
+    let mut child = match spawn::launch(spawn::Launch {
+        bun: &bun,
+        data_dir: &data_dir,
+        preview_entry: preview_entry.as_deref(),
+        script: &script,
+        template_dir: template_dir.as_deref(),
+    }) {
         Ok(child) => child,
         Err(reason) => return stillborn(reason),
     };

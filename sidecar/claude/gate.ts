@@ -2,7 +2,7 @@ import type {
   CanUseTool,
   PermissionResult,
 } from "@anthropic-ai/claude-agent-sdk";
-import { Deferred, Effect, Exit } from "effect";
+import { Deferred, type Duration, Effect, Exit } from "effect";
 import type { ClaudeEvent, PermissionDecision } from "@/shared/ipc";
 import { review } from "./permission";
 
@@ -37,7 +37,11 @@ interface Pending {
 
 const ALLOWED: PermissionResult = { behavior: "allow" };
 
-export function makeGate(): PermissionGate {
+const UNANSWERED = "10 minutes";
+
+export function makeGate(
+  unanswered: Duration.Input = UNANSWERED
+): PermissionGate {
   const pending = new Map<string, Pending>();
   const remembered = new Set<string>();
 
@@ -82,7 +86,11 @@ export function makeGate(): PermissionGate {
         });
         return yield* Deferred.await(deferred);
       }).pipe(
-        Effect.onInterrupt(() => Effect.sync(() => pending.delete(ask.id)))
+        Effect.timeoutOrElse({
+          duration: unanswered,
+          orElse: () => Effect.succeed<PermissionDecision>("deny"),
+        }),
+        Effect.ensuring(Effect.sync(() => pending.delete(ask.id)))
       ),
   };
 }

@@ -15,8 +15,14 @@ import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { useStudio } from "./studio-provider";
 
 export function PreviewPane() {
-  const { projectFolder } = useStudio();
-  const { hint, preview, restart } = usePreview(projectFolder);
+  const { activeProject, scaffolds } = useStudio();
+  const isReady =
+    activeProject !== null &&
+    !activeProject.missing &&
+    !scaffolds.has(activeProject.id);
+  const { hint, preview, restart } = usePreview(
+    isReady ? activeProject.id : null
+  );
 
   return (
     <Pane>
@@ -35,7 +41,7 @@ export function PreviewPane() {
       <PaneBody className="gap-2 p-4">
         <div className="flex min-h-0 flex-1 items-center justify-center [container-type:size]">
           <div className="aspect-(--preview-aspect) w-full max-w-[calc(100cqh*var(--preview-w)/var(--preview-h))] overflow-hidden rounded-xl border bg-black/30 [--preview-aspect:calc(var(--preview-w)/var(--preview-h))] [--preview-h:9] [--preview-w:16]">
-            {projectFolder === null ? (
+            {activeProject === null ? (
               <NoFolder />
             ) : (
               <Stage preview={preview} />

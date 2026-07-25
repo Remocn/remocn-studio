@@ -1,6 +1,7 @@
 "use client";
 
 import { FolderOpenIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyDescription,
@@ -16,13 +17,9 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useClaudeTurn } from "@/hooks/use-claude-turn";
-import { useSessionTranscript } from "@/hooks/use-session-transcript";
-import type {
-  EffortLevel,
-  HistorySession,
-  TranscriptEntry,
-} from "@/shared/ipc";
+import { useLocateProject } from "@/hooks/use-locate-project";
+import type { OpenTurn } from "@/hooks/use-open-turn";
+import type { HistorySession, Project } from "@/shared/ipc";
 import { Composer } from "./composer";
 import { LogoMark } from "./logo-mark";
 import { MarkdownProvider } from "./markdown";
@@ -34,39 +31,27 @@ import { Transcript } from "./transcript";
 const PLACEHOLDERS = ["one", "two", "three"];
 
 export function ChatPane() {
-  const {
-    activeSession,
-    claudeEffort,
-    claudeModel,
-    openedSession,
-    projectFolder,
-    rememberSession,
-    reportThinking,
-    sessionKey,
-  } = useStudio();
-
-  const history = useSessionTranscript(openedSession?.id ?? null);
+  const { activeProject, activeSession, relocateProject, turn } = useStudio();
+  const { locate } = useLocateProject(
+    activeProject?.id ?? null,
+    relocateProject
+  );
 
   return (
     <Pane>
       <PaneHeader>
-        <PaneTitle>{titleOf(projectFolder, activeSession)}</PaneTitle>
+        <PaneTitle>{titleOf(activeProject, activeSession)}</PaneTitle>
       </PaneHeader>
 
-      {history.isLoading ? (
+      {turn.isLoadingTranscript ? (
         <LoadingTranscript />
       ) : (
         <Conversation
-          cwd={projectFolder}
-          effort={claudeEffort}
-          historyId={openedSession?.id ?? null}
-          initial={history.entries}
-          key={sessionKey}
-          model={claudeModel}
-          onSession={rememberSession}
-          onThinking={reportThinking}
-          sdkSessionId={openedSession?.sdkSessionId ?? null}
-          transcriptError={history.error}
+          cwd={activeProject?.path ?? null}
+          hasProject={activeProject !== null}
+          missing={activeProject?.missing ?? false}
+          onLocate={locate}
+          turn={turn}
         />
       )}
     </Pane>
@@ -74,10 +59,10 @@ export function ChatPane() {
 }
 
 function titleOf(
-  projectFolder: string | null,
+  project: Project | null,
   session: HistorySession | null
 ): string {
-  if (projectFolder === null) {
+  if (project === null) {
     return "Chat";
   }
   return session?.title ?? "New session";
@@ -97,38 +82,18 @@ function LoadingTranscript() {
 
 function Conversation({
   cwd,
-  effort,
-  historyId,
-  initial,
-  model,
-  onSession,
-  onThinking,
-  sdkSessionId,
-  transcriptError,
+  hasProject,
+  missing,
+  onLocate,
+  turn,
 }: {
   cwd: string | null;
-  effort: EffortLevel | null;
-  historyId: string | null;
-  initial: readonly TranscriptEntry[];
-  model: string | null;
-  onSession: (session: HistorySession) => void;
-  onThinking: (isThinking: boolean) => void;
-  sdkSessionId: string | null;
-  transcriptError: string | null;
+  hasProject: boolean;
+  missing: boolean;
+  onLocate: () => void;
+  turn: OpenTurn;
 }) {
-  const turn = useClaudeTurn({
-    cwd,
-    effort,
-    historyId,
-    initial,
-    model,
-    onSession,
-    onThinking,
-    sdkSessionId,
-  });
-
-  const error = turn.error ?? transcriptError;
-  const hasTranscript = turn.entries.length > 0 || error !== null;
+  const hasTranscript = turn.entries.length > 0 || turn.turnError !== null;
 
   return (
     <PaneBody>
@@ -144,12 +109,12 @@ function Conversation({
                   <Transcript
                     cwd={cwd}
                     entries={turn.entries}
-                    error={error}
+                    error={turn.turnError}
                     isRunning={turn.isRunning}
                     isWaiting={turn.permission !== null}
                   />
                 ) : (
-                  <ChatEmptyState hasProjectFolder={cwd !== null} />
+                  <ChatEmptyState hasProject={hasProject} />
                 )}
               </MessageScrollerContent>
             </MessageScrollerViewport>
@@ -157,6 +122,19 @@ function Conversation({
           </MessageScroller>
         </MessageScrollerProvider>
       </MarkdownProvider>
+
+      {missing ? (
+        <div className="mb-2 shrink-0 px-4 pt-1">
+          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-2">
+            <p className="min-w-0 break-all text-muted-foreground text-xs">
+              {cwd} is not on disk anymore.
+            </p>
+            <Button onClick={onLocate} size="sm" variant="outline">
+              Locate…
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {turn.permission === null ? null : (
         <div className="mb-2 shrink-0 px-4 pt-1">
@@ -172,7 +150,7 @@ function Conversation({
 
       <Composer
         context={turn.context}
-        disabled={cwd === null}
+        disabled={!hasProject || missing}
         isRunning={turn.isRunning}
         isWaiting={turn.permission !== null}
         onStop={turn.stop}
@@ -182,8 +160,8 @@ function Conversation({
   );
 }
 
-function ChatEmptyState({ hasProjectFolder }: { hasProjectFolder: boolean }) {
-  if (!hasProjectFolder) {
+function ChatEmptyState({ hasProject }: { hasProject: boolean }) {
+  if (!hasProject) {
     return (
       <Empty>
         <EmptyHeader>

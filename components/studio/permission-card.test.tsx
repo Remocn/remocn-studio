@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PermissionCard } from "@/components/studio/permission-card";
-import type { PendingPermission } from "@/hooks/use-claude-turn";
+import type { PendingPermission } from "@/lib/studio/turns";
 
 const CWD = "/Users/me/projects/my-video";
 
