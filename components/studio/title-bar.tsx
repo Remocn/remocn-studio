@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { folderName } from "@/lib/studio/paths";
+import { baseName } from "@/lib/studio/paths";
 import { SidecarStatus } from "./sidecar-status";
 import { useStudio } from "./studio-provider";
 
@@ -35,7 +35,7 @@ export function TitleBar() {
           >
             <FolderOpenIcon data-icon="inline-start" />
             <span className="truncate">
-              {projectFolder ? folderName(projectFolder) : "Open folder"}
+              {projectFolder ? baseName(projectFolder) : "Open folder"}
             </span>
           </TooltipTrigger>
           <TooltipContent align="start" side="bottom">

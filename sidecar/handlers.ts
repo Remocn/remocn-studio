@@ -1,5 +1,9 @@
 import { Clock, Effect, Ref, Stream } from "effect";
-import { type ClaudeFailure, SIDECAR_PROTOCOL } from "@/shared/ipc";
+import {
+  type ClaudeFailure,
+  type ContextUsage,
+  SIDECAR_PROTOCOL,
+} from "@/shared/ipc";
 import { eventsOf } from "./claude/events";
 import { failureFromText, failureOf } from "./claude/failure";
 import { messages } from "./claude/session";
@@ -29,9 +33,13 @@ export const handlers: Handlers = {
     Effect.gen(function* () {
       const sessionId = yield* Ref.make(params.sessionId);
       const failure = yield* Ref.make<ClaudeFailure | null>(null);
+      const context = yield* Ref.make<ContextUsage | null>(null);
 
       yield* Stream.runForEach(
-        messages(params, (line) => Effect.runSync(log(line))),
+        messages(params, {
+          log: (line) => Effect.runSync(log(line)),
+          onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
+        }),
         (message) =>
           Effect.gen(function* () {
             if (message.type === "system" && message.subtype === "init") {
@@ -55,6 +63,7 @@ export const handlers: Handlers = {
       );
 
       return {
+        context: yield* Ref.get(context),
         failure: yield* Ref.get(failure),
         sessionId: yield* Ref.get(sessionId),
       };

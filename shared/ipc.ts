@@ -1,6 +1,6 @@
 import { type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 2;
+export const SIDECAR_PROTOCOL = 3;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -46,11 +46,42 @@ export type EmitParams = (typeof EmitParams)["Type"];
 export type EmitChunk = (typeof EmitChunk)["Type"];
 export type EmitResult = (typeof EmitResult)["Type"];
 
+export const EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;
+
+export const EffortLevel = Schema.Literals(EFFORT_LEVELS);
+
+export function isEffortLevel(value: unknown): value is EffortLevel {
+  return (
+    typeof value === "string" &&
+    (EFFORT_LEVELS as readonly string[]).includes(value)
+  );
+}
+
+export const ImageMediaType = Schema.Literals([
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+export const PromptAttachment = Schema.Struct({
+  mediaType: ImageMediaType,
+  name: Schema.NonEmptyString,
+  path: Schema.NonEmptyString,
+});
+
 export const PromptParams = Schema.Struct({
+  attachments: Schema.Array(PromptAttachment),
   cwd: Schema.NonEmptyString,
+  effort: Schema.NullOr(EffortLevel),
   model: Schema.NullOr(Schema.NonEmptyString),
-  prompt: Schema.NonEmptyString,
+  prompt: Schema.String,
   sessionId: Schema.NullOr(Schema.NonEmptyString),
+});
+
+export const ContextUsage = Schema.Struct({
+  maxTokens: Schema.Int,
+  totalTokens: Schema.Int,
 });
 
 export const ClaudeFailureKind = Schema.Literals([
@@ -98,11 +129,16 @@ export const ClaudeEvent = Schema.Union([
 ]);
 
 export const PromptResult = Schema.Struct({
+  context: Schema.NullOr(ContextUsage),
   failure: Schema.NullOr(ClaudeFailure),
   sessionId: Schema.NullOr(Schema.String),
 });
 
 export type PromptParams = (typeof PromptParams)["Type"];
+export type EffortLevel = (typeof EffortLevel)["Type"];
+export type ImageMediaType = (typeof ImageMediaType)["Type"];
+export type PromptAttachment = (typeof PromptAttachment)["Type"];
+export type ContextUsage = (typeof ContextUsage)["Type"];
 export type ClaudeFailureKind = (typeof ClaudeFailureKind)["Type"];
 export type ClaudeFailure = (typeof ClaudeFailure)["Type"];
 export type ClaudeEvent = (typeof ClaudeEvent)["Type"];

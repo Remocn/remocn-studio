@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  ArrowUpIcon,
-  FolderOpenIcon,
-  SparklesIcon,
-  SquareIcon,
-} from "lucide-react";
-import { Bubble, BubbleContent } from "@/components/ui/bubble";
+import { FolderOpenIcon } from "lucide-react";
 import {
   Empty,
   EmptyDescription,
@@ -15,75 +9,33 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupTextarea,
-} from "@/components/ui/input-group";
-import { Message, MessageContent } from "@/components/ui/message";
-import {
   MessageScroller,
   MessageScrollerButton,
   MessageScrollerContent,
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
-import {
-  type ActivityState,
-  type ClaudeTurn,
-  type TurnEntry,
-  useClaudeTurn,
-} from "@/hooks/use-claude-turn";
-import {
-  type Composer as ComposerState,
-  useComposer,
-} from "@/hooks/use-composer";
-import { cn } from "@/lib/utils";
-import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
+import { useClaudeTurn } from "@/hooks/use-claude-turn";
+import type { EffortLevel } from "@/shared/ipc";
+import { Composer } from "./composer";
+import { LogoMark } from "./logo-mark";
+import { MarkdownProvider } from "./markdown";
+import { Pane, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { useStudio } from "./studio-provider";
-
-const MODELS = [
-  { label: "Default", value: "" },
-  { label: "Opus 5", value: "claude-opus-5" },
-  { label: "Sonnet 5", value: "claude-sonnet-5" },
-  { label: "Haiku 4.5", value: "claude-haiku-4-5-20251001" },
-];
-
-const ACTIVITY_DOTS: Record<ActivityState, string> = {
-  done: "bg-emerald-500",
-  failed: "bg-destructive",
-  running: "animate-pulse bg-amber-500",
-};
+import { Transcript } from "./transcript";
 
 export function ChatPane() {
-  const { claudeModel, onModelChange, projectFolder } = useStudio();
+  const { claudeEffort, claudeModel, projectFolder } = useStudio();
 
   return (
     <Pane>
       <PaneHeader>
         <PaneTitle>{projectFolder ? "New session" : "Chat"}</PaneTitle>
-        <PaneActions>
-          <NativeSelect
-            aria-label="Model"
-            onChange={onModelChange}
-            size="sm"
-            value={claudeModel ?? ""}
-          >
-            {MODELS.map((model) => (
-              <NativeSelectOption key={model.value} value={model.value}>
-                {model.label}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </PaneActions>
       </PaneHeader>
 
       <Conversation
         cwd={projectFolder}
+        effort={claudeEffort}
         key={projectFolder ?? ""}
         model={claudeModel}
       />
@@ -93,101 +45,48 @@ export function ChatPane() {
 
 function Conversation({
   cwd,
+  effort,
   model,
 }: {
   cwd: string | null;
+  effort: EffortLevel | null;
   model: string | null;
 }) {
-  const turn = useClaudeTurn(cwd, model);
-  const composer = useComposer(turn.send);
+  const turn = useClaudeTurn({ cwd, effort, model });
+  const hasTranscript = turn.entries.length > 0 || turn.error !== null;
 
   return (
     <PaneBody>
-      <MessageScrollerProvider>
-        <MessageScroller>
-          <MessageScrollerViewport aria-label="Conversation">
-            <MessageScrollerContent className="mx-auto w-full max-w-2xl px-4 py-6">
-              {turn.entries.length > 0 || turn.error !== null ? (
-                <Transcript turn={turn} />
-              ) : (
-                <ChatEmptyState hasProjectFolder={cwd !== null} />
-              )}
-            </MessageScrollerContent>
-          </MessageScrollerViewport>
-          <MessageScrollerButton />
-        </MessageScroller>
-      </MessageScrollerProvider>
+      <MarkdownProvider>
+        <MessageScrollerProvider>
+          <MessageScroller>
+            <MessageScrollerViewport aria-label="Conversation">
+              <MessageScrollerContent className="mx-auto w-full max-w-2xl gap-3 px-4 py-6">
+                {hasTranscript ? (
+                  <Transcript
+                    cwd={cwd}
+                    entries={turn.entries}
+                    error={turn.error}
+                    isRunning={turn.isRunning}
+                  />
+                ) : (
+                  <ChatEmptyState hasProjectFolder={cwd !== null} />
+                )}
+              </MessageScrollerContent>
+            </MessageScrollerViewport>
+            <MessageScrollerButton />
+          </MessageScroller>
+        </MessageScrollerProvider>
+      </MarkdownProvider>
 
       <Composer
-        composer={composer}
+        context={turn.context}
         disabled={cwd === null}
         isRunning={turn.isRunning}
         onStop={turn.stop}
+        onSubmit={turn.send}
       />
     </PaneBody>
-  );
-}
-
-function Transcript({ turn }: { turn: ClaudeTurn }) {
-  return (
-    <div className="flex flex-col gap-4">
-      {turn.entries.map((entry) => (
-        <Entry entry={entry} key={entry.id} />
-      ))}
-
-      {turn.error ? (
-        <p
-          className="rounded-xl bg-destructive/10 px-3 py-2 text-destructive text-sm"
-          role="alert"
-        >
-          {turn.error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function Entry({ entry }: { entry: TurnEntry }) {
-  if (entry.kind === "user") {
-    return (
-      <Message align="end">
-        <MessageContent>
-          <Bubble align="end">
-            <BubbleContent>{entry.text}</BubbleContent>
-          </Bubble>
-        </MessageContent>
-      </Message>
-    );
-  }
-
-  if (entry.kind === "assistant") {
-    return (
-      <Message>
-        <MessageContent>
-          <Bubble variant="ghost">
-            <BubbleContent className="whitespace-pre-wrap">
-              {entry.text}
-            </BubbleContent>
-          </Bubble>
-        </MessageContent>
-      </Message>
-    );
-  }
-
-  if (entry.kind === "notice") {
-    return <p className="text-muted-foreground text-xs">{entry.text}</p>;
-  }
-
-  return (
-    <div className="flex items-center gap-2 font-mono text-xs">
-      <span
-        className={cn(
-          "size-1.5 shrink-0 rounded-full",
-          ACTIVITY_DOTS[entry.state]
-        )}
-      />
-      <span className="truncate text-muted-foreground">{entry.name}</span>
-    </div>
   );
 }
 
@@ -210,69 +109,17 @@ function ChatEmptyState({ hasProjectFolder }: { hasProjectFolder: boolean }) {
   }
 
   return (
-    <Empty>
+    <Empty className="border-none">
       <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <SparklesIcon />
+        <EmptyMedia>
+          <LogoMark className="size-10 text-foreground" />
         </EmptyMedia>
-        <EmptyTitle>No session selected</EmptyTitle>
+        <EmptyTitle className="text-2xl">What should we make?</EmptyTitle>
         <EmptyDescription>
           Describe the video you want and Claude builds it as real Remotion
           components in your project.
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
-  );
-}
-
-function Composer({
-  composer,
-  disabled,
-  isRunning,
-  onStop,
-}: {
-  composer: ComposerState;
-  disabled: boolean;
-  isRunning: boolean;
-  onStop: () => void;
-}) {
-  return (
-    <div className="shrink-0 px-4 pb-4">
-      <div className="mx-auto w-full max-w-2xl">
-        <InputGroup>
-          <InputGroupTextarea
-            aria-label="Message Claude"
-            disabled={disabled}
-            onChange={composer.onChange}
-            onKeyDown={composer.onKeyDown}
-            placeholder="Describe the scene you want to build…"
-            rows={2}
-            value={composer.value}
-          />
-          <InputGroupAddon align="block-end" className="justify-end">
-            {isRunning ? (
-              <InputGroupButton
-                onClick={onStop}
-                size="icon-sm"
-                variant="outline"
-              >
-                <SquareIcon />
-                <span className="sr-only">Stop</span>
-              </InputGroupButton>
-            ) : (
-              <InputGroupButton
-                disabled={disabled || composer.value.trim().length === 0}
-                onClick={composer.submit}
-                size="icon-sm"
-                variant="default"
-              >
-                <ArrowUpIcon />
-                <span className="sr-only">Send</span>
-              </InputGroupButton>
-            )}
-          </InputGroupAddon>
-        </InputGroup>
-      </div>
-    </div>
   );
 }

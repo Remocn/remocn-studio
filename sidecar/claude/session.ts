@@ -7,7 +7,8 @@ import {
 } from "@anthropic-ai/claude-agent-sdk";
 import { Data, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
-import type { PromptParams } from "@/shared/ipc";
+import type { ContextUsage, PromptParams } from "@/shared/ipc";
+import { contentOf } from "./content";
 
 export class ClaudeError extends Data.TaggedError("ClaudeError")<{
   message: string;
@@ -18,12 +19,17 @@ interface Turn {
   readonly session: Query;
 }
 
+export interface TurnCallbacks {
+  readonly log: (line: string) => void;
+  readonly onContext: (usage: ContextUsage) => void;
+}
+
 export function messages(
   params: PromptParams,
-  log: (line: string) => void
+  callbacks: TurnCallbacks
 ): Stream.Stream<SDKMessage, ClaudeError> {
   return Stream.suspend(() => {
-    const turn = open(params, log);
+    const turn = open(params, callbacks.log);
     let finished = false;
 
     return Stream.fromAsyncIterable(
@@ -31,15 +37,36 @@ export function messages(
       (cause) => new ClaudeError({ message: errorMessage(cause) })
     ).pipe(
       Stream.tap((message) =>
-        Effect.sync(() => {
-          if (message.type === "result") {
-            finished = true;
-            turn.close();
+        Effect.suspend(() => {
+          if (message.type !== "result") {
+            return Effect.void;
           }
+          finished = true;
+          return context(turn, callbacks.onContext).pipe(
+            Effect.andThen(Effect.sync(() => turn.close()))
+          );
         })
       )
     );
   });
+}
+
+function context(
+  turn: Turn,
+  onContext: (usage: ContextUsage) => void
+): Effect.Effect<void> {
+  return Effect.tryPromise(() => turn.session.getContextUsage()).pipe(
+    Effect.timeout("2 seconds"),
+    Effect.tap((usage) =>
+      Effect.sync(() =>
+        onContext({
+          maxTokens: usage.maxTokens,
+          totalTokens: usage.totalTokens,
+        })
+      )
+    ),
+    Effect.ignore
+  );
 }
 
 function open(params: PromptParams, log: (line: string) => void): Turn {
@@ -47,7 +74,7 @@ function open(params: PromptParams, log: (line: string) => void): Turn {
 
   const prompt = (async function* () {
     yield {
-      message: { content: params.prompt, role: "user" as const },
+      message: { content: await contentOf(params), role: "user" as const },
       parent_tool_use_id: null,
       session_id: "",
       type: "user" as const,
@@ -69,6 +96,7 @@ function optionsOf(params: PromptParams, log: (line: string) => void): Options {
     permissionMode: "acceptEdits",
     settingSources: ["project"],
     stderr: (data) => log(`claude: ${data.trimEnd()}`),
+    ...(params.effort === null ? {} : { effort: params.effort }),
     ...(params.model === null ? {} : { model: params.model }),
     ...(params.sessionId === null ? {} : { resume: params.sessionId }),
   };

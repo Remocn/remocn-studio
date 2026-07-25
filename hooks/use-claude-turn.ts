@@ -5,33 +5,64 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { causeMessage } from "@/lib/error-message";
 import { promptClaude } from "@/lib/studio/claude";
 import type { SidecarError } from "@/lib/studio/sidecar";
-import type { ClaudeEvent, PromptResult } from "@/shared/ipc";
+import type {
+  ClaudeEvent,
+  ContextUsage,
+  EffortLevel,
+  PromptAttachment,
+  PromptResult,
+} from "@/shared/ipc";
 
 export type ActivityState = "done" | "failed" | "running";
 
+export interface ActivityEntry {
+  id: string;
+  input: unknown;
+  kind: "activity";
+  name: string;
+  result: string | null;
+  state: ActivityState;
+}
+
+export interface UserEntry {
+  attachments: readonly PromptAttachment[];
+  id: string;
+  kind: "user";
+  text: string;
+}
+
 export type TurnEntry =
-  | { id: string; kind: "activity"; name: string; state: ActivityState }
+  | ActivityEntry
+  | UserEntry
   | { id: string; kind: "assistant"; text: string }
-  | { id: string; kind: "notice"; text: string }
-  | { id: string; kind: "user"; text: string };
+  | { id: string; kind: "notice"; text: string };
+
+export interface TurnSettings {
+  cwd: string | null;
+  effort: EffortLevel | null;
+  model: string | null;
+}
 
 export interface ClaudeTurn {
+  context: ContextUsage | null;
   entries: TurnEntry[];
   error: string | null;
   isRunning: boolean;
-  send: (prompt: string) => void;
+  send: (prompt: string, attachments?: readonly PromptAttachment[]) => void;
   sessionId: string | null;
   stop: () => void;
 }
 
-export function useClaudeTurn(
-  cwd: string | null,
-  model: string | null
-): ClaudeTurn {
+export function useClaudeTurn({
+  cwd,
+  effort,
+  model,
+}: TurnSettings): ClaudeTurn {
   const [entries, setEntries] = useState<TurnEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [context, setContext] = useState<ContextUsage | null>(null);
   const inflight = useRef<Fiber.Fiber<PromptResult, SidecarError> | null>(null);
 
   const stop = useCallback(() => {
@@ -42,9 +73,10 @@ export function useClaudeTurn(
   }, []);
 
   const send = useCallback(
-    (prompt: string) => {
+    (prompt: string, attachments: readonly PromptAttachment[] = []) => {
       const trimmed = prompt.trim();
-      if (cwd === null || trimmed.length === 0 || inflight.current !== null) {
+      const isEmpty = trimmed.length === 0 && attachments.length === 0;
+      if (cwd === null || isEmpty || inflight.current !== null) {
         return;
       }
 
@@ -52,11 +84,16 @@ export function useClaudeTurn(
       setIsRunning(true);
       setEntries((current) => [
         ...current,
-        { id: `user-${current.length}`, kind: "user", text: trimmed },
+        {
+          attachments,
+          id: `user-${current.length}`,
+          kind: "user",
+          text: trimmed,
+        },
       ]);
 
       const turn = promptClaude(
-        { cwd, model, prompt: trimmed, sessionId },
+        { attachments, cwd, effort, model, prompt: trimmed, sessionId },
         (event) => {
           if (event.type === "session") {
             setSessionId(event.sessionId);
@@ -78,6 +115,9 @@ export function useClaudeTurn(
             if (exit.value.sessionId !== null) {
               setSessionId(exit.value.sessionId);
             }
+            if (exit.value.context !== null) {
+              setContext(exit.value.context);
+            }
             setError(exit.value.failure?.message ?? null);
           })
         )
@@ -85,14 +125,14 @@ export function useClaudeTurn(
 
       inflight.current = Effect.runFork(turn);
     },
-    [cwd, model, sessionId]
+    [cwd, effort, model, sessionId]
   );
 
   useEffect(() => stop, [stop]);
 
   return useMemo(
-    () => ({ entries, error, isRunning, send, sessionId, stop }),
-    [entries, error, isRunning, send, sessionId, stop]
+    () => ({ context, entries, error, isRunning, send, sessionId, stop }),
+    [context, entries, error, isRunning, send, sessionId, stop]
   );
 }
 
@@ -106,8 +146,10 @@ function fold(entries: TurnEntry[], event: ClaudeEvent): TurnEntry[] {
       ...entries,
       {
         id: event.id,
+        input: event.input,
         kind: "activity",
-        name: describe(event.name, event.input),
+        name: event.name,
+        result: null,
         state: "running",
       },
     ];
@@ -116,7 +158,11 @@ function fold(entries: TurnEntry[], event: ClaudeEvent): TurnEntry[] {
   if (event.type === "tool_result") {
     return entries.map((entry) =>
       entry.kind === "activity" && entry.id === event.id
-        ? { ...entry, state: event.isError ? "failed" : "done" }
+        ? {
+            ...entry,
+            result: event.text,
+            state: event.isError ? "failed" : "done",
+          }
         : entry
     );
   }
@@ -142,26 +188,4 @@ function appendText(entries: TurnEntry[], text: string): TurnEntry[] {
     ...entries,
     { id: `assistant-${entries.length}`, kind: "assistant", text },
   ];
-}
-
-function describe(name: string, input: unknown): string {
-  const target = subject(input);
-  return target === null ? name : `${name} ${target}`;
-}
-
-function subject(input: unknown): string | null {
-  if (typeof input !== "object" || input === null) {
-    return null;
-  }
-
-  const fields = input as Record<string, unknown>;
-
-  for (const key of ["file_path", "path", "command", "pattern", "url"]) {
-    const value = fields[key];
-    if (typeof value === "string" && value.length > 0) {
-      return value;
-    }
-  }
-
-  return null;
 }

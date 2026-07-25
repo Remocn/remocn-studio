@@ -2,24 +2,33 @@
 
 import type { ChangeEvent, KeyboardEvent } from "react";
 import { useCallback, useMemo, useState } from "react";
+import { type Attachments, useAttachments } from "@/hooks/use-attachments";
+import type { PromptAttachment } from "@/shared/ipc";
 
 export interface Composer {
+  attachments: Attachments;
+  canSubmit: boolean;
   onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   submit: () => void;
   value: string;
 }
 
-export function useComposer(onSubmit: (text: string) => void): Composer {
+export function useComposer(
+  onSubmit: (text: string, attachments: readonly PromptAttachment[]) => void
+): Composer {
   const [value, setValue] = useState("");
+  const attachments = useAttachments();
+  const canSubmit = value.trim().length > 0 || attachments.items.length > 0;
 
   const submit = useCallback(() => {
-    if (value.trim().length === 0) {
+    if (!canSubmit) {
       return;
     }
-    onSubmit(value);
+    onSubmit(value, attachments.items);
     setValue("");
-  }, [onSubmit, value]);
+    attachments.clear();
+  }, [attachments, canSubmit, onSubmit, value]);
 
   const onChange = useCallback((event: ChangeEvent<HTMLTextAreaElement>) => {
     setValue(event.target.value);
@@ -36,7 +45,7 @@ export function useComposer(onSubmit: (text: string) => void): Composer {
   );
 
   return useMemo(
-    () => ({ onChange, onKeyDown, submit, value }),
-    [onChange, onKeyDown, submit, value]
+    () => ({ attachments, canSubmit, onChange, onKeyDown, submit, value }),
+    [attachments, canSubmit, onChange, onKeyDown, submit, value]
   );
 }
