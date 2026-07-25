@@ -8,8 +8,8 @@ export class HistoryError extends Data.TaggedError("HistoryError")<{
 }> {}
 
 export interface OpenSession {
-  readonly folder: string;
-  readonly id: string | null;
+  readonly id: string;
+  readonly projectId: string;
   readonly title: string;
 }
 
@@ -43,7 +43,7 @@ export const HistoryStore = Context.Service<HistoryStore>(
 );
 
 const COLUMNS =
-  "id, sdk_session_id, folder, title, created_at, updated_at" as const;
+  "id, project_id, sdk_session_id, title, created_at, updated_at" as const;
 
 const decodeSession = Schema.decodeUnknownEffect(HistorySession);
 const decodeEntry = Schema.decodeUnknownEffect(TranscriptEntry);
@@ -101,19 +101,18 @@ export function make(driver: SqlDriver): HistoryStore {
     open: (input) =>
       Effect.gen(function* () {
         const now = yield* Clock.currentTimeMillis;
-        const id = input.id ?? crypto.randomUUID();
 
         yield* attempt(() =>
           driver.run(
-            `INSERT INTO session (${COLUMNS}) VALUES (?, NULL, ?, ?, ?, ?)
+            `INSERT INTO session (${COLUMNS}) VALUES (?, ?, NULL, ?, ?, ?)
              ON CONFLICT (id) DO UPDATE SET
-               folder = excluded.folder,
+               project_id = excluded.project_id,
                updated_at = excluded.updated_at`,
-            [id, input.folder, input.title, now, now]
+            [input.id, input.projectId, input.title, now, now]
           )
         );
 
-        return yield* read(id);
+        return yield* read(input.id);
       }),
 
     remove: (sessionId) =>
@@ -168,8 +167,8 @@ export function broken(message: string): HistoryStore {
 function sessionOf(row: SqlRow): Effect.Effect<HistorySession, HistoryError> {
   return decodeSession({
     createdAt: row.created_at,
-    folder: row.folder,
     id: row.id,
+    projectId: row.project_id,
     sdkSessionId: row.sdk_session_id,
     title: row.title,
     updatedAt: row.updated_at,

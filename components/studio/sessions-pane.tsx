@@ -29,13 +29,13 @@ const PLACEHOLDERS = ["one", "two", "three", "four"];
 
 export function SessionsPane() {
   const {
+    activeProject,
     activeSession,
     isLoadingSessions,
     isThinking,
     onRemoveSession,
     onSelectSession,
     openFolder,
-    projectFolder,
     reloadSessions,
     sessions,
     sessionsError,
@@ -51,7 +51,7 @@ export function SessionsPane() {
             <TooltipTrigger
               render={
                 <Button
-                  disabled={projectFolder === null}
+                  disabled={activeProject === null}
                   onClick={startSession}
                   size="icon-sm"
                   variant="ghost"
@@ -70,13 +70,13 @@ export function SessionsPane() {
         <SessionsBody
           activeId={activeSession?.id ?? null}
           error={sessionsError}
+          hasProject={activeProject !== null}
           isLoading={isLoadingSessions}
           isThinking={isThinking}
           onOpenFolder={openFolder}
           onRemove={onRemoveSession}
           onRetry={reloadSessions}
           onSelect={onSelectSession}
-          projectFolder={projectFolder}
           sessions={sessions}
         />
       </PaneBody>
@@ -87,24 +87,24 @@ export function SessionsPane() {
 function SessionsBody({
   activeId,
   error,
+  hasProject,
   isLoading,
   isThinking,
   onOpenFolder,
   onRemove,
   onRetry,
   onSelect,
-  projectFolder,
   sessions,
 }: {
   activeId: string | null;
   error: string | null;
+  hasProject: boolean;
   isLoading: boolean;
   isThinking: boolean;
-  onOpenFolder: () => Promise<void>;
+  onOpenFolder: () => void;
   onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
   onRetry: () => void;
   onSelect: (event: MouseEvent<HTMLButtonElement>) => void;
-  projectFolder: string | null;
   sessions: readonly HistorySession[];
 }) {
   if (error !== null) {
@@ -149,7 +149,7 @@ function SessionsBody({
     );
   }
 
-  if (projectFolder === null) {
+  if (!hasProject) {
     return (
       <Empty className="px-4 py-8">
         <EmptyHeader>

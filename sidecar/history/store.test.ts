@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 import type { TranscriptEntry } from "@/shared/ipc";
 import type { SqlDriver, SqlRow, SqlValue } from "@/sidecar/history/driver";
 import { MIGRATIONS, migrate, prepare } from "@/sidecar/history/migrations";
-import { broken, type HistoryStore, make } from "@/sidecar/history/store";
+import { make as makeProjects } from "@/sidecar/history/projects";
+import { broken, make } from "@/sidecar/history/store";
+
+const FOLDER = "/videos/promo";
 
 function nodeDriver(): SqlDriver {
   const db = new DatabaseSync(":memory:");
@@ -20,14 +23,21 @@ function nodeDriver(): SqlDriver {
   };
 }
 
-function store(): HistoryStore {
+const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromise(effect);
+
+async function studio() {
   const driver = nodeDriver();
   prepare(driver);
   migrate(driver);
-  return make(driver);
-}
 
-const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromise(effect);
+  const history = make(driver);
+  const project = await run(makeProjects(driver).open(FOLDER));
+
+  const open = (title: string, id = crypto.randomUUID()) =>
+    history.open({ id, projectId: project.id, title });
+
+  return { history, open, project };
+}
 
 const assistant = (text: string): TranscriptEntry => ({
   id: "assistant-1",
@@ -49,32 +59,22 @@ describe("migrate", () => {
 });
 
 describe("HistoryStore", () => {
-  it("opens a session and lists it", async () => {
-    const history = store();
+  it("opens a session under its project and lists it", async () => {
+    const { history, open, project } = await studio();
 
-    const session = await run(
-      history.open({ folder: "/videos/promo", id: null, title: "A promo" })
-    );
+    const session = await run(open("A promo"));
 
-    expect(session.folder).toBe("/videos/promo");
+    expect(session.projectId).toBe(project.id);
     expect(session.title).toBe("A promo");
     expect(session.sdkSessionId).toBeNull();
     expect(await run(history.sessions)).toEqual([session]);
   });
 
   it("keeps the first title when the same session is opened again", async () => {
-    const history = store();
+    const { history, open } = await studio();
 
-    const first = await run(
-      history.open({ folder: "/videos/promo", id: null, title: "A promo" })
-    );
-    const again = await run(
-      history.open({
-        folder: "/videos/promo",
-        id: first.id,
-        title: "something else entirely",
-      })
-    );
+    const first = await run(open("A promo"));
+    const again = await run(open("something else entirely", first.id));
 
     expect(again.id).toBe(first.id);
     expect(again.title).toBe("A promo");
@@ -83,10 +83,8 @@ describe("HistoryStore", () => {
   });
 
   it("remembers the SDK session id so a later turn can resume it", async () => {
-    const history = store();
-    const session = await run(
-      history.open({ folder: "/videos/promo", id: null, title: "A promo" })
-    );
+    const { history, open } = await studio();
+    const session = await run(open("A promo"));
 
     await run(history.bind(session.id, "sdk-42"));
 
@@ -95,10 +93,8 @@ describe("HistoryStore", () => {
   });
 
   it("reads blocks back in order, with ids from their ordinal", async () => {
-    const history = store();
-    const session = await run(
-      history.open({ folder: "/videos/promo", id: null, title: "A promo" })
-    );
+    const { history, open } = await studio();
+    const session = await run(open("A promo"));
 
     await run(
       history.write({
@@ -116,7 +112,7 @@ describe("HistoryStore", () => {
       history.write({
         entry: {
           id: "toolu_1",
-          input: { file_path: "/videos/promo/src/Main.tsx" },
+          input: { file_path: `${FOLDER}/src/Main.tsx` },
           kind: "activity",
           name: "Write",
           result: null,
@@ -136,7 +132,7 @@ describe("HistoryStore", () => {
       },
       {
         id: "block-1",
-        input: { file_path: "/videos/promo/src/Main.tsx" },
+        input: { file_path: `${FOLDER}/src/Main.tsx` },
         kind: "activity",
         name: "Write",
         result: null,
@@ -146,10 +142,8 @@ describe("HistoryStore", () => {
   });
 
   it("overwrites a block written again at the same ordinal", async () => {
-    const history = store();
-    const session = await run(
-      history.open({ folder: "/videos/promo", id: null, title: "A promo" })
-    );
+    const { history, open } = await studio();
+    const session = await run(open("A promo"));
 
     await run(
       history.write({
@@ -173,10 +167,8 @@ describe("HistoryStore", () => {
   });
 
   it("continues numbering where the last turn stopped", async () => {
-    const history = store();
-    const session = await run(
-      history.open({ folder: "/videos/promo", id: null, title: "A promo" })
-    );
+    const { history, open } = await studio();
+    const session = await run(open("A promo"));
 
     expect(await run(history.nextOrdinal(session.id))).toBe(0);
 
@@ -199,10 +191,8 @@ describe("HistoryStore", () => {
   });
 
   it("takes the blocks with the session when it is deleted", async () => {
-    const history = store();
-    const session = await run(
-      history.open({ folder: "/videos/promo", id: null, title: "A promo" })
-    );
+    const { history, open } = await studio();
+    const session = await run(open("A promo"));
     await run(
       history.write({
         entry: assistant("hi"),
@@ -218,7 +208,7 @@ describe("HistoryStore", () => {
   });
 
   it("fails rather than inventing a session that was never opened", async () => {
-    const history = store();
+    const { history } = await studio();
 
     const exit = await Effect.runPromiseExit(history.blocks("nope"));
     expect(Exit.isSuccess(exit)).toBe(true);
@@ -231,6 +221,16 @@ describe("HistoryStore", () => {
       })
     );
     expect(Exit.isFailure(bound)).toBe(true);
+  });
+
+  it("refuses a session whose project does not exist", async () => {
+    const { history } = await studio();
+
+    const exit = await Effect.runPromiseExit(
+      history.open({ id: "s-1", projectId: "gone", title: "Orphan" })
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
   });
 });
 

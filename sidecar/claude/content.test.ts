@@ -10,10 +10,10 @@ let shot = "";
 function params(shape: Partial<PromptParams>): PromptParams {
   return {
     attachments: [],
-    cwd: "/tmp/project",
     effort: null,
-    historyId: null,
+    historyId: "history-1",
     model: null,
+    projectId: "project-1",
     prompt: "",
     sessionId: null,
     ...shape,

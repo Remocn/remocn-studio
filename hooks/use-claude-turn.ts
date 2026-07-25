@@ -25,13 +25,13 @@ export interface PendingPermission {
 }
 
 export interface TurnSettings {
-  cwd: string | null;
   effort: EffortLevel | null;
   historyId: string | null;
   initial: readonly TranscriptEntry[];
   model: string | null;
   onSession: (session: HistorySession) => void;
   onThinking: (isThinking: boolean) => void;
+  projectId: string | null;
   sdkSessionId: string | null;
 }
 
@@ -47,13 +47,13 @@ export interface ClaudeTurn {
 }
 
 export function useClaudeTurn({
-  cwd,
   effort,
   historyId,
   initial,
   model,
   onSession,
   onThinking,
+  projectId,
   sdkSessionId,
 }: TurnSettings): ClaudeTurn {
   const [entries, setEntries] = useState(initial);
@@ -61,7 +61,7 @@ export function useClaudeTurn({
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionId, setSessionId] = useState(sdkSessionId);
-  const [storedId, setStoredId] = useState(historyId);
+  const [storedId] = useState(() => historyId ?? crypto.randomUUID());
   const [context, setContext] = useState<ContextUsage | null>(null);
   const inflight = useRef<Fiber.Fiber<PromptResult, SidecarError> | null>(null);
 
@@ -98,7 +98,7 @@ export function useClaudeTurn({
     (prompt: string, attachments: readonly PromptAttachment[] = []) => {
       const trimmed = prompt.trim();
       const isEmpty = trimmed.length === 0 && attachments.length === 0;
-      if (cwd === null || isEmpty || inflight.current !== null) {
+      if (projectId === null || isEmpty || inflight.current !== null) {
         return;
       }
 
@@ -111,10 +111,10 @@ export function useClaudeTurn({
       const turn = promptClaude(
         {
           attachments,
-          cwd,
           effort,
           historyId: storedId,
           model,
+          projectId,
           prompt: trimmed,
           sessionId,
         },
@@ -124,7 +124,6 @@ export function useClaudeTurn({
             return;
           }
           if (event.type === "history") {
-            setStoredId(event.session.id);
             onSession(event.session);
             return;
           }
@@ -167,7 +166,7 @@ export function useClaudeTurn({
 
       inflight.current = Effect.runFork(turn);
     },
-    [cwd, effort, model, onSession, sessionId, storedId]
+    [effort, model, onSession, projectId, sessionId, storedId]
   );
 
   useEffect(() => stop, [stop]);

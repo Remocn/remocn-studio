@@ -9,6 +9,8 @@ import { migrate, prepare } from "@/sidecar/history/migrations";
 import { recording } from "@/sidecar/history/recorder";
 import { broken, type HistoryStore, make } from "@/sidecar/history/store";
 
+const PROJECT_ID = "project-1";
+
 function store(): HistoryStore {
   const db = new DatabaseSync(":memory:");
   const driver: SqlDriver = {
@@ -22,16 +24,21 @@ function store(): HistoryStore {
 
   prepare(driver);
   migrate(driver);
+  driver.run(
+    `INSERT INTO project (id, path, name, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?)`,
+    [PROJECT_ID, "/videos/promo", "promo", 0, 0]
+  );
   return make(driver);
 }
 
 function params(shape: Partial<PromptParams>): PromptParams {
   return {
     attachments: [],
-    cwd: "/videos/promo",
     effort: null,
-    historyId: null,
+    historyId: crypto.randomUUID(),
     model: null,
+    projectId: PROJECT_ID,
     prompt: "make a title card",
     sessionId: null,
     ...shape,
@@ -109,7 +116,7 @@ describe("recording", () => {
 
   it("appends a second turn after the first instead of overwriting it", async () => {
     const history = store();
-    const first = params({});
+    const first = params({ historyId: "history-1" });
 
     const session = await Effect.runPromise(
       Effect.gen(function* () {
@@ -119,7 +126,7 @@ describe("recording", () => {
       })
     );
 
-    const second = params({ historyId: session?.id, prompt: "now in red" });
+    const second = params({ historyId: "history-1", prompt: "now in red" });
     await Effect.runPromise(
       Effect.gen(function* () {
         const recorder = yield* recording(history, second, log);
@@ -139,14 +146,18 @@ describe("recording", () => {
     const long = "a".repeat(200);
 
     const opened = await Effect.runPromise(
-      recording(history, params({ prompt: `  ${long}  ` }), log)
+      recording(
+        history,
+        params({ historyId: "history-1", prompt: `  ${long}  ` }),
+        log
+      )
     );
     expect(opened.session?.title).toHaveLength(60);
 
     const again = await Effect.runPromise(
       recording(
         history,
-        params({ historyId: opened.session?.id, prompt: "a follow-up" }),
+        params({ historyId: "history-1", prompt: "a follow-up" }),
         log
       )
     );

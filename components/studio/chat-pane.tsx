@@ -21,6 +21,7 @@ import { useSessionTranscript } from "@/hooks/use-session-transcript";
 import type {
   EffortLevel,
   HistorySession,
+  Project,
   TranscriptEntry,
 } from "@/shared/ipc";
 import { Composer } from "./composer";
@@ -35,11 +36,11 @@ const PLACEHOLDERS = ["one", "two", "three"];
 
 export function ChatPane() {
   const {
+    activeProject,
     activeSession,
     claudeEffort,
     claudeModel,
     openedSession,
-    projectFolder,
     rememberSession,
     reportThinking,
     sessionKey,
@@ -50,14 +51,14 @@ export function ChatPane() {
   return (
     <Pane>
       <PaneHeader>
-        <PaneTitle>{titleOf(projectFolder, activeSession)}</PaneTitle>
+        <PaneTitle>{titleOf(activeProject, activeSession)}</PaneTitle>
       </PaneHeader>
 
       {history.isLoading ? (
         <LoadingTranscript />
       ) : (
         <Conversation
-          cwd={projectFolder}
+          cwd={activeProject?.path ?? null}
           effort={claudeEffort}
           historyId={openedSession?.id ?? null}
           initial={history.entries}
@@ -65,6 +66,7 @@ export function ChatPane() {
           model={claudeModel}
           onSession={rememberSession}
           onThinking={reportThinking}
+          projectId={activeProject?.id ?? null}
           sdkSessionId={openedSession?.sdkSessionId ?? null}
           transcriptError={history.error}
         />
@@ -74,10 +76,10 @@ export function ChatPane() {
 }
 
 function titleOf(
-  projectFolder: string | null,
+  project: Project | null,
   session: HistorySession | null
 ): string {
-  if (projectFolder === null) {
+  if (project === null) {
     return "Chat";
   }
   return session?.title ?? "New session";
@@ -103,6 +105,7 @@ function Conversation({
   model,
   onSession,
   onThinking,
+  projectId,
   sdkSessionId,
   transcriptError,
 }: {
@@ -113,17 +116,18 @@ function Conversation({
   model: string | null;
   onSession: (session: HistorySession) => void;
   onThinking: (isThinking: boolean) => void;
+  projectId: string | null;
   sdkSessionId: string | null;
   transcriptError: string | null;
 }) {
   const turn = useClaudeTurn({
-    cwd,
     effort,
     historyId,
     initial,
     model,
     onSession,
     onThinking,
+    projectId,
     sdkSessionId,
   });
 
@@ -172,7 +176,7 @@ function Conversation({
 
       <Composer
         context={turn.context}
-        disabled={cwd === null}
+        disabled={projectId === null}
         isRunning={turn.isRunning}
         isWaiting={turn.permission !== null}
         onStop={turn.stop}

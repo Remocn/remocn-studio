@@ -8,8 +8,8 @@ const ROW = /^A promo/;
 
 const SESSION: HistorySession = {
   createdAt: NOW - 7_200_000,
-  folder: "/Users/me/projects/my-video",
   id: "session-1",
+  projectId: "project-1",
   sdkSessionId: "sdk-1",
   title: "A promo for the launch",
   updatedAt: NOW - 120_000,

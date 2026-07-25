@@ -1,6 +1,6 @@
 import { type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 6;
+export const SIDECAR_PROTOCOL = 7;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -20,6 +20,11 @@ export const METHOD_NAMES = [
   "history.remove",
   "history.sessions",
   "preview.start",
+  "project.create",
+  "project.list",
+  "project.open",
+  "project.remove",
+  "project.rename",
   "sidecar.emit",
   "sidecar.info",
 ] as const;
@@ -79,10 +84,10 @@ export const PromptAttachment = Schema.Struct({
 
 export const PromptParams = Schema.Struct({
   attachments: Schema.Array(PromptAttachment),
-  cwd: Schema.NonEmptyString,
   effort: Schema.NullOr(EffortLevel),
-  historyId: Schema.NullOr(Schema.NonEmptyString),
+  historyId: Schema.NonEmptyString,
   model: Schema.NullOr(Schema.NonEmptyString),
+  projectId: Schema.NonEmptyString,
   prompt: Schema.String,
   sessionId: Schema.NullOr(Schema.NonEmptyString),
 });
@@ -118,8 +123,8 @@ export const TranscriptEntry = Schema.Union([
 
 export const HistorySession = Schema.Struct({
   createdAt: Schema.Int,
-  folder: Schema.String,
   id: Schema.NonEmptyString,
+  projectId: Schema.NonEmptyString,
   sdkSessionId: Schema.NullOr(Schema.String),
   title: Schema.String,
   updatedAt: Schema.Int,
@@ -138,6 +143,35 @@ export type UserEntry = Extract<TranscriptEntry, { kind: "user" }>;
 export type HistorySession = (typeof HistorySession)["Type"];
 export type HistorySessionRef = (typeof HistorySessionRef)["Type"];
 export type HistoryRemoved = (typeof HistoryRemoved)["Type"];
+
+export const Project = Schema.Struct({
+  createdAt: Schema.Int,
+  id: Schema.NonEmptyString,
+  missing: Schema.Boolean,
+  name: Schema.NonEmptyString,
+  path: Schema.NonEmptyString,
+  updatedAt: Schema.Int,
+});
+
+export const ProjectRef = Schema.Struct({
+  projectId: Schema.NonEmptyString,
+});
+
+export const ProjectPath = Schema.Struct({
+  path: Schema.NonEmptyString,
+});
+
+export const ProjectDraft = Schema.Struct({
+  name: Schema.NonEmptyString,
+  parent: Schema.NonEmptyString,
+});
+
+export const ProjectName = Schema.Struct({
+  name: Schema.NonEmptyString,
+  projectId: Schema.NonEmptyString,
+});
+
+export const ProjectRemoved = Schema.Struct({ removed: Schema.Boolean });
 
 export const ContextUsage = Schema.Struct({
   maxTokens: Schema.Int,
@@ -224,6 +258,12 @@ export type PermissionParams = (typeof PermissionParams)["Type"];
 export type PermissionAnswer = (typeof PermissionAnswer)["Type"];
 export type ImageMediaType = (typeof ImageMediaType)["Type"];
 export type PromptAttachment = (typeof PromptAttachment)["Type"];
+export type Project = (typeof Project)["Type"];
+export type ProjectRef = (typeof ProjectRef)["Type"];
+export type ProjectPath = (typeof ProjectPath)["Type"];
+export type ProjectDraft = (typeof ProjectDraft)["Type"];
+export type ProjectName = (typeof ProjectName)["Type"];
+export type ProjectRemoved = (typeof ProjectRemoved)["Type"];
 export type ContextUsage = (typeof ContextUsage)["Type"];
 export type ClaudeFailureKind = (typeof ClaudeFailureKind)["Type"];
 export type ClaudeFailure = (typeof ClaudeFailure)["Type"];
@@ -231,7 +271,7 @@ export type ClaudeEvent = (typeof ClaudeEvent)["Type"];
 export type PromptResult = (typeof PromptResult)["Type"];
 
 export const PreviewParams = Schema.Struct({
-  folder: Schema.NonEmptyString,
+  projectId: Schema.NonEmptyString,
 });
 
 export const PreviewEvent = Schema.Union([
@@ -285,6 +325,31 @@ export const SIDECAR_METHODS = {
     params: PreviewParams,
     result: PreviewResult,
     stream: PreviewEvent,
+  },
+  "project.create": {
+    params: ProjectDraft,
+    result: Project,
+    stream: Schema.Never,
+  },
+  "project.list": {
+    params: Schema.Null,
+    result: Schema.Array(Project),
+    stream: Schema.Never,
+  },
+  "project.open": {
+    params: ProjectPath,
+    result: Project,
+    stream: Schema.Never,
+  },
+  "project.remove": {
+    params: ProjectRef,
+    result: ProjectRemoved,
+    stream: Schema.Never,
+  },
+  "project.rename": {
+    params: ProjectName,
+    result: Project,
+    stream: Schema.Never,
   },
   "sidecar.emit": { params: EmitParams, result: EmitResult, stream: EmitChunk },
   "sidecar.info": {

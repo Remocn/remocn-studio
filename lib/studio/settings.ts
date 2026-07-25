@@ -18,7 +18,7 @@ const openStore = Effect.runSync(
 export interface StudioSettings {
   claudeEffort: EffortLevel | null;
   claudeModel: string | null;
-  projectFolder: string | null;
+  legacyProjectFolder: string | null;
 }
 
 export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
@@ -34,7 +34,7 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
     return {
       claudeEffort: effortOf(cache.get(CLAUDE_EFFORT_KEY)),
       claudeModel: cache.get(CLAUDE_MODEL_KEY) ?? null,
-      projectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
+      legacyProjectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
     };
   })
 );
@@ -61,11 +61,9 @@ function forget(key: string): Effect.Effect<void> {
   );
 }
 
-export function saveProjectFolder(folder: string): Effect.Effect<void> {
-  return Effect.sync(() => {
-    cache.set(PROJECT_FOLDER_KEY, folder);
-  }).pipe(Effect.andThen(persist(PROJECT_FOLDER_KEY, folder)));
-}
+export const forgetProjectFolder: Effect.Effect<void> = Effect.sync(() => {
+  cache.delete(PROJECT_FOLDER_KEY);
+}).pipe(Effect.andThen(forget(PROJECT_FOLDER_KEY)));
 
 export function saveClaudeModel(model: string | null): Effect.Effect<void> {
   return remember(CLAUDE_MODEL_KEY, model);

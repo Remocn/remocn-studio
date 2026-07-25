@@ -8,12 +8,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { baseName } from "@/lib/studio/paths";
 import { SidecarStatus } from "./sidecar-status";
 import { useStudio } from "./studio-provider";
 
 export function TitleBar() {
-  const { folderError, openFolder, projectFolder } = useStudio();
+  const { activeProject, folderError, openFolder } = useStudio();
 
   return (
     <header
@@ -35,19 +34,21 @@ export function TitleBar() {
           >
             <FolderOpenIcon data-icon="inline-start" />
             <span className="truncate">
-              {projectFolder ? baseName(projectFolder) : "Open folder"}
+              {activeProject?.name ?? "Open folder"}
             </span>
           </TooltipTrigger>
           <TooltipContent align="start" side="bottom">
             <span className="break-all">
-              {folderError ?? projectFolder ?? "Choose a Remotion project"}
+              {folderError ??
+                activeProject?.path ??
+                "Choose a Remotion project"}
             </span>
           </TooltipContent>
         </Tooltip>
       </div>
 
       <div className="flex shrink-0 items-center" data-tauri-drag-region>
-        {projectFolder ? (
+        {activeProject ? (
           <Badge className="font-mono" variant="outline">
             Main
           </Badge>

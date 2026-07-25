@@ -7,9 +7,19 @@ import { errorMessage } from "@/lib/error-message";
 import { DATA_DIR_ENV } from "@/shared/ipc";
 import type { SqlDriver, SqlRow, SqlValue } from "./driver";
 import { migrate, prepare } from "./migrations";
+import {
+  broken as brokenProjects,
+  make as makeProjects,
+  type ProjectStore,
+} from "./projects";
 import { broken, type HistoryStore, make } from "./store";
 
 const FILE = "history.db";
+
+export interface Stores {
+  readonly history: HistoryStore;
+  readonly projects: ProjectStore;
+}
 
 export function driverFor(path: string): SqlDriver {
   const db = new Database(path, { create: true });
@@ -22,9 +32,9 @@ export function driverFor(path: string): SqlDriver {
   };
 }
 
-export function openHistory(
+export function openStores(
   log: (line: string) => Effect.Effect<void>
-): Effect.Effect<HistoryStore> {
+): Effect.Effect<Stores> {
   return Effect.suspend(() => {
     const path = join(directory(), FILE);
 
@@ -39,10 +49,18 @@ export function openHistory(
       Effect.tap(({ version }) =>
         log(`history at ${path}, schema version ${version}`)
       ),
-      Effect.map(({ driver }) => make(driver)),
+      Effect.map(({ driver }) => ({
+        history: make(driver),
+        projects: makeProjects(driver),
+      })),
       Effect.catch((message) =>
         log(`history is unavailable: ${message}`).pipe(
-          Effect.as(broken(`the history at ${path} could not be opened`))
+          Effect.as({
+            history: broken(`the history at ${path} could not be opened`),
+            projects: brokenProjects(
+              `the history at ${path} could not be opened`
+            ),
+          })
         )
       )
     );

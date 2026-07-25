@@ -22,6 +22,7 @@ interface Turn {
 
 export interface TurnCallbacks {
   readonly canUseTool: CanUseTool;
+  readonly cwd: string;
   readonly log: (line: string) => void;
   readonly onContext: (usage: ContextUsage) => void;
   readonly onStop: () => void;
@@ -95,7 +96,7 @@ function open(params: PromptParams, callbacks: TurnCallbacks): Turn {
 function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
   return {
     canUseTool: callbacks.canUseTool,
-    cwd: params.cwd,
+    cwd: callbacks.cwd,
     includePartialMessages: true,
     permissionMode: "default",
     settingSources: ["project"],

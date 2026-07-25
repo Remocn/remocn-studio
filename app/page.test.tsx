@@ -2,7 +2,7 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import Page from "@/app/page";
-import type { HistorySession } from "@/shared/ipc";
+import type { HistorySession, Project } from "@/shared/ipc";
 
 const PICKED_FOLDER = "/Users/me/projects/my-video";
 const SESSION_ROW = /^A promo for the launch/;
@@ -15,17 +15,30 @@ const SIDECAR_READY = {
   pid: 1234,
 };
 
+const PROJECT: Project = {
+  createdAt: 1_700_000_000_000,
+  id: "project-1",
+  missing: false,
+  name: "my-video",
+  path: PICKED_FOLDER,
+  updatedAt: 1_700_000_000_000,
+};
+
 const STORED_SESSION: HistorySession = {
   createdAt: 1_700_000_000_000,
-  folder: PICKED_FOLDER,
   id: "session-1",
+  projectId: PROJECT.id,
   sdkSessionId: "sdk-1",
   title: "A promo for the launch",
   updatedAt: 1_700_000_000_000,
 };
 
 function mockStudio(
-  options: { folder?: string | null; sessions?: HistorySession[] } = {}
+  options: {
+    folder?: string | null;
+    projects?: Project[];
+    sessions?: HistorySession[];
+  } = {}
 ) {
   mockIPC(
     (cmd, payload) => {
@@ -45,6 +58,12 @@ function mockStudio(
         }
         if (method === "history.remove") {
           return { removed: true };
+        }
+        if (method === "project.list") {
+          return options.projects ?? [];
+        }
+        if (method === "project.open") {
+          return PROJECT;
         }
         if (method === "preview.start") {
           return new Promise(() => undefined);
@@ -115,7 +134,7 @@ describe("app shell", () => {
   });
 
   it("lists stored sessions and opens the one that is clicked", async () => {
-    mockStudio({ sessions: [STORED_SESSION] });
+    mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
     await renderShell();
 
     fireEvent.click(
@@ -131,7 +150,7 @@ describe("app shell", () => {
   });
 
   it("drops a deleted session and puts the chat back on a new one", async () => {
-    mockStudio({ sessions: [STORED_SESSION] });
+    mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
     await renderShell();
     fireEvent.click(await screen.findByRole("button", { name: SESSION_ROW }));
     await screen.findByRole("heading", { name: "A promo for the launch" });

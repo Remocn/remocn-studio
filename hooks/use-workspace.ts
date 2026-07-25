@@ -2,40 +2,38 @@
 
 import type { MouseEvent } from "react";
 import { useCallback, useMemo } from "react";
-import {
-  type ProjectFolder,
-  useProjectFolder,
-} from "@/hooks/use-project-folder";
+import { type StudioProjects, useProjects } from "@/hooks/use-projects";
 import { type StudioSessions, useSessions } from "@/hooks/use-sessions";
 import type { StudioSettings } from "@/lib/studio/settings";
 import type { HistorySession } from "@/shared/ipc";
 
-export interface Workspace extends ProjectFolder, StudioSessions {
+export interface Workspace extends StudioProjects, StudioSessions {
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
-  openFolder: () => Promise<void>;
 }
 
 export function useWorkspace(settings: StudioSettings | null): Workspace {
-  const folder = useProjectFolder(settings);
+  const projects = useProjects(settings);
   const sessions = useSessions();
 
-  const { pickFolder, setProjectFolder } = folder;
+  const { selectProject } = projects;
   const { selectSession, startSession } = sessions;
   const rows = sessions.sessions;
+  const pickFolder = projects.openFolder;
 
   const openFolder = useCallback(async () => {
-    const picked = await pickFolder();
-    if (picked !== null) {
+    const project = await pickFolder();
+    if (project !== null) {
       startSession();
     }
+    return project;
   }, [pickFolder, startSession]);
 
   const openSession = useCallback(
     (session: HistorySession) => {
-      setProjectFolder(session.folder);
+      selectProject(session.projectId);
       selectSession(session);
     },
-    [selectSession, setProjectFolder]
+    [selectProject, selectSession]
   );
 
   const onSelectSession = useCallback(
@@ -50,12 +48,12 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
 
   return useMemo(
     () => ({
-      ...folder,
+      ...projects,
       ...sessions,
       onSelectSession,
       openFolder,
       selectSession: openSession,
     }),
-    [folder, onSelectSession, openFolder, openSession, sessions]
+    [onSelectSession, openFolder, openSession, projects, sessions]
   );
 }

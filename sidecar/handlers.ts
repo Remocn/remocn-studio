@@ -1,13 +1,18 @@
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import { Clock, Effect, Ref, Stream } from "effect";
+import { errorMessage } from "@/lib/error-message";
 import {
   type ClaudeFailure,
   type ContextUsage,
+  type Project,
   SIDECAR_PROTOCOL,
 } from "@/shared/ipc";
 import { eventsOf } from "./claude/events";
 import { failureFromText, failureOf } from "./claude/failure";
 import { makeGate, permissionGuard } from "./claude/gate";
 import { messages } from "./claude/session";
+import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
 import { HandlerError, type Handlers } from "./host";
@@ -37,7 +42,22 @@ const gate = makeGate();
 const unstored = (error: HistoryError) =>
   new HandlerError({ message: error.message });
 
-export const handlers: Handlers<HistoryStore> = {
+const onDisk = (project: Project) =>
+  project.missing
+    ? Effect.fail(
+        new HandlerError({
+          message: `${project.name} is not on disk anymore — ${project.path} is gone`,
+        })
+      )
+    : Effect.succeed(project);
+
+const located = (projectId: string) =>
+  Effect.flatMap(ProjectStore, (projects) => projects.find(projectId)).pipe(
+    Effect.mapError(unstored),
+    Effect.flatMap(onDisk)
+  );
+
+export const handlers: Handlers<HistoryStore | ProjectStore> = {
   "claude.permission": ({ params }) =>
     Effect.map(gate.answer(params.id, params.decision), (matched) => ({
       matched,
@@ -46,6 +66,7 @@ export const handlers: Handlers<HistoryStore> = {
   "claude.prompt": ({ emit, log, params }) =>
     Effect.gen(function* () {
       const turnId = yield* Effect.sync(() => crypto.randomUUID());
+      const project = yield* located(params.projectId);
       const sessionId = yield* Ref.make(params.sessionId);
       const failure = yield* Ref.make<ClaudeFailure | null>(null);
       const context = yield* Ref.make<ContextUsage | null>(null);
@@ -58,7 +79,13 @@ export const handlers: Handlers<HistoryStore> = {
 
       yield* Stream.runForEach(
         messages(params, {
-          canUseTool: permissionGuard({ cwd: params.cwd, emit, gate, turnId }),
+          canUseTool: permissionGuard({
+            cwd: project.path,
+            emit,
+            gate,
+            turnId,
+          }),
+          cwd: project.path,
           log: (line) => Effect.runSync(log(line)),
           onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
           onStop: () => Effect.runSync(gate.abandon(turnId)),
@@ -116,10 +143,48 @@ export const handlers: Handlers<HistoryStore> = {
     ),
 
   "preview.start": ({ emit, log, params }) =>
-    Stream.runForEach(previewEvents(params.folder, log), emit).pipe(
-      Effect.as({ reason: "the preview host stopped" }),
-      Effect.mapError((error) => new HandlerError({ message: error.message }))
+    Effect.flatMap(located(params.projectId), (project) =>
+      Stream.runForEach(previewEvents(project.path, log), emit).pipe(
+        Effect.as({ reason: "the preview host stopped" }),
+        Effect.mapError((error) => new HandlerError({ message: error.message }))
+      )
     ),
+
+  "project.create": ({ params }) =>
+    Effect.gen(function* () {
+      const projects = yield* ProjectStore;
+      const path = join(params.parent, params.name);
+
+      yield* Effect.tryPromise({
+        catch: (cause) => new HandlerError({ message: errorMessage(cause) }),
+        try: () => mkdir(path, { recursive: true }),
+      });
+
+      return yield* Effect.mapError(projects.open(path), unstored);
+    }),
+
+  "project.list": () =>
+    Effect.flatMap(ProjectStore, (projects) => projects.list).pipe(
+      Effect.mapError(unstored)
+    ),
+
+  "project.open": ({ params }) =>
+    Effect.flatMap(ProjectStore, (projects) => projects.open(params.path)).pipe(
+      Effect.mapError(unstored)
+    ),
+
+  "project.remove": ({ params }) =>
+    Effect.flatMap(ProjectStore, (projects) =>
+      projects.remove(params.projectId)
+    ).pipe(
+      Effect.map((removed) => ({ removed })),
+      Effect.mapError(unstored)
+    ),
+
+  "project.rename": ({ params }) =>
+    Effect.flatMap(ProjectStore, (projects) =>
+      projects.rename(params.projectId, params.name)
+    ).pipe(Effect.mapError(unstored)),
 
   "sidecar.emit": ({ emit, params }) =>
     Effect.gen(function* () {
