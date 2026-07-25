@@ -1,0 +1,48 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/next",
+    "ultracite/biome/react"
+  ],
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
+  },
+  "files": {
+    "includes": [
+      // No leading "**" here on purpose: the extended ultracite presets already
+      // supply the catch-all, and adding a second one trips Biome's own
+      // `noBiomeFirstException` rule. These entries only subtract from it.
+      "!!repos",
+      // Generated output — nothing here is authored.
+      "!!.next",
+      "!!out",
+      "!!src-tauri/target",
+      "!!src-tauri/gen"
+    ]
+  },
+  "overrides": [
+    {
+      // Output of `bunx shadcn add …`. We do not author these files and any
+      // re-add overwrites them, so hand-fixing lint findings here is work that
+      // reappears on the next component install. 90 of the 93 findings on first
+      // run were in this set. Formatting stays ON so the tree is consistent;
+      // only the linter is off.
+      "includes": ["components/ui/**", "hooks/use-mobile.ts"],
+      // Linter off, formatter on. `recommended: false` does not work as a
+      // blanket here: the ultracite presets enable rules by name, so they
+      // survive it and the a11y/style findings come straight back.
+      //
+      // Real defects in this directory are caught by `bun run typecheck`
+      // instead, which is part of CI. That is not theoretical — `shadcn add`
+      // shipped duplicated `components={{…}}` in calendar.tsx and duplicated
+      // `render={…}` in pagination.tsx, and `tsc` flagged both as TS17001. A
+      // duplicate JSX attribute silently discards the earlier one, so the first
+      // block was dead code in each file.
+      "linter": { "enabled": false }
+    }
+  ]
+}

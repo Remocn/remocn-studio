@@ -4,287 +4,194 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
-## Version warning (read this first)
+## Rules
 
-This project pins **Next.js 16.2.9** and **React 19.2.4** — both newer than most training data. APIs, file conventions, and async behavior differ from older Next.js. Per `AGENTS.md`, **read the relevant guide under `node_modules/next/dist/docs/` before writing any Next.js code** (`01-app`, `02-pages`, `03-architecture`). Heed deprecation notices there.
+- **Never start a dev server.** `bun dev`, `next dev`, `bun tauri dev` and
+  equivalents are the user's to run — he owns that terminal. One-shot commands
+  that terminate (`bun run build`, `bun install`, `cargo check`) are fine. When a
+  change needs runtime verification, verify what a build can verify, then say
+  what must be checked in the running app and ask him to run it.
+
+## What this is
+
+A **local macOS desktop app** (Tauri v2) that turns "I want a video" into a real
+Remotion project: Claude writes actual Remotion TSX into a folder on disk, and
+the app previews the result live and exports an mp4. Design record and work list:
+[Remocn/remocn#218](https://github.com/Remocn/remocn/issues/218) and its children
+(#219–#228).
+
+**This is not `studio.remocn.dev`.** That one — sketched in the remocn repo's
+`RENDER_SDK.md` §13 — is a hosted, spec-driven web editor built on one generic
+composition plus a JSON spine. Different product. Do not carry its timeline /
+project-JSON design into this repo.
+
+Shape of the prototype, as decided in #218:
+
+- **Claude produces code, not spec.** Real TSX in the user's folder, like Claude
+  Code + the remocn skill. So preview must compile source the app has never seen.
+- **Open any folder.** The app controls neither the entry point, the Remotion
+  version, nor the build config.
+- **Exactly one composition,** id `Main`; every scene lives inside it via
+  `Series` / `TransitionSeries`. No composition selector.
+- **Claude access via `@anthropic-ai/claude-agent-sdk`** inside a bun sidecar,
+  using the Pro/Max subscription of the already-logged-in Claude Code. No API
+  key, no custom OAuth.
+- **Three panes:** sessions | chat | preview, exactly one active session.
+- **Own SQLite history** — the CLI transcript format is not a public contract.
+- **Permissions split:** file tools inside the opened folder run automatically;
+  Bash and any path outside the folder raise an Allow/Deny card.
+- **Export goes through the *project's own* `@remotion/renderer`,** resolved from
+  its `node_modules` — never a version the app bundles.
 
 ## Commands
 
 The lockfile is `bun.lock`; use bun.
 
-- `bun dev` — start dev server (http://localhost:3000)
-- `bun run build` — production build
-- `bun start` — serve the production build
+- `bun run check` — formatter **and** linter in one pass, read-only. This is what
+  CI runs; it fails on violations rather than fixing them.
+- `bun run fix` — apply the fixes `check` reports.
+- `bun run typecheck` — `tsc --noEmit`. Keep this in the loop: Next 16 no longer
+  lints on build, and it is the only gate over `components/ui/**`, where the
+  linter is deliberately off.
+- `bun run test` — Vitest, single run. `test:watch` and `test:coverage` also exist.
+- `bun run build` — Next static export into `out/`. Needs network on a cold cache
+  (fonts are self-hosted at build time).
+- `bun tauri build` — unsigned `.app` bundle. `--no-bundle` compiles without
+  packaging; `--bundles app` skips the DMG.
+- `bunx shadcn@latest add <component>` — add UI components (config in
+  `components.json`).
+- `bun run changeset` — record a change for the next release (see Releases).
 
-There is no test runner, linter, or formatter configured. Type checking happens through the build (`tsconfig.json` is `noEmit`); run `bun run build` to surface type errors.
+### Linting and formatting
 
-To add UI components: `bunx shadcn@latest add <component>` (config in `components.json`).
+[Ultracite](https://www.ultracite.ai/) over Biome; config in `biome.jsonc`,
+which extends `ultracite/biome/{core,next,react}`. Two things about it are
+load-bearing:
+
+- **`repos/` is force-ignored** (`!!repos`). Without it `ultracite init` walks
+  into the vendored checkouts — it reformatted 42 `tsconfig.json` files inside
+  `repos/effect` on first run.
+- **The linter is off for `components/ui/**` and `hooks/use-mobile.ts`**, which
+  are `shadcn add` output we do not author and that any re-add overwrites; 90 of
+  93 findings on first run were there. Formatting stays on. `recommended: false`
+  does **not** work as a blanket in that override — the ultracite presets enable
+  rules by name and they survive it. `typecheck` is the real net for that
+  directory, and it earns its keep: the generator shipped duplicated
+  `components={{…}}` in `calendar.tsx` and duplicated `render={…}` in
+  `pagination.tsx`, both TS17001, and a duplicate JSX attribute silently discards
+  the earlier one.
+
+### Tests
+
+Vitest + React Testing Library + jsdom (`vitest.config.mts`). The `@/*` alias
+resolves natively via `resolve.tsconfigPaths` — do not add `vite-tsconfig-paths`,
+Vite 7 warns that it is redundant.
+
+**jsdom is not a Tauri webview.** There is no `window.__TAURI_INTERNALS__`, so
+any `invoke()` that reaches the real transport throws. Tests touching IPC must
+install a fake with `mockIPC` from `@tauri-apps/api/mocks`; `vitest.setup.ts`
+calls `clearMocks()` after each test so one test's fake cannot leak into the
+next. `app/page.test.tsx` is the worked example.
+
+## Releases
+
+Version lives in **one** place: `package.json`. `src-tauri/tauri.conf.json` sets
+`"version": "../package.json"`, which Tauri resolves at build time, so there is
+no version sync step and `src-tauri/Cargo.toml`'s version never reaches the
+bundle.
+
+Changesets drives versioning and the changelog — not publishing; the package is
+private, and `privatePackages: { version, tag }` in `.changeset/config.json` is
+what makes it work on a private package at all.
+
+1. `bun run changeset` to record what changed.
+2. On push to `main`, `.github/workflows/publish.yml` opens/refreshes a
+   "Version Packages" PR that bumps `package.json` and writes `CHANGELOG.md`.
+3. Merging that PR is the decision to release; the action pushes a `v<version>` tag.
+4. The tag triggers the macOS build (Apple silicon + Intel) and publishes a
+   **draft** GitHub release with the bundles attached.
+
+The version script is named `version:packages`, not `version`, because npm and
+bun treat a `version` script as an `npm version` lifecycle hook, which recurses.
 
 ## Architecture
 
-This is a shadcn/ui component library scaffold on the Next.js App Router.
+### Frontend is Next.js in **static export mode**
 
-- **UI primitives are `@base-ui/react`, NOT Radix.** Every component in `components/ui/` imports from `@base-ui/react/*` (e.g. `import { Button as ButtonPrimitive } from "@base-ui/react/button"`). Base UI's component APIs, prop names, and composition patterns differ from Radix — do not assume Radix props/slots. Check the actual primitive import before editing a component.
-- **Styling is Tailwind v4, CSS-first.** There is no `tailwind.config.*`. All theme config lives in `app/globals.css` via `@import "tailwindcss"`, `@theme inline { ... }`, and CSS variables (`:root` / `.dark`). Colors use `oklch()`. The radius scale is derived (`--radius-sm` … `--radius-4xl` computed from `--radius`). `shadcn/tailwind.css` is imported there too.
-- **shadcn config** (`components.json`): style `base-luma`, base color `zinc`, RSC enabled, Lucide icons. Variants are defined with `class-variance-authority` (`cva`) inside each component.
-- **`cn()`** in `lib/utils.ts` (clsx + tailwind-merge) is the standard className composer — use it for all conditional/merged classes.
-- **Path alias** `@/*` maps to the repo root. Aliases: `@/components`, `@/components/ui`, `@/lib`, `@/lib/utils`, `@/hooks`.
-- **Fonts** are loaded via `next/font/google` in `app/layout.tsx` (Geist, Geist Mono, Manrope) and exposed as CSS variables (`--font-geist-sans`, `--font-geist-mono`, `--font-heading`) wired into the `@theme` block.
+`next.config.mjs` sets `output: "export"`. Tauri serves `devUrl`
+(`http://localhost:3000`) in dev and the `out/` bundle over a custom protocol in
+production — **there is no Node server at runtime**. Therefore:
 
-## Layout / structure
+- No SSR-dependent features: no server actions, no `cookies()`, no route
+  handlers that read the request, no `redirects`/`rewrites`/`headers`, no proxy,
+  no ISR, no default-loader image optimization (`images.unoptimized` is set).
+- Anything that needs a real runtime goes to **Rust (Tauri commands)** or to the
+  **bun sidecar**, never to a Next.js server.
+- `components.json` has `"rsc": false` so generated components carry
+  `"use client"` — the editor is interactive top to bottom.
+- `turbopack.root` is pinned in `next.config.mjs`: an unrelated `package-lock.json`
+  sits above this repo and Turbopack's root inference walks up to it otherwise.
 
-- `app/` — App Router entry (`layout.tsx`, `page.tsx`, `globals.css`).
-- `components/ui/` — the generated shadcn component set (Base UI–backed).
-- `lib/utils.ts` — `cn` helper.
-- `hooks/` — shared hooks (e.g. `use-mobile.ts`).
+### UI
 
+- **Primitives are `@base-ui/react`, NOT Radix.** The shadcn style is
+  `base-luma`; every `components/ui/*` file imports from `@base-ui/react/*`.
+  Prop names and composition patterns differ from Radix — check the actual
+  primitive import before editing a component.
+- **Tailwind v4, CSS-first.** No `tailwind.config.*`. Theme lives in
+  `app/globals.css` via `@theme inline` and CSS variables (`:root` / `.dark`),
+  colors in `oklch()`, radius scale derived from `--radius`. Tokens are copied
+  from remocn.dev — the `.dark` set is the warm obsidian palette (`#141318`).
+- `app/globals.css` imports `shadcn/tailwind.css`, which supplies the `data-open`
+  / `data-checked` / … custom variants the base-luma components compile against.
+  Do not drop that import.
+- **Dark-first**, and deliberately not following the OS: `components/theme-provider.tsx`
+  sets `defaultTheme="dark"`, `enableSystem={false}`.
+- `cn()` in `lib/utils.ts` (clsx + tailwind-merge) composes all classNames.
+- Path alias `@/*` maps to the repo root.
+- Fonts come from `next/font/google` (Manrope → `--font-manrope`, Geist Mono →
+  `--font-geist-mono`) and are self-hosted into the export at build time. Note
+  this means **`bun run build` needs network on a cold cache.**
 
-# remocn studio — design
-
-A standalone, hosted in-browser **video editor** that assembles videos from first-party
-remocn components: drag components onto a typed timeline, configure them, preview in the
-browser, and render an MP4 server-side.
-
-> Status: design. This document is the source of truth for the build.
-> The studio is a **separate project** (`remocn-studio`) deployed at **studio.remocn.dev**,
-> not part of this repo. remocn.dev itself is the landing page.
-
----
-
-## 1. What it is
-
-- **Hosted** on `studio.remocn.dev`, against the **first-party remocn component set only**
-  (a closed, known catalog — not the user's local components).
-- Users assemble a video from remocn components, preview via `@remotion/player`, and render
-  an MP4 on the server.
-- **v1 ships MP4 download.** "Own your code" (export readable Remotion `.tsx`) is a designed-for
-  v2 feature — the JSON project format keeps code-gen possible.
-- **remocn.dev is the landing page** and owns the "Open Studio" CTA. The studio repo has **no
-  marketing pages** — only the editor, dashboard, and auth.
-
-## 2. Timeline model — typed 3-track
-
-The component taxonomy dictates the timeline shape. Components are not uniform clips:
-
-| Track | Holds | Render mapping |
-|-------|-------|----------------|
-| **BG** | one background spanning the whole video (`mesh-gradient-bg`, `volumetric-rays`) | `<AbsoluteFill>` behind everything |
-| **Scene** | full scenes/compositions back-to-back (`claude-chat`, `terminal-simulator`), with **transitions docked on the seams** | sequential clips + custom cross-fade engine over seam overlaps |
-| **Overlay** | floating, timed elements (`typewriter`, badges), **freely placed on the canvas** | `<Sequence from/durationInFrames>` + `{x,y,w,h}` |
+## Layout
 
 ```
-BG     │███████████████████████│ mesh-gradient
-SCENE  │█claude-chat█▒fade▒█terminal█│
-OVERLAY│   █typewriter█      █badge█ │
+app/                  Next App Router (layout, page, globals.css)
+components/ui/        shadcn/ui primitives (Base UI–backed)
+components/           app-level components (theme-provider, later: studio panes)
+lib/utils.ts          cn helper
+src-tauri/            Rust core (Tauri v2)
+public/               static assets
 ```
 
-## 3. Project format — the spine
-
-A project is **one JSON document**. It feeds two consumers that must stay identical:
+Planned, per #218 — keep the flat root, no monorepo:
 
 ```
-project.json
-{ fps, width, height,
-  tracks: [
-    { kind: 'bg',    clips: [{ componentId, props }] },
-    { kind: 'scene', clips: [
-        { componentId, from, durationInFrames, props },
-        { transition: { type, overlapFrames } },
-        { componentId, durationInFrames, props } ] },
-    { kind: 'overlay', clips: [
-        { componentId, from, durationInFrames, props, x, y, w, h } ] } ] }
-        │
-        ├─▶  <Player component={ProjectRoot} inputProps={project} />     (client preview)
-        └─▶  renderMedia(serveUrl, "studio-project", inputProps=project) (server render)
+sidecar/              bun: Agent SDK host, Vite preview server, export
+shared/ipc.ts         one typed message contract for Rust ↔ webview ↔ sidecar
 ```
 
-- **`ProjectRoot`** is one generic Remotion component that reads the JSON, looks each
-  `componentId` up in `component-map.generated.ts`, and renders BG / Scene (with the transition
-  engine) / Overlay.
-- `ProjectRoot` + the component map are **shared code** used by both the client Player and the
-  render bundle — that is what makes preview and render provably identical.
-- `calculateMetadata` derives total duration / fps / dimensions from the JSON.
+## Vendored Repositories
 
-## 4. Component manifest — extend `config.ts`, do NOT add zod
+This project vendors external repositories under @repos/
 
-Every registry component already ships a `config.ts` typed as `ComponentConfig`
-(`lib/customizer-config.ts`) that powers the docs customizer. It already encodes what the studio
-needs — reuse it instead of retrofitting zod schemas:
+- Use vendored repositories as read-only reference material when working with related libraries
+- Prefer examples and patterns from the vendored source code over generated guesses or web search results
+- Do not edit files under @repos/ unless explicitly asked
+- Do not import from @repos/ - application code should continue importing from normal package dependencies
 
-```ts
-// existing fields, already authored per component:
-controls: { fromText: { type:'text', default:'…', label:'…' }, … }  // right-panel form schema
-durationInFrames, fps, compositionWidth, compositionHeight, previewBackdrop, componentName, importPath
+When writing Effect code, inspect @repos/effect/ for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Effect patterns.
 
-// add for studio:
-track: 'bg' | 'scene' | 'overlay'
-durationMode: 'fixed' | 'stretchable'
-category: string
-studio?: boolean   // opt-in; the palette = installed components with studio === true
-```
+`repos/` is gitignored and excluded from `tsconfig.json` and from Zed's file scan — the checkouts
+are local reference material, not part of this project's build.
 
-- The studio's **right-panel inspector renders from `config.controls`** — reuse the docs
-  customizer's control→widget renderer (`lib/ui-preview-internals.tsx`) verbatim.
-- `durationInFrames` is the clip's **default duration**.
-- **zod is used only as an optional server-side validation guard** on the incoming project JSON,
-  never to generate the UI.
+## Distilled agent patterns
 
-## 5. Transitions & duration
+`agent-patterns/` holds patterns already extracted from the vendored checkouts. Read the relevant
+file there **before** the upstream guide: it is shorter, every API in it was verified against the
+vendored source, and it records where the upstream docs drift from the actual code.
 
-- **Custom cross-fade engine in `ProjectRoot`.** Transitions are seam **data**
-  (`{ type, overlapFrames }`); `ProjectRoot` computes per-frame opacity/transform across the
-  overlap window for the two adjacent scenes.
-- The registry's existing "transition" components (`fade-through`, wipes) are **self-contained
-  scene clips** (they morph their own content A→B with hardcoded frame timings) — they are **not**
-  `@remotion/transitions` `TransitionPresentation`s and stay on the **Scene track as standalone
-  clips**. `@remotion/transitions` is not used.
-- **Most clips are fixed-duration** (hardcoded timings; stretching longer holds the clamped final
-  state, shortening truncates — acceptable for v1). `stretchable` is opt-in for components that
-  derive timing from `useVideoConfig().durationInFrames`.
-
-## 6. Overlay placement — drag-on-canvas
-
-- Overlays are placed by **direct manipulation on the Player**: selection handles, drag-to-move,
-  corner-scale, snap guides. Schema stores `{ x, y, w, h }`.
-- Screen→composition coords via `PlayerRef.getScale()`; the handle layer sits above the Player;
-  **pause playback during drag**. (Heaviest single UI item in the build.)
-
-## 7. Content scope (v1)
-
-- First-party components **+ user text only** (edit text props: messages, headlines, code).
-- **No** user image/video/audio uploads, **no** audio track. (→ no object storage, renders stay
-  stateless and fast; the bundle already contains every component.)
-- Uploads + audio track are a clearly-scoped v2.
-
-## 8. Topology — standalone repo consuming the registry
-
-```
-remocn (this repo)                         remocn-studio (new repo)
- registry/remocn/<c>/                         components/remocn/<c>.tsx        ← shadcn add @remocn/<c>
-   index.tsx     ── publishes ──▶             components/remocn/<c>.config.ts
-   config.ts  (ADD to files[])                lib/remocn-ui/   (shared customizer-config)
-                                              lib/studio/component-map.generated.ts ← codegen scans configs
-                                              src/remotion/{ProjectRoot,Root,index}
-                                              app/(studio)/   editor UI
-```
-
-The studio is the **biggest consumer of the remocn registry** — it installs the first-party set
-via shadcn (dogfooding), rather than reaching into this repo's internals.
-
-**Prerequisite change in THIS repo:** add `config.ts` to each studio-eligible item's registry
-`files[]` (today only `index.tsx` ships), plus a shared `remocn-ui` registry item for
-`customizer-config.ts` (so `ComponentConfig`, `FPS`, `W`, `H`, `FONT_WEIGHT_OPTIONS` resolve after
-install). Then a studio component travels complete.
-
-`scripts/sync-registry.mts` runs `shadcn add @remocn/<set>` then codegens
-`component-map.generated.ts` from installed configs with `studio: true`. Re-running it is the
-**registry sync/versioning seam** (pin a version or re-sync deliberately).
-
-## 9. Tech stack
-
-- **Next.js (App Router)** + **shadcn/ui** + **Tailwind v4**, themed with remocn's tokens
-  (copy `app/globals.css` design tokens for visual consistency).
-- **@remotion/player** + **@remotion/bundler** + **@remotion/renderer**, all pinned **4.0.473**
-  to match the registry components; `acknowledgeRemotionLicense` set.
-- **jotai** (editor state) + **react-resizable-panels** (editor layout).
-- **better-auth + Drizzle + Postgres** (self-hosted on Coolify).
-
-## 10. Repo layout
-
-```
-remocn-studio/
-  app/
-    page.tsx                  → redirect: authed ? /studio/projects : /login
-    login/                    minimal better-auth sign-in
-    (studio)/
-      studio/                 the editor (palette · timeline · canvas · inspector)
-      studio/projects/        "My projects" dashboard (default authed landing)
-      studio/p/[id]/          share view (Player + "made with remocn"; public if visibility=public)
-    api/
-      render/  ([jobId]/, download/)   generalized job queue
-      auth/[...all]/                   better-auth handler
-      projects/                        CRUD
-  components/
-    remocn/                   shadcn-installed first-party components + .config.ts
-    ui/                       shadcn/ui primitives
-    studio/                   timeline, clip, palette, inspector, canvas-handles
-  lib/
-    remocn-ui/                shared customizer-config (installed from registry)
-    studio/
-      project-schema.ts       project JSON shape (zod, server-validated)
-      component-map.generated.ts
-      transition-engine.ts
-    server/                   bundle.ts, render.ts, render-queue.ts (lifted + generalized)
-    db/                       drizzle schema + client
-    auth.ts                   better-auth (Drizzle adapter)
-  src/remotion/
-    ProjectRoot.tsx · Root.tsx (registers studio-project) · index.ts
-  scripts/
-    sync-registry.mts · bundle-remotion.mts · ensure-browser.mts
-  Dockerfile · drizzle.config.ts · components.json (registries: @remocn)
-```
-
-## 11. Backend
-
-- **Drizzle schema:** better-auth tables (`users`/`sessions`/`accounts`) +
-  `projects { id, userId, title, json (jsonb), thumbnailUrl?, visibility, createdAt, updatedAt }`.
-- **better-auth** with the Drizzle adapter; GitHub/Google OAuth.
-- **Render API** (lifted from this repo's `lib/server/*` + `api/render/*`): authed
-  `POST /api/render` (project JSON) → `enqueueRender` → `202 { jobId }`; poll
-  `GET /api/render/[jobId]`; `download`. **Server-side validation before render:** every
-  `clip.componentId ∈ map` and props validated against that component's config/zod — reject
-  otherwise (injection/abuse guard). Soft per-user daily render caps on the queue.
-
-## 12. Deployment (Coolify, subdomain)
-
-- Two Coolify services in one project: the Next.js app (Docker image with the Remotion pre-bundle
-  baked in, as in this repo) and a **Postgres** container.
-- Envs: `DATABASE_URL`, better-auth secrets, OAuth creds, `REMOTION_CONCURRENCY`,
-  `RENDER_MAX_CONCURRENT`, `RENDER_TIMEOUT_MS`.
-- Point `studio.remocn.dev` at the app service (Coolify domain → Traefik). Render box sizing
-  carries over from the existing CPX42 tuning.
-- Cross-domain: two independent apps, no shared session needed for v1. Optional future SSO via a
-  shared `.remocn.dev` cookie domain (better-auth supports it).
-
-## 13. Reuse vs build
-
-**Lifted from this repo (copy + generalize):** `lib/server/{bundle,render,render-queue,cleanup,
-rate-limit,paths}.ts`, `app/api/render/*`, `scripts/{bundle-remotion,ensure-browser}.mts`, the
-docs customizer control renderer + Player wiring, the autoplay shim, the theme tokens.
-
-**New:** the editor (timeline drag/resize/snap via pointer events, palette, inspector, drag-on-
-canvas overlay handles), `ProjectRoot` + transition engine, `project-schema.ts`, the
-`sync-registry` codegen, better-auth + Drizzle + projects CRUD + dashboard. The `ComponentConfig`
-studio-field extension lands in **this** repo.
-
-## 14. Suggested v1 build order
-
-1. Project schema + `ProjectRoot` + component map; render one hardcoded project end-to-end
-   (prove preview === render).
-2. Generalize the render route + server-side validation.
-3. better-auth + Drizzle + projects CRUD + dashboard + middleware redirect.
-4. Editor shell: palette → timeline (BG/Scene/Overlay), clip add/move/resize, inspector from config.
-5. Custom transition engine + seam UI.
-6. Drag-on-canvas overlay handles.
-7. `config.ts` → registry payload (this repo); `sync-registry` + studio-field retrofit on the
-   curated set; thumbnails.
-8. Polish, soft caps, watermark default, share links.
-
-## 15. Open items / risks
-
-- **`config.ts` → registry payload** is a prerequisite in this repo; without it the dogfood install
-  can't carry studio metadata.
-- **Preview perf** for stacked three.js scenes (`volumetric-rays`, `ai-generation-canvas`) in a live
-  Player — plan a "preview quality" toggle.
-- **Registry drift:** the studio pins a component set; re-sync is manual and deliberate.
-- **Remotion Company License** must be secured before public launch (commercial use of Player +
-  renderer).
-- **Render queue:** one box, low `RENDER_MAX_CONCURRENT` — free beta + accounts means soft per-user
-  caps must land before launch.
-
-## 16. Deferred to v2
-
-- Code export (readable `.tsx` composition + `npx shadcn add` list + JSON sidecar for round-trip).
-- User uploads (images, then audio track, then video).
-- Boundary transitions beyond the custom cross-fade set.
-- Paid tiers (render limits / resolution / watermark / premium components).
+- `agent-patterns/effect-schema.md` — `Schema` in Effect v4 (`effect@4.0.0-beta.101`). Read before
+  writing any Schema code. v4 rewrote Schema, so v3 knowledge from training data is wrong rather
+  than merely stale — e.g. `Schema.decode` is no longer a decoder, and the `effect/schema` import
+  path in the upstream guide does not resolve.
