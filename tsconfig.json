@@ -39,6 +39,7 @@
     "node_modules",
     "src-tauri",
     "out",
-    ".next"
+    ".next",
+    "repos"
   ]
 }

@@ -1,0 +1,33 @@
+{
+  "lsp": {
+    "vtsls": {
+      "settings": {
+        "typescript": {
+          "preferences": {
+            "autoImportFileExcludePatterns": ["repos/**"]
+          }
+        },
+        "javascript": {
+          "preferences": {
+            "autoImportFileExcludePatterns": ["repos/**"]
+          }
+        }
+      }
+    }
+  },
+
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/.svn",
+    "**/.hg",
+    "**/.jj",
+    "**/CVS",
+    "**/.DS_Store",
+    "**/Thumbs.db",
+    "**/.classpath",
+    "**/.settings",
+    // Vendored reference checkouts — read them on purpose, never incidentally.
+    "repos",
+    "repos/**"
+  ]
+}
