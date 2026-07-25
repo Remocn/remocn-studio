@@ -3,46 +3,58 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import Page from "@/app/page";
 
-const IPC_FAILURE = /IPC failed/;
+const PICKED_FOLDER = "/Users/me/projects/my-video";
 
-// Exercises the whole frontend test path in one place: jsdom, React Testing
-// Library, the `@/` tsconfig alias, a Base UI–backed shadcn component, and a
-// faked Tauri IPC boundary.
-describe("Page", () => {
-  it("renders the shell", () => {
-    render(<Page />);
+function mockFolderPicker(result: string | null) {
+  mockIPC((cmd) => {
+    if (cmd === "plugin:dialog|open") {
+      return result;
+    }
+    throw new Error(`unexpected command: ${cmd}`);
+  });
+}
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: "remocn studio" })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Ping the Rust core" })
-    ).toBeInTheDocument();
+async function renderShell() {
+  render(<Page />);
+  await screen.findByRole("button", { name: "Export" });
+}
+
+function openFolderButtons() {
+  return screen.getAllByRole("button", { name: "Open folder" });
+}
+
+describe("app shell", () => {
+  it("renders the three panes", async () => {
+    await renderShell();
+
+    expect(screen.getByRole("heading", { name: "Sessions" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Chat" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Preview" })).toBeVisible();
   });
 
-  it("shows what the Rust core returned", async () => {
-    mockIPC((cmd, payload) => {
-      if (cmd === "greet") {
-        const { name } = payload as { name: string };
-        return `Hello, ${name}!`;
-      }
-      throw new Error(`unexpected command: ${cmd}`);
-    });
+  it("says every pane is empty when no folder is open", async () => {
+    await renderShell();
 
-    render(<Page />);
-    fireEvent.click(screen.getByRole("button", { name: "Ping the Rust core" }));
-
-    expect(await screen.findByText("Hello, studio!")).toBeInTheDocument();
+    expect(screen.getAllByText("No folder open")).toHaveLength(3);
+    expect(openFolderButtons()).toHaveLength(2);
   });
 
-  it("surfaces an IPC failure instead of staying silent", async () => {
-    mockIPC(() => {
-      throw new Error("core is down");
-    });
+  it("shows the chosen folder in the title bar", async () => {
+    mockFolderPicker(PICKED_FOLDER);
+    await renderShell();
 
-    render(<Page />);
-    fireEvent.click(screen.getByRole("button", { name: "Ping the Rust core" }));
+    fireEvent.click(openFolderButtons()[0]);
 
-    expect(await screen.findByText(IPC_FAILURE)).toBeInTheDocument();
+    expect(await screen.findByText("my-video")).toBeVisible();
+    expect(screen.queryByText("No folder open")).not.toBeInTheDocument();
+  });
+
+  it("keeps the empty states when the picker is dismissed", async () => {
+    mockFolderPicker(null);
+    await renderShell();
+
+    fireEvent.click(openFolderButtons()[0]);
+
+    expect(await screen.findAllByText("No folder open")).toHaveLength(3);
   });
 });

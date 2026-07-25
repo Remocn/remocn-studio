@@ -148,6 +148,10 @@
 }
 
 @layer base {
+  :root {
+    --titlebar-leading-inset: 5rem;
+  }
+
   /* This is an app window, not a web page: the shell owns the viewport and the
      panes scroll internally. Rubber-banding the whole document would drag the
      title bar around. */

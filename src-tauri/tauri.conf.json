@@ -12,9 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "remocn-studio",
-        "width": 800,
-        "height": 600
+        "title": "remocn studio",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 960,
+        "minHeight": 640,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 16, "y": 16 }
       }
     ],
     "security": {
