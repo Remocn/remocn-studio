@@ -9,6 +9,7 @@ export const QUIT_REQUESTED_EVENT = "app://quit-requested";
 export const HOST_PID_ENV = "REMOCN_STUDIO_HOST_PID";
 export const DATA_DIR_ENV = "REMOCN_STUDIO_DATA_DIR";
 export const PREVIEW_ENTRY_ENV = "REMOCN_STUDIO_PREVIEW_ENTRY";
+export const TEMPLATE_DIR_ENV = "REMOCN_STUDIO_TEMPLATE_DIR";
 
 export const CANCELLED = "cancelled";
 
@@ -27,6 +28,7 @@ export const METHOD_NAMES = [
   "project.relocate",
   "project.remove",
   "project.rename",
+  "project.scaffold",
   "sidecar.emit",
   "sidecar.info",
 ] as const;
@@ -180,6 +182,21 @@ export const ProjectMove = Schema.Struct({
 
 export const ProjectRemoved = Schema.Struct({ removed: Schema.Boolean });
 
+export const SCAFFOLD_STEPS = ["template", "install"] as const;
+
+export const ScaffoldStep = Schema.Literals(SCAFFOLD_STEPS);
+
+export const ScaffoldEvent = Schema.Union([
+  Schema.Struct({
+    step: ScaffoldStep,
+    type: Schema.Literal("started"),
+  }),
+  Schema.Struct({
+    step: ScaffoldStep,
+    type: Schema.Literal("done"),
+  }),
+]);
+
 export const ContextUsage = Schema.Struct({
   maxTokens: Schema.Int,
   totalTokens: Schema.Int,
@@ -272,6 +289,8 @@ export type ProjectDraft = (typeof ProjectDraft)["Type"];
 export type ProjectName = (typeof ProjectName)["Type"];
 export type ProjectMove = (typeof ProjectMove)["Type"];
 export type ProjectRemoved = (typeof ProjectRemoved)["Type"];
+export type ScaffoldStep = (typeof ScaffoldStep)["Type"];
+export type ScaffoldEvent = (typeof ScaffoldEvent)["Type"];
 export type ContextUsage = (typeof ContextUsage)["Type"];
 export type ClaudeFailureKind = (typeof ClaudeFailureKind)["Type"];
 export type ClaudeFailure = (typeof ClaudeFailure)["Type"];
@@ -363,6 +382,11 @@ export const SIDECAR_METHODS = {
     params: ProjectName,
     result: Project,
     stream: Schema.Never,
+  },
+  "project.scaffold": {
+    params: ProjectRef,
+    result: Project,
+    stream: ScaffoldEvent,
   },
   "sidecar.emit": { params: EmitParams, result: EmitResult, stream: EmitChunk },
   "sidecar.info": {

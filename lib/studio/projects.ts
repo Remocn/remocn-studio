@@ -1,10 +1,11 @@
 import { Effect } from "effect";
 import {
+  cancelSidecarRequest,
   newRequestId,
   requestSidecar,
   type SidecarError,
 } from "@/lib/studio/sidecar";
-import type { Project, ProjectDraft } from "@/shared/ipc";
+import type { Project, ProjectDraft, ScaffoldEvent } from "@/shared/ipc";
 
 export const listProjects: Effect.Effect<readonly Project[], SidecarError> =
   Effect.gen(function* () {
@@ -49,6 +50,22 @@ export function renameProject(
       method: "project.rename",
       params: { name, projectId },
     });
+  });
+}
+
+export function scaffoldProject(
+  projectId: string,
+  onEvent: (event: ScaffoldEvent) => void
+): Effect.Effect<Project, SidecarError> {
+  return Effect.gen(function* () {
+    const id = yield* newRequestId;
+
+    return yield* requestSidecar({
+      id,
+      method: "project.scaffold",
+      onStream: onEvent,
+      params: { projectId },
+    }).pipe(Effect.onInterrupt(() => Effect.ignore(cancelSidecarRequest(id))));
   });
 }
 

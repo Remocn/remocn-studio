@@ -404,6 +404,27 @@ remount *was* the cancel, cancellation is now `stopTurn`, said out loud.
   confirmation when something is. The flag that lets the second attempt through
   lives in Rust, so `app.exit(0)` cannot deadlock against its own guard.
 
+### New projects
+
+`templates/remotion/` is a real Remotion project checked in here and mapped into the
+bundle by `tauri.conf.json`; Rust resolves it the same way it resolves the preview entry
+(source tree in debug, resource dir in release) and passes it as
+`REMOCN_STUDIO_TEMPLATE_DIR`. The one-composition invariant is *ours*, so the template
+declares it — one `<Composition id="Main">` — rather than the app hoping a generator
+produced it.
+
+- **Two methods, because they fail differently.** `project.create` makes the folder and
+  the row; `project.scaffold` streams `template` and `install`. The second is where the
+  network is, so the chat is usable while `bun install` runs, and a failure leaves the
+  project in place with a Retry.
+- **Expansion never overwrites.** A file that already exists is skipped, which is what
+  makes Retry safe once Claude has edited the scene. `package.json` is the one file the
+  copy rewrites, to name the package after the folder — slugified, since npm names cannot
+  hold spaces or capitals.
+- **The linter has one exception for the template.** `useFilenamingConvention` is off
+  under `templates/**`: every Remotion project has `src/Root.tsx`, and a scaffolded
+  project spelled `root.tsx` would look wrong to anyone who has seen another one.
+
 ### The preview
 
 The pane runs **the project's own Remotion bundler with our entry instead of the Studio UI**.
@@ -483,6 +504,8 @@ preview/              the entry the *project's* webpack compiles instead of Stud
 shared/               ipc.ts: the typed contract; transcript.ts: the one fold
 sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
 sidecar/history/      driver seam, migrations, project and session stores, recorder
+sidecar/scaffold/     what "New project…" expands and installs
+templates/remotion/   that project, vendored here and shipped as a Tauri resource
 sidecar/preview/      the --preview-host child: project resolution, webpack watch, server
 src-tauri/            Rust core (Tauri v2), including the sidecar supervisor
 public/               static assets

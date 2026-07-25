@@ -17,6 +17,8 @@ import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
 import { HandlerError, type Handlers } from "./host";
 import { previewEvents } from "./preview/supervisor";
+import { installDependencies } from "./scaffold/install";
+import { expandTemplate, type ScaffoldError } from "./scaffold/template";
 
 const TOKENS = [
   "Streaming",
@@ -40,6 +42,9 @@ const MAX_DELAY_MS = 2000;
 const gate = makeGate();
 
 const unstored = (error: HistoryError) =>
+  new HandlerError({ message: error.message });
+
+const unscaffolded = (error: ScaffoldError) =>
   new HandlerError({ message: error.message });
 
 const onDisk = (project: Project) =>
@@ -190,6 +195,24 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
     Effect.flatMap(ProjectStore, (projects) =>
       projects.rename(params.projectId, params.name)
     ).pipe(Effect.mapError(unstored)),
+
+  "project.scaffold": ({ emit, log, params }) =>
+    Effect.gen(function* () {
+      const project = yield* located(params.projectId);
+
+      yield* emit({ step: "template", type: "started" });
+      yield* Effect.mapError(expandTemplate(project.path), unscaffolded);
+      yield* emit({ step: "template", type: "done" });
+
+      yield* emit({ step: "install", type: "started" });
+      yield* Effect.mapError(
+        installDependencies(project.path, log),
+        unscaffolded
+      );
+      yield* emit({ step: "install", type: "done" });
+
+      return project;
+    }),
 
   "sidecar.emit": ({ emit, params }) =>
     Effect.gen(function* () {

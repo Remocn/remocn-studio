@@ -9,7 +9,7 @@ use std::{
 use tauri::{AppHandle, Manager};
 use tokio::process::{Child, Command};
 
-use crate::ipc::{DATA_DIR_ENV, HOST_PID_ENV, PREVIEW_ENTRY_ENV};
+use crate::ipc::{DATA_DIR_ENV, HOST_PID_ENV, PREVIEW_ENTRY_ENV, TEMPLATE_DIR_ENV};
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
 const FALLBACK_DIRS: [&str; 5] = [
@@ -76,6 +76,23 @@ pub fn resolve_preview_entry(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|err| format!("the app bundle has no preview entry: {err}"))
 }
 
+#[cfg(debug_assertions)]
+pub fn resolve_template_dir(_app: &AppHandle) -> Result<PathBuf, String> {
+    let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../templates/remotion");
+    source
+        .canonicalize()
+        .map_err(|err| format!("no project template at {}: {err}", source.display()))
+}
+
+#[cfg(not(debug_assertions))]
+pub fn resolve_template_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    use tauri::path::BaseDirectory;
+
+    app.path()
+        .resolve("templates/remotion", BaseDirectory::Resource)
+        .map_err(|err| format!("the app bundle has no project template: {err}"))
+}
+
 pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app
         .path()
@@ -88,16 +105,31 @@ pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
-pub fn launch(
-    bun: &Path,
-    script: &Path,
-    data_dir: &Path,
-    preview_entry: Option<&Path>,
-) -> Result<Child, String> {
+pub struct Launch<'a> {
+    pub bun: &'a Path,
+    pub data_dir: &'a Path,
+    pub preview_entry: Option<&'a Path>,
+    pub script: &'a Path,
+    pub template_dir: Option<&'a Path>,
+}
+
+pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
+    let Launch {
+        bun,
+        data_dir,
+        preview_entry,
+        script,
+        template_dir,
+    } = paths;
+
     let mut command = Command::new(bun);
 
     if let Some(entry) = preview_entry {
         command.env(PREVIEW_ENTRY_ENV, entry);
+    }
+
+    if let Some(template) = template_dir {
+        command.env(TEMPLATE_DIR_ENV, template);
     }
 
     command

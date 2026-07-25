@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ProjectGroup } from "@/components/studio/project-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
+import type { ScaffoldState } from "@/hooks/use-scaffold";
 import { IDLE_TURN, type TurnState } from "@/lib/studio/turns";
 import type { HistorySession, Project } from "@/shared/ipc";
 
@@ -42,6 +43,7 @@ function renderGroup(
     onToggle?: () => void;
     project?: Project;
     rows?: HistorySession[];
+    scaffold?: ScaffoldState;
     turns?: ReadonlyMap<string, TurnState>;
   } = {}
 ) {
@@ -53,9 +55,11 @@ function renderGroup(
         isExpanded={shape.isExpanded ?? true}
         onNewSession={shape.onNewSession ?? vi.fn()}
         onRemoveSession={vi.fn()}
+        onRetryScaffold={vi.fn()}
         onSelectSession={vi.fn()}
         onToggle={shape.onToggle ?? vi.fn()}
         project={shape.project ?? PROJECT}
+        scaffold={shape.scaffold}
         sessions={shape.rows ?? sessions(2)}
         turns={shape.turns ?? new Map()}
       />
@@ -109,6 +113,35 @@ describe("ProjectGroup", () => {
       screen.getByRole("status", { name: "Session 1 is running" })
     ).toBeVisible();
     expect(screen.queryByRole("status", { name: OTHER_ROW })).toBeNull();
+  });
+
+  it("says which scaffold step is running", () => {
+    renderGroup({
+      scaffold: { error: null, isRunning: true, step: "install" },
+    });
+
+    expect(screen.getByText("Installing dependencies…")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Retry" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers a retry, and the error, when a scaffold step failed", () => {
+    renderGroup({
+      scaffold: {
+        error: "bun install exited with code 1",
+        isRunning: false,
+        step: "install",
+      },
+    });
+
+    expect(
+      screen.getByText("Could not install the dependencies.")
+    ).toBeVisible();
+    expect(screen.getByText("bun install exited with code 1")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Retry" })).toHaveValue(
+      PROJECT.id
+    );
   });
 
   it("says a project has no sessions rather than showing nothing", () => {

@@ -3,12 +3,14 @@
 import { ChevronRightIcon, SquarePenIcon, UnplugIcon } from "lucide-react";
 import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
+import type { ScaffoldState } from "@/hooks/use-scaffold";
 import { useVisibleSessions } from "@/hooks/use-visible-sessions";
 import { statusOf, type TurnState } from "@/lib/studio/turns";
 import { cn } from "@/lib/utils";
@@ -22,9 +24,11 @@ export function ProjectGroup({
   isExpanded,
   onNewSession,
   onRemoveSession,
+  onRetryScaffold,
   onSelectSession,
   onToggle,
   project,
+  scaffold,
   sessions,
   turns,
 }: {
@@ -33,9 +37,11 @@ export function ProjectGroup({
   isExpanded: boolean;
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
+  onRetryScaffold: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onToggle: (event: MouseEvent<HTMLButtonElement>) => void;
   project: Project;
+  scaffold: ScaffoldState | undefined;
   sessions: readonly HistorySession[];
   turns: ReadonlyMap<string, TurnState>;
 }) {
@@ -101,6 +107,14 @@ export function ProjectGroup({
         </div>
       </div>
 
+      {scaffold === undefined ? null : (
+        <Scaffolding
+          onRetry={onRetryScaffold}
+          projectId={project.id}
+          scaffold={scaffold}
+        />
+      )}
+
       {isExpanded ? (
         <ol className="flex flex-col gap-0.5 pl-3" id={panelId}>
           {visible.map((session) => (
@@ -136,6 +150,55 @@ export function ProjectGroup({
           ) : null}
         </ol>
       ) : null}
+    </div>
+  );
+}
+
+const DOING: Record<ScaffoldState["step"], string> = {
+  install: "Installing dependencies…",
+  template: "Copying the template…",
+};
+
+const FAILED: Record<ScaffoldState["step"], string> = {
+  install: "Could not install the dependencies.",
+  template: "Could not copy the template.",
+};
+
+function Scaffolding({
+  onRetry,
+  projectId,
+  scaffold,
+}: {
+  onRetry: (event: MouseEvent<HTMLButtonElement>) => void;
+  projectId: string;
+  scaffold: ScaffoldState;
+}) {
+  if (scaffold.isRunning) {
+    return (
+      <p className="flex items-center gap-2 py-1 pl-4 text-muted-foreground text-xs">
+        <Spinner className="size-3" />
+        {DOING[scaffold.step]}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1 py-1 pl-4">
+      <p className="text-destructive text-xs">{FAILED[scaffold.step]}</p>
+      {scaffold.error === null ? null : (
+        <p className="line-clamp-3 break-all font-mono text-[10px] text-muted-foreground">
+          {scaffold.error}
+        </p>
+      )}
+      <Button
+        className="self-start text-xs"
+        onClick={onRetry}
+        size="sm"
+        value={projectId}
+        variant="outline"
+      >
+        Retry
+      </Button>
     </div>
   );
 }

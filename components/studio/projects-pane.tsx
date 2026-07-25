@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useNewProject } from "@/hooks/use-new-project";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
+import type { ScaffoldState } from "@/hooks/use-scaffold";
 import type { ProjectGroup as Group } from "@/lib/studio/groups";
 import type { TurnState } from "@/lib/studio/turns";
 import { NewProjectDialog } from "./new-project-dialog";
@@ -43,6 +44,7 @@ export function ProjectsPane() {
     isLoadingProjects,
     onNewSession,
     onRemoveSession,
+    onRetryScaffold,
     onSelectSession,
     onToggleProject,
     openFolder,
@@ -51,6 +53,7 @@ export function ProjectsPane() {
     reloadProjects,
     removeProject,
     renameProject,
+    scaffolds,
     sessionsError,
     turns,
   } = useStudio();
@@ -107,8 +110,10 @@ export function ProjectsPane() {
           onOpenFolder={openFolder}
           onRemoveSession={onRemoveSession}
           onRetry={reloadProjects}
+          onRetryScaffold={onRetryScaffold}
           onSelectSession={onSelectSession}
           onToggle={onToggleProject}
+          scaffolds={scaffolds}
           turns={turns}
         />
 
@@ -135,8 +140,10 @@ function ProjectsBody({
   onOpenFolder,
   onRemoveSession,
   onRetry,
+  onRetryScaffold,
   onSelectSession,
   onToggle,
+  scaffolds,
   turns,
 }: {
   activeSessionId: string | null;
@@ -149,8 +156,10 @@ function ProjectsBody({
   onOpenFolder: () => void;
   onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onRetry: () => void;
+  onRetryScaffold: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onToggle: (event: MouseEvent<HTMLButtonElement>) => void;
+  scaffolds: ReadonlyMap<string, ScaffoldState>;
   turns: ReadonlyMap<string, TurnState>;
 }) {
   if (error !== null) {
@@ -207,9 +216,11 @@ function ProjectsBody({
             isExpanded={expanded.has(group.project.id)}
             onNewSession={onNewSession}
             onRemoveSession={onRemoveSession}
+            onRetryScaffold={onRetryScaffold}
             onSelectSession={onSelectSession}
             onToggle={onToggle}
             project={group.project}
+            scaffold={scaffolds.get(group.project.id)}
             sessions={group.sessions}
             turns={turns}
           />

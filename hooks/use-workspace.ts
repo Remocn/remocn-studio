@@ -11,6 +11,7 @@ import {
   useProjectActions,
 } from "@/hooks/use-project-actions";
 import { type StudioProjects, useProjects } from "@/hooks/use-projects";
+import { type Scaffolds, useScaffold } from "@/hooks/use-scaffold";
 import { type StudioSessions, useSessions } from "@/hooks/use-sessions";
 import { type Turns, useTurns } from "@/hooks/use-turns";
 import { groupSessions, type ProjectGroup } from "@/lib/studio/groups";
@@ -22,6 +23,7 @@ export interface Workspace
     StudioSessions,
     ExpandedProjects,
     ProjectActions,
+    Scaffolds,
     Turns {
   groups: readonly ProjectGroup[];
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -34,6 +36,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
   const sessions = useSessions();
   const actions = useProjectActions();
   const turns = useTurns(sessions.rememberSession);
+  const scaffolds = useScaffold(projects.replaceProject);
   const expansion = useExpandedProjects(
     settings,
     projects.activeProject?.id ?? null
@@ -69,6 +72,8 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
     return project;
   }, [expandProject, pickFolder, startSession]);
 
+  const { startScaffold } = scaffolds;
+
   const createProject = useCallback(
     async (draft: ProjectDraft) => {
       const project = await create(draft);
@@ -76,10 +81,11 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
         rememberProject(project);
         expandProject(project.id);
         startSession();
+        startScaffold(project.id);
       }
       return project;
     },
-    [create, expandProject, rememberProject, startSession]
+    [create, expandProject, rememberProject, startScaffold, startSession]
   );
 
   const renameProject = useCallback(
@@ -169,6 +175,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       ...sessions,
       ...actions,
       ...expansion,
+      ...scaffolds,
       ...turns,
       createProject,
       groups,
@@ -196,6 +203,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       relocateProject,
       removeProject,
       renameProject,
+      scaffolds,
       sessions,
       startSessionIn,
       turns,
