@@ -50,6 +50,15 @@ describe("app shell", () => {
     expect(screen.getByRole("heading", { name: "Preview" })).toBeVisible();
   });
 
+  it("lets the transcript be selected, unlike the rest of the shell", async () => {
+    const { container } = render(<Page />);
+    await screen.findByRole("button", { name: "Export" });
+
+    expect(
+      container.querySelector('[data-slot="message-scroller-content"]')
+    ).toHaveAttribute("data-selectable");
+  });
+
   it("says every pane is empty when no folder is open", async () => {
     await renderShell();
 

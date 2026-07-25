@@ -2,7 +2,7 @@ import { createInterface } from "node:readline";
 import { PassThrough } from "node:stream";
 import { Effect } from "effect";
 import { describe, expect, it, vi } from "vitest";
-import type { SidecarFrame } from "@/shared/ipc";
+import { SIDECAR_PROTOCOL, type SidecarFrame } from "@/shared/ipc";
 import { make, SidecarChannel } from "@/sidecar/channel";
 import { handlers } from "@/sidecar/handlers";
 import { type Handlers, runHost } from "@/sidecar/host";
@@ -53,7 +53,7 @@ describe("runHost", () => {
     await settled();
 
     expect(host.sent).toEqual([
-      { pid: process.pid, protocol: 1, type: "ready" },
+      { pid: process.pid, protocol: SIDECAR_PROTOCOL, type: "ready" },
     ]);
 
     host.close();

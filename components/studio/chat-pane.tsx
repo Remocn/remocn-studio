@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpIcon, FolderOpenIcon, SparklesIcon } from "lucide-react";
+import { FolderOpenIcon } from "lucide-react";
 import {
   Empty,
   EmptyDescription,
@@ -9,23 +9,23 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupTextarea,
-} from "@/components/ui/input-group";
-import {
   MessageScroller,
   MessageScrollerButton,
   MessageScrollerContent,
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
+import { useClaudeTurn } from "@/hooks/use-claude-turn";
+import type { EffortLevel } from "@/shared/ipc";
+import { Composer } from "./composer";
+import { LogoMark } from "./logo-mark";
+import { MarkdownProvider } from "./markdown";
 import { Pane, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { useStudio } from "./studio-provider";
+import { Transcript } from "./transcript";
 
 export function ChatPane() {
-  const { projectFolder } = useStudio();
+  const { claudeEffort, claudeModel, projectFolder } = useStudio();
 
   return (
     <Pane>
@@ -33,21 +33,63 @@ export function ChatPane() {
         <PaneTitle>{projectFolder ? "New session" : "Chat"}</PaneTitle>
       </PaneHeader>
 
-      <PaneBody>
+      <Conversation
+        cwd={projectFolder}
+        effort={claudeEffort}
+        key={projectFolder ?? ""}
+        model={claudeModel}
+      />
+    </Pane>
+  );
+}
+
+function Conversation({
+  cwd,
+  effort,
+  model,
+}: {
+  cwd: string | null;
+  effort: EffortLevel | null;
+  model: string | null;
+}) {
+  const turn = useClaudeTurn({ cwd, effort, model });
+  const hasTranscript = turn.entries.length > 0 || turn.error !== null;
+
+  return (
+    <PaneBody>
+      <MarkdownProvider>
         <MessageScrollerProvider>
           <MessageScroller>
             <MessageScrollerViewport aria-label="Conversation">
-              <MessageScrollerContent className="mx-auto w-full max-w-2xl px-4 py-6">
-                <ChatEmptyState hasProjectFolder={projectFolder !== null} />
+              <MessageScrollerContent
+                className="mx-auto w-full max-w-2xl gap-3 px-4 py-6"
+                data-selectable
+              >
+                {hasTranscript ? (
+                  <Transcript
+                    cwd={cwd}
+                    entries={turn.entries}
+                    error={turn.error}
+                    isRunning={turn.isRunning}
+                  />
+                ) : (
+                  <ChatEmptyState hasProjectFolder={cwd !== null} />
+                )}
               </MessageScrollerContent>
             </MessageScrollerViewport>
             <MessageScrollerButton />
           </MessageScroller>
         </MessageScrollerProvider>
+      </MarkdownProvider>
 
-        <Composer disabled />
-      </PaneBody>
-    </Pane>
+      <Composer
+        context={turn.context}
+        disabled={cwd === null}
+        isRunning={turn.isRunning}
+        onStop={turn.stop}
+        onSubmit={turn.send}
+      />
+    </PaneBody>
   );
 }
 
@@ -70,44 +112,17 @@ function ChatEmptyState({ hasProjectFolder }: { hasProjectFolder: boolean }) {
   }
 
   return (
-    <Empty>
+    <Empty className="border-none">
       <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <SparklesIcon />
+        <EmptyMedia>
+          <LogoMark className="size-10 text-foreground" />
         </EmptyMedia>
-        <EmptyTitle>No session selected</EmptyTitle>
+        <EmptyTitle className="text-2xl">What should we make?</EmptyTitle>
         <EmptyDescription>
           Describe the video you want and Claude builds it as real Remotion
           components in your project.
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
-  );
-}
-
-function Composer({ disabled }: { disabled: boolean }) {
-  return (
-    <div className="shrink-0 px-4 pb-4">
-      <div className="mx-auto w-full max-w-2xl">
-        <InputGroup>
-          <InputGroupTextarea
-            aria-label="Message Claude"
-            disabled={disabled}
-            placeholder="Describe the scene you want to build…"
-            rows={2}
-          />
-          <InputGroupAddon align="block-end" className="justify-end">
-            <InputGroupButton
-              disabled={disabled}
-              size="icon-sm"
-              variant="default"
-            >
-              <ArrowUpIcon />
-              <span className="sr-only">Send</span>
-            </InputGroupButton>
-          </InputGroupAddon>
-        </InputGroup>
-      </div>
-    </div>
   );
 }

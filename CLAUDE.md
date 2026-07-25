@@ -85,6 +85,16 @@ load-bearing:
   `pagination.tsx`, both TS17001, and a duplicate JSX attribute silently discards
   the earlier one.
 
+**Biome is pinned to 2.5.5 for one reason:** 2.5.3 and 2.5.4 panic in their
+module resolver on any file that does `import { memo } from "react"`
+(`index out of bounds: the len is 38 but the index is 287`), and a panic fails the
+whole file instead of emitting a diagnostic. 2.5.5 in turn reads `!value` in
+`useStudio` as always-truthy, which is why that guard is spelled `value === null`.
+Two rules shape how components are written here: `noArrayIndexKey` means rendered
+rows carry their own id (`DiffLine.id`), and `noJsxPropsBind` bans inline arrows
+in props — a per-item handler reads `event.currentTarget.value` instead, which is
+why `useAttachments` exposes `onRemove` as an event handler.
+
 ### Tests
 
 Vitest + React Testing Library + jsdom (`vitest.config.mts`). The `@/*` alias
@@ -151,6 +161,21 @@ production — **there is no Node server at runtime**. Therefore:
   Do not drop that import.
 - **Dark-first**, and deliberately not following the OS: `components/theme-provider.tsx`
   sets `defaultTheme="dark"`, `enableSystem={false}`.
+- **Assistant markdown is [Streamdown](https://streamdown.ai)**, not `react-markdown`.
+  Two lines in `app/globals.css` are load-bearing: `@import "streamdown/styles.css"`
+  (the `animated` reveal keyframes) and `@source "../node_modules/streamdown/dist/*.js"`
+  — Streamdown ships Tailwind utility classes inside its compiled JS, so without
+  that the markdown renders unstyled. It expects the shadcn tokens, which the
+  base-luma palette already supplies.
+- **Syntax highlighting is our own Shiki plugin**, `lib/studio/highlighter.ts`,
+  built on `createHighlighterCore` with a fixed language set (tsx, ts, jsx, js,
+  json, bash, css) and the JS regex engine, so no `onig.wasm` has to load over
+  the custom protocol. `@streamdown/code` is deliberately not installed: it calls
+  `createHighlighter` with `bundledLanguages` and its options expose themes only,
+  so the 9.1 MB it adds cannot be configured away. `CodeHighlighterPlugin` is a
+  public interface and `plugins.code.getThemes()` wins over the `shikiTheme` prop.
+  The langs and themes are dynamic imports, so they are separate chunks, not part
+  of the initial bundle.
 - `cn()` in `lib/utils.ts` (clsx + tailwind-merge) composes all classNames.
 - Path alias `@/*` maps to the repo root. Bun honours it too, so `sidecar/` code
   imports `@/shared/ipc` the same way the webview does.
@@ -214,6 +239,15 @@ event.
     it separately. If the envelope rejected unknown methods, a bad method would
     be dropped as unparseable and the caller would wait forever instead of
     getting `there is no method called …`.
+- **A turn carries more than a prompt.** `claude.prompt` takes the reasoning
+  `effort` and image `attachments`, and answers with the context-window reading
+  next to the session id. Two decisions there are deliberate: attachments travel
+  as **paths**, and `sidecar/claude/content.ts` reads and base64-encodes them, so
+  megabytes of image never cross the Tauri IPC or the stdio frames; and the
+  context reading is taken from the live `Query` with `getContextUsage()` **before
+  the turn closes it**, because afterwards there is no session left to ask. It is
+  wrapped in a timeout and ignored on failure — a missing reading hides the meter,
+  it never fails the turn.
 - **bun comes from the user's machine**, resolved from `$REMOCN_STUDIO_BUN`,
   `~/.bun/bin`, `$PATH`, then the usual Homebrew/`/usr/local` locations. A
   GUI-launched app gets a minimal `PATH`, which is why the fallback list exists.

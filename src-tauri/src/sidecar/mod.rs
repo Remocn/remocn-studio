@@ -201,7 +201,11 @@ impl Inner {
             pid,
         };
 
-        let _ = self.status.send(status.clone());
+        // `send` drops the value when no receiver is alive, and receivers only
+        // exist while `wait_ready` is waiting — so a phase published before the
+        // first request would be lost and the status would read `starting`
+        // forever. `send_replace` always stores it.
+        self.status.send_replace(status.clone());
         let _ = self.app.emit(STATUS_EVENT, status);
     }
 

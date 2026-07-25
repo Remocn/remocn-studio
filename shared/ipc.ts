@@ -1,6 +1,6 @@
 import { type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 1;
+export const SIDECAR_PROTOCOL = 3;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -11,7 +11,11 @@ export const CANCELLED = "cancelled";
 
 const RequestId = Schema.NonEmptyString;
 
-export const METHOD_NAMES = ["sidecar.emit", "sidecar.info"] as const;
+export const METHOD_NAMES = [
+  "claude.prompt",
+  "sidecar.emit",
+  "sidecar.info",
+] as const;
 
 export const SidecarInfo = Schema.Struct({
   bun: Schema.String,
@@ -42,7 +46,110 @@ export type EmitParams = (typeof EmitParams)["Type"];
 export type EmitChunk = (typeof EmitChunk)["Type"];
 export type EmitResult = (typeof EmitResult)["Type"];
 
+export const EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;
+
+export const EffortLevel = Schema.Literals(EFFORT_LEVELS);
+
+export function isEffortLevel(value: unknown): value is EffortLevel {
+  return (
+    typeof value === "string" &&
+    (EFFORT_LEVELS as readonly string[]).includes(value)
+  );
+}
+
+export const ImageMediaType = Schema.Literals([
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+export const PromptAttachment = Schema.Struct({
+  mediaType: ImageMediaType,
+  name: Schema.NonEmptyString,
+  path: Schema.NonEmptyString,
+});
+
+export const PromptParams = Schema.Struct({
+  attachments: Schema.Array(PromptAttachment),
+  cwd: Schema.NonEmptyString,
+  effort: Schema.NullOr(EffortLevel),
+  model: Schema.NullOr(Schema.NonEmptyString),
+  prompt: Schema.String,
+  sessionId: Schema.NullOr(Schema.NonEmptyString),
+});
+
+export const ContextUsage = Schema.Struct({
+  maxTokens: Schema.Int,
+  totalTokens: Schema.Int,
+});
+
+export const ClaudeFailureKind = Schema.Literals([
+  "auth",
+  "usage",
+  "model",
+  "unknown",
+]);
+
+export const ClaudeFailure = Schema.Struct({
+  kind: ClaudeFailureKind,
+  message: Schema.String,
+});
+
+export const ClaudeEvent = Schema.Union([
+  Schema.Struct({
+    model: Schema.String,
+    sessionId: Schema.String,
+    type: Schema.Literal("session"),
+  }),
+  Schema.Struct({
+    text: Schema.String,
+    type: Schema.Literal("text"),
+  }),
+  Schema.Struct({
+    text: Schema.String,
+    type: Schema.Literal("thinking"),
+  }),
+  Schema.Struct({
+    id: Schema.String,
+    input: Schema.Unknown,
+    name: Schema.String,
+    type: Schema.Literal("tool_use"),
+  }),
+  Schema.Struct({
+    id: Schema.String,
+    isError: Schema.Boolean,
+    text: Schema.String,
+    type: Schema.Literal("tool_result"),
+  }),
+  Schema.Struct({
+    message: Schema.String,
+    type: Schema.Literal("notice"),
+  }),
+]);
+
+export const PromptResult = Schema.Struct({
+  context: Schema.NullOr(ContextUsage),
+  failure: Schema.NullOr(ClaudeFailure),
+  sessionId: Schema.NullOr(Schema.String),
+});
+
+export type PromptParams = (typeof PromptParams)["Type"];
+export type EffortLevel = (typeof EffortLevel)["Type"];
+export type ImageMediaType = (typeof ImageMediaType)["Type"];
+export type PromptAttachment = (typeof PromptAttachment)["Type"];
+export type ContextUsage = (typeof ContextUsage)["Type"];
+export type ClaudeFailureKind = (typeof ClaudeFailureKind)["Type"];
+export type ClaudeFailure = (typeof ClaudeFailure)["Type"];
+export type ClaudeEvent = (typeof ClaudeEvent)["Type"];
+export type PromptResult = (typeof PromptResult)["Type"];
+
 export const SIDECAR_METHODS = {
+  "claude.prompt": {
+    params: PromptParams,
+    result: PromptResult,
+    stream: ClaudeEvent,
+  },
   "sidecar.emit": { params: EmitParams, result: EmitResult, stream: EmitChunk },
   "sidecar.info": {
     params: Schema.Null,

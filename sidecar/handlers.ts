@@ -1,5 +1,12 @@
-import { Clock, Effect } from "effect";
-import { SIDECAR_PROTOCOL } from "@/shared/ipc";
+import { Clock, Effect, Ref, Stream } from "effect";
+import {
+  type ClaudeFailure,
+  type ContextUsage,
+  SIDECAR_PROTOCOL,
+} from "@/shared/ipc";
+import { eventsOf } from "./claude/events";
+import { failureFromText, failureOf } from "./claude/failure";
+import { messages } from "./claude/session";
 import type { Handlers } from "./host";
 
 const TOKENS = [
@@ -22,6 +29,46 @@ const MAX_COUNT = 500;
 const MAX_DELAY_MS = 2000;
 
 export const handlers: Handlers = {
+  "claude.prompt": ({ emit, log, params }) =>
+    Effect.gen(function* () {
+      const sessionId = yield* Ref.make(params.sessionId);
+      const failure = yield* Ref.make<ClaudeFailure | null>(null);
+      const context = yield* Ref.make<ContextUsage | null>(null);
+
+      yield* Stream.runForEach(
+        messages(params, {
+          log: (line) => Effect.runSync(log(line)),
+          onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
+        }),
+        (message) =>
+          Effect.gen(function* () {
+            if (message.type === "system" && message.subtype === "init") {
+              yield* Ref.set(sessionId, message.session_id);
+            }
+
+            const found = failureOf(message);
+            if (found !== null) {
+              yield* Ref.set(failure, found);
+            }
+
+            yield* Effect.forEach(eventsOf(message), emit, { discard: true });
+          })
+      ).pipe(
+        Effect.catch((error) =>
+          Ref.update(
+            failure,
+            (current) => current ?? failureFromText(error.message)
+          )
+        )
+      );
+
+      return {
+        context: yield* Ref.get(context),
+        failure: yield* Ref.get(failure),
+        sessionId: yield* Ref.get(sessionId),
+      };
+    }),
+
   "sidecar.emit": ({ emit, params }) =>
     Effect.gen(function* () {
       const total = clamp(params.count, 1, MAX_COUNT);

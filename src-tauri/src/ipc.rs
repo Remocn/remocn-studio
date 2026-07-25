@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-pub const PROTOCOL: u32 = 1;
+pub const PROTOCOL: u32 = 3;
 pub const STATUS_EVENT: &str = "sidecar://status";
 pub const NOTIFY_EVENT: &str = "sidecar://notify";
 pub const HOST_PID_ENV: &str = "REMOCN_STUDIO_HOST_PID";

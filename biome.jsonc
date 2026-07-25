@@ -21,7 +21,10 @@
       "!!.next",
       "!!out",
       "!!src-tauri/target",
-      "!!src-tauri/gen"
+      "!!src-tauri/gen",
+      // Source artwork for `tauri icon`, not authored markup: the a11y and
+      // attribute-order rules have nothing useful to say about it.
+      "!!src-tauri/app-icon.svg"
     ]
   },
   "overrides": [

@@ -1,0 +1,108 @@
+import { describe, expect, it } from "vitest";
+import { toolDetail, toolFailure, toolTarget } from "@/lib/studio/activity";
+
+const CWD = "/Users/me/projects/my-video";
+
+describe("toolTarget", () => {
+  it("shows an edited file relative to the open folder", () => {
+    expect(toolTarget({ file_path: `${CWD}/src/Scene.tsx` }, CWD)).toBe(
+      "src/Scene.tsx"
+    );
+  });
+
+  it("keeps a path outside the folder absolute", () => {
+    expect(toolTarget({ file_path: "/etc/hosts" }, CWD)).toBe("/etc/hosts");
+  });
+
+  it("prefers the command over the description for Bash", () => {
+    expect(
+      toolTarget({ command: "bun add remotion", description: "Install" }, CWD)
+    ).toBe("bun add remotion");
+  });
+
+  it("has nothing to show for an input without a subject", () => {
+    expect(toolTarget({ todos: [] }, CWD)).toBeNull();
+    expect(toolTarget(null, CWD)).toBeNull();
+  });
+});
+
+describe("toolDetail", () => {
+  it("reads a Write as a diff of added lines", () => {
+    const detail = toolDetail({
+      input: { content: "a\nb", file_path: "/a.tsx" },
+      name: "Write",
+      result: "File created",
+    });
+
+    expect(detail).toEqual({
+      kind: "diff",
+      lines: [
+        { id: 0, kind: "added", text: "a" },
+        { id: 1, kind: "added", text: "b" },
+      ],
+    });
+  });
+
+  it("diffs an Edit from its own strings, not from the result text", () => {
+    const detail = toolDetail({
+      input: { new_string: "b", old_string: "a" },
+      name: "Edit",
+      result: "The file /a.tsx has been updated.",
+    });
+
+    expect(detail).toEqual({
+      kind: "diff",
+      lines: [
+        { id: 0, kind: "removed", text: "a" },
+        { id: 1, kind: "added", text: "b" },
+      ],
+    });
+  });
+
+  it("keeps a Bash command next to its output", () => {
+    expect(
+      toolDetail({
+        input: { command: "bun run build" },
+        name: "Bash",
+        result: "done\n",
+      })
+    ).toEqual({ command: "bun run build", kind: "command", output: "done\n" });
+  });
+
+  it("shows the command of a Bash call that has not answered yet", () => {
+    expect(
+      toolDetail({ input: { command: "bun test" }, name: "Bash", result: null })
+    ).toEqual({ command: "bun test", kind: "command", output: "" });
+  });
+
+  it("previews the result of any other tool", () => {
+    expect(
+      toolDetail({
+        input: { file_path: "/a.tsx" },
+        name: "Read",
+        result: "  x  ",
+      })
+    ).toEqual({ kind: "text", text: "x" });
+  });
+
+  it("has nothing to expand while a read is still running", () => {
+    expect(
+      toolDetail({ input: { file_path: "/a.tsx" }, name: "Read", result: null })
+    ).toBeNull();
+  });
+});
+
+describe("toolFailure", () => {
+  it("keeps the error short and says there is more", () => {
+    expect(toolFailure("one\ntwo\nthree\nfour")).toBe("one\ntwo\nthree…");
+  });
+
+  it("keeps a short error whole", () => {
+    expect(toolFailure("no such file")).toBe("no such file");
+  });
+
+  it("has nothing to say when the tool said nothing", () => {
+    expect(toolFailure("   ")).toBeNull();
+    expect(toolFailure(null)).toBeNull();
+  });
+});

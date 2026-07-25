@@ -19,6 +19,20 @@ export function pickFolder(
   });
 }
 
+export function pickImages(): Effect.Effect<string[], ShellError> {
+  return Effect.tryPromise({
+    catch: fail,
+    try: () =>
+      open({
+        filters: [
+          { extensions: ["png", "jpg", "jpeg", "gif", "webp"], name: "Images" },
+        ],
+        multiple: true,
+        title: "Attach images",
+      }),
+  }).pipe(Effect.map((picked) => picked ?? []));
+}
+
 export function revealInFinder(path: string): Effect.Effect<void, ShellError> {
   return Effect.tryPromise({
     catch: fail,
