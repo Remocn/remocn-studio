@@ -140,10 +140,10 @@
     @apply font-sans;
   }
   body {
-    @apply bg-background text-foreground;
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    @apply bg-background text-foreground;
   }
 }
 
@@ -160,8 +160,8 @@
   /* Native-feeling chrome: no text selection or browser context menu except
      where a component opts back in. */
   body {
-    user-select: none;
     cursor: default;
+    user-select: none;
   }
   input,
   textarea,

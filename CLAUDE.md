@@ -47,14 +47,72 @@ Shape of the prototype, as decided in #218:
 
 The lockfile is `bun.lock`; use bun.
 
-- `bun run build` — production build; **this is the typecheck** (`tsconfig.json`
-  is `noEmit`, and Next 16 no longer runs a linter on build). Emits the static
-  export to `out/`.
-- `bun tauri build` — unsigned `.app` bundle.
+- `bun run check` — formatter **and** linter in one pass, read-only. This is what
+  CI runs; it fails on violations rather than fixing them.
+- `bun run fix` — apply the fixes `check` reports.
+- `bun run typecheck` — `tsc --noEmit`. Keep this in the loop: Next 16 no longer
+  lints on build, and it is the only gate over `components/ui/**`, where the
+  linter is deliberately off.
+- `bun run test` — Vitest, single run. `test:watch` and `test:coverage` also exist.
+- `bun run build` — Next static export into `out/`. Needs network on a cold cache
+  (fonts are self-hosted at build time).
+- `bun tauri build` — unsigned `.app` bundle. `--no-bundle` compiles without
+  packaging; `--bundles app` skips the DMG.
 - `bunx shadcn@latest add <component>` — add UI components (config in
   `components.json`).
+- `bun run changeset` — record a change for the next release (see Releases).
 
-There is no test runner, linter, or formatter configured.
+### Linting and formatting
+
+[Ultracite](https://www.ultracite.ai/) over Biome; config in `biome.jsonc`,
+which extends `ultracite/biome/{core,next,react}`. Two things about it are
+load-bearing:
+
+- **`repos/` is force-ignored** (`!!repos`). Without it `ultracite init` walks
+  into the vendored checkouts — it reformatted 42 `tsconfig.json` files inside
+  `repos/effect` on first run.
+- **The linter is off for `components/ui/**` and `hooks/use-mobile.ts`**, which
+  are `shadcn add` output we do not author and that any re-add overwrites; 90 of
+  93 findings on first run were there. Formatting stays on. `recommended: false`
+  does **not** work as a blanket in that override — the ultracite presets enable
+  rules by name and they survive it. `typecheck` is the real net for that
+  directory, and it earns its keep: the generator shipped duplicated
+  `components={{…}}` in `calendar.tsx` and duplicated `render={…}` in
+  `pagination.tsx`, both TS17001, and a duplicate JSX attribute silently discards
+  the earlier one.
+
+### Tests
+
+Vitest + React Testing Library + jsdom (`vitest.config.mts`). The `@/*` alias
+resolves natively via `resolve.tsconfigPaths` — do not add `vite-tsconfig-paths`,
+Vite 7 warns that it is redundant.
+
+**jsdom is not a Tauri webview.** There is no `window.__TAURI_INTERNALS__`, so
+any `invoke()` that reaches the real transport throws. Tests touching IPC must
+install a fake with `mockIPC` from `@tauri-apps/api/mocks`; `vitest.setup.ts`
+calls `clearMocks()` after each test so one test's fake cannot leak into the
+next. `app/page.test.tsx` is the worked example.
+
+## Releases
+
+Version lives in **one** place: `package.json`. `src-tauri/tauri.conf.json` sets
+`"version": "../package.json"`, which Tauri resolves at build time, so there is
+no version sync step and `src-tauri/Cargo.toml`'s version never reaches the
+bundle.
+
+Changesets drives versioning and the changelog — not publishing; the package is
+private, and `privatePackages: { version, tag }` in `.changeset/config.json` is
+what makes it work on a private package at all.
+
+1. `bun run changeset` to record what changed.
+2. On push to `main`, `.github/workflows/publish.yml` opens/refreshes a
+   "Version Packages" PR that bumps `package.json` and writes `CHANGELOG.md`.
+3. Merging that PR is the decision to release; the action pushes a `v<version>` tag.
+4. The tag triggers the macOS build (Apple silicon + Intel) and publishes a
+   **draft** GitHub release with the bundles attached.
+
+The version script is named `version:packages`, not `version`, because npm and
+bun treat a `version` script as an `npm version` lifecycle hook, which recurses.
 
 ## Architecture
 

@@ -1,0 +1,118 @@
+name: publish
+
+# Two phases, deliberately split.
+#
+#   1. push to main  → Changesets opens/refreshes a "Version Packages" PR that
+#      bumps package.json and writes CHANGELOG.md from the .changeset/*.md files.
+#      Merging that PR is the act of deciding to release; the action then pushes
+#      a `v<version>` tag.
+#   2. push of v*    → build macOS and publish the GitHub release with the
+#      artifacts attached.
+#
+# Nothing is published to npm — the package is private. Changesets is used only
+# for versioning, changelog and tagging (`privatePackages` in
+# .changeset/config.json enables that for a private package).
+#
+# The app version lives in ONE place: `package.json`. `src-tauri/tauri.conf.json`
+# sets `"version": "../package.json"`, which Tauri resolves at build time, so
+# Changesets bumping package.json is enough — there is no version sync step and
+# Cargo.toml's version does not reach the bundle.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: version PR
+    if: startsWith(github.ref, 'refs/heads/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Changesets needs history to work out what changed since the base branch.
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - uses: changesets/action@v1
+        with:
+          # Named `version:packages`, not `version`: npm and bun treat a `version`
+          # script as a lifecycle hook for `npm version`, which would recurse.
+          version-script: bun run version:packages
+          commit-message: "chore: version packages"
+          pr-title: "chore: version packages"
+          # The release itself is created by the tag-triggered job below, which is
+          # the only place that has the built artifacts to attach.
+          create-github-releases: false
+          push-git-tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-macos:
+    name: macOS ${{ matrix.label }}
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            label: Apple silicon
+          - target: x86_64-apple-darwin
+            label: Intel
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: ${{ matrix.target }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # tauri-action runs `beforeBuildCommand` (`bun run build`) itself, producing
+      # the Next static export in `out/` before compiling the Rust binary.
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: remocn studio ${{ github.ref_name }}
+          releaseBody: |
+            Unsigned macOS build — see CHANGELOG.md for what changed.
+
+            macOS will refuse to open this on first launch because it is not
+            signed or notarized: right-click the app and choose Open, or run
+            `xattr -dr com.apple.quarantine /Applications/remocn-studio.app`.
+          releaseDraft: true
+          prerelease: false
+          args: --target ${{ matrix.target }}
+          # Nothing here is signed, so there are no updater signatures to publish.
+          uploadUpdaterJson: false

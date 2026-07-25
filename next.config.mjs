@@ -9,11 +9,11 @@ const internalHost = process.env.TAURI_DEV_HOST || "localhost";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
+  assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
   images: {
     unoptimized: true,
   },
-  assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
+  output: "export",
   turbopack: {
     // Pinned explicitly: an unrelated lockfile sits above this repo in the
     // filesystem, and Turbopack's root inference would otherwise walk up to it.

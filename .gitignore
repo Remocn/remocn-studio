@@ -16,6 +16,9 @@ out
 next-env.d.ts
 .turbo
 
+# tsc --noEmit with "incremental": true
+*.tsbuildinfo
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

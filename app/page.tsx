@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 // Placeholder shell. The real three-pane layout (sessions | chat | preview)
@@ -24,7 +24,7 @@ export default function Page() {
   return (
     <main className="flex h-full flex-col items-center justify-center gap-6 p-8">
       <div className="space-y-1 text-center">
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+        <h1 className="font-heading font-semibold text-2xl tracking-tight">
           remocn studio
         </h1>
         <p className="text-muted-foreground text-sm">
@@ -34,16 +34,16 @@ export default function Page() {
 
       <Button onClick={ping}>Ping the Rust core</Button>
 
-      {pong && (
-        <p data-selectable className="text-muted-foreground font-mono text-xs">
+      {pong ? (
+        <p className="font-mono text-muted-foreground text-xs" data-selectable>
           {pong}
         </p>
-      )}
-      {error && (
-        <p data-selectable className="text-destructive font-mono text-xs">
+      ) : null}
+      {error ? (
+        <p className="font-mono text-destructive text-xs" data-selectable>
           IPC failed: {error}
         </p>
-      )}
+      ) : null}
     </main>
   );
 }

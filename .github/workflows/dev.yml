@@ -1,0 +1,65 @@
+name: dev
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch makes the in-flight run pointless.
+concurrency:
+  group: dev-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: format · lint · types · tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # `ultracite check` is formatter *and* linter in one pass (Biome under the
+      # hood) and never writes files, so a violation fails the job instead of
+      # being silently corrected. Run `bun run fix` locally to resolve.
+      - name: Format and lint
+        run: bun run check
+
+      # The project has no separate typecheck in the app build path: Next 16
+      # stopped running a linter on build, and `tsconfig.json` is `noEmit`. This
+      # is the step that catches type errors — including the ones the shadcn
+      # generator has shipped in `components/ui/**`, where the linter is off.
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Tests
+        run: bun run test
+
+  # Kept separate: the frontend gates above are fast and should report on their
+  # own, while this proves the static export Tauri actually ships still builds.
+  # `next build` self-hosts Google fonts at build time, so this step needs
+  # network access.
+  build:
+    name: static export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build static export
+        run: bun run build

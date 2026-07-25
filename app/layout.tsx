@@ -1,26 +1,30 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Manrope, Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
+import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
-const manropeHeading = Manrope({subsets:['latin'],variable:'--font-heading'});
+const manropeHeading = Manrope({
+  subsets: ["latin"],
+  variable: "--font-heading",
+});
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 const manrope = Manrope({
-  variable: "--font-manrope",
   subsets: ["latin"],
+  variable: "--font-manrope",
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
+  description:
+    "Build Remotion videos with Claude, without touching a terminal.",
   title: "remocn studio",
-  description: "Build Remotion videos with Claude, without touching a terminal.",
 };
 
 export default function RootLayout({
@@ -31,7 +35,11 @@ export default function RootLayout({
   return (
     // `suppressHydrationWarning` is required by next-themes: it writes the
     // theme class onto <html> before React hydrates.
-    <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable, manropeHeading.variable)}>
+    <html
+      className={cn("font-sans", geist.variable, manropeHeading.variable)}
+      lang="en"
+      suppressHydrationWarning
+    >
       <body className={cn(manrope.variable, geistMono.variable, "antialiased")}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
