@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import { useVisibleSessions } from "@/hooks/use-visible-sessions";
+import { statusOf, type TurnState } from "@/lib/studio/turns";
 import { cn } from "@/lib/utils";
 import type { HistorySession, Project } from "@/shared/ipc";
 import { ProjectMenu } from "./project-menu";
@@ -19,24 +20,24 @@ export function ProjectGroup({
   activeSessionId,
   commands,
   isExpanded,
-  isThinking,
   onNewSession,
   onRemoveSession,
   onSelectSession,
   onToggle,
   project,
   sessions,
+  turns,
 }: {
   activeSessionId: string | null;
   commands: ProjectCommands;
   isExpanded: boolean;
-  isThinking: boolean;
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onToggle: (event: MouseEvent<HTMLButtonElement>) => void;
   project: Project;
   sessions: readonly HistorySession[];
+  turns: ReadonlyMap<string, TurnState>;
 }) {
   const { hidden, showAll, visible } = useVisibleSessions(sessions);
   const panelId = `project-${project.id}`;
@@ -106,10 +107,11 @@ export function ProjectGroup({
             <li key={session.id}>
               <SessionItem
                 isActive={session.id === activeSessionId}
-                isThinking={isThinking && session.id === activeSessionId}
                 onRemove={onRemoveSession}
                 onSelect={onSelectSession}
                 session={session}
+                status={statusOf(turns.get(session.id))}
+                unread={turns.get(session.id)?.unread ?? false}
               />
             </li>
           ))}

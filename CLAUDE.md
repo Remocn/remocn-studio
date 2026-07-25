@@ -36,7 +36,9 @@ Shape of the prototype, as decided in #218:
 - **Claude access via `@anthropic-ai/claude-agent-sdk`** inside a bun sidecar,
   using the Pro/Max subscription of the already-logged-in Claude Code. No API
   key, no custom OAuth.
-- **Three panes:** sessions | chat | preview, exactly one active session.
+- **Three panes:** projects | chat | preview. Projects are rows and sessions hang
+  under them; turns keep running when you look away (#235 supersedes the original
+  "sessions pane, exactly one active session").
 - **Own SQLite history** — the CLI transcript format is not a public contract.
 - **Permissions split:** file tools inside the opened folder run automatically;
   Bash and any path outside the folder raise an Allow/Deny card.
@@ -347,7 +349,21 @@ public contract and would break the left pane on any CLI update. Only
   empty. The `history.*` methods report their errors normally.
 - **Migrations are `PRAGMA user_version`** against `MIGRATIONS` in
   `sidecar/history/migrations.ts` — one array entry per version, applied in one
-  transaction. The schema *will* change; adding an entry is the whole ceremony.
+  transaction. The schema *will* change; adding an entry is the whole ceremony. A
+  step is a SQL string or a function over the driver, because migration 2 has to
+  resolve symlinks and take a basename to turn every `session.folder` into a
+  `project` row, and SQL can do neither. That migration rebuilds `session` around
+  `project_id`, which is why `migrate` turns **foreign keys off** around its
+  transaction: with them on, `DROP TABLE session` runs an implicit delete and the
+  cascade takes every `block` with it. `PRAGMA foreign_key_check` before `COMMIT`
+  is what proves it did not.
+- **A folder is a row.** `project (id, path UNIQUE, name, …)` and `path` is
+  canonical — `realpathSync` plus `resolve`, so the same folder opened twice,
+  symlink or not, is one project rather than two histories. Sessions cascade from
+  it and blocks from them, so removing a project is one `DELETE` and never touches
+  the folder on disk. A project whose folder is gone keeps its row: `missing` is
+  computed at read time with `existsSync`, and the sidecar refuses to start a turn
+  in it rather than handing the SDK a `cwd` that is not there.
 - **`bun:sqlite` cannot be imported by the test suite** — Vitest's workers run
   under Node, which has no `bun:` loader — so the store is written against a
   three-method `SqlDriver`. Production binds it to `bun:sqlite` in
@@ -357,13 +373,36 @@ public contract and would break the left pane on any CLI update. Only
   Node built-ins, and `vitest.setup.ts` skips its DOM teardown when there is no
   `window`.
 
-The pane on top of it: sessions newest first, selecting one loads its blocks and
-rebinds the agent to *that* session's folder, and switching stops the running
-turn — the chat pane is keyed on a token that only an explicit select or New
-changes, so a remount is the interrupt. A session row is created by the first
-turn and arrives in the webview as the `history` chunk at the head of that turn's
-stream, which is why the list can show a brand-new session without a round trip
-and without racing the turn that created it.
+The pane on top of it: projects ordered by their most recent session — that
+ordering is `project.list`'s `ORDER BY`, not the webview's — sessions newest first
+inside each, expansion persisted in `settings.json`. A session row is created by
+the first turn and arrives in the webview as the `history` chunk at the head of
+that turn's stream, which is why the list can show a brand-new session without a
+round trip and without racing the turn that created it. The id in that row is one
+the *webview* minted and sent, so a turn has a key from the moment it starts
+rather than from the moment the sidecar answers.
+
+### Turns run in the provider, not in the pane
+
+`hooks/use-turns.ts` holds a map keyed by that id: entries, the running `Fiber`,
+the pending permission queue. Switching sessions is a read from another key, so
+nothing is interrupted — where the chat pane used to be keyed on a token and a
+remount *was* the cancel, cancellation is now `stopTurn`, said out loud.
+
+- **The open session is a ref, not a prop.** `markOpen` tells the store which key
+  is on screen; a turn that ends anywhere else sets `unread`, which the row shows
+  as a dot until you open it. Status per row — running, waiting on a permission,
+  failed — is derived from the same map by `statusOf`, and none of it is stored.
+- **A permission belongs to its turn, not to the screen.** A background session
+  that asks marks its row and keeps its own composer locked; the card is answered
+  when you open that session. The gate denies anything unanswered for ten minutes,
+  because with background turns "nobody is looking at this card" is the normal
+  case and a held card holds a `claude` process open.
+- **Quitting asks first.** The Rust core prevents both `CloseRequested` and
+  `ExitRequested` and emits `app://quit-requested`; the webview answers by
+  invoking `quit_studio` immediately when nothing is in flight, or after the
+  confirmation when something is. The flag that lets the second attempt through
+  lives in Rust, so `app.exit(0)` cannot deadlock against its own guard.
 
 ### The preview
 
@@ -443,7 +482,7 @@ lib/                  cn helper, error formatting, lib/studio/* clients
 preview/              the entry the *project's* webpack compiles instead of Studio's UI
 shared/               ipc.ts: the typed contract; transcript.ts: the one fold
 sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
-sidecar/history/      driver seam, migrations, store, per-turn recorder
+sidecar/history/      driver seam, migrations, project and session stores, recorder
 sidecar/preview/      the --preview-host child: project resolution, webpack watch, server
 src-tauri/            Rust core (Tauri v2), including the sidecar supervisor
 public/               static assets

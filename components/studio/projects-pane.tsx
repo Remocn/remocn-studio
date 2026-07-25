@@ -25,6 +25,7 @@ import {
 import { useNewProject } from "@/hooks/use-new-project";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ProjectGroup as Group } from "@/lib/studio/groups";
+import type { TurnState } from "@/lib/studio/turns";
 import { NewProjectDialog } from "./new-project-dialog";
 import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { ProjectGroup } from "./project-group";
@@ -40,7 +41,6 @@ export function ProjectsPane() {
     expandedProjects,
     groups,
     isLoadingProjects,
-    isThinking,
     onNewSession,
     onRemoveSession,
     onSelectSession,
@@ -52,6 +52,7 @@ export function ProjectsPane() {
     removeProject,
     renameProject,
     sessionsError,
+    turns,
   } = useStudio();
 
   const newProject = useNewProject(createProject);
@@ -102,13 +103,13 @@ export function ProjectsPane() {
           expanded={expandedProjects}
           groups={groups}
           isLoading={isLoadingProjects}
-          isThinking={isThinking}
           onNewSession={onNewSession}
           onOpenFolder={openFolder}
           onRemoveSession={onRemoveSession}
           onRetry={reloadProjects}
           onSelectSession={onSelectSession}
           onToggle={onToggleProject}
+          turns={turns}
         />
 
         {actionError === null ? null : (
@@ -130,13 +131,13 @@ function ProjectsBody({
   expanded,
   groups,
   isLoading,
-  isThinking,
   onNewSession,
   onOpenFolder,
   onRemoveSession,
   onRetry,
   onSelectSession,
   onToggle,
+  turns,
 }: {
   activeSessionId: string | null;
   commands: ProjectCommands;
@@ -144,13 +145,13 @@ function ProjectsBody({
   expanded: ReadonlySet<string>;
   groups: readonly Group[];
   isLoading: boolean;
-  isThinking: boolean;
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onOpenFolder: () => void;
   onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onRetry: () => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onToggle: (event: MouseEvent<HTMLButtonElement>) => void;
+  turns: ReadonlyMap<string, TurnState>;
 }) {
   if (error !== null) {
     return (
@@ -204,13 +205,13 @@ function ProjectsBody({
             activeSessionId={activeSessionId}
             commands={commands}
             isExpanded={expanded.has(group.project.id)}
-            isThinking={isThinking}
             onNewSession={onNewSession}
             onRemoveSession={onRemoveSession}
             onSelectSession={onSelectSession}
             onToggle={onToggle}
             project={group.project}
             sessions={group.sessions}
+            turns={turns}
           />
         </li>
       ))}

@@ -4,6 +4,7 @@ export const SIDECAR_PROTOCOL = 7;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
+export const QUIT_REQUESTED_EVENT = "app://quit-requested";
 
 export const HOST_PID_ENV = "REMOCN_STUDIO_HOST_PID";
 export const DATA_DIR_ENV = "REMOCN_STUDIO_DATA_DIR";

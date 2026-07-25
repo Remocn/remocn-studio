@@ -8,16 +8,14 @@ import type { HistorySession } from "@/shared/ipc";
 
 export interface StudioSessions {
   activeSession: HistorySession | null;
+  draftId: string;
   forgetSessionsOf: (projectId: string) => void;
   isLoadingSessions: boolean;
-  isThinking: boolean;
   onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
   openedSession: HistorySession | null;
   reloadSessions: () => void;
   rememberSession: (session: HistorySession) => void;
-  reportThinking: (isThinking: boolean) => void;
   selectSession: (session: HistorySession) => void;
-  sessionKey: string;
   sessions: readonly HistorySession[];
   sessionsError: string | null;
   startSession: () => void;
@@ -27,10 +25,9 @@ export function useSessions(): StudioSessions {
   const [sessions, setSessions] = useState<readonly HistorySession[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openedId, setOpenedId] = useState<string | null>(null);
-  const [sessionKey, setSessionKey] = useState(() => crypto.randomUUID());
+  const [draftId, setDraftId] = useState(() => crypto.randomUUID());
   const [sessionsError, setSessionsError] = useState<string | null>(null);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
-  const [isThinking, setIsThinking] = useState(false);
 
   const reloadSessions = useCallback(() => {
     setIsLoadingSessions(true);
@@ -56,13 +53,12 @@ export function useSessions(): StudioSessions {
   const startSession = useCallback(() => {
     setActiveId(null);
     setOpenedId(null);
-    setSessionKey(crypto.randomUUID());
+    setDraftId(crypto.randomUUID());
   }, []);
 
   const selectSession = useCallback((session: HistorySession) => {
     setActiveId(session.id);
     setOpenedId(session.id);
-    setSessionKey(crypto.randomUUID());
   }, []);
 
   const rememberSession = useCallback((session: HistorySession) => {
@@ -115,31 +111,28 @@ export function useSessions(): StudioSessions {
   return useMemo(
     () => ({
       activeSession: sessions.find((row) => row.id === activeId) ?? null,
+      draftId,
       forgetSessionsOf,
       isLoadingSessions,
-      isThinking,
       onRemoveSession,
       openedSession: sessions.find((row) => row.id === openedId) ?? null,
       reloadSessions,
       rememberSession,
-      reportThinking: setIsThinking,
       selectSession,
-      sessionKey,
       sessions,
       sessionsError,
       startSession,
     }),
     [
       activeId,
+      draftId,
       forgetSessionsOf,
       isLoadingSessions,
-      isThinking,
       onRemoveSession,
       openedId,
       reloadSessions,
       rememberSession,
       selectSession,
-      sessionKey,
       sessions,
       sessionsError,
       startSession,

@@ -11,6 +11,7 @@ import { layoutStorage } from "@/lib/studio/settings";
 import { ChatPane } from "./chat-pane";
 import { PreviewPane } from "./preview-pane";
 import { ProjectsPane } from "./projects-pane";
+import { QuitGuard } from "./quit-guard";
 import { StudioProvider } from "./studio-provider";
 import { TitleBar } from "./title-bar";
 
@@ -21,6 +22,7 @@ export function AppShell() {
     <StudioProvider>
       <TooltipProvider delay={500}>
         <ShellLayout />
+        <QuitGuard />
       </TooltipProvider>
     </StudioProvider>
   );

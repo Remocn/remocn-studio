@@ -12,6 +12,7 @@ import {
 } from "@/hooks/use-project-actions";
 import { type StudioProjects, useProjects } from "@/hooks/use-projects";
 import { type StudioSessions, useSessions } from "@/hooks/use-sessions";
+import { type Turns, useTurns } from "@/hooks/use-turns";
 import { groupSessions, type ProjectGroup } from "@/lib/studio/groups";
 import type { StudioSettings } from "@/lib/studio/settings";
 import type { HistorySession, ProjectDraft } from "@/shared/ipc";
@@ -20,7 +21,8 @@ export interface Workspace
   extends StudioProjects,
     StudioSessions,
     ExpandedProjects,
-    ProjectActions {
+    ProjectActions,
+    Turns {
   groups: readonly ProjectGroup[];
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -31,6 +33,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
   const projects = useProjects(settings);
   const sessions = useSessions();
   const actions = useProjectActions();
+  const turns = useTurns(sessions.rememberSession);
   const expansion = useExpandedProjects(
     settings,
     projects.activeProject?.id ?? null
@@ -40,6 +43,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
     projects;
   const { forgetSessionsOf, selectSession, startSession } = sessions;
   const { expandProject } = expansion;
+  const { stopTurn } = turns;
   const rows = sessions.sessions;
   const pickFolder = projects.openFolder;
   const create = actions.createProject;
@@ -102,6 +106,12 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
 
   const removeProject = useCallback(
     async (projectId: string) => {
+      for (const row of rows) {
+        if (row.projectId === projectId) {
+          stopTurn(row.id);
+        }
+      }
+
       const removed = await remove(projectId);
       if (removed) {
         forgetSessionsOf(projectId);
@@ -109,7 +119,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       }
       return removed;
     },
-    [forgetProject, forgetSessionsOf, remove]
+    [forgetProject, forgetSessionsOf, remove, rows, stopTurn]
   );
 
   const openSession = useCallback(
@@ -138,6 +148,16 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
     [startSessionIn]
   );
 
+  const removeSession = sessions.onRemoveSession;
+
+  const onRemoveSession = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      stopTurn(event.currentTarget.value);
+      removeSession(event);
+    },
+    [removeSession, stopTurn]
+  );
+
   const groups = useMemo(
     () => groupSessions(projects.projects, rows),
     [projects.projects, rows]
@@ -149,9 +169,11 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       ...sessions,
       ...actions,
       ...expansion,
+      ...turns,
       createProject,
       groups,
       onNewSession,
+      onRemoveSession,
       onSelectSession,
       openFolder,
       relocateProject,
@@ -166,6 +188,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       expansion,
       groups,
       onNewSession,
+      onRemoveSession,
       onSelectSession,
       openFolder,
       openSession,
@@ -175,6 +198,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       renameProject,
       sessions,
       startSessionIn,
+      turns,
     ]
   );
 }

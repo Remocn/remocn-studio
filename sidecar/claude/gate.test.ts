@@ -72,6 +72,15 @@ describe("makeGate", () => {
     expect(await Effect.runPromise(Fiber.join(waiting))).toBe("deny");
   });
 
+  it("denies a card nobody ever answered", async () => {
+    const gate = makeGate("10 millis");
+
+    const waiting = Effect.runFork(gate.wait(ask("p1")));
+
+    expect(await Effect.runPromise(Fiber.join(waiting))).toBe("deny");
+    expect(await Effect.runPromise(gate.answer("p1", "allow"))).toBe(false);
+  });
+
   it("leaves another turn's cards alone", async () => {
     const gate = makeGate();
 

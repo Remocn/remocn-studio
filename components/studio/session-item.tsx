@@ -1,25 +1,34 @@
 "use client";
 
-import { Trash2Icon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  CircleQuestionMarkIcon,
+  Trash2Icon,
+} from "lucide-react";
 import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { DotmSquare1 } from "@/components/ui/dotm-square-1";
+import type { SessionStatus } from "@/lib/studio/turns";
 import { cn } from "@/lib/utils";
 import type { HistorySession } from "@/shared/ipc";
 
 export function SessionItem({
   isActive,
-  isThinking,
   onRemove,
   onSelect,
   session,
+  status,
+  unread,
 }: {
   isActive: boolean;
-  isThinking: boolean;
   onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelect: (event: MouseEvent<HTMLButtonElement>) => void;
   session: HistorySession;
+  status: SessionStatus;
+  unread: boolean;
 }) {
+  const busy = status === "running" || status === "waiting";
+
   return (
     <div className="group/session relative">
       <Button
@@ -38,14 +47,9 @@ export function SessionItem({
         </span>
       </Button>
 
-      {isThinking ? (
-        <DotmSquare1
-          ariaLabel={`${session.title} is running`}
-          className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-primary transition-opacity group-hover/session:opacity-0"
-          dotSize={2}
-          size={16}
-        />
-      ) : (
+      <Marker session={session} status={status} unread={unread} />
+
+      {busy ? null : (
         <Button
           aria-label={`Delete ${session.title}`}
           className="absolute top-1/2 right-1 -translate-y-1/2 opacity-0 focus-visible:opacity-100 group-hover/session:opacity-100"
@@ -59,4 +63,60 @@ export function SessionItem({
       )}
     </div>
   );
+}
+
+function Marker({
+  session,
+  status,
+  unread,
+}: {
+  session: HistorySession;
+  status: SessionStatus;
+  unread: boolean;
+}) {
+  const className =
+    "pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 transition-opacity group-hover/session:opacity-0";
+
+  if (status === "running") {
+    return (
+      <DotmSquare1
+        ariaLabel={`${session.title} is running`}
+        className={cn(className, "text-primary")}
+        dotSize={2}
+        size={16}
+      />
+    );
+  }
+
+  if (status === "waiting") {
+    return (
+      <CircleQuestionMarkIcon
+        aria-label={`${session.title} is waiting for an answer`}
+        className={cn(className, "size-3.5 text-primary")}
+        role="status"
+      />
+    );
+  }
+
+  if (status === "failed") {
+    return (
+      <CircleAlertIcon
+        aria-label={`${session.title} failed`}
+        className={cn(className, "size-3.5 text-destructive")}
+        role="status"
+      />
+    );
+  }
+
+  if (unread) {
+    return (
+      <span
+        aria-label={`${session.title} has news`}
+        className={cn(className, "size-1.5 rounded-full bg-primary")}
+        role="status"
+      />
+    );
+  }
+
+  return null;
 }

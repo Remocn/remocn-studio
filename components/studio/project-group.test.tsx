@@ -3,9 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { ProjectGroup } from "@/components/studio/project-group";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
+import { IDLE_TURN, type TurnState } from "@/lib/studio/turns";
 import type { HistorySession, Project } from "@/shared/ipc";
 
 const SHOW_MORE = /Show \d+ more/;
+const OTHER_ROW = /Session 0/;
 
 const PROJECT: Project = {
   createdAt: 0,
@@ -40,6 +42,7 @@ function renderGroup(
     onToggle?: () => void;
     project?: Project;
     rows?: HistorySession[];
+    turns?: ReadonlyMap<string, TurnState>;
   } = {}
 ) {
   return render(
@@ -48,13 +51,13 @@ function renderGroup(
         activeSessionId={null}
         commands={commands}
         isExpanded={shape.isExpanded ?? true}
-        isThinking={false}
         onNewSession={shape.onNewSession ?? vi.fn()}
         onRemoveSession={vi.fn()}
         onSelectSession={vi.fn()}
         onToggle={shape.onToggle ?? vi.fn()}
         project={shape.project ?? PROJECT}
         sessions={shape.rows ?? sessions(2)}
+        turns={shape.turns ?? new Map()}
       />
     </TooltipProvider>
   );
@@ -95,6 +98,17 @@ describe("ProjectGroup", () => {
     expect(
       screen.queryByRole("button", { name: SHOW_MORE })
     ).not.toBeInTheDocument();
+  });
+
+  it("marks a session whose turn is running in the background", () => {
+    renderGroup({
+      turns: new Map([["session-1", { ...IDLE_TURN, isRunning: true }]]),
+    });
+
+    expect(
+      screen.getByRole("status", { name: "Session 1 is running" })
+    ).toBeVisible();
+    expect(screen.queryByRole("status", { name: OTHER_ROW })).toBeNull();
   });
 
   it("says a project has no sessions rather than showing nothing", () => {
