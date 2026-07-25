@@ -38,7 +38,7 @@ describe("diffLines", () => {
     expect(diffLines("a", "b").map((line) => line.id)).toEqual([0, 1]);
   });
 
-  it("falls back to a coarse diff instead of a huge table", () => {
+  it("keeps a large file as context around a one-line append", () => {
     const before = Array.from({ length: 600 }, (_, i) => `line ${i}`).join(
       "\n"
     );
@@ -46,7 +46,9 @@ describe("diffLines", () => {
 
     const lines = diffLines(before, after);
 
-    expect(lines).toHaveLength(1201);
-    expect(lines.some((line) => line.kind === "context")).toBe(false);
+    expect(lines).toHaveLength(601);
+    expect(lines.filter((line) => line.kind !== "context")).toEqual([
+      { id: 600, kind: "added", text: "last" },
+    ]);
   });
 });

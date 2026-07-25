@@ -92,12 +92,20 @@ const subscribe = <A>(
       }),
   });
 
+const unsubscribe = (unlisten: UnlistenFn) =>
+  Effect.ignore(
+    Effect.tryPromise({
+      catch: fail,
+      try: () => Promise.resolve(unlisten()),
+    })
+  );
+
 export function watchSidecarStatus(
   onStatus: (status: SidecarStatus) => void
 ): Effect.Effect<void, SidecarError, Scope.Scope> {
   return Effect.acquireRelease(
     subscribe(SIDECAR_STATUS_EVENT, decodeSidecarStatus, onStatus),
-    (unlisten) => Effect.ignore(Effect.try(() => unlisten()))
+    unsubscribe
   ).pipe(Effect.asVoid);
 }
 
@@ -106,6 +114,6 @@ export function watchSidecarNotifications(
 ): Effect.Effect<void, SidecarError, Scope.Scope> {
   return Effect.acquireRelease(
     subscribe(SIDECAR_NOTIFY_EVENT, decodeSidecarNotification, onNotify),
-    (unlisten) => Effect.ignore(Effect.try(() => unlisten()))
+    unsubscribe
   ).pipe(Effect.asVoid);
 }
