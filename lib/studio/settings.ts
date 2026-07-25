@@ -1,4 +1,5 @@
-import { load, type Store } from "@tauri-apps/plugin-store";
+import { load } from "@tauri-apps/plugin-store";
+import { Effect } from "effect";
 import type { LayoutStorage } from "react-resizable-panels";
 
 const SETTINGS_FILE = "settings.json";
@@ -7,50 +8,39 @@ const LAYOUT_KEY_PREFIX = "layout:";
 
 const cache = new Map<string, string>();
 
-let store: Store | null = null;
-let opening: Promise<Store | null> | null = null;
-
-function openStore(): Promise<Store | null> {
-  if (store) {
-    return Promise.resolve(store);
-  }
-  opening ??= load(SETTINGS_FILE)
-    .then((opened) => {
-      store = opened;
-      return opened;
-    })
-    .catch(() => {
-      opening = null;
-      return null;
-    });
-  return opening;
-}
+const openStore = Effect.runSync(
+  Effect.cached(Effect.tryPromise(() => load(SETTINGS_FILE)))
+);
 
 export interface StudioSettings {
   projectFolder: string | null;
 }
 
-export async function hydrateSettings(): Promise<StudioSettings> {
-  const opened = await openStore();
-  cache.clear();
-
-  if (opened) {
-    for (const [key, value] of await opened.entries()) {
+export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
+  Effect.flatMap((store) => Effect.tryPromise(() => store.entries())),
+  Effect.orElseSucceed((): [string, unknown][] => []),
+  Effect.map((entries) => {
+    cache.clear();
+    for (const [key, value] of entries) {
       if (typeof value === "string") {
         cache.set(key, value);
       }
     }
-  }
-
-  return { projectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null };
-}
+    return { projectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null };
+  })
+);
 
 function write(key: string, value: string): void {
   cache.set(key, value);
-
-  openStore()
-    .then((opened) => opened?.set(key, value))
-    .catch(() => undefined);
+  Effect.runFork(
+    Effect.ignore(
+      openStore.pipe(
+        Effect.flatMap((store) =>
+          Effect.tryPromise(() => store.set(key, value))
+        )
+      )
+    )
+  );
 }
 
 export function saveProjectFolder(folder: string): void {
