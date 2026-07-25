@@ -16,7 +16,6 @@ export function SessionItem({
 }: {
   isActive: boolean;
   isThinking: boolean;
-  now: number;
   onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelect: (event: MouseEvent<HTMLButtonElement>) => void;
   session: HistorySession;

@@ -132,8 +132,6 @@ function SessionsBody({
   }
 
   if (sessions.length > 0) {
-    const now = Date.now();
-
     return (
       <ol className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2">
         {sessions.map((session) => (
@@ -141,7 +139,6 @@ function SessionsBody({
             <SessionItem
               isActive={session.id === activeId}
               isThinking={isThinking && session.id === activeId}
-              now={now}
               onRemove={onRemove}
               onSelect={onSelect}
               session={session}

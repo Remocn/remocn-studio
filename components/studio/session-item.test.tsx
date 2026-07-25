@@ -20,7 +20,6 @@ function renderItem(shape: { isActive?: boolean; isThinking?: boolean } = {}) {
     <SessionItem
       isActive={shape.isActive ?? false}
       isThinking={shape.isThinking ?? false}
-      now={NOW}
       onRemove={vi.fn()}
       onSelect={vi.fn()}
       session={SESSION}
@@ -29,11 +28,11 @@ function renderItem(shape: { isActive?: boolean; isThinking?: boolean } = {}) {
 }
 
 describe("SessionItem", () => {
-  it("names the session and where it lives", () => {
+  it("names the session", () => {
     renderItem();
 
     expect(screen.getByRole("button", { name: ROW })).toHaveTextContent(
-      "my-video · 2m ago"
+      "A promo for the launch"
     );
   });
 
