@@ -6,9 +6,12 @@ import {
   type PermissionAction,
   permissionChoices,
   permissionTitle,
+  planText,
 } from "@/lib/studio/permission";
 import type { PendingPermission } from "@/lib/studio/turns";
+import type { SessionMode } from "@/shared/ipc";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Markdown } from "./markdown";
 
 export function PermissionCard({
   cwd,
@@ -16,11 +19,16 @@ export function PermissionCard({
   permission,
 }: {
   cwd: string | null;
-  onAnswer: (id: string, action: PermissionAction) => void;
+  onAnswer: (
+    id: string,
+    action: PermissionAction,
+    mode: SessionMode | null
+  ) => void;
   permission: PendingPermission;
 }) {
-  const card = usePermissionCard(permission.id, onAnswer);
-  const target = toolTarget(permission.input, cwd);
+  const card = usePermissionCard(permission, onAnswer);
+  const plan = permission.reason === "plan" ? planText(permission.input) : null;
+  const target = plan === null ? toolTarget(permission.input, cwd) : null;
 
   return (
     <Card
@@ -32,8 +40,16 @@ export function PermissionCard({
       <CardHeader>
         <CardTitle>
           {permissionTitle(permission.reason)}
-          <span className="text-muted-foreground"> {permission.name}</span>
+          {plan === null ? (
+            <span className="text-muted-foreground"> {permission.name}</span>
+          ) : null}
         </CardTitle>
+
+        {plan === null ? null : (
+          <div className="max-h-56 overflow-y-auto rounded-lg bg-muted/50 px-2.5 py-1.5">
+            <Markdown className="text-xs">{plan}</Markdown>
+          </div>
+        )}
 
         {target === null ? null : (
           <p className="wrap-break-word whitespace-pre-wrap rounded-lg bg-muted/50 px-2.5 py-1.5 font-mono text-foreground text-xs leading-relaxed">
@@ -47,10 +63,10 @@ export function PermissionCard({
           {permissionChoices(permission.reason).map((choice) => (
             <button
               className="-mx-1 flex items-baseline gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-muted"
-              key={choice.action}
+              key={choice.id}
               onClick={card.onChoose}
               type="button"
-              value={choice.action}
+              value={choice.id}
             >
               <span className="shrink-0 text-sm">{choice.label}</span>
               <span className="truncate text-muted-foreground text-xs">

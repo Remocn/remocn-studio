@@ -6,11 +6,13 @@ import {
   type ClaudeFailure,
   type ContextUsage,
   type Project,
+  type SessionMode,
   SIDECAR_PROTOCOL,
 } from "@/shared/ipc";
 import { eventsOf } from "./claude/events";
 import { failureFromText, failureOf } from "./claude/failure";
 import { makeGate, permissionGuard } from "./claude/gate";
+import { makeModeSwitch } from "./claude/mode";
 import { messages } from "./claude/session";
 import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
@@ -64,9 +66,10 @@ const located = (projectId: string) =>
 
 export const handlers: Handlers<HistoryStore | ProjectStore> = {
   "claude.permission": ({ params }) =>
-    Effect.map(gate.answer(params.id, params.decision), (matched) => ({
-      matched,
-    })),
+    Effect.map(
+      gate.answer(params.id, params.decision, params.mode),
+      (matched) => ({ matched })
+    ),
 
   "claude.prompt": ({ emit, log, params }) =>
     Effect.gen(function* () {
@@ -82,17 +85,31 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
         yield* emit({ session: recorder.session, type: "history" });
       }
 
+      const switcher = yield* makeModeSwitch();
+
+      const approved = (mode: SessionMode) =>
+        switcher.set(mode).pipe(
+          Effect.andThen(
+            store.setMode(params.historyId, mode).pipe(
+              Effect.flatMap((session) => emit({ session, type: "history" })),
+              Effect.catch((error) => log(`history: ${error.message}`))
+            )
+          )
+        );
+
       yield* Stream.runForEach(
         messages(params, {
           canUseTool: permissionGuard({
             cwd: project.path,
             emit,
             gate,
+            onApprove: approved,
             turnId,
           }),
           cwd: project.path,
           log: (line) => Effect.runSync(log(line)),
           onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
+          onMode: (apply) => Effect.runSync(switcher.bind(apply)),
           onStop: () => Effect.runSync(gate.abandon(turnId)),
         }),
         (message) =>
@@ -107,7 +124,7 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
             }
 
             yield* Effect.forEach(
-              eventsOf(message),
+              eventsOf(message, params.mode),
               (event) => Effect.andThen(emit(event), recorder.event(event)),
               { discard: true }
             );
@@ -132,6 +149,11 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
   "history.blocks": ({ params }) =>
     Effect.flatMap(HistoryStore, (store) =>
       store.blocks(params.sessionId)
+    ).pipe(Effect.mapError(unstored)),
+
+  "history.mode": ({ params }) =>
+    Effect.flatMap(HistoryStore, (store) =>
+      store.setMode(params.sessionId, params.mode)
     ).pipe(Effect.mapError(unstored)),
 
   "history.remove": ({ params }) =>

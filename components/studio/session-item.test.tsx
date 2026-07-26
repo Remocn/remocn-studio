@@ -11,6 +11,7 @@ const DELETE = /^Delete/;
 const SESSION: HistorySession = {
   createdAt: NOW - 7_200_000,
   id: "session-1",
+  mode: "auto",
   projectId: "project-1",
   sdkSessionId: "sdk-1",
   title: "A promo for the launch",

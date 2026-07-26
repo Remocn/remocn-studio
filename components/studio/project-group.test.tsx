@@ -29,6 +29,7 @@ function sessions(count: number): HistorySession[] {
   return Array.from({ length: count }, (_unused, index) => ({
     createdAt: 0,
     id: `session-${index}`,
+    mode: "auto",
     projectId: PROJECT.id,
     sdkSessionId: null,
     title: `Session ${index}`,

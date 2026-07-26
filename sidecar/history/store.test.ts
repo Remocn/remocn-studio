@@ -2,13 +2,14 @@
 import { DatabaseSync } from "node:sqlite";
 import { Effect, Exit } from "effect";
 import { describe, expect, it } from "vitest";
-import type { TranscriptEntry } from "@/shared/ipc";
+import type { SessionMode, TranscriptEntry } from "@/shared/ipc";
 import type { SqlDriver, SqlRow, SqlValue } from "@/sidecar/history/driver";
 import { MIGRATIONS, migrate, prepare } from "@/sidecar/history/migrations";
 import { make as makeProjects } from "@/sidecar/history/projects";
 import { broken, make } from "@/sidecar/history/store";
 
 const FOLDER = "/videos/promo";
+const MODE = "auto" as const;
 
 function nodeDriver(): SqlDriver {
   const db = new DatabaseSync(":memory:");
@@ -33,8 +34,11 @@ async function studio() {
   const history = make(driver);
   const project = await run(makeProjects(driver).open(FOLDER));
 
-  const open = (title: string, id = crypto.randomUUID()) =>
-    history.open({ id, projectId: project.id, title });
+  const open = (
+    title: string,
+    id = crypto.randomUUID(),
+    mode: SessionMode = MODE
+  ) => history.open({ id, mode, projectId: project.id, title });
 
   return { history, open, project };
 }
@@ -55,6 +59,38 @@ describe("migrate", () => {
     expect(driver.all("PRAGMA user_version").at(0)).toEqual({
       user_version: MIGRATIONS.length,
     });
+  });
+
+  it("leaves a session that predates the mode column in Auto", async () => {
+    const driver = nodeDriver();
+    prepare(driver);
+
+    driver.exec("PRAGMA foreign_keys = OFF");
+    for (const step of MIGRATIONS.slice(0, 2).flat()) {
+      if (typeof step === "string") {
+        driver.exec(step);
+      } else {
+        step(driver);
+      }
+    }
+    driver.exec("PRAGMA user_version = 2");
+    driver.exec("PRAGMA foreign_keys = ON");
+
+    driver.run(
+      `INSERT INTO project (id, path, name, created_at, updated_at)
+       VALUES ('p', ?, 'promo', 0, 0)`,
+      [FOLDER]
+    );
+    driver.run(
+      `INSERT INTO session (id, project_id, sdk_session_id, title, created_at, updated_at)
+       VALUES ('s', 'p', NULL, 'A promo', 0, 0)`
+    );
+
+    migrate(driver);
+
+    const [session] = await run(make(driver).sessions);
+    expect(session.mode).toBe("auto");
+    expect(session.title).toBe("A promo");
   });
 });
 
@@ -80,6 +116,49 @@ describe("HistoryStore", () => {
     expect(again.title).toBe("A promo");
     expect(again.createdAt).toBe(first.createdAt);
     expect(await run(history.sessions)).toHaveLength(1);
+  });
+
+  it("starts a session in the mode its first turn ran in", async () => {
+    const { open } = await studio();
+
+    const session = await run(open("A plan", crypto.randomUUID(), "plan"));
+
+    expect(session.mode).toBe("plan");
+  });
+
+  it("takes the mode of the turn that opened it again", async () => {
+    const { open } = await studio();
+
+    const first = await run(open("A promo", crypto.randomUUID(), "plan"));
+    const again = await run(open("A promo", first.id, "acceptEdits"));
+
+    expect(again.mode).toBe("acceptEdits");
+  });
+
+  it("changes a mode between turns without touching the transcript", async () => {
+    const { history, open } = await studio();
+    const session = await run(open("A promo"));
+    await run(
+      history.write({
+        entry: assistant("Building it."),
+        ordinal: 0,
+        sessionId: session.id,
+      })
+    );
+
+    const changed = await run(history.setMode(session.id, "plan"));
+
+    expect(changed.mode).toBe("plan");
+    expect(changed.updatedAt).toBe(session.updatedAt);
+    expect(await run(history.blocks(session.id))).toHaveLength(1);
+  });
+
+  it("refuses to change the mode of a session it never opened", async () => {
+    const { history } = await studio();
+
+    const exit = await Effect.runPromiseExit(history.setMode("nope", "plan"));
+
+    expect(Exit.isFailure(exit)).toBe(true);
   });
 
   it("remembers the SDK session id so a later turn can resume it", async () => {
@@ -227,7 +306,12 @@ describe("HistoryStore", () => {
     const { history } = await studio();
 
     const exit = await Effect.runPromiseExit(
-      history.open({ id: "s-1", projectId: "gone", title: "Orphan" })
+      history.open({
+        id: "s-1",
+        mode: MODE,
+        projectId: "gone",
+        title: "Orphan",
+      })
     );
 
     expect(Exit.isFailure(exit)).toBe(true);

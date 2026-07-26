@@ -37,6 +37,7 @@ function params(shape: Partial<PromptParams>): PromptParams {
     attachments: [],
     effort: null,
     historyId: crypto.randomUUID(),
+    mode: "auto",
     model: null,
     projectId: PROJECT_ID,
     prompt: "make a title card",
@@ -46,7 +47,7 @@ function params(shape: Partial<PromptParams>): PromptParams {
 }
 
 const TURN: ClaudeEvent[] = [
-  { model: "claude-opus-5", sessionId: "sdk-7", type: "session" },
+  { mode: "auto", model: "claude-opus-5", sessionId: "sdk-7", type: "session" },
   { text: "Writing ", type: "text" },
   { text: "the scene.", type: "text" },
   {

@@ -15,6 +15,7 @@ export interface StudioSessions {
   openedSession: HistorySession | null;
   reloadSessions: () => void;
   rememberSession: (session: HistorySession) => void;
+  replaceSession: (session: HistorySession) => void;
   selectSession: (session: HistorySession) => void;
   sessions: readonly HistorySession[];
   sessionsError: string | null;
@@ -69,6 +70,12 @@ export function useSessions(): StudioSessions {
     setActiveId((current) => current ?? session.id);
   }, []);
 
+  const replaceSession = useCallback((session: HistorySession) => {
+    setSessions((current) =>
+      current.map((row) => (row.id === session.id ? session : row))
+    );
+  }, []);
+
   const forgetSessionsOf = useCallback(
     (projectId: string) => {
       const open = sessions.some(
@@ -118,6 +125,7 @@ export function useSessions(): StudioSessions {
       openedSession: sessions.find((row) => row.id === openedId) ?? null,
       reloadSessions,
       rememberSession,
+      replaceSession,
       selectSession,
       sessions,
       sessionsError,
@@ -132,6 +140,7 @@ export function useSessions(): StudioSessions {
       openedId,
       reloadSessions,
       rememberSession,
+      replaceSession,
       selectSession,
       sessions,
       sessionsError,

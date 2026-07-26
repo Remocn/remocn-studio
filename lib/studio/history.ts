@@ -4,7 +4,11 @@ import {
   requestSidecar,
   type SidecarError,
 } from "@/lib/studio/sidecar";
-import type { HistorySession, TranscriptEntry } from "@/shared/ipc";
+import type {
+  HistorySession,
+  SessionMode,
+  TranscriptEntry,
+} from "@/shared/ipc";
 
 export const listSessions: Effect.Effect<
   readonly HistorySession[],
@@ -29,6 +33,21 @@ export function loadTranscript(
       id,
       method: "history.blocks",
       params: { sessionId },
+    });
+  });
+}
+
+export function saveSessionMode(
+  sessionId: string,
+  mode: SessionMode
+): Effect.Effect<HistorySession, SidecarError> {
+  return Effect.gen(function* () {
+    const id = yield* newRequestId;
+
+    return yield* requestSidecar({
+      id,
+      method: "history.mode",
+      params: { mode, sessionId },
     });
   });
 }

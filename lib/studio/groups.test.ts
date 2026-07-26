@@ -14,6 +14,7 @@ const project = (id: string): Project => ({
 const session = (id: string, projectId: string): HistorySession => ({
   createdAt: 0,
   id,
+  mode: "auto",
   projectId,
   sdkSessionId: null,
   title: id,

@@ -13,6 +13,7 @@ import type {
   HistorySession,
   PromptAttachment,
   PromptResult,
+  SessionMode,
 } from "@/shared/ipc";
 import { appendUser, fold } from "@/shared/transcript";
 
@@ -20,6 +21,7 @@ export interface StartTurn {
   attachments: readonly PromptAttachment[];
   effort: EffortLevel | null;
   historyId: string;
+  mode: SessionMode;
   model: string | null;
   projectId: string;
   prompt: string;
@@ -29,12 +31,14 @@ export interface Turns {
   answerTurn: (
     historyId: string,
     permissionId: string,
-    action: PermissionAction
+    action: PermissionAction,
+    mode: SessionMode | null
   ) => void;
   hasRunningTurns: boolean;
   loadTurn: (session: HistorySession) => void;
   markOpen: (historyId: string | null) => void;
   sendTurn: (input: StartTurn) => void;
+  setTurnMode: (historyId: string, mode: SessionMode) => void;
   stopTurn: (historyId: string) => void;
   turns: ReadonlyMap<string, TurnState>;
 }
@@ -80,6 +84,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       update(session.id, (turn) => ({
         ...turn,
         isLoading: true,
+        mode: session.mode,
         sdkSessionId: session.sdkSessionId,
       }));
 
@@ -105,6 +110,13 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
           )
         )
       );
+    },
+    [update]
+  );
+
+  const setTurnMode = useCallback(
+    (historyId: string, mode: SessionMode) => {
+      update(historyId, (turn) => ({ ...turn, mode }));
     },
     [update]
   );
@@ -143,6 +155,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
           attachments: input.attachments,
           effort: input.effort,
           historyId,
+          mode: input.mode,
           model: input.model,
           projectId: input.projectId,
           prompt: trimmed,
@@ -152,11 +165,16 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
           if (event.type === "session") {
             update(historyId, (current) => ({
               ...current,
+              mode: event.mode ?? current.mode,
               sdkSessionId: event.sessionId,
             }));
             return;
           }
           if (event.type === "history") {
+            update(historyId, (current) => ({
+              ...current,
+              mode: event.session.mode,
+            }));
             onSession(event.session);
             return;
           }
@@ -215,7 +233,12 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
   );
 
   const answerTurn = useCallback(
-    (historyId: string, permissionId: string, action: PermissionAction) => {
+    (
+      historyId: string,
+      permissionId: string,
+      action: PermissionAction,
+      mode: SessionMode | null
+    ) => {
       if (action === "cancel") {
         stopTurn(historyId);
         return;
@@ -229,7 +252,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       }));
 
       Effect.runFork(
-        answerPermission({ decision: action, id: permissionId }).pipe(
+        answerPermission({ decision: action, id: permissionId, mode }).pipe(
           Effect.catch((failure) =>
             Effect.sync(() =>
               update(historyId, (turn) => ({
@@ -256,9 +279,19 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       loadTurn,
       markOpen,
       sendTurn,
+      setTurnMode,
       stopTurn,
       turns,
     }),
-    [answerTurn, hasRunningTurns, loadTurn, markOpen, sendTurn, stopTurn, turns]
+    [
+      answerTurn,
+      hasRunningTurns,
+      loadTurn,
+      markOpen,
+      sendTurn,
+      setTurnMode,
+      stopTurn,
+      turns,
+    ]
   );
 }
