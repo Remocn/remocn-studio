@@ -45,6 +45,7 @@ export const MIGRATIONS: readonly (readonly Migration[])[] = [
     "CREATE INDEX session_by_recency ON session (updated_at DESC)",
     "CREATE INDEX session_by_project ON session (project_id)",
   ],
+  ["ALTER TABLE session ADD COLUMN mode TEXT NOT NULL DEFAULT 'auto'"],
 ];
 
 export function prepare(driver: SqlDriver): void {

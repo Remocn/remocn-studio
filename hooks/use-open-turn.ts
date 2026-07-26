@@ -8,15 +8,18 @@ import {
   type PendingPermission,
   type TurnState,
 } from "@/lib/studio/turns";
-import type {
-  ContextUsage,
-  EffortLevel,
-  HistorySession,
-  PromptAttachment,
-  TranscriptEntry,
+import {
+  type ContextUsage,
+  type EffortLevel,
+  type HistorySession,
+  isSessionMode,
+  type PromptAttachment,
+  type SessionMode,
+  type TranscriptEntry,
 } from "@/shared/ipc";
 
 export interface OpenTurnSettings {
+  changeMode: (historyId: string, mode: SessionMode) => void;
   draftId: string;
   effort: EffortLevel | null;
   model: string | null;
@@ -26,11 +29,17 @@ export interface OpenTurnSettings {
 }
 
 export interface OpenTurn {
-  answer: (permissionId: string, action: PermissionAction) => void;
+  answer: (
+    permissionId: string,
+    action: PermissionAction,
+    mode: SessionMode | null
+  ) => void;
   context: ContextUsage | null;
   entries: readonly TranscriptEntry[];
   isLoadingTranscript: boolean;
   isRunning: boolean;
+  mode: SessionMode;
+  onModeChange: (value: string) => void;
   openId: string;
   permission: PendingPermission | null;
   send: (prompt: string, attachments?: readonly PromptAttachment[]) => void;
@@ -39,6 +48,7 @@ export interface OpenTurn {
 }
 
 export function useOpenTurn({
+  changeMode,
   draftId,
   effort,
   model,
@@ -69,20 +79,33 @@ export function useOpenTurn({
         attachments,
         effort,
         historyId: openId,
+        mode: turn.mode,
         model,
         projectId,
         prompt,
       });
     },
-    [effort, model, openId, projectId, sendTurn]
+    [effort, model, openId, projectId, sendTurn, turn.mode]
   );
 
   const stop = useCallback(() => stopTurn(openId), [openId, stopTurn]);
 
   const answer = useCallback(
-    (permissionId: string, action: PermissionAction) =>
-      answerTurn(openId, permissionId, action),
+    (
+      permissionId: string,
+      action: PermissionAction,
+      mode: SessionMode | null
+    ) => answerTurn(openId, permissionId, action, mode),
     [answerTurn, openId]
+  );
+
+  const onModeChange = useCallback(
+    (value: string) => {
+      if (isSessionMode(value)) {
+        changeMode(openId, value);
+      }
+    },
+    [changeMode, openId]
   );
 
   return useMemo(
@@ -92,12 +115,14 @@ export function useOpenTurn({
       entries: turn.entries,
       isLoadingTranscript: turn.isLoading,
       isRunning: turn.isRunning,
+      mode: turn.mode,
+      onModeChange,
       openId,
       permission: turn.permissions[0] ?? null,
       send,
       stop,
       turnError: turn.error,
     }),
-    [answer, openId, send, stop, turn]
+    [answer, onModeChange, openId, send, stop, turn]
   );
 }

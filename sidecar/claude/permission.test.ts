@@ -108,4 +108,14 @@ describe("review", () => {
       kind: "allow",
     });
   });
+
+  it("asks for the plan itself when Claude wants to leave plan mode", async () => {
+    expect(
+      await verdict("ExitPlanMode", { plan: "1. Build the title card" })
+    ).toEqual({
+      kind: "ask",
+      reason: "plan",
+      signature: signatureOf("ExitPlanMode", "1. Build the title card"),
+    });
+  });
 });

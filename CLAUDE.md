@@ -41,7 +41,8 @@ Shape of the prototype, as decided in #218:
   "sessions pane, exactly one active session").
 - **Own SQLite history** — the CLI transcript format is not a public contract.
 - **Permissions split:** file tools inside the opened folder run automatically;
-  Bash and any path outside the folder raise an Allow/Deny card.
+  Bash and any path outside the folder raise an Allow/Deny card. How much of that
+  is asked about is the session's **mode** — auto, accept edits or plan (#236).
 - **Export goes through the *project's own* `@remotion/renderer`,** resolved from
   its `node_modules` — never a version the app bundles.
 
@@ -250,13 +251,37 @@ event.
   the turn closes it**, because afterwards there is no session left to ask. It is
   wrapped in a timeout and ignored on failure — a missing reading hides the meter,
   it never fails the turn.
-- **Permissions are a `canUseTool` gate, not a permission mode.** The turn runs on
-  `permissionMode: "default"` so every call reaches `sidecar/claude/gate.ts`.
-  `review()` in `sidecar/claude/permission.ts` resolves each path field — symlinks
-  and `..` included, walking up to the nearest existing ancestor so a file that is
-  about to be created still resolves — and auto-allows the file tools when
+- **Permissions are a `canUseTool` gate *and* a permission mode.** The gate is the
+  constant: `review()` in `sidecar/claude/permission.ts` resolves each path field —
+  symlinks and `..` included, walking up to the nearest existing ancestor so a file
+  that is about to be created still resolves — and auto-allows the file tools when
   everything lands inside `params.cwd`. Bash always asks; so does a tool with no
-  path rule.
+  path rule. What the *mode* changes is how much traffic ever reaches it, because
+  the SDK routes a call to `canUseTool` only when the mode would otherwise prompt.
+  - **The mode belongs to the session** and travels on `claude.prompt` as
+    `permissionMode`. Three values, spelled the way the SDK spells them so there is
+    no translation table: `auto` (the default), `acceptEdits`, `plan`.
+    `bypassPermissions` and `dontAsk` are deliberately not offered — a mode that
+    skips the gate has no story here.
+  - **What `auto` costs.** Claude Code's classifier decides *before* `canUseTool`,
+    so in `auto` a call the gate would have stopped — including a write resolving
+    outside the opened folder — can be approved without the gate ever seeing it.
+    The #223 invariant "anything outside the folder always asks" is therefore
+    absolute in `acceptEdits` and `plan`, and best-effort in `auto`. That is the
+    trade `auto` *is*; it is not an oversight. Its silent denials are not silent:
+    `system`/`permission_denied` is folded into a `notice`, or a refused tool would
+    show up as nothing but a failed activity line.
+  - **The CLI is asked what it actually did.** `system`/`init` reports the
+    `permissionMode` in force; it rides on the `session` event, and a mismatch with
+    what was requested (a model without `supportsAutoMode`, say) adds a `notice`.
+    The chip must never claim a mode the turn did not run in.
+  - **Plan mode ends in a card, not a message.** `ExitPlanMode` reaches the gate
+    like any other tool and gets its own reason, `plan`, with the plan markdown in
+    the tool input. Approving carries the mode to continue in, and the sidecar
+    applies it to the live `Query` with `setPermissionMode` — so the same turn
+    starts building — then persists it and re-emits the `history` chunk, which the
+    webview already folds into the session row. Denying is "keep planning" and says
+    so to the agent, rather than the standard refusal.
   - **The ask is a stream chunk of the turn** (`ClaudeEvent` `permission`), not a
     notification, so it belongs to the turn that raised it and dies with it. The
     answer is a *separate* `claude.permission` request, which works because
@@ -364,6 +389,12 @@ public contract and would break the left pane on any CLI update. Only
   the folder on disk. A project whose folder is gone keeps its row: `missing` is
   computed at read time with `existsSync`, and the sidecar refuses to start a turn
   in it rather than handing the SDK a `cwd` that is not there.
+- **The mode is a column on the session** (migration 3, defaulting to `auto`, so
+  every session that predates it comes back behaving exactly as it did). Two things
+  write it: the turn itself, through `open`'s upsert, so the stored mode and the
+  mode a turn ran under cannot drift; and `history.mode`, for a mode picked between
+  turns that would otherwise be lost on quit. A draft session has no row yet and
+  keeps its mode in the turns map, exactly as it keeps its SDK session id.
 - **`bun:sqlite` cannot be imported by the test suite** — Vitest's workers run
   under Node, which has no `bun:` loader — so the store is written against a
   three-method `SqlDriver`. Production binds it to `bun:sqlite` in
@@ -398,6 +429,12 @@ remount *was* the cancel, cancellation is now `stopTurn`, said out loud.
   when you open that session. The gate denies anything unanswered for ten minutes,
   because with background turns "nobody is looking at this card" is the normal
   case and a held card holds a `claude` process open.
+- **The mode chip reads the open turn, not a setting.** Model and Effort are
+  app-wide and live in `settings.json`; the mode is per session and lives in the
+  same map as everything else about a turn, which is why the composer takes it as a
+  prop where the other two come from `useStudio()`. Persisting it needs both the
+  turn map and the session list, so `useWorkspace` owns that seam — it is the only
+  place that has both.
 - **Quitting asks first.** The Rust core prevents both `CloseRequested` and
   `ExitRequested` and emits `app://quit-requested`; the webview answers by
   invoking `quit_studio` immediately when nothing is in flight, or after the

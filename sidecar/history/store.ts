@@ -1,6 +1,10 @@
 import { Clock, Context, Data, Effect, Schema } from "effect";
 import { errorMessage } from "@/lib/error-message";
-import { HistorySession, TranscriptEntry } from "@/shared/ipc";
+import {
+  HistorySession,
+  type SessionMode,
+  TranscriptEntry,
+} from "@/shared/ipc";
 import type { SqlDriver, SqlRow } from "./driver";
 
 export class HistoryError extends Data.TaggedError("HistoryError")<{
@@ -9,6 +13,7 @@ export class HistoryError extends Data.TaggedError("HistoryError")<{
 
 export interface OpenSession {
   readonly id: string;
+  readonly mode: SessionMode;
   readonly projectId: string;
   readonly title: string;
 }
@@ -35,6 +40,10 @@ export interface HistoryStore {
   ) => Effect.Effect<HistorySession, HistoryError>;
   readonly remove: (sessionId: string) => Effect.Effect<boolean, HistoryError>;
   readonly sessions: Effect.Effect<readonly HistorySession[], HistoryError>;
+  readonly setMode: (
+    sessionId: string,
+    mode: SessionMode
+  ) => Effect.Effect<HistorySession, HistoryError>;
   readonly write: (block: StoredBlock) => Effect.Effect<void, HistoryError>;
 }
 
@@ -43,7 +52,7 @@ export const HistoryStore = Context.Service<HistoryStore>(
 );
 
 const COLUMNS =
-  "id, project_id, sdk_session_id, title, created_at, updated_at" as const;
+  "id, project_id, sdk_session_id, title, mode, created_at, updated_at" as const;
 
 const decodeSession = Schema.decodeUnknownEffect(HistorySession);
 const decodeEntry = Schema.decodeUnknownEffect(TranscriptEntry);
@@ -104,11 +113,12 @@ export function make(driver: SqlDriver): HistoryStore {
 
         yield* attempt(() =>
           driver.run(
-            `INSERT INTO session (${COLUMNS}) VALUES (?, ?, NULL, ?, ?, ?)
+            `INSERT INTO session (${COLUMNS}) VALUES (?, ?, NULL, ?, ?, ?, ?)
              ON CONFLICT (id) DO UPDATE SET
                project_id = excluded.project_id,
+               mode = excluded.mode,
                updated_at = excluded.updated_at`,
-            [input.id, input.projectId, input.title, now, now]
+            [input.id, input.projectId, input.title, input.mode, now, now]
           )
         );
 
@@ -125,6 +135,14 @@ export function make(driver: SqlDriver): HistoryStore {
         `SELECT ${COLUMNS} FROM session ORDER BY updated_at DESC, created_at DESC`
       )
     ).pipe(Effect.flatMap((rows) => Effect.forEach(rows, sessionOf))),
+
+    setMode: (sessionId, mode) =>
+      attempt(() =>
+        driver.run("UPDATE session SET mode = ? WHERE id = ?", [
+          mode,
+          sessionId,
+        ])
+      ).pipe(Effect.andThen(read(sessionId))),
 
     write: (block) =>
       Effect.gen(function* () {
@@ -160,6 +178,7 @@ export function broken(message: string): HistoryStore {
     open: () => fail,
     remove: () => fail,
     sessions: fail,
+    setMode: () => fail,
     write: () => fail,
   };
 }
@@ -168,6 +187,7 @@ function sessionOf(row: SqlRow): Effect.Effect<HistorySession, HistoryError> {
   return decodeSession({
     createdAt: row.created_at,
     id: row.id,
+    mode: row.mode,
     projectId: row.project_id,
     sdkSessionId: row.sdk_session_id,
     title: row.title,

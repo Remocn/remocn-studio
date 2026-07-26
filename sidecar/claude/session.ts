@@ -10,6 +10,7 @@ import { Data, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { ContextUsage, PromptParams } from "@/shared/ipc";
 import { contentOf } from "./content";
+import type { ApplyMode } from "./mode";
 
 export class ClaudeError extends Data.TaggedError("ClaudeError")<{
   message: string;
@@ -25,6 +26,7 @@ export interface TurnCallbacks {
   readonly cwd: string;
   readonly log: (line: string) => void;
   readonly onContext: (usage: ContextUsage) => void;
+  readonly onMode: (apply: ApplyMode) => void;
   readonly onStop: () => void;
 }
 
@@ -87,10 +89,10 @@ function open(params: PromptParams, callbacks: TurnCallbacks): Turn {
     await input.promise;
   })();
 
-  return {
-    close: () => input.resolve(),
-    session: query({ options: optionsOf(params, callbacks), prompt }),
-  };
+  const session = query({ options: optionsOf(params, callbacks), prompt });
+  callbacks.onMode((mode) => session.setPermissionMode(mode));
+
+  return { close: () => input.resolve(), session };
 }
 
 function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
@@ -98,7 +100,7 @@ function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
     canUseTool: callbacks.canUseTool,
     cwd: callbacks.cwd,
     includePartialMessages: true,
-    permissionMode: "default",
+    permissionMode: params.mode,
     settingSources: ["project"],
     stderr: (data) => callbacks.log(`claude: ${data.trimEnd()}`),
     ...(params.effort === null ? {} : { effort: params.effort }),

@@ -6,6 +6,9 @@ import type { PendingPermission } from "@/lib/studio/turns";
 const CWD = "/Users/me/projects/my-video";
 
 const ONCE = /Approve once/;
+const BUILD = /Approve and build/;
+const RUN = /Approve and let it run/;
+const KEEP = /Keep planning/;
 const ALWAYS = /Always allow this session/;
 const DECLINE = /Decline/;
 const CANCEL = /Cancel turn/;
@@ -72,7 +75,7 @@ describe("PermissionCard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: ONCE }));
 
-    expect(onAnswer).toHaveBeenCalledWith("p1", "allow");
+    expect(onAnswer).toHaveBeenCalledWith("p1", "allow", null);
   });
 
   it("remembers the call for the session as its own choice", () => {
@@ -80,7 +83,7 @@ describe("PermissionCard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: ALWAYS }));
 
-    expect(onAnswer).toHaveBeenCalledWith("p1", "always");
+    expect(onAnswer).toHaveBeenCalledWith("p1", "always", null);
   });
 
   it("declines without stopping the turn", () => {
@@ -88,7 +91,7 @@ describe("PermissionCard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: DECLINE }));
 
-    expect(onAnswer).toHaveBeenCalledWith("p1", "deny");
+    expect(onAnswer).toHaveBeenCalledWith("p1", "deny", null);
   });
 
   it("cancels the whole turn", () => {
@@ -96,7 +99,7 @@ describe("PermissionCard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: CANCEL }));
 
-    expect(onAnswer).toHaveBeenCalledWith("p1", "cancel");
+    expect(onAnswer).toHaveBeenCalledWith("p1", "cancel", null);
   });
 
   it("says what remembering means for a path, not for a command", () => {
@@ -109,5 +112,51 @@ describe("PermissionCard", () => {
     expect(
       screen.getByText("Don't ask again for this path this session")
     ).toBeVisible();
+  });
+});
+
+describe("PermissionCard, on a plan", () => {
+  const plan = {
+    input: { plan: "1. Build the title card\n2. Add the outro" },
+    name: "ExitPlanMode",
+    reason: "plan",
+  } as const;
+
+  it("shows the plan instead of a tool call", () => {
+    renderCard(plan);
+
+    expect(screen.getByText("Ready to build this plan?")).toBeVisible();
+    expect(screen.getByText("Build the title card")).toBeVisible();
+    expect(screen.queryByText("ExitPlanMode")).toBeNull();
+  });
+
+  it("approves into accept edits", () => {
+    const onAnswer = renderCard(plan);
+
+    fireEvent.click(screen.getByRole("button", { name: BUILD }));
+
+    expect(onAnswer).toHaveBeenCalledWith("p1", "allow", "acceptEdits");
+  });
+
+  it("approves into auto", () => {
+    const onAnswer = renderCard(plan);
+
+    fireEvent.click(screen.getByRole("button", { name: RUN }));
+
+    expect(onAnswer).toHaveBeenCalledWith("p1", "allow", "auto");
+  });
+
+  it("sends the plan back without leaving plan mode", () => {
+    const onAnswer = renderCard(plan);
+
+    fireEvent.click(screen.getByRole("button", { name: KEEP }));
+
+    expect(onAnswer).toHaveBeenCalledWith("p1", "deny", null);
+  });
+
+  it("never offers to remember a plan for the session", () => {
+    renderCard(plan);
+
+    expect(screen.queryByRole("button", { name: ALWAYS })).toBeNull();
   });
 });

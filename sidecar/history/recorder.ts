@@ -34,6 +34,7 @@ export function recording(
     const session = yield* tolerate(
       store.open({
         id: params.historyId,
+        mode: params.mode,
         projectId: params.projectId,
         title: titleOf(params),
       })

@@ -1,6 +1,17 @@
 import { Exit } from "effect";
 import { describe, expect, it } from "vitest";
-import { decodeHostFrame, decodeMethod } from "@/shared/ipc";
+import { codecsFor, decodeHostFrame, decodeMethod } from "@/shared/ipc";
+
+const TURN = {
+  attachments: [],
+  effort: null,
+  historyId: "history-1",
+  mode: "plan",
+  model: null,
+  projectId: "project-1",
+  prompt: "make a title card",
+  sessionId: null,
+};
 
 function decoded(line: string) {
   const frame = decodeHostFrame(line);
@@ -54,5 +65,44 @@ describe("decodeMethod", () => {
 
   it("refuses anything else", () => {
     expect(Exit.isFailure(decodeMethod("sidecar.nope"))).toBe(true);
+  });
+});
+
+describe("the mode on the wire", () => {
+  it("carries the mode a turn should run in", () => {
+    const params = codecsFor("claude.prompt").params(TURN);
+
+    expect(Exit.isSuccess(params) && params.value.mode).toBe("plan");
+  });
+
+  it("refuses a mode the sidecar does not know", () => {
+    expect(
+      Exit.isFailure(
+        codecsFor("claude.prompt").params({
+          ...TURN,
+          mode: "bypassPermissions",
+        })
+      )
+    ).toBe(true);
+  });
+
+  it("lets a permission answer say which mode to continue in", () => {
+    const params = codecsFor("claude.permission").params({
+      decision: "allow",
+      id: "p1",
+      mode: "acceptEdits",
+    });
+
+    expect(Exit.isSuccess(params) && params.value.mode).toBe("acceptEdits");
+  });
+
+  it("keeps the mode out of every other answer", () => {
+    const params = codecsFor("claude.permission").params({
+      decision: "deny",
+      id: "p1",
+      mode: null,
+    });
+
+    expect(Exit.isSuccess(params) && params.value.mode).toBeNull();
   });
 });

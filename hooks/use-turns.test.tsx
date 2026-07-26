@@ -17,6 +17,7 @@ const DONE: PromptResult = {
 const STORED: HistorySession = {
   createdAt: 0,
   id: "a",
+  mode: "plan",
   projectId: "project-1",
   sdkSessionId: "sdk-9",
   title: "A promo",
@@ -33,6 +34,7 @@ function turn(historyId: string, prompt = "make a title card"): StartTurn {
     attachments: [],
     effort: null,
     historyId,
+    mode: "auto",
     model: null,
     projectId: "project-1",
     prompt,
@@ -43,6 +45,7 @@ function harness(options: { holdBlocks?: boolean } = {}) {
   const inflight = new Map<string, (result: PromptResult) => void>();
   const cancelled: string[] = [];
   const byHistory = new Map<string, string>();
+  const modes = new Map<string, string>();
   const blocks: ((entries: TranscriptEntry[]) => void)[] = [];
 
   mockIPC((cmd, payload) => {
@@ -50,10 +53,11 @@ function harness(options: { holdBlocks?: boolean } = {}) {
       const call = payload as {
         id: string;
         method: string;
-        params: { historyId?: string };
+        params: { historyId?: string; mode?: string };
       };
       if (call.method === "claude.prompt") {
         byHistory.set(call.params.historyId ?? "", call.id);
+        modes.set(call.params.historyId ?? "", call.params.mode ?? "");
         return new Promise<PromptResult>((resolve) => {
           inflight.set(call.id, resolve);
         });
@@ -92,6 +96,7 @@ function harness(options: { holdBlocks?: boolean } = {}) {
         await Promise.resolve();
       });
     },
+    sentMode: (historyId: string) => modes.get(historyId) ?? null,
     wasCancelled: (historyId: string) =>
       cancelled.includes(byHistory.get(historyId) ?? ""),
   };
@@ -248,6 +253,34 @@ describe("useTurns", () => {
 
     await waitFor(() => expect(ipc.wasCancelled("b")).toBe(true));
     expect(ipc.wasCancelled("a")).toBe(false);
+  });
+
+  it("brings a stored session back in the mode it was left in", async () => {
+    harness();
+    const { result } = renderHook(() => useTurns(vi.fn()));
+
+    act(() => {
+      result.current.loadTurn(STORED);
+    });
+
+    await waitFor(() => {
+      expect(result.current.turns.get("a")?.mode).toBe("plan");
+    });
+  });
+
+  it("runs the turn in the mode its session is set to", async () => {
+    const ipc = harness();
+    const { result } = renderHook(() => useTurns(vi.fn()));
+
+    act(() => {
+      result.current.setTurnMode("a", "plan");
+    });
+    act(() => {
+      result.current.sendTurn({ ...turn("a"), mode: "plan" });
+    });
+
+    await waitFor(() => expect(ipc.sentMode("a")).toBe("plan"));
+    expect(result.current.turns.get("a")?.mode).toBe("plan");
   });
 
   it("refuses a second turn in a session that is already running", async () => {

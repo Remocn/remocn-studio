@@ -1,6 +1,6 @@
 import { type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 7;
+export const SIDECAR_PROTOCOL = 8;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -19,6 +19,7 @@ export const METHOD_NAMES = [
   "claude.permission",
   "claude.prompt",
   "history.blocks",
+  "history.mode",
   "history.remove",
   "history.sessions",
   "preview.start",
@@ -73,6 +74,25 @@ export function isEffortLevel(value: unknown): value is EffortLevel {
   );
 }
 
+export const SESSION_MODES = ["auto", "acceptEdits", "plan"] as const;
+
+export const SessionMode = Schema.Literals(SESSION_MODES);
+
+export const DEFAULT_SESSION_MODE = "auto" satisfies SessionMode;
+
+export const SESSION_MODE_LABELS: Record<SessionMode, string> = {
+  acceptEdits: "Accept edits",
+  auto: "Auto",
+  plan: "Plan",
+};
+
+export function isSessionMode(value: unknown): value is SessionMode {
+  return (
+    typeof value === "string" &&
+    (SESSION_MODES as readonly string[]).includes(value)
+  );
+}
+
 export const ImageMediaType = Schema.Literals([
   "image/gif",
   "image/jpeg",
@@ -90,6 +110,7 @@ export const PromptParams = Schema.Struct({
   attachments: Schema.Array(PromptAttachment),
   effort: Schema.NullOr(EffortLevel),
   historyId: Schema.NonEmptyString,
+  mode: SessionMode,
   model: Schema.NullOr(Schema.NonEmptyString),
   projectId: Schema.NonEmptyString,
   prompt: Schema.String,
@@ -128,6 +149,7 @@ export const TranscriptEntry = Schema.Union([
 export const HistorySession = Schema.Struct({
   createdAt: Schema.Int,
   id: Schema.NonEmptyString,
+  mode: SessionMode,
   projectId: Schema.NonEmptyString,
   sdkSessionId: Schema.NullOr(Schema.String),
   title: Schema.String,
@@ -138,14 +160,21 @@ export const HistorySessionRef = Schema.Struct({
   sessionId: Schema.NonEmptyString,
 });
 
+export const HistorySessionMode = Schema.Struct({
+  mode: SessionMode,
+  sessionId: Schema.NonEmptyString,
+});
+
 export const HistoryRemoved = Schema.Struct({ removed: Schema.Boolean });
 
 export type ActivityState = (typeof ActivityState)["Type"];
 export type TranscriptEntry = (typeof TranscriptEntry)["Type"];
 export type ActivityEntry = Extract<TranscriptEntry, { kind: "activity" }>;
 export type UserEntry = Extract<TranscriptEntry, { kind: "user" }>;
+export type SessionMode = (typeof SessionMode)["Type"];
 export type HistorySession = (typeof HistorySession)["Type"];
 export type HistorySessionRef = (typeof HistorySessionRef)["Type"];
+export type HistorySessionMode = (typeof HistorySessionMode)["Type"];
 export type HistoryRemoved = (typeof HistoryRemoved)["Type"];
 
 export const Project = Schema.Struct({
@@ -214,19 +243,26 @@ export const ClaudeFailure = Schema.Struct({
   message: Schema.String,
 });
 
-export const PermissionReason = Schema.Literals(["bash", "outside", "tool"]);
+export const PermissionReason = Schema.Literals([
+  "bash",
+  "outside",
+  "plan",
+  "tool",
+]);
 
 export const PermissionDecision = Schema.Literals(["allow", "always", "deny"]);
 
 export const PermissionParams = Schema.Struct({
   decision: PermissionDecision,
   id: Schema.NonEmptyString,
+  mode: Schema.NullOr(SessionMode),
 });
 
 export const PermissionAnswer = Schema.Struct({ matched: Schema.Boolean });
 
 export const ClaudeEvent = Schema.Union([
   Schema.Struct({
+    mode: Schema.NullOr(SessionMode),
     model: Schema.String,
     sessionId: Schema.String,
     type: Schema.Literal("session"),
@@ -336,6 +372,11 @@ export const SIDECAR_METHODS = {
   "history.blocks": {
     params: HistorySessionRef,
     result: Schema.Array(TranscriptEntry),
+    stream: Schema.Never,
+  },
+  "history.mode": {
+    params: HistorySessionMode,
+    result: HistorySession,
     stream: Schema.Never,
   },
   "history.remove": {

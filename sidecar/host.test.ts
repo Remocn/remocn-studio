@@ -136,7 +136,11 @@ describe("runHost", () => {
     const host = harness();
 
     host.push(
-      request("perm-1", "claude.permission", { decision: "allow", id: "gone" })
+      request("perm-1", "claude.permission", {
+        decision: "allow",
+        id: "gone",
+        mode: null,
+      })
     );
     await settled();
 

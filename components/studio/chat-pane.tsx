@@ -153,6 +153,8 @@ function Conversation({
         disabled={!hasProject || missing}
         isRunning={turn.isRunning}
         isWaiting={turn.permission !== null}
+        mode={turn.mode}
+        onModeChange={turn.onModeChange}
         onStop={turn.stop}
         onSubmit={turn.send}
       />

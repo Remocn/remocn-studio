@@ -1,7 +1,9 @@
-import type {
-  ContextUsage,
-  PermissionReason,
-  TranscriptEntry,
+import {
+  type ContextUsage,
+  DEFAULT_SESSION_MODE,
+  type PermissionReason,
+  type SessionMode,
+  type TranscriptEntry,
 } from "@/shared/ipc";
 
 export type SessionStatus = "failed" | "idle" | "running" | "waiting";
@@ -19,6 +21,7 @@ export interface TurnState {
   error: string | null;
   isLoading: boolean;
   isRunning: boolean;
+  mode: SessionMode;
   permissions: readonly PendingPermission[];
   sdkSessionId: string | null;
   unread: boolean;
@@ -30,6 +33,7 @@ export const IDLE_TURN: TurnState = {
   error: null,
   isLoading: false,
   isRunning: false,
+  mode: DEFAULT_SESSION_MODE,
   permissions: [],
   sdkSessionId: null,
   unread: false,

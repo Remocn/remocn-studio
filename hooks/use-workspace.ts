@@ -1,5 +1,6 @@
 "use client";
 
+import { Effect } from "effect";
 import type { MouseEvent } from "react";
 import { useCallback, useMemo } from "react";
 import {
@@ -15,8 +16,9 @@ import { type Scaffolds, useScaffold } from "@/hooks/use-scaffold";
 import { type StudioSessions, useSessions } from "@/hooks/use-sessions";
 import { type Turns, useTurns } from "@/hooks/use-turns";
 import { groupSessions, type ProjectGroup } from "@/lib/studio/groups";
+import { saveSessionMode } from "@/lib/studio/history";
 import type { StudioSettings } from "@/lib/studio/settings";
-import type { HistorySession, ProjectDraft } from "@/shared/ipc";
+import type { HistorySession, ProjectDraft, SessionMode } from "@/shared/ipc";
 
 export interface Workspace
   extends StudioProjects,
@@ -25,6 +27,7 @@ export interface Workspace
     ProjectActions,
     Scaffolds,
     Turns {
+  changeSessionMode: (historyId: string, mode: SessionMode) => void;
   groups: readonly ProjectGroup[];
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -44,9 +47,10 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
 
   const { forgetProject, rememberProject, replaceProject, selectProject } =
     projects;
-  const { forgetSessionsOf, selectSession, startSession } = sessions;
+  const { forgetSessionsOf, replaceSession, selectSession, startSession } =
+    sessions;
   const { expandProject } = expansion;
-  const { stopTurn } = turns;
+  const { setTurnMode, stopTurn } = turns;
   const rows = sessions.sessions;
   const pickFolder = projects.openFolder;
   const create = actions.createProject;
@@ -61,6 +65,24 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       startSession();
     },
     [expandProject, selectProject, startSession]
+  );
+
+  const changeSessionMode = useCallback(
+    (historyId: string, mode: SessionMode) => {
+      setTurnMode(historyId, mode);
+
+      if (!rows.some((row) => row.id === historyId)) {
+        return;
+      }
+
+      Effect.runFork(
+        saveSessionMode(historyId, mode).pipe(
+          Effect.tap((session) => Effect.sync(() => replaceSession(session))),
+          Effect.ignore
+        )
+      );
+    },
+    [replaceSession, rows, setTurnMode]
   );
 
   const openFolder = useCallback(async () => {
@@ -177,6 +199,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       ...expansion,
       ...scaffolds,
       ...turns,
+      changeSessionMode,
       createProject,
       groups,
       onNewSession,
@@ -191,6 +214,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
     }),
     [
       actions,
+      changeSessionMode,
       createProject,
       expansion,
       groups,

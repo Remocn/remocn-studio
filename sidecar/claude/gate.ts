@@ -3,8 +3,12 @@ import type {
   PermissionResult,
 } from "@anthropic-ai/claude-agent-sdk";
 import { Deferred, type Duration, Effect, Exit } from "effect";
-import type { ClaudeEvent, PermissionDecision } from "@/shared/ipc";
-import { review } from "./permission";
+import type {
+  ClaudeEvent,
+  PermissionDecision,
+  SessionMode,
+} from "@/shared/ipc";
+import { EXIT_PLAN_TOOL, review } from "./permission";
 
 export interface PermissionAsk {
   readonly id: string;
@@ -12,30 +16,39 @@ export interface PermissionAsk {
   readonly turnId: string;
 }
 
+export interface GateAnswer {
+  readonly decision: PermissionDecision;
+  readonly mode: SessionMode | null;
+}
+
 export interface PermissionGate {
   readonly abandon: (turnId: string) => Effect.Effect<void>;
   readonly answer: (
     id: string,
-    decision: PermissionDecision
+    decision: PermissionDecision,
+    mode: SessionMode | null
   ) => Effect.Effect<boolean>;
   readonly remembers: (signature: string) => Effect.Effect<boolean>;
-  readonly wait: (ask: PermissionAsk) => Effect.Effect<PermissionDecision>;
+  readonly wait: (ask: PermissionAsk) => Effect.Effect<GateAnswer>;
 }
 
 export interface GuardOptions {
   readonly cwd: string;
   readonly emit: (event: ClaudeEvent) => Effect.Effect<void>;
   readonly gate: PermissionGate;
+  readonly onApprove: (mode: SessionMode) => Effect.Effect<void>;
   readonly turnId: string;
 }
 
 interface Pending {
-  readonly deferred: Deferred.Deferred<PermissionDecision>;
+  readonly deferred: Deferred.Deferred<GateAnswer>;
   readonly signature: string;
   readonly turnId: string;
 }
 
 const ALLOWED: PermissionResult = { behavior: "allow" };
+
+const REFUSED: GateAnswer = { decision: "deny", mode: null };
 
 const UNANSWERED = "10 minutes";
 
@@ -45,7 +58,11 @@ export function makeGate(
   const pending = new Map<string, Pending>();
   const remembered = new Set<string>();
 
-  const settle = (id: string, decision: PermissionDecision) =>
+  const settle = (
+    id: string,
+    decision: PermissionDecision,
+    mode: SessionMode | null
+  ) =>
     Effect.suspend(() => {
       const entry = pending.get(id);
       if (entry === undefined) {
@@ -57,7 +74,10 @@ export function makeGate(
         remembered.add(entry.signature);
       }
 
-      return Effect.as(Deferred.succeed(entry.deferred, decision), true);
+      return Effect.as(
+        Deferred.succeed(entry.deferred, { decision, mode }),
+        true
+      );
     });
 
   return {
@@ -67,7 +87,7 @@ export function makeGate(
           [...pending]
             .filter(([, entry]) => entry.turnId === turnId)
             .map(([id]) => id),
-          (id) => settle(id, "deny"),
+          (id) => settle(id, "deny", null),
           { discard: true }
         )
       ),
@@ -78,7 +98,7 @@ export function makeGate(
 
     wait: (ask) =>
       Effect.gen(function* () {
-        const deferred = yield* Deferred.make<PermissionDecision>();
+        const deferred = yield* Deferred.make<GateAnswer>();
         pending.set(ask.id, {
           deferred,
           signature: ask.signature,
@@ -88,7 +108,7 @@ export function makeGate(
       }).pipe(
         Effect.timeoutOrElse({
           duration: unanswered,
-          orElse: () => Effect.succeed<PermissionDecision>("deny"),
+          orElse: () => Effect.succeed(REFUSED),
         }),
         Effect.ensuring(Effect.sync(() => pending.delete(ask.id)))
       ),
@@ -103,7 +123,7 @@ export function permissionGuard(options: GuardOptions): CanUseTool {
 
     const id = crypto.randomUUID();
     const abort = () => {
-      Effect.runFork(options.gate.answer(id, "deny"));
+      Effect.runFork(options.gate.answer(id, "deny", null));
     };
 
     signal.addEventListener("abort", abort, { once: true });
@@ -143,17 +163,33 @@ function decide(
       type: "permission",
     });
 
-    const decision = yield* options.gate.wait({
+    const answer = yield* options.gate.wait({
       id,
       signature: verdict.signature,
       turnId: options.turnId,
     });
 
-    return decision === "deny" ? denied(toolName) : ALLOWED;
+    if (answer.decision === "deny") {
+      return denied(toolName);
+    }
+
+    if (answer.mode !== null) {
+      yield* options.onApprove(answer.mode);
+    }
+
+    return ALLOWED;
   });
 }
 
 function denied(toolName: string): PermissionResult {
+  if (toolName === EXIT_PLAN_TOOL) {
+    return {
+      behavior: "deny",
+      message:
+        "The user is not ready to build this plan. Stay in plan mode, ask what they want changed, and present a revised plan.",
+    };
+  }
+
   return {
     behavior: "deny",
     message: `The user denied this ${toolName} call. Do not run it again. Carry on with what you can do without it, and say what you would have needed.`,

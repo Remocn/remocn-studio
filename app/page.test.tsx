@@ -27,6 +27,7 @@ const PROJECT: Project = {
 const STORED_SESSION: HistorySession = {
   createdAt: 1_700_000_000_000,
   id: "session-1",
+  mode: "auto",
   projectId: PROJECT.id,
   sdkSessionId: "sdk-1",
   title: "A promo for the launch",

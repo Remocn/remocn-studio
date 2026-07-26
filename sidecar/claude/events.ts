@@ -1,17 +1,34 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import type { ClaudeEvent } from "@/shared/ipc";
+import {
+  type ClaudeEvent,
+  isSessionMode,
+  SESSION_MODE_LABELS,
+  type SessionMode,
+} from "@/shared/ipc";
 
-export function eventsOf(message: SDKMessage): ClaudeEvent[] {
+export function eventsOf(
+  message: SDKMessage,
+  requested: SessionMode
+): ClaudeEvent[] {
   if (message.type === "system") {
-    return message.subtype === "init"
-      ? [
-          {
-            model: message.model,
-            sessionId: message.session_id,
-            type: "session",
-          },
-        ]
-      : [];
+    if (message.subtype === "init") {
+      return sessionEvents(
+        { model: message.model, sessionId: message.session_id },
+        message.permissionMode,
+        requested
+      );
+    }
+
+    if (message.subtype === "permission_denied") {
+      return [
+        {
+          message: `Claude Code declined ${message.tool_name} without asking. ${message.decision_reason ?? message.message}`,
+          type: "notice",
+        },
+      ];
+    }
+
+    return [];
   }
 
   if (message.type === "stream_event") {
@@ -27,6 +44,34 @@ export function eventsOf(message: SDKMessage): ClaudeEvent[] {
   }
 
   return [];
+}
+
+function sessionEvents(
+  opened: { model: string; sessionId: string },
+  effective: string,
+  requested: SessionMode
+): ClaudeEvent[] {
+  const session: ClaudeEvent = {
+    ...opened,
+    mode: isSessionMode(effective) ? effective : null,
+    type: "session",
+  };
+
+  if (effective === requested) {
+    return [session];
+  }
+
+  return [
+    session,
+    {
+      message: `Claude Code ran this turn in ${labelOf(effective)} mode, not ${SESSION_MODE_LABELS[requested]}.`,
+      type: "notice",
+    },
+  ];
+}
+
+function labelOf(mode: string): string {
+  return isSessionMode(mode) ? SESSION_MODE_LABELS[mode] : mode;
 }
 
 function deltaEvents(event: { delta?: unknown; type: string }): ClaudeEvent[] {

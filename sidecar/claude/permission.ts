@@ -24,6 +24,8 @@ const PATH_FIELDS: Record<string, readonly string[]> = {
 
 const FREE_TOOLS = new Set(["TodoWrite"]);
 
+export const EXIT_PLAN_TOOL = "ExitPlanMode";
+
 const ALLOW: PermissionVerdict = { kind: "allow" };
 
 export function review(
@@ -31,6 +33,10 @@ export function review(
   toolName: string,
   input: Record<string, unknown>
 ): Effect.Effect<PermissionVerdict> {
+  if (toolName === EXIT_PLAN_TOOL) {
+    return Effect.succeed(ask("plan", toolName, text(input, "plan") ?? ""));
+  }
+
   if (toolName === "Bash") {
     return Effect.succeed(ask("bash", toolName, text(input, "command") ?? ""));
   }

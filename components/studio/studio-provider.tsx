@@ -28,6 +28,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const effort = useClaudeEffort(settings);
 
   const turn = useOpenTurn({
+    changeMode: workspace.changeSessionMode,
     draftId: workspace.draftId,
     effort: effort.claudeEffort,
     model: model.claudeModel,

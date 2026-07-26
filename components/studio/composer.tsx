@@ -6,6 +6,7 @@ import {
   ImagePlusIcon,
   PlusIcon,
   SettingsIcon,
+  ShieldIcon,
   SparklesIcon,
   SquareIcon,
 } from "lucide-react";
@@ -29,7 +30,13 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { useComposer } from "@/hooks/use-composer";
 import { type Sidecar, useSidecar } from "@/hooks/use-sidecar";
-import type { ContextUsage, PromptAttachment } from "@/shared/ipc";
+import {
+  type ContextUsage,
+  type PromptAttachment,
+  SESSION_MODE_LABELS,
+  SESSION_MODES,
+  type SessionMode,
+} from "@/shared/ipc";
 import { AttachmentRow } from "./attachment-row";
 import { ContextMeter } from "./context-meter";
 import { useStudio } from "./studio-provider";
@@ -42,6 +49,11 @@ const MODELS = [
   { label: "Sonnet 5", value: "claude-sonnet-5" },
   { label: "Haiku 4.5", value: "claude-haiku-4-5-20251001" },
 ];
+
+const MODES = SESSION_MODES.map((mode) => ({
+  label: SESSION_MODE_LABELS[mode],
+  value: mode,
+}));
 
 const EFFORTS = [
   { label: "Default", value: DEFAULT },
@@ -57,6 +69,8 @@ export function Composer({
   disabled,
   isRunning,
   isWaiting,
+  mode,
+  onModeChange,
   onStop,
   onSubmit,
 }: {
@@ -64,6 +78,8 @@ export function Composer({
   disabled: boolean;
   isRunning: boolean;
   isWaiting: boolean;
+  mode: SessionMode;
+  onModeChange: (value: string) => void;
   onStop: () => void;
   onSubmit: (text: string, attachments: readonly PromptAttachment[]) => void;
 }) {
@@ -127,6 +143,15 @@ export function Composer({
 
             <div className="ml-auto flex items-center gap-1">
               {context === null ? null : <ContextMeter usage={context} />}
+
+              <MenuChip
+                icon={ShieldIcon}
+                items={MODES}
+                label={labelOf(MODES, mode)}
+                onChange={onModeChange}
+                title="Mode"
+                value={mode}
+              />
 
               <MenuChip
                 icon={SparklesIcon}

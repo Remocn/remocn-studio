@@ -12,6 +12,7 @@ function params(shape: Partial<PromptParams>): PromptParams {
     attachments: [],
     effort: null,
     historyId: "history-1",
+    mode: "auto",
     model: null,
     projectId: "project-1",
     prompt: "",

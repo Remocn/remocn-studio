@@ -1,6 +1,6 @@
 import { Effect, Fiber } from "effect";
 import { describe, expect, it } from "vitest";
-import type { ClaudeEvent } from "@/shared/ipc";
+import type { ClaudeEvent, SessionMode } from "@/shared/ipc";
 import { makeGate, permissionGuard } from "@/sidecar/claude/gate";
 import { signatureOf } from "@/sidecar/claude/permission";
 
@@ -15,15 +15,22 @@ describe("makeGate", () => {
     const gate = makeGate();
 
     const waiting = Effect.runFork(gate.wait(ask("p1")));
-    expect(await Effect.runPromise(gate.answer("p1", "allow"))).toBe(true);
+    expect(await Effect.runPromise(gate.answer("p1", "allow", null))).toBe(
+      true
+    );
 
-    expect(await Effect.runPromise(Fiber.join(waiting))).toBe("allow");
+    expect(await Effect.runPromise(Fiber.join(waiting))).toEqual({
+      decision: "allow",
+      mode: null,
+    });
   });
 
   it("knows nothing about an id it never asked about", async () => {
     const gate = makeGate();
 
-    expect(await Effect.runPromise(gate.answer("ghost", "allow"))).toBe(false);
+    expect(await Effect.runPromise(gate.answer("ghost", "allow", null))).toBe(
+      false
+    );
   });
 
   it("remembers a signature only when told to always allow", async () => {
@@ -31,13 +38,13 @@ describe("makeGate", () => {
     const signature = signatureOf("Bash", "bun install");
 
     const once = Effect.runFork(gate.wait(ask("p1", signature)));
-    await Effect.runPromise(gate.answer("p1", "allow"));
+    await Effect.runPromise(gate.answer("p1", "allow", null));
     await Effect.runPromise(Fiber.join(once));
 
     expect(await Effect.runPromise(gate.remembers(signature))).toBe(false);
 
     const again = Effect.runFork(gate.wait(ask("p2", signature)));
-    await Effect.runPromise(gate.answer("p2", "always"));
+    await Effect.runPromise(gate.answer("p2", "always", null));
     await Effect.runPromise(Fiber.join(again));
 
     expect(await Effect.runPromise(gate.remembers(signature))).toBe(true);
@@ -48,7 +55,7 @@ describe("makeGate", () => {
     const signature = signatureOf("Bash", "rm -rf /");
 
     const waiting = Effect.runFork(gate.wait(ask("p1", signature)));
-    await Effect.runPromise(gate.answer("p1", "deny"));
+    await Effect.runPromise(gate.answer("p1", "deny", null));
     await Effect.runPromise(Fiber.join(waiting));
 
     expect(await Effect.runPromise(gate.remembers(signature))).toBe(false);
@@ -60,7 +67,10 @@ describe("makeGate", () => {
     const waiting = Effect.runFork(gate.wait(ask("p1")));
     await Effect.runPromise(gate.abandon(TURN));
 
-    expect(await Effect.runPromise(Fiber.join(waiting))).toBe("deny");
+    expect(await Effect.runPromise(Fiber.join(waiting))).toEqual({
+      decision: "deny",
+      mode: null,
+    });
   });
 
   it("can be abandoned synchronously, from the stream teardown", async () => {
@@ -69,7 +79,10 @@ describe("makeGate", () => {
     const waiting = Effect.runFork(gate.wait(ask("p1")));
     Effect.runSync(gate.abandon(TURN));
 
-    expect(await Effect.runPromise(Fiber.join(waiting))).toBe("deny");
+    expect(await Effect.runPromise(Fiber.join(waiting))).toEqual({
+      decision: "deny",
+      mode: null,
+    });
   });
 
   it("denies a card nobody ever answered", async () => {
@@ -77,8 +90,27 @@ describe("makeGate", () => {
 
     const waiting = Effect.runFork(gate.wait(ask("p1")));
 
-    expect(await Effect.runPromise(Fiber.join(waiting))).toBe("deny");
-    expect(await Effect.runPromise(gate.answer("p1", "allow"))).toBe(false);
+    expect(await Effect.runPromise(Fiber.join(waiting))).toEqual({
+      decision: "deny",
+      mode: null,
+    });
+    expect(await Effect.runPromise(gate.answer("p1", "allow", null))).toBe(
+      false
+    );
+  });
+
+  it("hands the caller the mode its answer was given with", async () => {
+    const gate = makeGate();
+
+    const waiting = Effect.runFork(
+      gate.wait(ask("p1", signatureOf("ExitPlanMode", "1. Build it")))
+    );
+    await Effect.runPromise(gate.answer("p1", "allow", "acceptEdits"));
+
+    expect(await Effect.runPromise(Fiber.join(waiting))).toEqual({
+      decision: "allow",
+      mode: "acceptEdits",
+    });
   });
 
   it("leaves another turn's cards alone", async () => {
@@ -90,10 +122,18 @@ describe("makeGate", () => {
     );
 
     await Effect.runPromise(gate.abandon(TURN));
-    expect(await Effect.runPromise(Fiber.join(mine))).toBe("deny");
+    expect(await Effect.runPromise(Fiber.join(mine))).toEqual({
+      decision: "deny",
+      mode: null,
+    });
 
-    expect(await Effect.runPromise(gate.answer("p2", "allow"))).toBe(true);
-    expect(await Effect.runPromise(Fiber.join(theirs))).toBe("allow");
+    expect(await Effect.runPromise(gate.answer("p2", "allow", null))).toBe(
+      true
+    );
+    expect(await Effect.runPromise(Fiber.join(theirs))).toEqual({
+      decision: "allow",
+      mode: null,
+    });
   });
 });
 
@@ -101,14 +141,17 @@ describe("permissionGuard", () => {
   function harness() {
     const gate = makeGate();
     const events: ClaudeEvent[] = [];
+    const approvals: SessionMode[] = [];
 
     return {
+      approvals,
       events,
       gate,
       guard: permissionGuard({
         cwd: process.cwd(),
         emit: (event) => Effect.sync(() => events.push(event)),
         gate,
+        onApprove: (mode) => Effect.sync(() => approvals.push(mode)),
         turnId: TURN,
       }),
     };
@@ -160,7 +203,7 @@ describe("permissionGuard", () => {
     await settled();
     expect(events).toHaveLength(1);
 
-    await Effect.runPromise(gate.answer(pendingId(events), "allow"));
+    await Effect.runPromise(gate.answer(pendingId(events), "allow", null));
 
     expect(await call).toEqual({ behavior: "allow" });
   });
@@ -172,7 +215,7 @@ describe("permissionGuard", () => {
     const call = guard("Bash", { command: "rm -rf /" }, asked(controller, 1));
 
     await settled();
-    await Effect.runPromise(gate.answer(pendingId(events), "deny"));
+    await Effect.runPromise(gate.answer(pendingId(events), "deny", null));
 
     const result = await call;
 
@@ -194,7 +237,7 @@ describe("permissionGuard", () => {
     );
 
     await settled();
-    await Effect.runPromise(gate.answer(pendingId(events), "always"));
+    await Effect.runPromise(gate.answer(pendingId(events), "always", null));
     await first;
 
     const second = await guard(
@@ -217,5 +260,51 @@ describe("permissionGuard", () => {
     controller.abort();
 
     expect(await call).toMatchObject({ behavior: "deny" });
+  });
+
+  it("raises a plan card and switches the mode the plan was approved into", async () => {
+    const { approvals, events, gate, guard } = harness();
+
+    const call = guard(
+      "ExitPlanMode",
+      { plan: "1. Build the title card" },
+      asked(new AbortController(), 1)
+    );
+
+    await settled();
+    expect(events.at(0)).toMatchObject({
+      input: { plan: "1. Build the title card" },
+      name: "ExitPlanMode",
+      reason: "plan",
+    });
+
+    await Effect.runPromise(
+      gate.answer(pendingId(events), "allow", "acceptEdits")
+    );
+
+    expect(await call).toEqual({ behavior: "allow" });
+    expect(approvals).toEqual(["acceptEdits"]);
+  });
+
+  it("sends a plan back to be revised without changing the mode", async () => {
+    const { approvals, events, gate, guard } = harness();
+
+    const call = guard(
+      "ExitPlanMode",
+      { plan: "1. Rewrite everything" },
+      asked(new AbortController(), 1)
+    );
+
+    await settled();
+    await Effect.runPromise(gate.answer(pendingId(events), "deny", null));
+
+    const result = await call;
+
+    expect(result).toMatchObject({ behavior: "deny" });
+    expect(result).toHaveProperty(
+      "message",
+      expect.stringContaining("Stay in plan mode")
+    );
+    expect(approvals).toEqual([]);
   });
 });

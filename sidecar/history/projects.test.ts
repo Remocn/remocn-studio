@@ -111,7 +111,12 @@ describe("ProjectStore", () => {
     const first = await run(projects.open("/videos/first"));
     const second = await run(projects.open("/videos/second"));
     await run(
-      history.open({ id: "s-1", projectId: first.id, title: "A promo" })
+      history.open({
+        id: "s-1",
+        mode: "auto",
+        projectId: first.id,
+        title: "A promo",
+      })
     );
 
     expect((await run(projects.list)).map((row) => row.id)).toEqual([
@@ -129,7 +134,12 @@ describe("ProjectStore", () => {
 
     const project = await run(projects.open("/videos/promo"));
     const session = await run(
-      history.open({ id: "s-1", projectId: project.id, title: "A promo" })
+      history.open({
+        id: "s-1",
+        mode: "auto",
+        projectId: project.id,
+        title: "A promo",
+      })
     );
     await run(
       history.write({
