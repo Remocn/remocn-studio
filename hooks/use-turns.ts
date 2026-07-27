@@ -147,6 +147,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
         }),
         error: null,
         isRunning: true,
+        startedAt: Date.now(),
         unread: false,
       }));
 
@@ -184,6 +185,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
               permissions: [
                 ...current.permissions,
                 {
+                  askedAt: Date.now(),
                   id: event.id,
                   input: event.input,
                   name: event.name,
@@ -209,6 +211,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
                 ...current,
                 isRunning: false,
                 permissions: [],
+                startedAt: null,
                 unread: away,
               };
 

@@ -1,6 +1,11 @@
 "use client";
 
-import { FolderOpenIcon, MonitorPlayIcon, RotateCwIcon } from "lucide-react";
+import {
+  DownloadIcon,
+  FolderOpenIcon,
+  MonitorPlayIcon,
+  RotateCwIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -12,6 +17,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { type Preview, usePreview } from "@/hooks/use-preview";
 import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
+import { SidecarStatus } from "./sidecar-status";
 import { useStudio } from "./studio-provider";
 
 export function PreviewPane() {
@@ -26,16 +32,21 @@ export function PreviewPane() {
 
   return (
     <Pane>
-      <PaneHeader>
+      <PaneHeader data-tauri-drag-region>
         <PaneTitle>Preview</PaneTitle>
-        {preview.phase === "failed" ? (
-          <PaneActions>
+        <PaneActions>
+          {preview.phase === "failed" ? (
             <Button onClick={restart} size="sm" variant="ghost">
               <RotateCwIcon />
               Restart
             </Button>
-          </PaneActions>
-        ) : null}
+          ) : null}
+          <SidecarStatus />
+          <Button size="sm">
+            <DownloadIcon data-icon="inline-start" />
+            Export
+          </Button>
+        </PaneActions>
       </PaneHeader>
 
       <PaneBody className="gap-2 p-4">

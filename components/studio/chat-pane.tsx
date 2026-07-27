@@ -39,7 +39,7 @@ export function ChatPane() {
 
   return (
     <Pane>
-      <PaneHeader>
+      <PaneHeader data-tauri-drag-region>
         <PaneTitle>{titleOf(openedProject, activeSession)}</PaneTitle>
       </PaneHeader>
 

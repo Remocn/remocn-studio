@@ -14,7 +14,7 @@ function PaneHeader({ className, ...props }: React.ComponentProps<"header">) {
   return (
     <header
       className={cn(
-        "flex h-10 shrink-0 items-center justify-between gap-2 border-b px-2 pl-3",
+        "flex h-10 shrink-0 items-center justify-between gap-2 px-2 pl-3",
         className
       )}
       data-slot="pane-header"

@@ -15,6 +15,7 @@ const CANCEL = /Cancel turn/;
 
 function permission(shape: Partial<PendingPermission> = {}): PendingPermission {
   return {
+    askedAt: 0,
     id: "p1",
     input: { command: "bun add remotion" },
     name: "Bash",

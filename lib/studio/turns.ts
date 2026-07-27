@@ -9,6 +9,7 @@ import {
 export type SessionStatus = "failed" | "idle" | "running" | "waiting";
 
 export interface PendingPermission {
+  askedAt: number;
   id: string;
   input: unknown;
   name: string;
@@ -24,6 +25,7 @@ export interface TurnState {
   mode: SessionMode;
   permissions: readonly PendingPermission[];
   sdkSessionId: string | null;
+  startedAt: number | null;
   unread: boolean;
 }
 
@@ -36,6 +38,7 @@ export const IDLE_TURN: TurnState = {
   mode: DEFAULT_SESSION_MODE,
   permissions: [],
   sdkSessionId: null,
+  startedAt: null,
   unread: false,
 };
 
