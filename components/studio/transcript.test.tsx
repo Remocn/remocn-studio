@@ -36,6 +36,31 @@ function edit(index: number): TranscriptEntry {
   };
 }
 
+function read(
+  index: number,
+  state: "done" | "failed" = "done"
+): TranscriptEntry {
+  return {
+    id: `read-${index}`,
+    input: { file_path: `${CWD}/components/studio/Pane${index}.tsx` },
+    kind: "activity",
+    name: "Read",
+    result: state === "failed" ? "File does not exist." : "…",
+    state,
+  };
+}
+
+function shell(id: string, command: string): TranscriptEntry {
+  return {
+    id,
+    input: { command },
+    kind: "activity",
+    name: "Bash",
+    result: "…",
+    state: "done",
+  };
+}
+
 const ENTRIES: TranscriptEntry[] = [
   {
     attachments: [],
@@ -157,6 +182,100 @@ describe("Transcript", () => {
     renderTranscript(ENTRIES.slice(0, 1), true, true);
 
     expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+  });
+
+  it("takes one row for a run of reads, and says how many and where", () => {
+    renderTranscript([read(1), read(2), read(3)]);
+
+    expect(
+      screen.getByRole("button", {
+        name: "Read 3 files in components/studio",
+      })
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Read components/studio/Pane1.tsx" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("expands that run into exactly the rows it replaced", () => {
+    renderTranscript([read(1), read(2), read(3)]);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Read 3 files in components/studio" })
+    );
+
+    for (const index of [1, 2, 3]) {
+      expect(
+        screen.getByRole("button", {
+          name: `Read components/studio/Pane${index}.tsx`,
+        })
+      ).toBeVisible();
+    }
+  });
+
+  it("leaves a failed read on screen without anything being expanded", () => {
+    renderTranscript([read(1), read(2, "failed"), read(3), read(4)]);
+
+    expect(screen.getByText("File does not exist.")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Read components/studio/Pane2.tsx" })
+    ).toBeVisible();
+  });
+
+  it("shows the file being read right now while the run is still going", () => {
+    renderTranscript([read(1), read(2), read(3)], true);
+
+    expect(
+      screen.getByRole("button", { name: "Read components/studio/Pane3.tsx" })
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", {
+        name: "Read 3 files in components/studio",
+      })
+    ).not.toBeInTheDocument();
+  });
+
+  it("turns that ticker into a count once the turn has settled", () => {
+    renderTranscript([read(1), read(2), read(3)]);
+
+    expect(
+      screen.getByRole("button", { name: "Read 3 files in components/studio" })
+    ).toBeVisible();
+  });
+
+  it("folds a wall of shell exploration into one row", () => {
+    renderTranscript([
+      shell("sh-1", `cd ${CWD} && find . -type d -name dist`),
+      shell("sh-2", `cd ${CWD} && ls src/demos/ && echo "---"`),
+      shell("sh-3", `cd ${CWD} && grep -rln TransitionProps src/`),
+      shell("sh-4", `cd ${CWD} && cat src/demos/types.ts`),
+    ]);
+
+    expect(
+      screen.getByRole("button", { name: "Bash 4 commands" })
+    ).toBeVisible();
+  });
+
+  it("keeps the one command that changed something out of that row", () => {
+    renderTranscript([
+      shell("sh-1", `cd ${CWD} && ls src/demos/`),
+      shell("sh-2", `cd ${CWD} && cat package.json`),
+      shell("sh-3", `cd ${CWD} && bun add remotion`),
+    ]);
+
+    expect(
+      screen.getByRole("button", { name: `Bash cd ${CWD} && bun add remotion` })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Bash 2 commands" })
+    ).toBeVisible();
+  });
+
+  it("dims the cd into the open project instead of spending the row on it", () => {
+    renderTranscript([shell("sh-1", `cd ${CWD} && bun run build`)]);
+
+    expect(screen.getByText("bun run build")).toBeVisible();
+    expect(screen.getByText(`cd ${CWD} &&`)).toBeVisible();
   });
 
   it("reports a turn that failed outright", () => {

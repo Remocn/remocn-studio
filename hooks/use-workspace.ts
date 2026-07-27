@@ -15,10 +15,19 @@ import { type StudioProjects, useProjects } from "@/hooks/use-projects";
 import { type Scaffolds, useScaffold } from "@/hooks/use-scaffold";
 import { type StudioSessions, useSessions } from "@/hooks/use-sessions";
 import { type Turns, useTurns } from "@/hooks/use-turns";
-import { groupSessions, type ProjectGroup } from "@/lib/studio/groups";
+import {
+  groupSessions,
+  type ProjectGroup,
+  projectOf,
+} from "@/lib/studio/groups";
 import { saveSessionMode } from "@/lib/studio/history";
 import type { StudioSettings } from "@/lib/studio/settings";
-import type { HistorySession, ProjectDraft, SessionMode } from "@/shared/ipc";
+import type {
+  HistorySession,
+  Project,
+  ProjectDraft,
+  SessionMode,
+} from "@/shared/ipc";
 
 export interface Workspace
   extends StudioProjects,
@@ -31,6 +40,7 @@ export interface Workspace
   groups: readonly ProjectGroup[];
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
+  openedProject: Project | null;
   startSessionIn: (projectId: string) => void;
 }
 
@@ -191,6 +201,12 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
     [projects.projects, rows]
   );
 
+  const openedProject = projectOf(
+    projects.projects,
+    sessions.openedSession,
+    projects.activeProject
+  );
+
   return useMemo(
     () => ({
       ...projects,
@@ -205,6 +221,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       onNewSession,
       onRemoveSession,
       onSelectSession,
+      openedProject,
       openFolder,
       relocateProject,
       removeProject,
@@ -221,6 +238,7 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
       onNewSession,
       onRemoveSession,
       onSelectSession,
+      openedProject,
       openFolder,
       openSession,
       projects,

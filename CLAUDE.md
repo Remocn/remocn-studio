@@ -360,6 +360,26 @@ public contract and would break the left pane on any CLI update. Only
   what to store. The recorder writes only the entries whose identity changed —
   `fold` is immutable, so that is at most one row per event. Two folds that had
   to agree would drift; this one cannot.
+- **Grouping runs of activity is render-time, and lives nowhere near that fold.**
+  `lib/studio/runs.ts` takes the entries and returns items that are either one
+  entry or a run of consecutive read-only calls; the pane folds a run of two or
+  more into a single row that expands into exactly the rows it replaced. Doing it
+  in `shared/transcript.ts` instead would put presentation into SQLite and make
+  the stored transcript lossy — and because the grouper is a pure function over
+  the entries, a session loaded from history groups identically to one folded
+  live. Only an explicitly named set of tools folds, so an unrecognised tool is
+  never hidden, and neither is anything that failed or changed something.
+- **What folds is judged by what a call did, not by which tool did it.** The
+  named set covers `Read`, `Glob`, `Grep`, `NotebookRead` and the web lookups —
+  but an agent explores this codebase through `Bash` far more than through
+  `Read`, so a `Bash` call is folded when `isQuietCommand` in
+  `lib/studio/commands.ts` proves its command only looked. That classifier splits
+  on `&&`, `||`, `;` and `|`, rejects outright any command holding a redirect, a
+  backtick or `$(`, and then requires every segment's program to be in an
+  allowlist with per-program guards, because `find -delete`, `git commit` and
+  `curl -o` all write. Every branch that cannot prove read-only returns loud:
+  unknown program, unparseable quoting, empty string. Wrong in the quiet
+  direction hides a mutation, wrong in the loud direction costs one row.
 - **`id` is not stored.** The row is `(session_id, ordinal, kind, payload)` and
   the id is rebuilt on load as `block-<ordinal>`, so a session loaded from disk
   and a turn folded live can never collide on a React key.
@@ -424,6 +444,12 @@ remount *was* the cancel, cancellation is now `stopTurn`, said out loud.
   is on screen; a turn that ends anywhere else sets `unread`, which the row shows
   as a dot until you open it. Status per row — running, waiting on a permission,
   failed — is derived from the same map by `statusOf`, and none of it is stored.
+- **The pane's folder is the open session's project, not the selected one.**
+  `openedProject` resolves it from the session's `projectId` and only falls back
+  to the selection, because the selection is `null` until `project.list` answers
+  and every path in the transcript then renders absolute. One project drives the
+  title, the transcript's `cwd`, the permission card and the missing-folder
+  banner, so they cannot disagree about which folder a turn ran in.
 - **A permission belongs to its turn, not to the screen.** A background session
   that asks marks its row and keeps its own composer locked; the card is answered
   when you open that session. The gate denies anything unanswered for ten minutes,
