@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { toolDetail, toolFailure, toolTarget } from "@/lib/studio/activity";
+import {
+  targetText,
+  toolDetail,
+  toolFailure,
+  toolTarget,
+  toolTargetParts,
+} from "@/lib/studio/activity";
 
 const CWD = "/Users/me/projects/my-video";
 
@@ -23,6 +29,99 @@ describe("toolTarget", () => {
   it("has nothing to show for an input without a subject", () => {
     expect(toolTarget({ todos: [] }, CWD)).toBeNull();
     expect(toolTarget(null, CWD)).toBeNull();
+  });
+});
+
+describe("toolTargetParts", () => {
+  it("splits a path into the folder in front and the filename", () => {
+    expect(toolTargetParts({ file_path: `${CWD}/src/Scene.tsx` }, CWD)).toEqual(
+      {
+        kind: "path",
+        lead: "src/",
+        name: "Scene.tsx",
+      }
+    );
+  });
+
+  it("leaves a file at the root of the project with no folder in front", () => {
+    expect(
+      toolTargetParts({ file_path: `${CWD}/remotion.config.ts` }, CWD)
+    ).toEqual({ kind: "path", lead: "", name: "remotion.config.ts" });
+  });
+
+  it("keeps the whole folder in front when there is none to strip", () => {
+    expect(
+      toolTargetParts({ file_path: `${CWD}/src/Scene.tsx` }, null)
+    ).toEqual({
+      kind: "path",
+      lead: `${CWD}/src/`,
+      name: "Scene.tsx",
+    });
+  });
+
+  it("names the last segment of a folder, not the empty string after it", () => {
+    expect(toolTargetParts({ path: `${CWD}/src/scenes/` }, CWD)).toEqual({
+      kind: "path",
+      lead: "src/",
+      name: "scenes/",
+    });
+  });
+
+  it("leaves a command whole, since it reads from the left", () => {
+    expect(toolTargetParts({ command: "bun run build" }, CWD)).toEqual({
+      kind: "text",
+      lead: "",
+      name: "bun run build",
+    });
+  });
+
+  it("puts the cd in front, where it can be dimmed", () => {
+    expect(
+      toolTargetParts({ command: `cd ${CWD} && ls src/demos/` }, CWD)
+    ).toEqual({
+      kind: "text",
+      lead: `cd ${CWD} && `,
+      name: "ls src/demos/",
+    });
+  });
+
+  it("dims a cd that leaves the open folder too, since it is still a prefix", () => {
+    expect(
+      toolTargetParts(
+        { command: `cd ${CWD}/.. && bun run build` },
+        `${CWD}/src/demos/one`
+      )
+    ).toEqual({
+      kind: "text",
+      lead: `cd ${CWD}/.. && `,
+      name: "bun run build",
+    });
+  });
+
+  it("still hands the permission card the command that actually runs", () => {
+    const command = `cd ${CWD} && rm -rf dist`;
+
+    expect(toolTarget({ command }, CWD)).toBe(command);
+  });
+
+  it("joins back to the string the permission card renders", () => {
+    for (const input of [
+      { file_path: `${CWD}/src/Scene.tsx` },
+      { file_path: "/etc/hosts" },
+      { file_path: `${CWD}/remotion.config.ts` },
+      { command: "bun add remotion" },
+    ]) {
+      const parts = toolTargetParts(input, CWD);
+
+      expect(parts).not.toBeNull();
+      expect(parts === null ? null : targetText(parts)).toBe(
+        toolTarget(input, CWD)
+      );
+    }
+  });
+
+  it("has nothing to split for an input without a subject", () => {
+    expect(toolTargetParts({ todos: [] }, CWD)).toBeNull();
   });
 });
 

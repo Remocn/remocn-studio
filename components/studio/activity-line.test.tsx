@@ -38,7 +38,51 @@ describe("ActivityLine", () => {
     );
 
     expect(screen.getByText("Read")).toBeVisible();
-    expect(screen.getByText("src/Scene.tsx")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Read src/Scene.tsx" })
+    ).toBeVisible();
+  });
+
+  it("puts the filename in a text node of its own, ahead of its folder", () => {
+    render(
+      <ActivityLine
+        cwd={CWD}
+        entry={entry({
+          input: { file_path: `${CWD}/components/studio/composer.tsx` },
+        })}
+      />
+    );
+
+    expect(screen.getByText("composer.tsx")).toBeVisible();
+    expect(screen.getByText("components/studio/")).toBeVisible();
+  });
+
+  it("keeps a path outside the project recognisably absolute", () => {
+    render(
+      <ActivityLine
+        cwd={CWD}
+        entry={entry({ input: { file_path: "/etc/hosts" } })}
+      />
+    );
+
+    expect(screen.getByText("/etc/")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Read /etc/hosts" })
+    ).toBeVisible();
+  });
+
+  it("still reads a whole path when the open folder is not known yet", () => {
+    render(
+      <ActivityLine
+        cwd={null}
+        entry={entry({ input: { file_path: `${CWD}/src/Scene.tsx` } })}
+      />
+    );
+
+    expect(screen.getByText("Scene.tsx")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: `Read ${CWD}/src/Scene.tsx` })
+    ).toBeVisible();
   });
 
   it("expands an edit into a diff", () => {

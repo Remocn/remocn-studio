@@ -360,6 +360,27 @@ public contract and would break the left pane on any CLI update. Only
   what to store. The recorder writes only the entries whose identity changed —
   `fold` is immutable, so that is at most one row per event. Two folds that had
   to agree would drift; this one cannot.
+- **Grouping runs of activity is render-time, and lives nowhere near that fold.**
+  `lib/studio/runs.ts` takes the entries and returns items that are either one
+  entry or a run of consecutive tool calls; the pane folds a run of two or more
+  into a single row showing the last of them and a `+N`, which expands into
+  exactly the rows it replaced. Doing it in `shared/transcript.ts` instead would
+  put presentation into SQLite and make the stored transcript lossy — and because
+  the grouper is a pure function over the entries, a session loaded from history
+  groups identically to one folded live.
+- **Every tool call folds, and only a failure breaks a run.** An earlier rule
+  folded a named set of read-only tools and kept every command on screen. Two
+  turns' worth of screenshots killed it: a real turn is walls of `Bash`, and the
+  walls are as much `mkdir` and generator scripts as `ls` — a rule that spares
+  mutations spares the wall. A failed call still stands alone, because its error
+  text renders under the row and a count must never be the only trace of the one
+  thing that went wrong. Showing the newest entry rather than a count is what
+  makes the same row a live ticker while the turn runs.
+- **A row leads with an icon for the kind of work, not a state dot.**
+  `components/studio/activity-icon.tsx` maps tool → lucide icon through a `Map`
+  (a `Record` would resolve `constructor` off `Object.prototype`), with a wrench
+  for anything unknown. State went into the icon's colour, so a settled turn has
+  no column of green and `running`/`failed` stay findable.
 - **`id` is not stored.** The row is `(session_id, ordinal, kind, payload)` and
   the id is rebuilt on load as `block-<ordinal>`, so a session loaded from disk
   and a turn folded live can never collide on a React key.
@@ -424,6 +445,12 @@ remount *was* the cancel, cancellation is now `stopTurn`, said out loud.
   is on screen; a turn that ends anywhere else sets `unread`, which the row shows
   as a dot until you open it. Status per row — running, waiting on a permission,
   failed — is derived from the same map by `statusOf`, and none of it is stored.
+- **The pane's folder is the open session's project, not the selected one.**
+  `openedProject` resolves it from the session's `projectId` and only falls back
+  to the selection, because the selection is `null` until `project.list` answers
+  and every path in the transcript then renders absolute. One project drives the
+  title, the transcript's `cwd`, the permission card and the missing-folder
+  banner, so they cannot disagree about which folder a turn ran in.
 - **A permission belongs to its turn, not to the screen.** A background session
   that asks marks its row and keeps its own composer locked; the card is answered
   when you open that session. The gate denies anything unanswered for ten minutes,

@@ -3,16 +3,17 @@
 import { ChevronRightIcon } from "lucide-react";
 import { useMemo } from "react";
 import { useDisclosure } from "@/hooks/use-disclosure";
-import { toolDetail, toolFailure, toolTarget } from "@/lib/studio/activity";
+import {
+  targetText,
+  toolDetail,
+  toolFailure,
+  toolTargetParts,
+} from "@/lib/studio/activity";
 import { cn } from "@/lib/utils";
-import type { ActivityEntry, ActivityState } from "@/shared/ipc";
+import type { ActivityEntry } from "@/shared/ipc";
 import { ActivityDetail } from "./activity-detail";
-
-const DOTS: Record<ActivityState, string> = {
-  done: "bg-emerald-500",
-  failed: "bg-destructive",
-  running: "animate-pulse bg-amber-500",
-};
+import { ActivityIcon } from "./activity-icon";
+import { ActivityTarget } from "./activity-target";
 
 export function ActivityLine({
   cwd,
@@ -23,28 +24,24 @@ export function ActivityLine({
 }) {
   const disclosure = useDisclosure();
   const detail = useMemo(() => toolDetail(entry), [entry]);
-  const target = toolTarget(entry.input, cwd);
+  const target = toolTargetParts(entry.input, cwd);
   const failure = entry.state === "failed" ? toolFailure(entry.result) : null;
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <button
         aria-expanded={detail === null ? undefined : disclosure.isOpen}
-        aria-label={target === null ? entry.name : `${entry.name} ${target}`}
+        aria-label={
+          target === null ? entry.name : `${entry.name} ${targetText(target)}`
+        }
         className="group flex w-full min-w-0 items-center gap-2 text-left font-mono text-xs disabled:cursor-default"
         disabled={detail === null}
         onClick={disclosure.toggle}
         type="button"
       >
-        <span
-          className={cn("size-1.5 shrink-0 rounded-full", DOTS[entry.state])}
-        />
+        <ActivityIcon name={entry.name} state={entry.state} />
         <span className="shrink-0 text-foreground">{entry.name}</span>
-        {target === null ? null : (
-          <span className="truncate text-muted-foreground group-hover:text-foreground">
-            {target}
-          </span>
-        )}
+        {target === null ? null : <ActivityTarget target={target} />}
         {detail === null ? null : (
           <ChevronRightIcon
             className={cn(

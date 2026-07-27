@@ -31,25 +31,25 @@ import { Transcript } from "./transcript";
 const PLACEHOLDERS = ["one", "two", "three"];
 
 export function ChatPane() {
-  const { activeProject, activeSession, relocateProject, turn } = useStudio();
+  const { activeSession, openedProject, relocateProject, turn } = useStudio();
   const { locate } = useLocateProject(
-    activeProject?.id ?? null,
+    openedProject?.id ?? null,
     relocateProject
   );
 
   return (
     <Pane>
       <PaneHeader>
-        <PaneTitle>{titleOf(activeProject, activeSession)}</PaneTitle>
+        <PaneTitle>{titleOf(openedProject, activeSession)}</PaneTitle>
       </PaneHeader>
 
       {turn.isLoadingTranscript ? (
         <LoadingTranscript />
       ) : (
         <Conversation
-          cwd={activeProject?.path ?? null}
-          hasProject={activeProject !== null}
-          missing={activeProject?.missing ?? false}
+          cwd={openedProject?.path ?? null}
+          hasProject={openedProject !== null}
+          missing={openedProject?.missing ?? false}
           onLocate={locate}
           turn={turn}
         />

@@ -1,11 +1,13 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Message, MessageContent } from "@/components/ui/message";
 import { MessageScrollerItem } from "@/components/ui/message-scroller";
+import { groupActivity } from "@/lib/studio/runs";
 import type { TranscriptEntry } from "@/shared/ipc";
 import { ActivityLine } from "./activity-line";
+import { ActivityRun } from "./activity-run";
 import { AttachmentRow } from "./attachment-row";
 import { Markdown } from "./markdown";
 import { Thinking } from "./thinking";
@@ -23,18 +25,24 @@ export function Transcript({
   isRunning: boolean;
   isWaiting: boolean;
 }) {
+  const items = useMemo(() => groupActivity(entries), [entries]);
   const last = entries.at(-1) ?? null;
   const isThinking = isRunning && !isWaiting && last?.kind !== "assistant";
+  const lastId = items.at(-1)?.id ?? null;
 
   return (
     <>
-      {entries.map((entry) => (
-        <MessageScrollerItem key={entry.id} messageId={entry.id}>
-          <Entry
-            cwd={cwd}
-            entry={entry}
-            isStreaming={isRunning && entry.id === last?.id}
-          />
+      {items.map((item) => (
+        <MessageScrollerItem key={item.id} messageId={item.id}>
+          {item.kind === "run" ? (
+            <Run cwd={cwd} entries={item.entries} />
+          ) : (
+            <Entry
+              cwd={cwd}
+              entry={item.entry}
+              isStreaming={isRunning && item.id === lastId}
+            />
+          )}
         </MessageScrollerItem>
       ))}
 
@@ -106,3 +114,4 @@ function EntryBlock({
 }
 
 const Entry = memo(EntryBlock);
+const Run = memo(ActivityRun);

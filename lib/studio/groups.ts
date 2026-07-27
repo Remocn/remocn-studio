@@ -5,6 +5,18 @@ export interface ProjectGroup {
   readonly sessions: readonly HistorySession[];
 }
 
+export function projectOf(
+  projects: readonly Project[],
+  session: HistorySession | null,
+  fallback: Project | null
+): Project | null {
+  if (session === null) {
+    return fallback;
+  }
+
+  return projects.find((row) => row.id === session.projectId) ?? fallback;
+}
+
 export function groupSessions(
   projects: readonly Project[],
   sessions: readonly HistorySession[]
