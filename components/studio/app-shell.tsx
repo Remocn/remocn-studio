@@ -6,6 +6,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { layoutStorage } from "@/lib/studio/settings";
 import { ChatPane } from "./chat-pane";
@@ -13,7 +14,6 @@ import { PreviewPane } from "./preview-pane";
 import { ProjectsPane } from "./projects-pane";
 import { QuitGuard } from "./quit-guard";
 import { StudioProvider } from "./studio-provider";
-import { TitleBar } from "./title-bar";
 
 const SHELL_LAYOUT_ID = "shell";
 
@@ -21,8 +21,10 @@ export function AppShell() {
   return (
     <StudioProvider>
       <TooltipProvider delay={500}>
-        <ShellLayout />
-        <QuitGuard />
+        <Toaster>
+          <ShellLayout />
+          <QuitGuard />
+        </Toaster>
       </TooltipProvider>
     </StudioProvider>
   );
@@ -37,8 +39,6 @@ function ShellLayout() {
 
   return (
     <div className="isolate flex h-full min-h-0 flex-col overflow-hidden bg-background">
-      <TitleBar />
-
       <ResizablePanelGroup
         className="min-h-0 flex-1"
         defaultLayout={defaultLayout}

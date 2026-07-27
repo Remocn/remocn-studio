@@ -1,29 +1,25 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { HistorySession } from "@/shared/ipc";
-
-const LIMIT = 8;
+import type { PaneGroup, SessionRow } from "@/lib/studio/groups";
 
 export interface VisibleSessions {
   hidden: number;
   showAll: () => void;
-  visible: readonly HistorySession[];
+  visible: readonly SessionRow[];
 }
 
-export function useVisibleSessions(
-  sessions: readonly HistorySession[]
-): VisibleSessions {
+export function useVisibleSessions(group: PaneGroup): VisibleSessions {
   const [isFull, setIsFull] = useState(false);
 
   const showAll = useCallback(() => setIsFull(true), []);
 
   return useMemo(
     () => ({
-      hidden: isFull ? 0 : Math.max(sessions.length - LIMIT, 0),
+      hidden: isFull ? 0 : group.hidden,
       showAll,
-      visible: isFull ? sessions : sessions.slice(0, LIMIT),
+      visible: isFull ? group.rows : group.visible,
     }),
-    [isFull, sessions, showAll]
+    [group, isFull, showAll]
   );
 }

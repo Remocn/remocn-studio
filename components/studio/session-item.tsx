@@ -5,54 +5,108 @@ import {
   CircleQuestionMarkIcon,
   Trash2Icon,
 } from "lucide-react";
-import type { MouseEvent } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { DotmSquare1 } from "@/components/ui/dotm-square-1";
-import type { SessionStatus } from "@/lib/studio/turns";
+import { type SessionRow, sessionMeta } from "@/lib/studio/groups";
+import { relativeTime } from "@/lib/studio/time";
 import { cn } from "@/lib/utils";
-import type { HistorySession } from "@/shared/ipc";
 
-export function SessionItem({
-  isActive,
-  onRemove,
-  onSelect,
-  session,
-  status,
-  unread,
-}: {
+interface RowProps {
   isActive: boolean;
+  now: number;
   onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelect: (event: MouseEvent<HTMLButtonElement>) => void;
-  session: HistorySession;
-  status: SessionStatus;
-  unread: boolean;
+  row: SessionRow;
+}
+
+export function SessionItem(props: RowProps) {
+  const { now, row } = props;
+  const meta = sessionMeta(row, now);
+
+  return (
+    <RowShell
+      {...props}
+      marker={<Marker row={row} />}
+      meta={
+        meta === null ? null : (
+          <p
+            className={cn(
+              "truncate text-xs tabular-nums",
+              meta.isError ? "text-destructive" : "text-muted-foreground"
+            )}
+          >
+            {meta.text}
+          </p>
+        )
+      }
+      time={meta === null ? relativeTime(row.session.updatedAt, now) : null}
+    />
+  );
+}
+
+function RowShell({
+  isActive,
+  marker,
+  meta,
+  onRemove,
+  onSelect,
+  row,
+  time,
+}: RowProps & {
+  marker: ReactNode;
+  meta: ReactNode;
+  time: string | null;
 }) {
+  const { session, status } = row;
   const busy = status === "running" || status === "waiting";
+  const titleId = `session-title-${session.id}`;
 
   return (
     <div className="group/session relative">
-      <Button
-        aria-current={isActive ? "true" : undefined}
+      <div
         className={cn(
-          "flex w-full flex-row text-left",
-          isActive && "bg-sidebar-accent"
+          "rounded-lg py-1.5 pr-8 pl-7 text-sm",
+          isActive ? "bg-sidebar-accent" : "group-hover/session:bg-muted/60"
         )}
+      >
+        <div className="flex items-baseline gap-2">
+          <div
+            className={cn(
+              "min-w-0 flex-1 truncate",
+              isActive
+                ? "text-sidebar-foreground"
+                : "text-sidebar-foreground/65"
+            )}
+            id={titleId}
+          >
+            {session.title}
+          </div>
+          {time === null ? null : (
+            <div className="shrink-0 text-muted-foreground text-xs tabular-nums">
+              {time}
+            </div>
+          )}
+        </div>
+
+        {meta}
+      </div>
+
+      {marker}
+
+      <button
+        aria-current={isActive ? "true" : undefined}
+        aria-labelledby={titleId}
+        className="absolute inset-0 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
         onClick={onSelect}
         type="button"
         value={session.id}
-        variant="ghost"
-      >
-        <span className="w-full truncate pr-7 text-sidebar-foreground text-sm">
-          {session.title}
-        </span>
-      </Button>
-
-      <Marker session={session} status={status} unread={unread} />
+      />
 
       {busy ? null : (
         <Button
           aria-label={`Delete ${session.title}`}
-          className="absolute top-1/2 right-1 -translate-y-1/2 opacity-0 focus-visible:opacity-100 group-hover/session:opacity-100"
+          className="absolute top-1 right-1 z-10 opacity-0 focus-visible:opacity-100 group-hover/session:opacity-100"
           onClick={onRemove}
           size="icon-xs"
           value={session.id}
@@ -65,22 +119,20 @@ export function SessionItem({
   );
 }
 
-function Marker({
-  session,
-  status,
-  unread,
-}: {
-  session: HistorySession;
-  status: SessionStatus;
-  unread: boolean;
-}) {
-  const className =
-    "pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 transition-opacity group-hover/session:opacity-0";
+function Marker({ row }: { row: SessionRow }) {
+  const label = statusLabel(row);
+  // `left-1.5` puts the marker in the same column as the project row's chevron,
+  // so a session and its project share one icon gutter.
+  const className = "pointer-events-none absolute top-2 left-1.5 shrink-0";
 
-  if (status === "running") {
+  if (label === null) {
+    return null;
+  }
+
+  if (row.status === "running") {
     return (
       <DotmSquare1
-        ariaLabel={`${session.title} is running`}
+        ariaLabel={label}
         className={cn(className, "text-primary")}
         dotSize={2}
         size={16}
@@ -88,35 +140,50 @@ function Marker({
     );
   }
 
-  if (status === "waiting") {
+  if (row.status === "waiting") {
     return (
       <CircleQuestionMarkIcon
-        aria-label={`${session.title} is waiting for an answer`}
-        className={cn(className, "size-3.5 text-primary")}
+        aria-label={label}
+        className={cn(className, "size-4 text-primary")}
         role="status"
       />
     );
   }
 
-  if (status === "failed") {
+  if (row.status === "failed") {
     return (
       <CircleAlertIcon
-        aria-label={`${session.title} failed`}
-        className={cn(className, "size-3.5 text-destructive")}
+        aria-label={label}
+        className={cn(className, "size-4 text-destructive")}
         role="status"
       />
     );
   }
 
-  if (unread) {
-    return (
-      <span
-        aria-label={`${session.title} has news`}
-        className={cn(className, "size-1.5 rounded-full bg-primary")}
-        role="status"
-      />
-    );
+  return (
+    <span
+      aria-label={label}
+      className={cn(
+        className,
+        "top-3.5 left-3 size-1.5 rounded-full bg-primary"
+      )}
+      role="status"
+    />
+  );
+}
+
+function statusLabel(row: SessionRow): string | null {
+  const { session, status, unread } = row;
+
+  if (status === "running") {
+    return `${session.title} is running`;
+  }
+  if (status === "waiting") {
+    return `${session.title} is waiting for an answer`;
+  }
+  if (status === "failed") {
+    return `${session.title} failed`;
   }
 
-  return null;
+  return unread ? `${session.title} has news` : null;
 }

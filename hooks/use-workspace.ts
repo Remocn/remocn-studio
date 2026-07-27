@@ -15,11 +15,7 @@ import { type StudioProjects, useProjects } from "@/hooks/use-projects";
 import { type Scaffolds, useScaffold } from "@/hooks/use-scaffold";
 import { type StudioSessions, useSessions } from "@/hooks/use-sessions";
 import { type Turns, useTurns } from "@/hooks/use-turns";
-import {
-  groupSessions,
-  type ProjectGroup,
-  projectOf,
-} from "@/lib/studio/groups";
+import { type PaneGroup, paneGroups, projectOf } from "@/lib/studio/groups";
 import { saveSessionMode } from "@/lib/studio/history";
 import type { StudioSettings } from "@/lib/studio/settings";
 import type {
@@ -37,7 +33,7 @@ export interface Workspace
     Scaffolds,
     Turns {
   changeSessionMode: (historyId: string, mode: SessionMode) => void;
-  groups: readonly ProjectGroup[];
+  groups: readonly PaneGroup[];
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
   openedProject: Project | null;
@@ -197,8 +193,8 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
   );
 
   const groups = useMemo(
-    () => groupSessions(projects.projects, rows),
-    [projects.projects, rows]
+    () => paneGroups(projects.projects, rows, turns.turns),
+    [projects.projects, rows, turns.turns]
   );
 
   const openedProject = projectOf(

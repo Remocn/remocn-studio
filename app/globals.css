@@ -165,7 +165,10 @@
 
 @layer base {
   :root {
-    --titlebar-leading-inset: 5rem;
+    /* The window has no title bar, so macOS draws its buttons straight over the
+       sidebar. This is the band kept clear for them — vertical, not horizontal,
+       so the sidebar's own content still starts on the pane's left edge. */
+    --titlebar-block-inset: 2.5rem;
   }
 
   /* This is an app window, not a web page: the shell owns the viewport and the

@@ -6,6 +6,7 @@ import type { HistorySession, Project } from "@/shared/ipc";
 
 const PICKED_FOLDER = "/Users/me/projects/my-video";
 const SESSION_ROW = /^A promo for the launch/;
+const WORDMARK = /^emocn/;
 
 const SIDECAR_READY = {
   attempt: 0,
@@ -82,8 +83,8 @@ async function renderShell() {
   await screen.findByRole("button", { name: "Export" });
 }
 
-function openFolderButtons() {
-  return screen.getAllByRole("button", { name: "Open folder" });
+function openFolderButton() {
+  return screen.findByRole("button", { name: "Open folder" });
 }
 
 describe("app shell", () => {
@@ -113,16 +114,29 @@ describe("app shell", () => {
 
     expect(await screen.findByText("No projects yet")).toBeVisible();
     expect(screen.getAllByText("No folder open")).toHaveLength(2);
-    expect(openFolderButtons()).toHaveLength(2);
+    expect(await openFolderButton()).toBeVisible();
   });
 
-  it("shows the chosen folder in the title bar", async () => {
+  it("names the app at the head of the sidebar, and never a folder", async () => {
+    mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
+    await renderShell();
+
+    // The lockup spells the name with the mark as its "R", so the text beside
+    // the glyph starts at "emocn" — nothing else in the shell draws that.
+    expect(await screen.findByText(WORDMARK)).toBeVisible();
+    expect(screen.getAllByText("my-video")).toHaveLength(1);
+    expect(
+      screen.queryByRole("button", { name: "Open folder" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the picked folder into the pane", async () => {
     mockStudio({ folder: PICKED_FOLDER });
     await renderShell();
 
-    fireEvent.click(openFolderButtons()[0]);
+    fireEvent.click(await openFolderButton());
 
-    expect(await screen.findAllByText("my-video")).toHaveLength(2);
+    expect(await screen.findByText("my-video")).toBeVisible();
     expect(screen.queryByText("No folder open")).not.toBeInTheDocument();
     expect(screen.queryByText("No projects yet")).not.toBeInTheDocument();
   });
@@ -131,7 +145,7 @@ describe("app shell", () => {
     mockStudio({ folder: null });
     await renderShell();
 
-    fireEvent.click(openFolderButtons()[0]);
+    fireEvent.click(await openFolderButton());
 
     expect(await screen.findByText("No projects yet")).toBeVisible();
     expect(screen.getAllByText("No folder open")).toHaveLength(2);
@@ -147,7 +161,7 @@ describe("app shell", () => {
       })
     );
 
-    expect(await screen.findAllByText("my-video")).toHaveLength(2);
+    expect(await screen.findByText("my-video")).toBeVisible();
     expect(
       await screen.findByRole("heading", { name: "A promo for the launch" })
     ).toBeVisible();
@@ -169,6 +183,28 @@ describe("app shell", () => {
     expect(await screen.findByText("No sessions yet")).toBeVisible();
     expect(
       await screen.findByRole("heading", { name: "New session" })
+    ).toBeVisible();
+  });
+
+  it("offers to undo a delete, and puts the session back where it was", async () => {
+    mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
+    await renderShell();
+    fireEvent.click(await screen.findByRole("button", { name: SESSION_ROW }));
+    await screen.findByRole("heading", { name: "A promo for the launch" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete A promo for the launch" })
+    );
+
+    expect(await screen.findByText("Session deleted")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+
+    expect(
+      await screen.findByRole("button", { name: SESSION_ROW })
+    ).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "A promo for the launch" })
     ).toBeVisible();
   });
 

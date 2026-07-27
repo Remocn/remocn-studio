@@ -152,15 +152,20 @@ production — **there is no Node server at runtime**. Therefore:
 ### UI
 
 - **Primitives are `@base-ui/react`, NOT Radix.** The shadcn style is
-  `base-luma`; every `components/ui/*` file imports from `@base-ui/react/*`.
+  `base-vega`; every `components/ui/*` file imports from `@base-ui/react/*`.
   Prop names and composition patterns differ from Radix — check the actual
-  primitive import before editing a component.
+  primitive import before editing a component. The style moved from `base-luma`
+  to `base-vega` when the tree was regenerated: buttons went from `rounded-4xl`
+  pills to `rounded-md`, and radii now come from `min(var(--radius-md), …)` per
+  size. **A re-add rewrites all ~70 files at once**, so run `bun run fix` right
+  after — the registry emits its own formatting and `check` fails on every file
+  until it is normalised.
 - **Tailwind v4, CSS-first.** No `tailwind.config.*`. Theme lives in
   `app/globals.css` via `@theme inline` and CSS variables (`:root` / `.dark`),
   colors in `oklch()`, radius scale derived from `--radius`. Tokens are copied
   from remocn.dev — the `.dark` set is the warm obsidian palette (`#141318`).
 - `app/globals.css` imports `shadcn/tailwind.css`, which supplies the `data-open`
-  / `data-checked` / … custom variants the base-luma components compile against.
+  / `data-checked` / … custom variants the base-vega components compile against.
   Do not drop that import.
 - **Dark-first**, and deliberately not following the OS: `components/theme-provider.tsx`
   sets `defaultTheme="dark"`, `enableSystem={false}`.
@@ -169,7 +174,7 @@ production — **there is no Node server at runtime**. Therefore:
   (the `animated` reveal keyframes) and `@source "../node_modules/streamdown/dist/*.js"`
   — Streamdown ships Tailwind utility classes inside its compiled JS, so without
   that the markdown renders unstyled. It expects the shadcn tokens, which the
-  base-luma palette already supplies.
+  base-vega palette already supplies.
 - **Syntax highlighting is our own Shiki plugin**, `lib/studio/highlighter.ts`,
   built on `createHighlighterCore` with a fixed language set (tsx, ts, jsx, js,
   json, bash, css) and the JS regex engine, so no `onig.wasm` has to load over
@@ -426,13 +431,56 @@ public contract and would break the left pane on any CLI update. Only
   `window`.
 
 The pane on top of it: projects ordered by their most recent session — that
-ordering is `project.list`'s `ORDER BY`, not the webview's — sessions newest first
-inside each, expansion persisted in `settings.json`. A session row is created by
+*base* ordering is `project.list`'s `ORDER BY` — sessions newest first inside
+each, expansion persisted in `settings.json`. A session row is created by
 the first turn and arrives in the webview as the `history` chunk at the head of
 that turn's stream, which is why the list can show a brand-new session without a
 round trip and without racing the turn that created it. The id in that row is one
 the *webview* minted and sent, so a turn has a key from the moment it starts
 rather than from the moment the sidecar answers.
+
+### The pane never hides what needs you
+
+`paneGroups` in `lib/studio/groups.ts` is one pure function over the projects, the
+sessions and the turn map, and it decides everything the pane's honesty rests on:
+grouping, ordering, the collapsed rollup, and which rows the cap may hide.
+Components render its output and decide nothing, which is why the rules are pinned
+by tests that render nothing.
+
+- **Attention beats recency, but only where it exists.** Inside a group: waiting
+  first, longest wait leading, then running, then everything else in the order the
+  store gave. Across groups: the store's order is the base and a group holding a
+  waiting session is promoted above the rest, keeping the base order within each
+  half. That promotion is the one piece of ordering the *webview* owns, and it has
+  to be — turn state exists nowhere else. With an empty turn map the output is
+  byte-for-byte the store's order.
+- **The cap counts only quiet rows.** Waiting, running and unread rows render
+  regardless and are excluded from the "Show N more" count, so the number always
+  matches what expanding reveals and the cap can only ever hide what you have
+  already seen and settled.
+- **The rollup is worst-of**, waiting > running > failed > unread, on the project
+  row while the group is collapsed, and waiting carries its count.
+- **Timestamps are webview-only.** `TurnState` gains a `startedAt` when a turn
+  begins and each pending ask an `askedAt` when its event arrives — no IPC, schema
+  or sidecar change, because the webview already receives both moments. One
+  minute-interval tick (`useNow`, a fiber, not a bare `setInterval`) drives every
+  label in the pane, and the pure layer takes `now` as an argument so tests pass a
+  fixed one instead of faking clocks.
+- **Rows are adaptive.** Settled is one line — title left, relative time right.
+  Waiting, running and failed take a second line: `Waiting 4m · Bash`,
+  `Running · 2m`, or the first line of the error. The waiting timer counts *up*
+  and never toward the gate's ten-minute auto-deny: if that window changes the
+  pane needs no change, because it displays elapsed and not remaining.
+- **Hovering hides nothing.** The status marker leads the row and the delete
+  button has its own slot, where the marker used to fade out to make room for it —
+  aiming at a session used to cost you the thing you were checking.
+- **Deleting forgives.** The row leaves the list at once, but `history.remove` is
+  held behind an undo window — `Effect.sleep` in a forked fiber — and the toast's
+  Undo is a fiber interrupt that puts the row back at its old index, selection
+  included. The window is a parameter with a default so tests shrink it. Quitting
+  inside the window drops the delete rather than rushing it: the session comes back
+  next launch, which is the failure direction that keeps data. A busy session still
+  refuses to be deleted at all.
 
 ### Turns run in the provider, not in the pane
 
@@ -561,7 +609,7 @@ Flat root, no monorepo — per #218.
 ```
 app/                  Next App Router (layout, page, globals.css)
 components/ui/        shadcn/ui primitives (Base UI–backed)
-components/studio/    app-level components (panes, title bar, sidecar status)
+components/studio/    app-level components (panes, sidecar status, quit guard)
 hooks/                all behaviour: no logic inline in components
 lib/                  cn helper, error formatting, lib/studio/* clients
 preview/              the entry the *project's* webpack compiles instead of Studio's UI

@@ -1,8 +1,22 @@
 "use client";
 
-import { ChevronRightIcon, SquarePenIcon, UnplugIcon } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  CircleAlertIcon,
+  CircleQuestionMarkIcon,
+  SquarePenIcon,
+  UnplugIcon,
+} from "lucide-react";
 import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { DotmSquare1 } from "@/components/ui/dotm-square-1";
+import {
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+} from "@/components/ui/sidebar";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Tooltip,
@@ -12,99 +26,90 @@ import {
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
 import { useVisibleSessions } from "@/hooks/use-visible-sessions";
-import { statusOf, type TurnState } from "@/lib/studio/turns";
+import type { Rollup as GroupRollup, PaneGroup } from "@/lib/studio/groups";
 import { cn } from "@/lib/utils";
-import type { HistorySession, Project } from "@/shared/ipc";
 import { ProjectMenu } from "./project-menu";
 import { SessionItem } from "./session-item";
 
 export function ProjectGroup({
   activeSessionId,
   commands,
+  group,
   isExpanded,
+  now,
   onNewSession,
   onRemoveSession,
   onRetryScaffold,
   onSelectSession,
   onToggle,
-  project,
   scaffold,
-  sessions,
-  turns,
 }: {
   activeSessionId: string | null;
   commands: ProjectCommands;
+  group: PaneGroup;
   isExpanded: boolean;
+  now: number;
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onRetryScaffold: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onToggle: (event: MouseEvent<HTMLButtonElement>) => void;
-  project: Project;
   scaffold: ScaffoldState | undefined;
-  sessions: readonly HistorySession[];
-  turns: ReadonlyMap<string, TurnState>;
 }) {
-  const { hidden, showAll, visible } = useVisibleSessions(sessions);
+  const { hidden, showAll, visible } = useVisibleSessions(group);
+  const { project } = group;
   const panelId = `project-${project.id}`;
 
   return (
-    <div className="flex flex-col">
-      <div className="group/project relative">
-        <Button
-          aria-controls={panelId}
-          aria-expanded={isExpanded}
-          className={cn(
-            "w-full justify-start gap-1.5 pr-14 pl-1.5 font-medium text-sidebar-foreground text-xs",
-            project.missing && "opacity-50"
-          )}
-          onClick={onToggle}
-          size="sm"
-          value={project.id}
-          variant="ghost"
-        >
-          <ChevronRightIcon
-            className={cn(
-              "shrink-0 transition-transform",
-              isExpanded && "rotate-90"
-            )}
-          />
-          <span className="truncate">{project.name}</span>
-          {project.missing ? (
-            <Tooltip>
-              <TooltipTrigger render={<span className="shrink-0" />}>
-                <UnplugIcon className="size-3 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <span className="break-all">
-                  {project.path} is not on disk anymore
-                </span>
-              </TooltipContent>
-            </Tooltip>
-          ) : null}
-        </Button>
-
-        <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center opacity-0 focus-within:opacity-100 group-hover/project:opacity-100">
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        aria-controls={panelId}
+        aria-expanded={isExpanded}
+        className={cn("pr-14 font-medium", project.missing && "opacity-50")}
+        onClick={onToggle}
+        value={project.id}
+      >
+        {isExpanded ? (
+          <ChevronDown className="text-muted-foreground" />
+        ) : (
+          <ChevronRight className="text-muted-foreground" />
+        )}
+        <span className="min-w-0 flex-1 truncate">{project.name}</span>
+        {project.missing ? (
           <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  aria-label={`New session in ${project.name}`}
-                  disabled={project.missing}
-                  onClick={onNewSession}
-                  size="icon-xs"
-                  value={project.id}
-                  variant="ghost"
-                />
-              }
-            >
-              <SquarePenIcon />
+            <TooltipTrigger render={<span className="shrink-0" />}>
+              <UnplugIcon className="size-3 text-muted-foreground" />
             </TooltipTrigger>
-            <TooltipContent side="bottom">New session here</TooltipContent>
+            <TooltipContent side="bottom">
+              <span className="break-all">
+                {project.path} is not on disk anymore
+              </span>
+            </TooltipContent>
           </Tooltip>
+        ) : null}
+        {isExpanded ? null : <Rollup rollup={group.rollup} />}
+      </SidebarMenuButton>
 
-          <ProjectMenu commands={commands} project={project} />
-        </div>
+      <div className="absolute top-1 right-1 flex items-center opacity-0 focus-within:opacity-100 group-hover/menu-item:opacity-100">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={`New session in ${project.name}`}
+                disabled={project.missing}
+                onClick={onNewSession}
+                size="icon-xs"
+                value={project.id}
+                variant="ghost"
+              />
+            }
+          >
+            <SquarePenIcon />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">New session here</TooltipContent>
+        </Tooltip>
+
+        <ProjectMenu commands={commands} project={project} />
       </div>
 
       {scaffold === undefined ? null : (
@@ -116,41 +121,88 @@ export function ProjectGroup({
       )}
 
       {isExpanded ? (
-        <ol className="flex flex-col gap-0.5 pl-3" id={panelId}>
-          {visible.map((session) => (
-            <li key={session.id}>
+        // The sub-list keeps its semantics but drops its rail and indent: a
+        // session title lines up with the project name above it, one level.
+        // `role="list"` survives preflight's list-style:none, which WKWebView
+        // otherwise takes as a reason to drop list semantics entirely.
+        <SidebarMenuSub
+          className="mx-0 translate-x-0 gap-0.5 border-l-0 px-0"
+          id={panelId}
+          role="list"
+        >
+          {visible.map((row) => (
+            <SidebarMenuSubItem key={row.session.id}>
               <SessionItem
-                isActive={session.id === activeSessionId}
+                isActive={row.session.id === activeSessionId}
+                now={now}
                 onRemove={onRemoveSession}
                 onSelect={onSelectSession}
-                session={session}
-                status={statusOf(turns.get(session.id))}
-                unread={turns.get(session.id)?.unread ?? false}
+                row={row}
               />
-            </li>
+            </SidebarMenuSubItem>
           ))}
 
-          {sessions.length === 0 ? (
-            <li className="px-3 py-1.5 text-muted-foreground text-xs">
+          {group.rows.length === 0 ? (
+            <SidebarMenuSubItem className="py-1.5 pr-2 pl-7 text-muted-foreground text-xs">
               No sessions yet
-            </li>
+            </SidebarMenuSubItem>
           ) : null}
 
           {hidden > 0 ? (
-            <li>
+            <SidebarMenuSubItem>
               <Button
-                className="w-full justify-start pl-3 text-muted-foreground text-xs"
+                className="h-7 w-full justify-start pl-7 text-muted-foreground text-xs hover:bg-transparent hover:text-foreground"
                 onClick={showAll}
                 size="sm"
                 variant="ghost"
               >
                 Show {hidden} more
               </Button>
-            </li>
+            </SidebarMenuSubItem>
           ) : null}
-        </ol>
+        </SidebarMenuSub>
       ) : null}
-    </div>
+    </SidebarMenuItem>
+  );
+}
+
+const ROLLUP_WORD: Record<GroupRollup["status"], string> = {
+  failed: "failed",
+  running: "running",
+  unread: "unread",
+  waiting: "waiting",
+};
+
+function Rollup({ rollup }: { rollup: GroupRollup | null }) {
+  if (rollup === null) {
+    return null;
+  }
+
+  const { count, status } = rollup;
+  const label = `${count} ${count === 1 ? "session" : "sessions"} ${ROLLUP_WORD[status]}`;
+
+  return (
+    <span
+      aria-label={label}
+      className="flex shrink-0 items-center gap-1 font-normal text-[0.6875rem] text-muted-foreground tabular-nums"
+      role="status"
+    >
+      {status === "waiting" ? (
+        <>
+          <CircleQuestionMarkIcon className="size-4 shrink-0 text-primary" />
+          <span aria-hidden="true">{count}</span>
+        </>
+      ) : null}
+      {status === "running" ? (
+        <DotmSquare1 className="shrink-0 text-primary" dotSize={2} size={16} />
+      ) : null}
+      {status === "failed" ? (
+        <CircleAlertIcon className="size-4 shrink-0 text-destructive" />
+      ) : null}
+      {status === "unread" ? (
+        <span className="size-1.5 rounded-full bg-primary" />
+      ) : null}
+    </span>
   );
 }
 
@@ -175,7 +227,7 @@ function Scaffolding({
 }) {
   if (scaffold.isRunning) {
     return (
-      <p className="flex items-center gap-2 py-1 pl-4 text-muted-foreground text-xs">
+      <p className="flex items-center gap-2 py-1 pl-7 text-muted-foreground text-xs">
         <Spinner className="size-3" />
         {DOING[scaffold.step]}
       </p>
@@ -183,7 +235,7 @@ function Scaffolding({
   }
 
   return (
-    <div className="flex flex-col gap-1 py-1 pl-4">
+    <div className="flex flex-col gap-1 py-1 pl-7">
       <p className="text-destructive text-xs">{FAILED[scaffold.step]}</p>
       {scaffold.error === null ? null : (
         <p className="line-clamp-3 break-all font-mono text-[10px] text-muted-foreground">

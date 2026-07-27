@@ -1,14 +1,19 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ProjectGroup } from "@/components/studio/project-group";
+import { SidebarMenu, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
+import { paneGroups, SESSION_LIMIT } from "@/lib/studio/groups";
 import { IDLE_TURN, type TurnState } from "@/lib/studio/turns";
 import type { HistorySession, Project } from "@/shared/ipc";
 
+const NOW = Date.UTC(2026, 6, 25, 12, 0, 0);
+const MINUTE = 60_000;
 const SHOW_MORE = /Show \d+ more/;
 const OTHER_ROW = /Session 0/;
+const PROJECT_ROW = /^my-video/;
 
 const PROJECT: Project = {
   createdAt: 0,
@@ -25,6 +30,15 @@ const commands: ProjectCommands = {
   renameProject: vi.fn(),
 };
 
+const waiting = (askedAt: number): TurnState => ({
+  ...IDLE_TURN,
+  isRunning: true,
+  permissions: [
+    { askedAt, id: "ask-1", input: {}, name: "Bash", reason: "bash" },
+  ],
+  startedAt: askedAt,
+});
+
 function sessions(count: number): HistorySession[] {
   return Array.from({ length: count }, (_unused, index) => ({
     createdAt: 0,
@@ -40,6 +54,7 @@ function sessions(count: number): HistorySession[] {
 function renderGroup(
   shape: {
     isExpanded?: boolean;
+    limit?: number;
     onNewSession?: () => void;
     onToggle?: () => void;
     project?: Project;
@@ -48,22 +63,35 @@ function renderGroup(
     turns?: ReadonlyMap<string, TurnState>;
   } = {}
 ) {
+  const project = shape.project ?? PROJECT;
+  const [group] = paneGroups(
+    [project],
+    shape.rows ?? sessions(2),
+    shape.turns ?? new Map(),
+    shape.limit ?? SESSION_LIMIT
+  );
+
+  // The row is built out of sidebar menu parts, which read `SidebarProvider`'s
+  // context and expect to sit in a `SidebarMenu` list.
   return render(
     <TooltipProvider>
-      <ProjectGroup
-        activeSessionId={null}
-        commands={commands}
-        isExpanded={shape.isExpanded ?? true}
-        onNewSession={shape.onNewSession ?? vi.fn()}
-        onRemoveSession={vi.fn()}
-        onRetryScaffold={vi.fn()}
-        onSelectSession={vi.fn()}
-        onToggle={shape.onToggle ?? vi.fn()}
-        project={shape.project ?? PROJECT}
-        scaffold={shape.scaffold}
-        sessions={shape.rows ?? sessions(2)}
-        turns={shape.turns ?? new Map()}
-      />
+      <SidebarProvider>
+        <SidebarMenu>
+          <ProjectGroup
+            activeSessionId={null}
+            commands={commands}
+            group={group}
+            isExpanded={shape.isExpanded ?? true}
+            now={NOW}
+            onNewSession={shape.onNewSession ?? vi.fn()}
+            onRemoveSession={vi.fn()}
+            onRetryScaffold={vi.fn()}
+            onSelectSession={vi.fn()}
+            onToggle={shape.onToggle ?? vi.fn()}
+            scaffold={shape.scaffold}
+          />
+        </SidebarMenu>
+      </SidebarProvider>
     </TooltipProvider>
   );
 }
@@ -103,6 +131,49 @@ describe("ProjectGroup", () => {
     expect(
       screen.queryByRole("button", { name: SHOW_MORE })
     ).not.toBeInTheDocument();
+  });
+
+  it("counts only the quiet rows it hides, and never hides a busy one", () => {
+    renderGroup({
+      limit: 2,
+      rows: sessions(5),
+      turns: new Map([["session-4", waiting(NOW - MINUTE)]]),
+    });
+
+    expect(screen.getByText("Session 4")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Show 2 more" })).toBeVisible();
+  });
+
+  it("offers nothing to show when every row is already on screen", () => {
+    renderGroup({ rows: sessions(3) });
+
+    expect(
+      screen.queryByRole("button", { name: SHOW_MORE })
+    ).not.toBeInTheDocument();
+  });
+
+  it("says a collapsed group is waiting on you, and for how many sessions", () => {
+    renderGroup({
+      isExpanded: false,
+      rows: sessions(3),
+      turns: new Map([
+        ["session-0", waiting(NOW - MINUTE)],
+        ["session-2", waiting(NOW - 3 * MINUTE)],
+      ]),
+    });
+
+    expect(
+      screen.getByRole("status", { name: "2 sessions waiting" })
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: PROJECT_ROW })).toHaveTextContent(
+      "2"
+    );
+  });
+
+  it("keeps a settled group's row free of any rollup", () => {
+    renderGroup({ isExpanded: false, rows: sessions(3) });
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("marks a session whose turn is running in the background", () => {
