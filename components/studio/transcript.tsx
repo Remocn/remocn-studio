@@ -35,11 +35,7 @@ export function Transcript({
       {items.map((item) => (
         <MessageScrollerItem key={item.id} messageId={item.id}>
           {item.kind === "run" ? (
-            <Run
-              cwd={cwd}
-              entries={item.entries}
-              isStreaming={isRunning && item.id === lastId}
-            />
+            <Run cwd={cwd} entries={item.entries} />
           ) : (
             <Entry
               cwd={cwd}

@@ -59,10 +59,6 @@ export function targetText(target: ToolTarget): string {
   return `${target.lead}${target.name}`;
 }
 
-export function commandOf(input: unknown): string | null {
-  return string(fields(input), "command");
-}
-
 export function toolDetail(call: ToolCall): ToolDetail | null {
   const record = fields(call.input);
 
@@ -120,7 +116,7 @@ function splitTarget(
     return splitPath(relativeTo(value, cwd));
   }
 
-  const lead = key === "command" ? commandLead(value, cwd) : "";
+  const lead = key === "command" ? commandLead(value) : "";
   return { kind: "text", lead, name: value.slice(lead.length) };
 }
 

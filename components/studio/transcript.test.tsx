@@ -107,18 +107,20 @@ function renderTranscript(
 }
 
 describe("Transcript", () => {
-  it("shows one line per tool call, with its own state", () => {
+  it("spends one row on a run of calls, and shows the last of them", () => {
     renderTranscript(ENTRIES);
 
     expect(
-      screen.getByRole("button", { name: "Edit src/Scene1.tsx" })
+      screen.getByRole("button", { name: "Edit src/Scene3.tsx, 2 more" })
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Edit src/Scene2.tsx" })
-    ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Edit src/Scene3.tsx" })
-    ).toBeVisible();
+      screen.queryByRole("button", { name: "Edit src/Scene1.tsx" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the call that failed out of that row, error and all", () => {
+    renderTranscript(ENTRIES);
+
     expect(
       screen.getByRole("button", { name: "Bash bun run build" })
     ).toBeVisible();
@@ -128,6 +130,9 @@ describe("Transcript", () => {
   it("expands one of those lines into a readable diff", () => {
     renderTranscript(ENTRIES);
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "Edit src/Scene3.tsx, 2 more" })
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Edit src/Scene2.tsx" })
     );
@@ -189,7 +194,7 @@ describe("Transcript", () => {
 
     expect(
       screen.getByRole("button", {
-        name: "Read 3 files in components/studio",
+        name: "Read components/studio/Pane3.tsx, 2 more",
       })
     ).toBeVisible();
     expect(
@@ -201,7 +206,9 @@ describe("Transcript", () => {
     renderTranscript([read(1), read(2), read(3)]);
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Read 3 files in components/studio" })
+      screen.getByRole("button", {
+        name: "Read components/studio/Pane3.tsx, 2 more",
+      })
     );
 
     for (const index of [1, 2, 3]) {
@@ -222,57 +229,46 @@ describe("Transcript", () => {
     ).toBeVisible();
   });
 
-  it("shows the file being read right now while the run is still going", () => {
-    renderTranscript([read(1), read(2), read(3)], true);
-
-    expect(
-      screen.getByRole("button", { name: "Read components/studio/Pane3.tsx" })
-    ).toBeVisible();
-    expect(
-      screen.queryByRole("button", {
-        name: "Read 3 files in components/studio",
-      })
-    ).not.toBeInTheDocument();
-  });
-
-  it("turns that ticker into a count once the turn has settled", () => {
-    renderTranscript([read(1), read(2), read(3)]);
-
-    expect(
-      screen.getByRole("button", { name: "Read 3 files in components/studio" })
-    ).toBeVisible();
-  });
-
-  it("folds a wall of shell exploration into one row", () => {
+  it("folds a wall of shell calls into the last of them", () => {
     renderTranscript([
       shell("sh-1", `cd ${CWD} && find . -type d -name dist`),
       shell("sh-2", `cd ${CWD} && ls src/demos/ && echo "---"`),
-      shell("sh-3", `cd ${CWD} && grep -rln TransitionProps src/`),
+      shell("sh-3", `cd ${CWD} && bun add remotion`),
       shell("sh-4", `cd ${CWD} && cat src/demos/types.ts`),
     ]);
 
     expect(
-      screen.getByRole("button", { name: "Bash 4 commands" })
+      screen.getByRole("button", {
+        name: `Bash cd ${CWD} && cat src/demos/types.ts, 3 more`,
+      })
     ).toBeVisible();
   });
 
-  it("keeps the one command that changed something out of that row", () => {
-    renderTranscript([
-      shell("sh-1", `cd ${CWD} && ls src/demos/`),
-      shell("sh-2", `cd ${CWD} && cat package.json`),
-      shell("sh-3", `cd ${CWD} && bun add remotion`),
-    ]);
-
-    expect(
-      screen.getByRole("button", { name: `Bash cd ${CWD} && bun add remotion` })
-    ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Bash 2 commands" })
-    ).toBeVisible();
-  });
-
-  it("dims the cd into the open project instead of spending the row on it", () => {
+  it("dims the cd instead of spending the row on it", () => {
     renderTranscript([shell("sh-1", `cd ${CWD} && bun run build`)]);
+
+    expect(screen.getByText("bun run build")).toBeVisible();
+    expect(screen.getByText(`cd ${CWD} &&`)).toBeVisible();
+  });
+
+  it("dims it even when the agent works above the folder that was opened", () => {
+    render(
+      <MessageScrollerProvider>
+        <MessageScroller>
+          <MessageScrollerViewport>
+            <MessageScrollerContent>
+              <Transcript
+                cwd={`${CWD}/src/demos/one`}
+                entries={[shell("sh-1", `cd ${CWD} && bun run build`)]}
+                error={null}
+                isRunning={false}
+                isWaiting={false}
+              />
+            </MessageScrollerContent>
+          </MessageScrollerViewport>
+        </MessageScroller>
+      </MessageScrollerProvider>
+    );
 
     expect(screen.getByText("bun run build")).toBeVisible();
     expect(screen.getByText(`cd ${CWD} &&`)).toBeVisible();

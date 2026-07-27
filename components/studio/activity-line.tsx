@@ -10,15 +10,10 @@ import {
   toolTargetParts,
 } from "@/lib/studio/activity";
 import { cn } from "@/lib/utils";
-import type { ActivityEntry, ActivityState } from "@/shared/ipc";
+import type { ActivityEntry } from "@/shared/ipc";
 import { ActivityDetail } from "./activity-detail";
+import { ActivityIcon } from "./activity-icon";
 import { ActivityTarget } from "./activity-target";
-
-export const DOTS: Record<ActivityState, string> = {
-  done: "bg-emerald-500",
-  failed: "bg-destructive",
-  running: "animate-pulse bg-amber-500",
-};
 
 export function ActivityLine({
   cwd,
@@ -44,9 +39,7 @@ export function ActivityLine({
         onClick={disclosure.toggle}
         type="button"
       >
-        <span
-          className={cn("size-1.5 shrink-0 rounded-full", DOTS[entry.state])}
-        />
+        <ActivityIcon name={entry.name} state={entry.state} />
         <span className="shrink-0 text-foreground">{entry.name}</span>
         {target === null ? null : <ActivityTarget target={target} />}
         {detail === null ? null : (

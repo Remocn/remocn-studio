@@ -75,13 +75,26 @@ describe("toolTargetParts", () => {
     });
   });
 
-  it("puts the cd into the open project in front, where it can be dimmed", () => {
+  it("puts the cd in front, where it can be dimmed", () => {
     expect(
       toolTargetParts({ command: `cd ${CWD} && ls src/demos/` }, CWD)
     ).toEqual({
       kind: "text",
       lead: `cd ${CWD} && `,
       name: "ls src/demos/",
+    });
+  });
+
+  it("dims a cd that leaves the open folder too, since it is still a prefix", () => {
+    expect(
+      toolTargetParts(
+        { command: `cd ${CWD}/.. && bun run build` },
+        `${CWD}/src/demos/one`
+      )
+    ).toEqual({
+      kind: "text",
+      lead: `cd ${CWD}/.. && `,
+      name: "bun run build",
     });
   });
 

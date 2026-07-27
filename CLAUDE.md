@@ -362,24 +362,25 @@ public contract and would break the left pane on any CLI update. Only
   to agree would drift; this one cannot.
 - **Grouping runs of activity is render-time, and lives nowhere near that fold.**
   `lib/studio/runs.ts` takes the entries and returns items that are either one
-  entry or a run of consecutive read-only calls; the pane folds a run of two or
-  more into a single row that expands into exactly the rows it replaced. Doing it
-  in `shared/transcript.ts` instead would put presentation into SQLite and make
-  the stored transcript lossy — and because the grouper is a pure function over
-  the entries, a session loaded from history groups identically to one folded
-  live. Only an explicitly named set of tools folds, so an unrecognised tool is
-  never hidden, and neither is anything that failed or changed something.
-- **What folds is judged by what a call did, not by which tool did it.** The
-  named set covers `Read`, `Glob`, `Grep`, `NotebookRead` and the web lookups —
-  but an agent explores this codebase through `Bash` far more than through
-  `Read`, so a `Bash` call is folded when `isQuietCommand` in
-  `lib/studio/commands.ts` proves its command only looked. That classifier splits
-  on `&&`, `||`, `;` and `|`, rejects outright any command holding a redirect, a
-  backtick or `$(`, and then requires every segment's program to be in an
-  allowlist with per-program guards, because `find -delete`, `git commit` and
-  `curl -o` all write. Every branch that cannot prove read-only returns loud:
-  unknown program, unparseable quoting, empty string. Wrong in the quiet
-  direction hides a mutation, wrong in the loud direction costs one row.
+  entry or a run of consecutive tool calls; the pane folds a run of two or more
+  into a single row showing the last of them and a `+N`, which expands into
+  exactly the rows it replaced. Doing it in `shared/transcript.ts` instead would
+  put presentation into SQLite and make the stored transcript lossy — and because
+  the grouper is a pure function over the entries, a session loaded from history
+  groups identically to one folded live.
+- **Every tool call folds, and only a failure breaks a run.** An earlier rule
+  folded a named set of read-only tools and kept every command on screen. Two
+  turns' worth of screenshots killed it: a real turn is walls of `Bash`, and the
+  walls are as much `mkdir` and generator scripts as `ls` — a rule that spares
+  mutations spares the wall. A failed call still stands alone, because its error
+  text renders under the row and a count must never be the only trace of the one
+  thing that went wrong. Showing the newest entry rather than a count is what
+  makes the same row a live ticker while the turn runs.
+- **A row leads with an icon for the kind of work, not a state dot.**
+  `components/studio/activity-icon.tsx` maps tool → lucide icon through a `Map`
+  (a `Record` would resolve `constructor` off `Object.prototype`), with a wrench
+  for anything unknown. State went into the icon's colour, so a settled turn has
+  no column of green and `running`/`failed` stay findable.
 - **`id` is not stored.** The row is `(session_id, ordinal, kind, payload)` and
   the id is rebuilt on load as `block-<ordinal>`, so a session loaded from disk
   and a turn folded live can never collide on a React key.
