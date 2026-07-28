@@ -43,6 +43,7 @@ export interface OpenTurn {
   openId: string;
   permission: PendingPermission | null;
   send: (prompt: string, attachments?: readonly PromptAttachment[]) => void;
+  startedAt: number | null;
   stop: () => void;
   turnError: string | null;
 }
@@ -120,6 +121,7 @@ export function useOpenTurn({
       openId,
       permission: turn.permissions[0] ?? null,
       send,
+      startedAt: turn.startedAt,
       stop,
       turnError: turn.error,
     }),

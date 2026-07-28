@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { elapsedTime, relativeTime } from "@/lib/studio/time";
+import { elapsedTime, relativeTime, runningTime } from "@/lib/studio/time";
 
 const NOW = Date.UTC(2026, 6, 25, 12, 0, 0);
 const HAS_DIGIT = /\d/;
 const ago = (ms: number) => relativeTime(NOW - ms, NOW);
 const since = (ms: number) => elapsedTime(NOW - ms, NOW);
+const running = (ms: number) => runningTime(NOW - ms, NOW);
 
 describe("relativeTime", () => {
   it("reads as just now for anything under a minute", () => {
@@ -56,5 +57,29 @@ describe("elapsedTime", () => {
 
   it("never counts backwards when a clock has drifted", () => {
     expect(elapsedTime(NOW + 60_000, NOW)).toBe("<1m");
+  });
+});
+
+describe("runningTime", () => {
+  it("counts seconds through the first minute", () => {
+    expect(running(0)).toBe("0s");
+    expect(running(12_000)).toBe("12s");
+    expect(running(59_999)).toBe("59s");
+  });
+
+  it("keeps the seconds beside the minutes", () => {
+    expect(running(60_000)).toBe("1m 0s");
+    expect(running(125_000)).toBe("2m 5s");
+    expect(running(59 * 60_000 + 59_000)).toBe("59m 59s");
+  });
+
+  it("stops counting seconds once an hour has passed", () => {
+    expect(running(3_600_000)).toBe("1h");
+    expect(running(3_600_000 + 5 * 60_000 + 30_000)).toBe("1h 5m");
+    expect(running(24 * 3_600_000)).toBe("1d");
+  });
+
+  it("never counts backwards when a clock has drifted", () => {
+    expect(runningTime(NOW + 60_000, NOW)).toBe("0s");
   });
 });
