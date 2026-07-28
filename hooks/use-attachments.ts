@@ -1,55 +1,82 @@
 "use client";
 
-import type { MouseEvent } from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { attachmentOf } from "@/lib/studio/attachments";
+import { saveImages } from "@/lib/studio/clipboard";
 import { pickImages } from "@/lib/studio/shell";
 import type { PromptAttachment } from "@/shared/ipc";
 
 export interface Attachments {
-  add: () => Promise<void>;
+  add: () => Promise<number>;
+  attach: (files: readonly File[]) => Promise<number>;
   clear: () => void;
   error: string | null;
   items: PromptAttachment[];
-  onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
+  removeAt: (index: number) => void;
 }
 
 export function useAttachments(): Attachments {
   const [items, setItems] = useState<PromptAttachment[]>([]);
+  const held = useRef<PromptAttachment[]>([]);
   const { error, run } = useAsyncAction();
+
+  const commit = useCallback((next: PromptAttachment[]) => {
+    held.current = next;
+    setItems(next);
+  }, []);
+
+  const append = useCallback(
+    (paths: readonly string[]) => {
+      const added = arriving(held.current, paths);
+      if (added.length > 0) {
+        commit([...held.current, ...added]);
+      }
+      return added.length;
+    },
+    [commit]
+  );
 
   const add = useCallback(async () => {
     const picked = await run(pickImages());
-    if (picked === null) {
-      return;
-    }
+    return picked === null ? 0 : append(picked);
+  }, [append, run]);
 
-    setItems((current) => merge(current, picked));
-  }, [run]);
+  const attach = useCallback(
+    async (files: readonly File[]) => {
+      const saved = await run(saveImages(files));
+      return saved === null ? 0 : append(saved);
+    },
+    [append, run]
+  );
 
-  const onRemove = useCallback((event: MouseEvent<HTMLButtonElement>) => {
-    const path = event.currentTarget.value;
-    setItems((current) => current.filter((item) => item.path !== path));
-  }, []);
+  const removeAt = useCallback(
+    (index: number) => {
+      commit(held.current.filter((_, at) => at !== index));
+    },
+    [commit]
+  );
 
-  const clear = useCallback(() => setItems([]), []);
+  const clear = useCallback(() => commit([]), [commit]);
 
   return useMemo(
-    () => ({ add, clear, error, items, onRemove }),
-    [add, clear, error, items, onRemove]
+    () => ({ add, attach, clear, error, items, removeAt }),
+    [add, attach, clear, error, items, removeAt]
   );
 }
 
-function merge(
-  current: PromptAttachment[],
-  picked: string[]
+function arriving(
+  held: readonly PromptAttachment[],
+  paths: readonly string[]
 ): PromptAttachment[] {
-  const known = new Set(current.map((item) => item.path));
-  const added = picked
-    .filter((path) => !known.has(path))
-    .map(attachmentOf)
-    .filter((item): item is PromptAttachment => item !== null);
+  const known = new Set(held.map((item) => item.path));
 
-  return added.length === 0 ? current : [...current, ...added];
+  return paths
+    .map(attachmentOf)
+    .filter((item): item is PromptAttachment => item !== null)
+    .filter((item) => {
+      const seen = known.has(item.path);
+      known.add(item.path);
+      return !seen;
+    });
 }

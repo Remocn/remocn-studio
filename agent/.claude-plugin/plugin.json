@@ -1,0 +1,7 @@
+{
+  "name": "remocn-studio",
+  "description": "The remocn and Remotion knowledge remocn studio ships with, so a project does not have to install it.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/Remocn/remocn-studio",
+  "license": "MIT"
+}

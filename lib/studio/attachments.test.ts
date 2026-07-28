@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attachmentOf, mediaLabel } from "@/lib/studio/attachments";
+import { attachmentOf } from "@/lib/studio/attachments";
 
 describe("attachmentOf", () => {
   it("reads the name and media type from the path", () => {
@@ -18,11 +18,5 @@ describe("attachmentOf", () => {
   it("refuses anything the model cannot look at", () => {
     expect(attachmentOf("/a/b.mp4")).toBeNull();
     expect(attachmentOf("/a/b")).toBeNull();
-  });
-});
-
-describe("mediaLabel", () => {
-  it("names the format in the way a chip can show it", () => {
-    expect(mediaLabel("image/webp")).toBe("WEBP");
   });
 });

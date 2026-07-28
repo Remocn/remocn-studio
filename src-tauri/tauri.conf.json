@@ -23,7 +23,11 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
     }
   },
   "bundle": {
@@ -33,7 +37,8 @@
       "../sidecar-dist/main.js": "sidecar/main.js",
       "../preview/entry.tsx": "preview/entry.tsx",
       "../preview/hot.ts": "preview/hot.ts",
-      "../templates/remotion": "templates/remotion"
+      "../templates/remotion": "templates/remotion",
+      "../agent": "agent"
     },
     "icon": [
       "icons/32x32.png",

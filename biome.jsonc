@@ -17,6 +17,9 @@
       // supply the catch-all, and adding a second one trips Biome's own
       // `noBiomeFirstException` rule. These entries only subtract from it.
       "!!repos",
+      // Vendored upstream skills. Formatting them would make `skills:check`
+      // report drift against upstream on every sync.
+      "!!agent/skills",
       // Generated output — nothing here is authored.
       "!!.next",
       "!!out",

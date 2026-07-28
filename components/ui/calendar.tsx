@@ -178,6 +178,7 @@ function Calendar({
         ...formatters,
       }}
       locale={locale}
+      showOutsideDays={showOutsideDays}
       {...props}
     />
   );

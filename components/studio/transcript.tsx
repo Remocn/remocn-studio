@@ -10,6 +10,7 @@ import { ActivityLine } from "./activity-line";
 import { ActivityRun } from "./activity-run";
 import { AttachmentRow } from "./attachment-row";
 import { Markdown } from "./markdown";
+import { MessageText } from "./message-text";
 import { Thinking } from "./thinking";
 
 export function Transcript({
@@ -83,7 +84,10 @@ function EntryBlock({
           {entry.text.length === 0 ? null : (
             <Bubble align="end">
               <BubbleContent className="whitespace-pre-wrap">
-                {entry.text}
+                <MessageText
+                  count={entry.attachments.length}
+                  text={entry.text}
+                />
               </BubbleContent>
             </Bubble>
           )}

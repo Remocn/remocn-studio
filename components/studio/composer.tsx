@@ -39,6 +39,7 @@ import {
 } from "@/shared/ipc";
 import { AttachmentRow } from "./attachment-row";
 import { ContextMeter } from "./context-meter";
+import { MessageText } from "./message-text";
 import { useStudio } from "./studio-provider";
 
 const DEFAULT = "";
@@ -93,29 +94,46 @@ export function Composer({
   return (
     <div className="shrink-0 px-4 pb-4">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-1">
-        <InputGroup>
+        <InputGroup className="rounded-xl border-none">
           {composer.attachments.items.length > 0 ? (
             <InputGroupAddon align="block-start">
               <AttachmentRow
                 items={composer.attachments.items}
-                onRemove={composer.attachments.onRemove}
+                onRemove={composer.onRemove}
               />
             </InputGroupAddon>
           ) : null}
 
-          <InputGroupTextarea
-            aria-label="Message Claude"
-            disabled={isLocked}
-            onChange={composer.onChange}
-            onKeyDown={composer.onKeyDown}
-            placeholder={
-              isWaiting
-                ? "Answer the approval request to continue…"
-                : "Describe the scene you want to build…"
-            }
-            rows={2}
-            value={composer.value}
-          />
+          <div className="relative flex w-full min-w-0 flex-1 flex-col">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-2.5 py-2 text-base md:text-sm"
+              ref={composer.caret.mirror}
+            >
+              <MessageText
+                count={composer.attachments.items.length}
+                text={composer.value}
+              />
+            </div>
+
+            <InputGroupTextarea
+              aria-label="Message Claude"
+              className="relative text-transparent caret-foreground"
+              disabled={isLocked}
+              onChange={composer.onChange}
+              onKeyDown={composer.onKeyDown}
+              onPaste={composer.onPaste}
+              onScroll={composer.caret.onScroll}
+              placeholder={
+                isWaiting
+                  ? "Answer the approval request to continue…"
+                  : "Describe the scene you want to build…"
+              }
+              ref={composer.caret.ref}
+              rows={2}
+              value={composer.value}
+            />
+          </div>
 
           <InputGroupAddon align="block-end">
             <DropdownMenu>
@@ -133,7 +151,7 @@ export function Composer({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={composer.attachments.add}>
+                  <DropdownMenuItem onClick={composer.add}>
                     <ImagePlusIcon />
                     Add image
                   </DropdownMenuItem>

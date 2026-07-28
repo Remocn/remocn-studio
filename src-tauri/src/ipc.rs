@@ -9,6 +9,7 @@ pub const HOST_PID_ENV: &str = "REMOCN_STUDIO_HOST_PID";
 pub const DATA_DIR_ENV: &str = "REMOCN_STUDIO_DATA_DIR";
 pub const PREVIEW_ENTRY_ENV: &str = "REMOCN_STUDIO_PREVIEW_ENTRY";
 pub const TEMPLATE_DIR_ENV: &str = "REMOCN_STUDIO_TEMPLATE_DIR";
+pub const PLUGIN_DIR_ENV: &str = "REMOCN_STUDIO_PLUGIN_DIR";
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]

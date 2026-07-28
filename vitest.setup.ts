@@ -1,7 +1,14 @@
 import "@testing-library/jest-dom/vitest";
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
+
+// Testing Library gives `findBy*` and `waitFor` one second. That is the whole
+// budget for a mount that fakes IPC, and on a loaded machine — CI, or a local
+// build running alongside — a dozen suites time out at 1005ms with nothing
+// wrong. The number buys headroom for a slow machine; it does not slow a fast
+// one down, because a passing query resolves on the first poll either way.
+configure({ asyncUtilTimeout: 5000 });
 
 class InertObserver {
   disconnect = () => undefined;
