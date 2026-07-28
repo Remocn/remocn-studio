@@ -470,6 +470,20 @@ by tests that render nothing.
   minute-interval tick (`useNow`, a fiber, not a bare `setInterval`) drives every
   label in the pane, and the pure layer takes `now` as an argument so tests pass a
   fixed one instead of faking clocks.
+  - **The thinking marker reads the same `startedAt`, a second at a time.**
+    `runningTime` is the ticker's formatter — seconds, then `2m 5s`, then
+    *`elapsedTime` itself* past an hour, so the long tail is written once and the
+    two panes cannot drift. The chat pane owns that clock and passes `now` down;
+    the marker formats and decides nothing. The redundancy with `Running · 2m` is
+    deliberate — one origin instant, a resolution per pane, chosen by how many
+    rows are on screen at once. `useNow` takes `null` for "do not tick", and the
+    pane passes an interval only while its turn runs: without it an idle window
+    repaints the conversation once a second for a desktop app's whole lifetime.
+    `Effect.repeat` runs its effect once before the schedule, so resuming the tick
+    refreshes `now` rather than measuring the turn against a timestamp frozen when
+    the pane mounted. The number is muted, `tabular-nums` and outside the shimmer,
+    and carries no live region or status role: a screen reader must never be
+    handed something that changes every second.
 - **Rows are adaptive.** Settled is one line — title left, relative time right.
   Waiting, running and failed take a second line: `Waiting 4m · Bash`,
   `Running · 2m`, or the first line of the error. The waiting timer counts *up*

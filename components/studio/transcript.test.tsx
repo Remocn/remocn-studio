@@ -10,6 +10,9 @@ import {
 import type { TranscriptEntry } from "@/shared/ipc";
 
 const CWD = "/Users/me/projects/my-video";
+const NOW = Date.UTC(2026, 6, 25, 12, 0, 0);
+const STARTED = NOW - 12_000;
+const TIMER = /^\d+[dhms]( \d+[hms])?$/;
 
 const ANSWER = [
   "## Done",
@@ -85,7 +88,8 @@ const ENTRIES: TranscriptEntry[] = [
 function renderTranscript(
   entries: TranscriptEntry[],
   isRunning = false,
-  isWaiting = false
+  isWaiting = false,
+  startedAt: number | null = STARTED
 ) {
   return render(
     <MessageScrollerProvider>
@@ -98,6 +102,8 @@ function renderTranscript(
               error={null}
               isRunning={isRunning}
               isWaiting={isWaiting}
+              now={NOW}
+              startedAt={startedAt}
             />
           </MessageScrollerContent>
         </MessageScrollerViewport>
@@ -171,22 +177,44 @@ describe("Transcript", () => {
     expect(screen.getByText("Thinking…")).toBeVisible();
   });
 
+  it("says how long the turn has been running, beside it", () => {
+    renderTranscript(ENTRIES.slice(0, 1), true);
+
+    expect(screen.getByText("12s")).toBeVisible();
+  });
+
+  it("counts the whole turn, not the last thing it did", () => {
+    renderTranscript(ENTRIES.slice(0, 1), true, false, NOW - 125_000);
+
+    expect(screen.getByText("2m 5s")).toBeVisible();
+  });
+
   it("stops saying it once the answer is streaming", () => {
     renderTranscript(ENTRIES, true);
 
     expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+    expect(screen.queryByText(TIMER)).not.toBeInTheDocument();
   });
 
   it("says nothing when no turn is running", () => {
     renderTranscript(ENTRIES.slice(0, 1));
 
     expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+    expect(screen.queryByText(TIMER)).not.toBeInTheDocument();
   });
 
   it("waits on an approval rather than claiming to be thinking", () => {
     renderTranscript(ENTRIES.slice(0, 1), true, true);
 
     expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
+    expect(screen.queryByText(TIMER)).not.toBeInTheDocument();
+  });
+
+  it("says only that it is thinking when the turn has no start", () => {
+    renderTranscript(ENTRIES.slice(0, 1), true, false, null);
+
+    expect(screen.getByText("Thinking…")).toBeVisible();
+    expect(screen.queryByText(TIMER)).not.toBeInTheDocument();
   });
 
   it("takes one row for a run of reads, and says how many and where", () => {
@@ -263,6 +291,8 @@ describe("Transcript", () => {
                 error={null}
                 isRunning={false}
                 isWaiting={false}
+                now={NOW}
+                startedAt={null}
               />
             </MessageScrollerContent>
           </MessageScrollerViewport>
@@ -286,6 +316,8 @@ describe("Transcript", () => {
                 error="the sidecar is not running"
                 isRunning={false}
                 isWaiting={false}
+                now={NOW}
+                startedAt={null}
               />
             </MessageScrollerContent>
           </MessageScrollerViewport>

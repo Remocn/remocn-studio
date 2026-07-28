@@ -1,4 +1,5 @@
-const MINUTE = 60_000;
+const SECOND = 1000;
+const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const WEEK = 7 * DAY;
@@ -41,4 +42,19 @@ export function elapsedTime(since: number, now: number): string {
   }
 
   return `${Math.floor(elapsed / DAY)}d`;
+}
+
+export function runningTime(since: number, now: number): string {
+  const elapsed = Math.max(0, now - since);
+
+  if (elapsed < MINUTE) {
+    return `${Math.floor(elapsed / SECOND)}s`;
+  }
+  if (elapsed < HOUR) {
+    const minutes = Math.floor(elapsed / MINUTE);
+    const seconds = Math.floor((elapsed % MINUTE) / SECOND);
+    return `${minutes}m ${seconds}s`;
+  }
+
+  return elapsedTime(since, now);
 }

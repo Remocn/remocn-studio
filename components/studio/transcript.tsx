@@ -19,12 +19,16 @@ export function Transcript({
   error,
   isRunning,
   isWaiting,
+  now,
+  startedAt,
 }: {
   cwd: string | null;
   entries: readonly TranscriptEntry[];
   error: string | null;
   isRunning: boolean;
   isWaiting: boolean;
+  now: number;
+  startedAt: number | null;
 }) {
   const items = useMemo(() => groupActivity(entries), [entries]);
   const last = entries.at(-1) ?? null;
@@ -49,7 +53,7 @@ export function Transcript({
 
       {isThinking ? (
         <MessageScrollerItem>
-          <Thinking />
+          <Thinking now={now} startedAt={startedAt} />
         </MessageScrollerItem>
       ) : null}
 

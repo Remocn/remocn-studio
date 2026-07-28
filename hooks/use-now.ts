@@ -5,10 +5,14 @@ import { useEffect, useState } from "react";
 
 const TICK = "1 minute";
 
-export function useNow(every: Duration.Input = TICK): number {
+export function useNow(every: Duration.Input | null = TICK): number {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
+    if (every === null) {
+      return;
+    }
+
     const fiber = Effect.runFork(
       Effect.repeat(
         Effect.sync(() => setNow(Date.now())),

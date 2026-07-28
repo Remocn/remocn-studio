@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/message-scroller";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocateProject } from "@/hooks/use-locate-project";
+import { useNow } from "@/hooks/use-now";
 import type { OpenTurn } from "@/hooks/use-open-turn";
 import type { HistorySession, Project } from "@/shared/ipc";
 import { Composer } from "./composer";
@@ -29,6 +30,7 @@ import { useStudio } from "./studio-provider";
 import { Transcript } from "./transcript";
 
 const PLACEHOLDERS = ["one", "two", "three"];
+const TICK = "1 second";
 
 export function ChatPane() {
   const { activeSession, openedProject, relocateProject, turn } = useStudio();
@@ -94,6 +96,7 @@ function Conversation({
   turn: OpenTurn;
 }) {
   const hasTranscript = turn.entries.length > 0 || turn.turnError !== null;
+  const now = useNow(turn.isRunning ? TICK : null);
 
   return (
     <PaneBody>
@@ -112,6 +115,8 @@ function Conversation({
                     error={turn.turnError}
                     isRunning={turn.isRunning}
                     isWaiting={turn.permission !== null}
+                    now={now}
+                    startedAt={turn.startedAt}
                   />
                 ) : (
                   <ChatEmptyState hasProject={hasProject} />
