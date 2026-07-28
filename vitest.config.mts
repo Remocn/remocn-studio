@@ -38,5 +38,9 @@ export default defineConfig({
     globals: false,
     include: ["**/*.{test,spec}.{ts,tsx}"],
     setupFiles: ["./vitest.setup.ts"],
+    // Has to sit above the `asyncUtilTimeout` in vitest.setup.ts, or a query
+    // that will never resolve burns the whole test budget and dies here — with
+    // "test timed out" instead of Testing Library's "unable to find element".
+    testTimeout: 15_000,
   },
 });

@@ -54,13 +54,13 @@ function ShellLayout() {
           <ProjectsPane />
         </ResizablePanel>
 
-        <ResizableHandle />
+        <ResizableHandle className="bg-pane-border" />
 
         <ResizablePanel defaultSize="46%" id="chat" minSize="380px">
           <ChatPane />
         </ResizablePanel>
 
-        <ResizableHandle />
+        <ResizableHandle className="bg-pane-border" />
 
         <ResizablePanel defaultSize="36%" id="preview" minSize="360px">
           <PreviewPane />

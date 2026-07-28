@@ -52,6 +52,7 @@
   --color-code-highlight: var(--code-highlight);
   --color-code-number: var(--code-number);
   --color-reference: var(--reference);
+  --color-pane-border: var(--pane-border);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -97,6 +98,7 @@
   --code-highlight: oklch(0.93 0 0);
   --code-number: oklch(0.556 0 0);
   --reference: oklch(0.52 0.105 223.128);
+  --pane-border: oklch(0.922 0 0);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
 }
@@ -126,7 +128,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: oklch(0.107 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.627 0.265 303.9);
   --sidebar-primary-foreground: oklch(0.977 0.014 308.299);
@@ -139,6 +141,7 @@
   --code-highlight: oklch(0.24 0.008 290);
   --code-number: oklch(0.55 0.008 290);
   --reference: oklch(0.715 0.143 215.221);
+  --pane-border: oklch(0.187 0 0);
 }
 
 @layer base {

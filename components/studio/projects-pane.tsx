@@ -212,7 +212,11 @@ function SidebarSearch() {
 function SidebarActions({ onNewProject }: { onNewProject: () => void }) {
   return (
     <div className="flex flex-col gap-2 px-2 pb-2">
-      <Button className="bg-input/30" onClick={onNewProject} variant="secondary">
+      <Button
+        className="bg-input/30"
+        onClick={onNewProject}
+        variant="secondary"
+      >
         <FolderPlusIcon data-icon="inline-start" />
         New Project
       </Button>
