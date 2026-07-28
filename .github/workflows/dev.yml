@@ -63,3 +63,23 @@ jobs:
 
       - name: Build static export
         run: bun run build
+
+  # The vendored skills under `agent/skills` are a copy of upstream, and a copy
+  # rots silently. This refetches them and fails when what is committed no
+  # longer matches, which is the whole reason vendoring is affordable. It talks
+  # to GitHub, so it is its own job rather than a step in `verify`.
+  skills:
+    name: vendored skills
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check the vendored skills against upstream
+        run: bun run skills:check

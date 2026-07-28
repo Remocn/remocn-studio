@@ -10,6 +10,8 @@ import { Data, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { ContextUsage, PromptParams } from "@/shared/ipc";
 import { contentOf } from "./content";
+import { STUDIO_CONVENTIONS } from "./conventions";
+import { pluginsFor } from "./knowledge";
 import type { ApplyMode } from "./mode";
 
 export class ClaudeError extends Data.TaggedError("ClaudeError")<{
@@ -101,8 +103,14 @@ function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
     cwd: callbacks.cwd,
     includePartialMessages: true,
     permissionMode: params.mode,
+    plugins: pluginsFor(callbacks.cwd),
     settingSources: ["project"],
     stderr: (data) => callbacks.log(`claude: ${data.trimEnd()}`),
+    systemPrompt: {
+      append: STUDIO_CONVENTIONS,
+      preset: "claude_code",
+      type: "preset",
+    },
     ...(params.effort === null ? {} : { effort: params.effort }),
     ...(params.model === null ? {} : { model: params.model }),
     ...(params.sessionId === null ? {} : { resume: params.sessionId }),

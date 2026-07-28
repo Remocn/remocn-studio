@@ -1,5 +1,6 @@
 mod commands;
 mod ipc;
+mod paste;
 mod sidecar;
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -31,6 +32,7 @@ pub fn run() {
             commands::sidecar_request,
             commands::sidecar_restart,
             commands::sidecar_status,
+            paste::save_pasted_image,
         ])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {

@@ -9,7 +9,9 @@ use std::{
 use tauri::{AppHandle, Manager};
 use tokio::process::{Child, Command};
 
-use crate::ipc::{DATA_DIR_ENV, HOST_PID_ENV, PREVIEW_ENTRY_ENV, TEMPLATE_DIR_ENV};
+use crate::ipc::{
+    DATA_DIR_ENV, HOST_PID_ENV, PLUGIN_DIR_ENV, PREVIEW_ENTRY_ENV, TEMPLATE_DIR_ENV,
+};
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
 const FALLBACK_DIRS: [&str; 5] = [
@@ -93,6 +95,23 @@ pub fn resolve_template_dir(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|err| format!("the app bundle has no project template: {err}"))
 }
 
+#[cfg(debug_assertions)]
+pub fn resolve_plugin_dir(_app: &AppHandle) -> Result<PathBuf, String> {
+    let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../agent");
+    source
+        .canonicalize()
+        .map_err(|err| format!("no agent plugin at {}: {err}", source.display()))
+}
+
+#[cfg(not(debug_assertions))]
+pub fn resolve_plugin_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    use tauri::path::BaseDirectory;
+
+    app.path()
+        .resolve("agent", BaseDirectory::Resource)
+        .map_err(|err| format!("the app bundle has no agent plugin: {err}"))
+}
+
 pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app
         .path()
@@ -108,6 +127,7 @@ pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
 pub struct Launch<'a> {
     pub bun: &'a Path,
     pub data_dir: &'a Path,
+    pub plugin_dir: Option<&'a Path>,
     pub preview_entry: Option<&'a Path>,
     pub script: &'a Path,
     pub template_dir: Option<&'a Path>,
@@ -117,6 +137,7 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
     let Launch {
         bun,
         data_dir,
+        plugin_dir,
         preview_entry,
         script,
         template_dir,
@@ -130,6 +151,10 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
 
     if let Some(template) = template_dir {
         command.env(TEMPLATE_DIR_ENV, template);
+    }
+
+    if let Some(plugin) = plugin_dir {
+        command.env(PLUGIN_DIR_ENV, plugin);
     }
 
     command

@@ -335,6 +335,16 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
         }
     };
 
+    let plugin_dir = match spawn::resolve_plugin_dir(&inner.app) {
+        Ok(path) => Some(path),
+        Err(reason) => {
+            inner
+                .log
+                .host(format!("the agent has no bundled skills: {reason}"));
+            None
+        }
+    };
+
     inner
         .log
         .host(format!("starting {} {}", bun.display(), script.display()));
@@ -342,6 +352,7 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
     let mut child = match spawn::launch(spawn::Launch {
         bun: &bun,
         data_dir: &data_dir,
+        plugin_dir: plugin_dir.as_deref(),
         preview_entry: preview_entry.as_deref(),
         script: &script,
         template_dir: template_dir.as_deref(),

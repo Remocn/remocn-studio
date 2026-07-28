@@ -36,6 +36,7 @@
     ".next",
     "repos",
     "preview",
-    "templates"
+    "templates",
+    "agent"
   ]
 }

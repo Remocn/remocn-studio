@@ -67,6 +67,9 @@ The lockfile is `bun.lock`; use bun.
   packaging; `--bundles app` skips the DMG.
 - `bunx shadcn@latest add <component>` — add UI components (config in
   `components.json`).
+- `bun run skills:sync` — refresh the vendored agent skills under `agent/skills`
+  from upstream; `bun run skills:check` is the read-only half CI runs. Both need
+  network. See *What the agent knows*.
 - `bun run changeset` — record a change for the next release (see Releases).
 
 ### Linting and formatting
@@ -255,7 +258,8 @@ event.
   context reading is taken from the live `Query` with `getContextUsage()` **before
   the turn closes it**, because afterwards there is no session left to ask. It is
   wrapped in a timeout and ignored on failure — a missing reading hides the meter,
-  it never fails the turn.
+  it never fails the turn. Where the images sit in that turn is the *prompt's*
+  decision now — see *Pasting a picture, and pointing at it*.
 - **Permissions are a `canUseTool` gate *and* a permission mode.** The gate is the
   constant: `review()` in `sidecar/claude/permission.ts` resolves each path field —
   symlinks and `..` included, walking up to the nearest existing ancestor so a file
@@ -516,6 +520,88 @@ remount *was* the cancel, cancellation is now `stopTurn`, said out loud.
   confirmation when something is. The flag that lets the second attempt through
   lives in Rust, so `app.exit(0)` cannot deadlock against its own guard.
 
+### Pasting a picture, and pointing at it
+
+Cmd+V attaches whatever image is on the clipboard and drops `[Image #1]` at the caret;
+the sentence the user writes is what says which picture they mean, and the turn is built
+by cutting the text at each reference and splicing the image in there (#13).
+
+- **The reference format lives in `shared/references.ts`**, next to the IPC contract and
+  the transcript fold, for the same reason the fold is shared: it is parsed in two
+  processes — the webview colours it, `sidecar/claude/content.ts` splices into it — and
+  two implementations that had to agree would drift. Everything about the format is a pure
+  function there: render, segment, insert at a caret, locate the reference a keystroke
+  should take, drop one (or several) and renumber, and diff two drafts for the references
+  that left. A number outside the attachment count is **not** a reference: `[Image #7]`
+  with three attached is plain text everywhere, coloured nowhere and spliced nowhere.
+- **The invariant is positional.** `items[i]` is always `[Image #{i+1}]`, which is what
+  makes the sidecar's splice a lookup by number rather than through a side table, and why
+  references carry no identity. Removing an attachment removes its reference and shifts
+  every higher one down, so the list and the text cannot disagree.
+- **The binding runs both ways, which is why the reference is atomic.** Deleting the
+  reference deletes the attachment, so Backspace/Delete touching or inside `[Image #N]`
+  takes the whole token in one keystroke rather than leaving `[Image #1`, which parses as
+  nothing. Anything that removes a reference wholesale — select and delete, cut, paste
+  over, Cmd+A — is caught instead by diffing the draft against the previous one in
+  `onChange`, and that path is the *only* one that rewrites text the user just typed, so
+  the fast path must never touch the caret. Two consequences worth knowing: modified
+  deletes (Option/Cmd+Backspace) are left to the browser and land in the diff path, and
+  **this reverses #13's story 16** — referencing is no longer optional, so an attachment
+  cannot outlive its reference. `contentOf`'s unreferenced-first rule stays because it is
+  what keeps a no-reference message byte-for-byte what it was, not because the UI can
+  still produce one.
+- **The composer owns the text, so it owns the references.** `useAttachments` is a plain
+  store whose add/attach report *how many* items arrived; every operation that touches
+  both the list and the text is orchestrated in `useComposer`, the only thing holding the
+  caret. `refer()` reads the live textarea rather than the `value` closure, so an image
+  that took a second to save cannot overwrite what was typed meanwhile.
+- **Three rules keep the spliced content safe.** Attachments nobody referenced go **first**,
+  ahead of the whole sequence — with no references at all that reduces byte-for-byte to
+  what the builder emitted before, which is what keeps the old behaviour and its tests
+  intact. A repeated reference stays literal text, so the image is sent once. Empty and
+  whitespace-only text blocks are dropped, because the API rejects them. The reference
+  text itself is *not* kept in the content — the image is at that spot — while the stored
+  transcript keeps the raw prompt, so history still shows `[Image #1]`.
+- **Pasted bytes become a file before anything else touches them.** The contract carries
+  attachments as paths, so the one unavoidable crossing happens once, at paste time, as a
+  **raw-body invoke** — bytes as a binary body, not a JSON array of numbers — with the media
+  type and the percent-encoded filename in request headers. `src-tauri/src/paste.rs`
+  decides where the file lives, exactly as the core decides where the history database
+  lives; the webview never picks a location. The written name is sanitised, keeps the
+  original extension when it already implies the same media type, and is disambiguated on
+  collision, so the basename is what the card displays. **Pasted files are never swept**:
+  history renders the same previews for past turns, so a sweep would hollow out old
+  sessions.
+- **Colouring a `<textarea>` is an overlay, not a rich editor.** The composer stays a real
+  textarea — keyboard behaviour, accessibility and the existing tests depend on it — with
+  its own text transparent, its caret kept, and a mirrored `aria-hidden` layer underneath
+  carrying identical typography and padding. `MessageText` draws both that overlay and the
+  user's bubble in the transcript, so a sent message looks like the message that was
+  written. The colour is its own token (`--reference`), not the primary colour, which in
+  the dark palette is too dark to read as text.
+  - **A reference may differ in colour and in nothing else.** The caret is positioned by
+    the textarea's metrics and the text you read is the overlay's, so any per-reference
+    style that changes width — weight, tracking, size, family, padding — desyncs the two,
+    and the error *accumulates*: `font-medium` on the span put the caret a character off
+    after four references. Colour is the only property that costs nothing here.
+- **Previews come from the asset protocol**, enabled in `tauri.conf.json` with the
+  `protocol-asset` cargo feature; no ACL permission is involved, since Tauri 2 gates it by
+  configuration alone. The scope is `**` on purpose: an attachment can be picked from
+  anywhere and the app already opens arbitrary folders. `previewUrl` returns `null` rather
+  than throwing outside a Tauri webview, and a dead path falls back to the icon the card
+  used to show. **The card is the picture and nothing else** — a filename and a format chip
+  are what you read when you cannot see which one it is, so showing the thing itself
+  replaces them rather than joining them. The name stays as the image's `alt` and the
+  card's hover title, which is also all that identifies a card whose file has gone.
+- **Under jsdom there is no asset protocol either**, so a test that renders a non-empty
+  attachment list installs the `convertFileSrc` fake next to the command fake — per test,
+  because `clearMocks()` drops `window.__TAURI_INTERNALS__` between them.
+
+Whether the macOS webview actually hands a pasted image to the page is the one thing no
+seam can test; it is verified by hand in the running app. If it ever stops doing so, the
+fallback is to read the clipboard in the core: the command loses its request body and
+everything above it is unchanged.
+
 ### New projects
 
 `templates/remotion/` is a real Remotion project checked in here and mapped into the
@@ -536,6 +622,41 @@ produced it.
 - **The linter has one exception for the template.** `useFilenamingConvention` is off
   under `templates/**`: every Remotion project has `src/Root.tsx`, and a scaffolded
   project spelled `root.tsx` would look wrong to anyone who has seen another one.
+
+### What the agent knows
+
+What makes this remocn studio and not a generic Claude Code GUI (#225). `agent/` is a real
+Claude Code **plugin** checked in here and mapped into the bundle by `tauri.conf.json`; Rust
+resolves it the way it resolves the template and passes it as `REMOCN_STUDIO_PLUGIN_DIR`, and
+`pluginsFor` in `sidecar/claude/knowledge.ts` turns it into the SDK's `plugins` option. It
+carries three vendored skills: `remocn`, `remotion-best-practices` and
+`remotion-interactivity`.
+
+- **A plugin, not the user's `~/.claude`.** Skills installed globally are invisible here:
+  measured with an empty folder, `settingSources: ["project"]` lists 45 commands and none of
+  them is a remocn skill, and reaching a global install means adding `"user"` — which also
+  loads `~/.claude/settings.json`, `~/.claude/CLAUDE.md` and, on the author's machine, 106
+  further commands, so the app would behave differently per user. The plugin route lists 48:
+  exactly the three we ship, namespaced `remocn-studio:<name>`. `settingSources` stays
+  `["project"]`, and nothing outside the app is ever written.
+- **`skills:sync` produces real files, and that is load-bearing.** `~/.claude/skills/*` are
+  symlinks into `~/.agents/skills/`, so a plain `cp -R` vendors dangling links and the plugin
+  then loads *nothing*, with no error anywhere. The script runs `skills add … --copy` in a
+  temp directory — never in the repo, whose "project" the CLI would resolve on its own — and
+  copies with `dereference`. `skills:check` refetches and compares a sha256 per file, so
+  upstream drift and a local edit fail the same way; `treeOf` rejects a symlink outright.
+- **The vendored tree is excluded from every tool that would rewrite it.** `agent/skills` is
+  force-ignored in `biome.jsonc` and `agent` is excluded in `tsconfig.json` — formatting it
+  would make `skills:check` report drift forever, and the skills ship `.tsx` samples that
+  import `remotion`, which is deliberately not a dependency here.
+- **The vendored copy is the floor, not an override.** A project that installed any of these
+  skills into its own `.claude/skills` gets the plugin dropped entirely rather than shadowed:
+  both copies would otherwise load, since plugin skills are namespaced and cannot collide.
+- **The conventions the skills cannot know** live in `sidecar/claude/conventions.ts` and ride
+  on `systemPrompt` as `{ preset: "claude_code", append }` — the wire keeps `systemPrompt` and
+  `appendSystemPrompt` as separate fields, so this adds to Claude Code's prompt rather than
+  replacing it. They are the one-composition invariant (`Main`, scenes inside it via
+  `Series`/`TransitionSeries`) and keeping the result editable.
 
 ### The preview
 
@@ -613,13 +734,16 @@ components/studio/    app-level components (panes, sidecar status, quit guard)
 hooks/                all behaviour: no logic inline in components
 lib/                  cn helper, error formatting, lib/studio/* clients
 preview/              the entry the *project's* webpack compiles instead of Studio's UI
-shared/               ipc.ts: the typed contract; transcript.ts: the one fold
+shared/               ipc.ts: the typed contract; transcript.ts: the one fold;
+                      references.ts: the one reader of `[Image #N]`
 sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
 sidecar/history/      driver seam, migrations, project and session stores, recorder
 sidecar/scaffold/     what "New project…" expands and installs
 templates/remotion/   that project, vendored here and shipped as a Tauri resource
+agent/                the Claude Code plugin we hand the SDK: vendored skills
+scripts/              build-time tooling; skills-sync.ts is the vendoring step
 sidecar/preview/      the --preview-host child: project resolution, webpack watch, server
-src-tauri/            Rust core (Tauri v2), including the sidecar supervisor
+src-tauri/            Rust core (Tauri v2), the sidecar supervisor, pasted-image writes
 public/               static assets
 ```
 
