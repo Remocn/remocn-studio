@@ -1,22 +1,14 @@
 "use client";
 
 import {
-  ArrowUpDownIcon,
   FolderOpenIcon,
   FolderPlusIcon,
-  PlusIcon,
   Search,
   SettingsIcon,
   SquarePenIcon,
 } from "lucide-react";
 import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Empty,
   EmptyDescription,
@@ -35,9 +27,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -105,8 +95,6 @@ export function ProjectsPane() {
     <SidebarProvider className="h-full min-h-0">
       <Sidebar className="w-full" collapsible="none">
         <SidebarHeader className="gap-0 p-0">
-          {/* The band macOS draws its window buttons over. It is an element
-              rather than padding so it stays a drag region. */}
           <div
             className="h-(--titlebar-block-inset) shrink-0"
             data-tauri-drag-region
@@ -116,50 +104,12 @@ export function ProjectsPane() {
             onNewSession={startSession}
           />
           <SidebarSearch />
+          <SidebarActions onNewProject={newProject.open} />
         </SidebarHeader>
 
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel
-              className="font-mono uppercase tracking-wide"
-              // biome-ignore lint/a11y/useHeadingContent: `render` only swaps the tag — the label's own children are the heading's content.
-              render={<h2 />}
-            >
-              Projects
-            </SidebarGroupLabel>
-
-            <SidebarGroupAction
-              aria-label="Sort projects"
-              className="right-9 text-muted-foreground"
-              disabled
-            >
-              <ArrowUpDownIcon />
-            </SidebarGroupAction>
-
-            <DropdownMenu>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <DropdownMenuTrigger
-                      render={<SidebarGroupAction aria-label="Add a project" />}
-                    />
-                  }
-                >
-                  <PlusIcon />
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Add a project</TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={openFolder}>
-                  <FolderOpenIcon />
-                  Open folder…
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={newProject.open}>
-                  <FolderPlusIcon />
-                  New project…
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <h2 className="sr-only">Projects</h2>
 
             <SidebarGroupContent>
               <ProjectsBody
@@ -255,6 +205,17 @@ function SidebarSearch() {
           <Kbd>⌘ + K</Kbd>
         </InputGroupAddon>
       </InputGroup>
+    </div>
+  );
+}
+
+function SidebarActions({ onNewProject }: { onNewProject: () => void }) {
+  return (
+    <div className="flex flex-col gap-2 px-2 pb-2">
+      <Button className="bg-input/30" onClick={onNewProject} variant="secondary">
+        <FolderPlusIcon data-icon="inline-start" />
+        New Project
+      </Button>
     </div>
   );
 }

@@ -208,16 +208,11 @@ describe("app shell", () => {
     ).toBeVisible();
   });
 
-  it("offers both ways to add a project", async () => {
+  it("offers a way to start a project from the header", async () => {
     await renderShell();
 
-    fireEvent.click(screen.getByRole("button", { name: "Add a project" }));
-
     expect(
-      await screen.findByRole("menuitem", { name: "Open folder…" })
-    ).toBeVisible();
-    expect(
-      screen.getByRole("menuitem", { name: "New project…" })
+      await screen.findByRole("button", { name: "New Project" })
     ).toBeVisible();
   });
 
