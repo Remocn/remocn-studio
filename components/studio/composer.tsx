@@ -28,11 +28,9 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
-import { useComposer } from "@/hooks/use-composer";
 import { type Sidecar, useSidecar } from "@/hooks/use-sidecar";
 import {
   type ContextUsage,
-  type PromptAttachment,
   SESSION_MODE_LABELS,
   SESSION_MODES,
   type SessionMode,
@@ -40,6 +38,7 @@ import {
 import { AttachmentRow } from "./attachment-row";
 import { ContextMeter } from "./context-meter";
 import { MessageText } from "./message-text";
+import { SelectionRow } from "./selection-row";
 import { useStudio } from "./studio-provider";
 
 const DEFAULT = "";
@@ -67,26 +66,31 @@ const EFFORTS = [
 
 export function Composer({
   context,
+  cwd,
   disabled,
   isRunning,
   isWaiting,
   mode,
   onModeChange,
   onStop,
-  onSubmit,
 }: {
   context: ContextUsage | null;
+  cwd: string | null;
   disabled: boolean;
   isRunning: boolean;
   isWaiting: boolean;
   mode: SessionMode;
   onModeChange: (value: string) => void;
   onStop: () => void;
-  onSubmit: (text: string, attachments: readonly PromptAttachment[]) => void;
 }) {
-  const { claudeEffort, claudeModel, onEffortChange, onModelChange } =
-    useStudio();
-  const composer = useComposer(onSubmit);
+  const {
+    claudeEffort,
+    claudeModel,
+    composer,
+    inspect,
+    onEffortChange,
+    onModelChange,
+  } = useStudio();
   const sidecar = useSidecar();
   const isLocked = disabled || isWaiting;
   const cannotSend = isLocked || sidecar.phase === "down";
@@ -104,16 +108,24 @@ export function Composer({
             </InputGroupAddon>
           ) : null}
 
+          {composer.selections.items.length > 0 ? (
+            <InputGroupAddon align="block-start">
+              <SelectionRow
+                cwd={cwd}
+                items={composer.selections.items}
+                onRemove={composer.onRemoveSelection}
+                onSeek={inspect.seek}
+              />
+            </InputGroupAddon>
+          ) : null}
+
           <div className="relative flex w-full min-w-0 flex-1 flex-col">
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-2.5 py-2 text-base md:text-sm"
               ref={composer.caret.mirror}
             >
-              <MessageText
-                count={composer.attachments.items.length}
-                text={composer.value}
-              />
+              <MessageText counts={composer.counts} text={composer.value} />
             </div>
 
             <InputGroupTextarea

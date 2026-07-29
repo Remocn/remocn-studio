@@ -108,7 +108,13 @@ describe("groupActivity", () => {
 
   it("preserves the order of the transcript exactly", () => {
     const entries: TranscriptEntry[] = [
-      { attachments: [], id: "user-0", kind: "user", text: "go" },
+      {
+        attachments: [],
+        elements: [],
+        id: "user-0",
+        kind: "user",
+        text: "go",
+      },
       read("a", "src/A.tsx"),
       read("b", "src/B.tsx"),
       activity({ id: "w", name: "Write" }),

@@ -1,11 +1,12 @@
-import { Player } from "@remotion/player";
-import { useContext, useEffect } from "react";
+import { Player, type PlayerRef } from "@remotion/player";
+import { useContext, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { Internals } from "remotion";
+import { onCommand, post } from "./bridge";
 import { connectHotReload } from "./hot";
+import { armInspect, type Stage as Frame, freezeInspect } from "./inspect";
 
 const MAIN_ID = "Main";
-const MESSAGE_SOURCE = "remocn-preview";
 
 connectHotReload();
 
@@ -44,10 +45,13 @@ function Preview({ Root }: { readonly Root: React.FC }) {
 function Stage() {
   const { compositions } = useContext(Internals.CompositionManager);
   const picked = pick(compositions, preferredId());
+  const player = useRef<PlayerRef>(null);
 
   useEffect(() => {
-    window.parent.postMessage(describe(picked, compositions.length), "*");
+    post(describe(picked, compositions.length));
   }, [compositions.length, picked]);
+
+  useInspectCommands(player, picked?.id ?? null, picked?.metadata?.fps ?? 30);
 
   if (picked === null || picked.metadata === null) {
     return null;
@@ -67,8 +71,50 @@ function Stage() {
       fps={fps}
       inputProps={defaultProps}
       loop
+      ref={player}
       style={{ height: "100%", width: "100%" }}
     />
+  );
+}
+
+function useInspectCommands(
+  player: React.RefObject<PlayerRef | null>,
+  composition: string | null,
+  fps: number
+) {
+  const playing = useRef({ composition, fps });
+  playing.current = { composition, fps };
+
+  const stage = useRef<Frame>({
+    composition: () => playing.current.composition ?? "",
+    fps: () => playing.current.fps,
+    frame: () => player.current?.getCurrentFrame() ?? 0,
+  });
+
+  useEffect(
+    () =>
+      onCommand((command) => {
+        if (command.type === "inspect") {
+          if (command.armed) {
+            player.current?.pause();
+          }
+          post({
+            paused: player.current !== null,
+            status: armInspect(command.armed, stage.current),
+            type: "inspect",
+          });
+          return;
+        }
+
+        if (command.type === "freeze") {
+          freezeInspect(command.frozen);
+          return;
+        }
+
+        player.current?.pause();
+        player.current?.seekTo(command.frame);
+      }),
+    [player]
   );
 }
 
@@ -82,8 +128,8 @@ function describe(picked: ReturnType<typeof pick>, total: number) {
     return {
       compositionId: null,
       reason: "none",
-      source: MESSAGE_SOURCE,
       total,
+      type: "composition",
       unmeasured: false,
     };
   }
@@ -91,8 +137,8 @@ function describe(picked: ReturnType<typeof pick>, total: number) {
   return {
     compositionId: picked.id,
     reason: picked.reason,
-    source: MESSAGE_SOURCE,
     total,
+    type: "composition",
     unmeasured: picked.metadata === null,
   };
 }

@@ -325,6 +325,16 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
         }
     };
 
+    let grab_script = match spawn::resolve_grab_script(&inner.app) {
+        Ok(path) => Some(path),
+        Err(reason) => {
+            inner
+                .log
+                .host(format!("the preview cannot be inspected: {reason}"));
+            None
+        }
+    };
+
     let template_dir = match spawn::resolve_template_dir(&inner.app) {
         Ok(path) => Some(path),
         Err(reason) => {
@@ -352,6 +362,7 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
     let mut child = match spawn::launch(spawn::Launch {
         bun: &bun,
         data_dir: &data_dir,
+        grab_script: grab_script.as_deref(),
         plugin_dir: plugin_dir.as_deref(),
         preview_entry: preview_entry.as_deref(),
         script: &script,

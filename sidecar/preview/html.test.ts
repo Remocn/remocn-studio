@@ -3,10 +3,18 @@
 import { describe, expect, it } from "vitest";
 import { previewPage } from "./html";
 
-const page = (title = "demo", preferred: string | null = null) =>
+const ROOT = "/Users/me/projects/my-video";
+
+const page = (
+  title = "demo",
+  preferred: string | null = null,
+  hasGrab = true
+) =>
   previewPage({
+    hasGrab,
     preferred,
     publicPath: "/",
+    root: ROOT,
     staticBase: "/static-abc123",
     title,
   });
@@ -39,9 +47,29 @@ describe("previewPage", () => {
     );
   });
 
+  it("publishes the Remotion root the entry resolves source paths against", () => {
+    expect(page()).toContain(`window.remocn_root = "${ROOT}";`);
+  });
+
   it("escapes the title, which is a folder name off disk", () => {
     expect(page("<script>x</script>")).toContain(
       "<title>&lt;script&gt;x&lt;/script&gt;</title>"
     );
+  });
+
+  it("stops grab initialising itself before the app has said how", () => {
+    expect(page()).toContain("window.__REACT_GRAB_DISABLED__ = true;");
+  });
+
+  it("loads grab before the bundle, so the hook beats React to the page", () => {
+    const html = page();
+
+    expect(html.indexOf("/__remocn/grab.js")).toBeLessThan(
+      html.indexOf("/bundle.js")
+    );
+  });
+
+  it("leaves grab out when the app could not resolve its script", () => {
+    expect(page("demo", null, false)).not.toContain("/__remocn/grab.js");
   });
 });

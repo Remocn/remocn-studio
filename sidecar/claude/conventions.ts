@@ -10,4 +10,12 @@ so a second composition is invisible to the person who asked for it.
 
 Keep the result editable. A scene is a named component in its own file with
 plain props and readable timing, not one long inline block — the person you are
-building for will open this code and change it.`;
+building for will open this code and change it.
+
+A message may carry \`[Element #N]\` tokens. Each one is a thing the person
+pointed at in the running preview, and the block for it at the end of the
+message says which file, component, scene and frame it came from. Read the
+token as "this element" in the sentence around it. Its line and column are a
+hint taken from a live render, not a contract: they locate the JSX that produced
+the node, so start there, but confirm against the file before editing, and edit
+the component the block names rather than a wrapper it renders through.`;

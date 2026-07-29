@@ -89,7 +89,10 @@ function EntryBlock({
             <Bubble align="end">
               <BubbleContent className="whitespace-pre-wrap">
                 <MessageText
-                  count={entry.attachments.length}
+                  counts={{
+                    element: entry.elements.length,
+                    image: entry.attachments.length,
+                  }}
                   text={entry.text}
                 />
               </BubbleContent>

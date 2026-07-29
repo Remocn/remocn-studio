@@ -14,6 +14,7 @@ import {
   type HistorySession,
   isSessionMode,
   type PromptAttachment,
+  type PromptElement,
   type SessionMode,
   type TranscriptEntry,
 } from "@/shared/ipc";
@@ -42,7 +43,11 @@ export interface OpenTurn {
   onModeChange: (value: string) => void;
   openId: string;
   permission: PendingPermission | null;
-  send: (prompt: string, attachments?: readonly PromptAttachment[]) => void;
+  send: (
+    prompt: string,
+    attachments?: readonly PromptAttachment[],
+    elements?: readonly PromptElement[]
+  ) => void;
   startedAt: number | null;
   stop: () => void;
   turnError: string | null;
@@ -72,13 +77,18 @@ export function useOpenTurn({
   }, [loadTurn, session]);
 
   const send = useCallback(
-    (prompt: string, attachments: readonly PromptAttachment[] = []) => {
+    (
+      prompt: string,
+      attachments: readonly PromptAttachment[] = [],
+      elements: readonly PromptElement[] = []
+    ) => {
       if (projectId === null) {
         return;
       }
       sendTurn({
         attachments,
         effort,
+        elements,
         historyId: openId,
         mode: turn.mode,
         model,

@@ -1,10 +1,15 @@
 "use client";
 
 import { Effect, Exit, Fiber } from "effect";
+import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   decodePreviewMessage,
-  type PreviewMessage,
+  originOf,
+  type PreviewCommand,
+  type PreviewComposition,
+  type PreviewInspect,
+  type PreviewSelection,
   startPreview,
 } from "@/lib/studio/preview";
 
@@ -14,20 +19,36 @@ export type Preview =
   | { phase: "idle" }
   | { phase: "ready"; url: string };
 
+export interface PreviewHandlers {
+  onInspect: (inspect: PreviewInspect) => void;
+  onRebuilt: () => void;
+  onSelection: (selection: PreviewSelection) => void;
+}
+
 export interface PreviewControl {
   hint: string | null;
+  isServing: boolean;
   preview: Preview;
   restart: () => void;
+  send: (command: PreviewCommand) => void;
+  stage: RefObject<HTMLIFrameElement | null>;
 }
 
 const IDLE: Preview = { phase: "idle" };
 
 type Running = Fiber.Fiber<unknown, unknown>;
 
-export function usePreview(projectId: string | null): PreviewControl {
+export function usePreview(
+  projectId: string | null,
+  handlers: PreviewHandlers
+): PreviewControl {
   const [preview, setPreview] = useState<Preview>(IDLE);
-  const [message, setMessage] = useState<PreviewMessage | null>(null);
+  const [pick, setPick] = useState<PreviewComposition | null>(null);
   const running = useRef<Running | null>(null);
+  const stage = useRef<HTMLIFrameElement>(null);
+
+  const origin = preview.phase === "ready" ? originOf(preview.url) : null;
+  const { onInspect, onRebuilt, onSelection } = handlers;
 
   const stop = useCallback(() => {
     if (running.current !== null) {
@@ -39,7 +60,7 @@ export function usePreview(projectId: string | null): PreviewControl {
   const launch = useCallback((target: string) => {
     let served = false;
 
-    setMessage(null);
+    setPick(null);
     setPreview({ percent: 0, phase: "building" });
 
     running.current = Effect.runFork(
@@ -69,7 +90,7 @@ export function usePreview(projectId: string | null): PreviewControl {
 
   useEffect(() => {
     if (projectId === null) {
-      setMessage(null);
+      setPick(null);
       setPreview(IDLE);
       return;
     }
@@ -80,11 +101,33 @@ export function usePreview(projectId: string | null): PreviewControl {
   }, [launch, projectId, stop]);
 
   useEffect(() => {
+    if (origin === null) {
+      return;
+    }
+
     const onMessage = (event: MessageEvent) => {
-      const decoded = decodePreviewMessage(event.data);
-      if (Exit.isSuccess(decoded)) {
-        setMessage(decoded.value);
+      if (event.origin !== origin) {
+        return;
       }
+
+      const decoded = decodePreviewMessage(event.data);
+      if (Exit.isFailure(decoded)) {
+        return;
+      }
+
+      if (decoded.value.type === "composition") {
+        setPick(decoded.value);
+        return;
+      }
+      if (decoded.value.type === "selection") {
+        onSelection(decoded.value);
+        return;
+      }
+      if (decoded.value.type === "inspect") {
+        onInspect(decoded.value);
+        return;
+      }
+      onRebuilt();
     };
 
     window.addEventListener("message", onMessage);
@@ -92,7 +135,16 @@ export function usePreview(projectId: string | null): PreviewControl {
     return () => {
       window.removeEventListener("message", onMessage);
     };
-  }, []);
+  }, [onInspect, onRebuilt, onSelection, origin]);
+
+  const send = useCallback(
+    (command: PreviewCommand) => {
+      if (origin !== null) {
+        stage.current?.contentWindow?.postMessage(command, origin);
+      }
+    },
+    [origin]
+  );
 
   const restart = useCallback(() => {
     stop();
@@ -101,12 +153,22 @@ export function usePreview(projectId: string | null): PreviewControl {
     }
   }, [launch, projectId, stop]);
 
-  const hint = useMemo(() => hintOf(message), [message]);
+  const hint = useMemo(() => hintOf(pick), [pick]);
 
-  return useMemo(() => ({ hint, preview, restart }), [hint, preview, restart]);
+  return useMemo(
+    () => ({
+      hint,
+      isServing: preview.phase === "ready",
+      preview,
+      restart,
+      send,
+      stage,
+    }),
+    [hint, preview, restart, send]
+  );
 }
 
-function hintOf(message: PreviewMessage | null): string | null {
+function hintOf(message: PreviewComposition | null): string | null {
   if (message === null) {
     return null;
   }

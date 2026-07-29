@@ -12,6 +12,7 @@ import type {
   EffortLevel,
   HistorySession,
   PromptAttachment,
+  PromptElement,
   PromptResult,
   SessionMode,
 } from "@/shared/ipc";
@@ -20,6 +21,7 @@ import { appendUser, fold } from "@/shared/transcript";
 export interface StartTurn {
   attachments: readonly PromptAttachment[];
   effort: EffortLevel | null;
+  elements: readonly PromptElement[];
   historyId: string;
   mode: SessionMode;
   model: string | null;
@@ -131,7 +133,10 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
   const sendTurn = useCallback(
     (input: StartTurn) => {
       const trimmed = input.prompt.trim();
-      const isEmpty = trimmed.length === 0 && input.attachments.length === 0;
+      const isEmpty =
+        trimmed.length === 0 &&
+        input.attachments.length === 0 &&
+        input.elements.length === 0;
       if (isEmpty || fibers.current.has(input.historyId)) {
         return;
       }
@@ -143,6 +148,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
         ...current,
         entries: appendUser(current.entries, {
           attachments: input.attachments,
+          elements: input.elements,
           text: trimmed,
         }),
         error: null,
@@ -155,6 +161,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
         {
           attachments: input.attachments,
           effort: input.effort,
+          elements: input.elements,
           historyId,
           mode: input.mode,
           model: input.model,

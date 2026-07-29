@@ -4,6 +4,19 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const WEEK = 7 * DAY;
 
+export function frameTime(frame: number, fps: number): string {
+  if (!(Number.isFinite(fps) && fps > 0)) {
+    return `frame ${frame}`;
+  }
+
+  const total = Math.max(0, frame) / fps;
+  const minutes = Math.floor(total / 60);
+  const seconds = Math.floor(total % 60);
+  const tenths = Math.floor((total * 10) % 10);
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}.${tenths}`;
+}
+
 export function relativeTime(at: number, now: number): string {
   const elapsed = Math.max(0, now - at);
 

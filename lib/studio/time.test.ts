@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { elapsedTime, relativeTime, runningTime } from "@/lib/studio/time";
+import {
+  elapsedTime,
+  frameTime,
+  relativeTime,
+  runningTime,
+} from "@/lib/studio/time";
 
 const NOW = Date.UTC(2026, 6, 25, 12, 0, 0);
 const HAS_DIGIT = /\d/;
@@ -81,5 +86,28 @@ describe("runningTime", () => {
 
   it("never counts backwards when a clock has drifted", () => {
     expect(runningTime(NOW + 60_000, NOW)).toBe("0s");
+  });
+});
+
+describe("frameTime", () => {
+  it("reads a frame as the time it plays at", () => {
+    expect(frameTime(42, 30)).toBe("0:01.4");
+  });
+
+  it("starts at zero", () => {
+    expect(frameTime(0, 30)).toBe("0:00.0");
+  });
+
+  it("carries into minutes", () => {
+    expect(frameTime(1830, 30)).toBe("1:01.0");
+  });
+
+  it("handles a fractional frame rate", () => {
+    expect(frameTime(60, 29.97)).toBe("0:02.0");
+  });
+
+  it("falls back to the frame when there is no usable rate", () => {
+    expect(frameTime(42, 0)).toBe("frame 42");
+    expect(frameTime(42, Number.NaN)).toBe("frame 42");
   });
 });

@@ -5,7 +5,9 @@ import {
   FolderOpenIcon,
   MonitorPlayIcon,
   RotateCwIcon,
+  SquareDashedMousePointerIcon,
 } from "lucide-react";
+import type { RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -15,20 +17,15 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
-import { type Preview, usePreview } from "@/hooks/use-preview";
+import type { Preview } from "@/hooks/use-preview";
+import { InspectOverlay } from "./inspect-overlay";
 import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { SidecarStatus } from "./sidecar-status";
 import { useStudio } from "./studio-provider";
 
 export function PreviewPane() {
-  const { activeProject, scaffolds } = useStudio();
-  const isReady =
-    activeProject !== null &&
-    !activeProject.missing &&
-    !scaffolds.has(activeProject.id);
-  const { hint, preview, restart } = usePreview(
-    isReady ? activeProject.id : null
-  );
+  const { activeProject, inspect, openedProject } = useStudio();
+  const { hint, preview, restart, stage } = inspect.preview;
 
   return (
     <Pane>
@@ -41,6 +38,17 @@ export function PreviewPane() {
               Restart
             </Button>
           ) : null}
+          <Button
+            aria-pressed={inspect.isArmed}
+            disabled={!inspect.canInspect}
+            onClick={inspect.toggle}
+            size="sm"
+            title={inspect.unavailable ?? "Pick an element to comment on"}
+            variant={inspect.isArmed ? "default" : "ghost"}
+          >
+            <SquareDashedMousePointerIcon data-icon="inline-start" />
+            Inspect
+          </Button>
           <SidecarStatus />
           <Button size="sm">
             <DownloadIcon data-icon="inline-start" />
@@ -51,14 +59,33 @@ export function PreviewPane() {
 
       <PaneBody className="gap-2 p-4">
         <div className="flex min-h-0 flex-1 items-center justify-center [container-type:size]">
-          <div className="aspect-(--preview-aspect) w-full max-w-[calc(100cqh*var(--preview-w)/var(--preview-h))] overflow-hidden rounded-xl border bg-black/30 [--preview-aspect:calc(var(--preview-w)/var(--preview-h))] [--preview-h:9] [--preview-w:16]">
+          <div className="relative aspect-(--preview-aspect) w-full max-w-[calc(100cqh*var(--preview-w)/var(--preview-h))] overflow-hidden rounded-xl border bg-black/30 [--preview-aspect:calc(var(--preview-w)/var(--preview-h))] [--preview-h:9] [--preview-w:16]">
             {activeProject === null ? (
               <NoFolder />
             ) : (
-              <Stage preview={preview} />
+              <Stage preview={preview} stage={stage} />
             )}
+
+            {inspect.isArmed ? (
+              <InspectOverlay
+                card={inspect.card}
+                cwd={openedProject?.path ?? null}
+                markers={inspect.markers}
+                onCancel={inspect.cancelComment}
+                onSubmit={inspect.submitComment}
+              />
+            ) : null}
           </div>
         </div>
+
+        {inspect.trouble === null ? null : (
+          <p
+            className="shrink-0 text-center text-destructive text-xs"
+            role="alert"
+          >
+            {inspect.trouble}
+          </p>
+        )}
 
         {hint === null ? null : (
           <p className="shrink-0 text-center text-muted-foreground text-xs">
@@ -70,12 +97,19 @@ export function PreviewPane() {
   );
 }
 
-function Stage({ preview }: { readonly preview: Preview }) {
+function Stage({
+  preview,
+  stage,
+}: {
+  readonly preview: Preview;
+  readonly stage: RefObject<HTMLIFrameElement | null>;
+}) {
   if (preview.phase === "ready") {
     return (
       <iframe
         allow="autoplay; fullscreen"
         className="h-full w-full border-0"
+        ref={stage}
         src={preview.url}
         title="Remotion preview"
       />

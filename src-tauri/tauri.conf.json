@@ -36,7 +36,11 @@
     "resources": {
       "../sidecar-dist/main.js": "sidecar/main.js",
       "../preview/entry.tsx": "preview/entry.tsx",
+      "../preview/bridge.ts": "preview/bridge.ts",
       "../preview/hot.ts": "preview/hot.ts",
+      "../preview/inspect.ts": "preview/inspect.ts",
+      "../preview/source.ts": "preview/source.ts",
+      "../node_modules/grab/dist/index.global.js": "grab/index.global.js",
       "../templates/remotion": "templates/remotion",
       "../agent": "agent"
     },

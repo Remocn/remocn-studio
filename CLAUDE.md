@@ -737,6 +737,103 @@ slot and mounts `<Player>` instead, so the pane is ours and the pixels are Remot
   compile finishes. `usePreview` ignores progress once served, or the pane would replace
   a live player with a spinner.
 
+### Pointing at an element, and commenting on it
+
+Inspect mode: hover the frame, click the thing you mean, write what should change, and the
+selection lands in the composer as `[Element #N]` — the second kind of composer reference,
+alongside `[Image #N]` (#18). The message is still sent by hand.
+
+- **Source resolution is React Grab, driven headlessly.** `grab`'s global build is served
+  by the preview host at `/__remocn/grab.js` from a Tauri resource, resolved the way the
+  template and the agent plugin are, and it goes in the page **before the project bundle**
+  — bippy's `Object.defineProperty` patch has to be in place before React defines the
+  DevTools hook. Measured: the hook is installed at script evaluation, so `init()` may be
+  called later, which is what lets the container be the player's canvas. Keeping it out of
+  the project's webpack is the point: that compile costs seconds and peaks over a
+  gigabyte, and this is 380 KB it would otherwise carry.
+- **Nothing reaches a third party.** `__REACT_GRAB_DISABLED__` is set in the page's globals
+  so the bundle does not self-initialise, `init` is called with `telemetry: false`, and the
+  `@import` of a Google-hosted font inside grab's shadow-DOM stylesheet is stripped by
+  `withoutWebFonts` **when the file is served**. `sidecar/preview/grab.test.ts` reads the
+  installed bundle and fails if a version bump reintroduces one — the alternative, a CSP on
+  the preview page, would also block fonts the *project* legitimately loads.
+- **`init({ enabled: false })` returns a dead API, and `setEnabled(true)` does not revive it.**
+  Measured against the shipped bundle: `isEnabled()` stays `false`, `activate()` is a no-op,
+  and — the part that bites — `getPlugins()` is `[]`, so `registerPlugin` never lands and
+  `onElementSelect` can never fire. `init` is therefore called with `enabled: true`, and
+  arming is `activate()`/`deactivate()` alone. Nothing is enabled early regardless, because
+  `open()` is lazy: it runs on the first arm, not at page load.
+- **The container is `.__remotion-player`**, which is the Player's canvas div and not its
+  outer container — `getContainerNode()` returns the outer one, which holds the transport
+  controls too. That class name is `playerCssClassname`'s default and Remotion injects its
+  own preview CSS against it, so it is load-bearing for Remotion rather than incidental.
+- **`preview/` duplicates the message shape rather than importing it**, as it already
+  duplicates the hot-reload path: it is compiled by the project's webpack and has no access
+  to the app's alias. `lib/studio/preview.test.ts` decodes both directions, and that test is
+  the only thing keeping the two in step. Every file under `preview/` needs its own entry in
+  `tauri.conf.json`'s resources.
+- **The channel is two-way and typed.** Page → app is a union discriminated by `type`
+  (`composition`, `selection`, `rebuilt`); app → page is `inspect`, `freeze`, `seek`,
+  addressed to the preview origin rather than `*`. Incoming messages are checked against
+  the origin `preview.start` reported **before** decoding, because these payloads carry file
+  paths that end up in a prompt; with no origin yet, nothing is accepted.
+- **`getSource` gives the component, the stack gives the parents.** Grab's display-name
+  accessor returns a Remotion wrapper; the source lookup returns the real scene, so the
+  component name comes from there. `projectFrames` keeps only frames inside the Remotion
+  root and outside `node_modules`, and drops the `apply` frame Remotion's dev-mode JSX proxy
+  leaves in every stack. Sourcemap paths are relative to the Remotion root, which is not
+  necessarily the opened folder, so the page carries `window.remocn_root` next to
+  `remocn_preferred` and `absolutise` joins against it.
+- **The scene comes from the fiber, its file does not.** Walking `fiber.return` for props
+  that look like a `Sequence` (finite `from` *and* `durationInFrames`) gives the scene's
+  identity and timing cheaply. Its own file and line are *not* available that way — for a
+  transition series the inner sequence element is created by Remotion, so the nearest
+  injected stack resolves into Remotion's code. The scene component's location is already
+  correct in the element's own stack, which is where it comes from.
+- **Everything visible except the hover box is drawn by the app.** The hover highlight stays
+  grab's, because it lives in the same document as the cursor and cannot lag; grab's toolbar,
+  label, drag box and grabbed boxes are themed off. Markers and the comment card render in
+  the app window over the iframe, in an `inset-0 pointer-events-none` overlay so hover and
+  click still reach the page. Marker geometry is **normalised to the preview page's
+  viewport**, which is exactly the iframe element's box, so a resize keeps markers on their
+  elements; `cardPlacement` is a pure function over three rectangles and is tested without
+  rendering anything.
+- **The card is not a Popover on purpose.** A popover brings Esc-to-close, outside-click-to-
+  close and a focus trap, and outside-click in this mode means "select the next element".
+  While it is open the page is sent `freeze`, which deactivates grab, so the frame does not
+  flicker with highlights while you type.
+- **The prompt keeps the token in the sentence and appends a block per selection at the end.**
+  Unlike an image, an element's payload is dozens of lines, and splicing it inline would tear
+  the sentence apart. There is one block per entry in the list, not per mention, so two
+  selections of the same element stay separate and a repeated mention does not duplicate the
+  payload. With no selections the content is byte-for-byte what it was.
+- **Availability is narrow, and the reasons differ.** Inspect is off while the composer is
+  locked, while the preview is not serving, and while the preview's project differs from the
+  open session's — the preview follows the *selected* project and the chat follows the *open
+  session's*, and those can diverge. Element references are dropped when the open session
+  moves to another project; text and images are left alone. That drop fires only on a real
+  switch, never on the first `null →` resolve at boot.
+- **A rebuild clears the markers and disarms**, because a box drawn over the old render lies
+  about the new one, and the page that comes back has forgotten it was armed. Unsent
+  references and whatever was being typed are untouched — an agent saving a file must not
+  delete your draft. Marking references *stale* per changed file is deliberately deferred.
+- **A selection with no source is still usable**, travelling with markup, component name and
+  frame, and says so on its chip. Failing closed would make the feature intermittently and
+  silently useless.
+- **Arming is acknowledged, so the button cannot lie.** The page answers every `inspect`
+  command with a status — `armed`, `disarmed`, `inert`, `no-canvas`, `no-grab` — and whether
+  it held a player ref to pause. The pane prints anything that is not a clean arm, including
+  "the preview never answered" once the silence outlasts `PATIENCE`, which is what a stale
+  compiled page looks like from the app's side. A disabled button carries the reason it is
+  disabled on its tooltip. Both exist because the first version of this failed silently in
+  three different places at once and none of them were distinguishable from the outside.
+- `PromptElement` carries `fps` as well as `frame`, which the prototype's shape did not: it is
+  what lets the chip read `0:01.4` rather than a frame number, and it makes the block's frame
+  counts interpretable. `file` is nullable for the same reason the chip needs to say "no
+  source".
+- **The first resolution after a rebuild costs ~210 ms** — the sourcemap fetch and parse —
+  and every one after it is 0 ms, so arming warms it up with a throwaway `getStack`.
+
 ## Layout
 
 Flat root, no monorepo — per #218.
@@ -747,9 +844,10 @@ components/ui/        shadcn/ui primitives (Base UI–backed)
 components/studio/    app-level components (panes, sidecar status, quit guard)
 hooks/                all behaviour: no logic inline in components
 lib/                  cn helper, error formatting, lib/studio/* clients
-preview/              the entry the *project's* webpack compiles instead of Studio's UI
+preview/              what the *project's* webpack compiles instead of Studio's UI:
+                      entry.tsx, the two-way bridge, hot reload, grab, source paths
 shared/               ipc.ts: the typed contract; transcript.ts: the one fold;
-                      references.ts: the one reader of `[Image #N]`
+                      references.ts: the one reader of `[Image #N]`/`[Element #N]`
 sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
 sidecar/history/      driver seam, migrations, project and session stores, recorder
 sidecar/scaffold/     what "New project…" expands and installs

@@ -1,10 +1,16 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
-import { segmentsOf } from "@/shared/references";
+import { type ReferenceCounts, segmentsOf } from "@/shared/references";
 
-export function MessageText({ count, text }: { count: number; text: string }) {
-  const segments = useMemo(() => segmentsOf(text, count), [count, text]);
+export function MessageText({
+  counts,
+  text,
+}: {
+  counts: ReferenceCounts;
+  text: string;
+}) {
+  const segments = useMemo(() => segmentsOf(text, counts), [counts, text]);
 
   return segments.map((segment) =>
     segment.kind === "reference" ? (

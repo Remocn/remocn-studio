@@ -67,6 +67,7 @@ function shell(id: string, command: string): TranscriptEntry {
 const ENTRIES: TranscriptEntry[] = [
   {
     attachments: [],
+    elements: [],
     id: "user-0",
     kind: "user",
     text: "Build me a title card",

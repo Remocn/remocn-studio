@@ -1,6 +1,6 @@
-import { type Exit, Schema, type SchemaError } from "effect";
+import { Effect, type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 8;
+export const SIDECAR_PROTOCOL = 9;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -9,6 +9,7 @@ export const QUIT_REQUESTED_EVENT = "app://quit-requested";
 export const HOST_PID_ENV = "REMOCN_STUDIO_HOST_PID";
 export const DATA_DIR_ENV = "REMOCN_STUDIO_DATA_DIR";
 export const PREVIEW_ENTRY_ENV = "REMOCN_STUDIO_PREVIEW_ENTRY";
+export const GRAB_SCRIPT_ENV = "REMOCN_STUDIO_GRAB_SCRIPT";
 export const TEMPLATE_DIR_ENV = "REMOCN_STUDIO_TEMPLATE_DIR";
 export const PLUGIN_DIR_ENV = "REMOCN_STUDIO_PLUGIN_DIR";
 
@@ -107,9 +108,34 @@ export const PromptAttachment = Schema.Struct({
   path: Schema.NonEmptyString,
 });
 
+export const ElementScene = Schema.Struct({
+  durationInFrames: Schema.Int,
+  frame: Schema.Int,
+  from: Schema.Int,
+  name: Schema.String,
+});
+
+export const PromptElement = Schema.Struct({
+  column: Schema.NullOr(Schema.Int),
+  component: Schema.NullOr(Schema.String),
+  composition: Schema.String,
+  file: Schema.NullOr(Schema.NonEmptyString),
+  fps: Schema.Finite,
+  frame: Schema.Int,
+  html: Schema.String,
+  line: Schema.NullOr(Schema.Int),
+  scene: Schema.NullOr(ElementScene),
+  stack: Schema.Array(Schema.String),
+});
+
+const elements = Schema.Array(PromptElement).pipe(
+  Schema.withDecodingDefault(Effect.succeed([]))
+);
+
 export const PromptParams = Schema.Struct({
   attachments: Schema.Array(PromptAttachment),
   effort: Schema.NullOr(EffortLevel),
+  elements,
   historyId: Schema.NonEmptyString,
   mode: SessionMode,
   model: Schema.NullOr(Schema.NonEmptyString),
@@ -123,6 +149,7 @@ export const ActivityState = Schema.Literals(["done", "failed", "running"]);
 export const TranscriptEntry = Schema.Union([
   Schema.Struct({
     attachments: Schema.Array(PromptAttachment),
+    elements,
     id: Schema.String,
     kind: Schema.Literal("user"),
     text: Schema.String,
@@ -319,6 +346,8 @@ export type PermissionParams = (typeof PermissionParams)["Type"];
 export type PermissionAnswer = (typeof PermissionAnswer)["Type"];
 export type ImageMediaType = (typeof ImageMediaType)["Type"];
 export type PromptAttachment = (typeof PromptAttachment)["Type"];
+export type ElementScene = (typeof ElementScene)["Type"];
+export type PromptElement = (typeof PromptElement)["Type"];
 export type Project = (typeof Project)["Type"];
 export type ProjectRef = (typeof ProjectRef)["Type"];
 export type ProjectPath = (typeof ProjectPath)["Type"];

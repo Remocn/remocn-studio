@@ -36,6 +36,7 @@ function params(shape: Partial<PromptParams>): PromptParams {
   return {
     attachments: [],
     effort: null,
+    elements: [],
     historyId: crypto.randomUUID(),
     mode: "auto",
     model: null,
@@ -70,7 +71,11 @@ function live(input: PromptParams, events: readonly ClaudeEvent[]) {
   return events
     .reduce(
       fold,
-      appendUser([], { attachments: input.attachments, text: input.prompt })
+      appendUser([], {
+        attachments: input.attachments,
+        elements: input.elements,
+        text: input.prompt,
+      })
     )
     .map(bare);
 }
