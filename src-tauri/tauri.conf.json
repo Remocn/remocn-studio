@@ -19,7 +19,10 @@
         "minHeight": 640,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "trafficLightPosition": { "x": 16, "y": 16 }
+        "trafficLightPosition": {
+          "x": 16,
+          "y": 16
+        }
       }
     ],
     "security": {
@@ -39,6 +42,7 @@
       "../preview/bridge.ts": "preview/bridge.ts",
       "../preview/hot.ts": "preview/hot.ts",
       "../preview/inspect.ts": "preview/inspect.ts",
+      "../preview/picker.ts": "preview/picker.ts",
       "../preview/source.ts": "preview/source.ts",
       "../node_modules/grab/dist/index.global.js": "grab/index.global.js",
       "../templates/remotion": "templates/remotion",

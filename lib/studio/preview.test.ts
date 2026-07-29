@@ -160,7 +160,7 @@ describe("decodePreviewMessage", () => {
   });
 
   it("accepts every reason the entry has for not arming", () => {
-    for (const status of ["disarmed", "inert", "no-canvas", "no-grab"]) {
+    for (const status of ["disarmed", "no-canvas", "no-grab"]) {
       expect(
         Exit.isSuccess(
           decodePreviewMessage({

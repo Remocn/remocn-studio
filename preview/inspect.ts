@@ -1,4 +1,5 @@
 import { post } from "./bridge";
+import { OVERLAY_ATTR, pickAt } from "./picker";
 import {
   absolutise,
   formatFrame,
@@ -11,8 +12,11 @@ import {
 const CANVAS = ".__remotion-player";
 const MARKUP_LIMIT = 4000;
 const PARENTS = 3;
-const REFERENCE_HUE = 195;
 const FIBER_KEY = "__reactFiber$";
+const ACCENT = "oklch(0.715 0.143 215.221)";
+const ACCENT_SOFT = "oklch(0.715 0.143 215.221 / 0.12)";
+const LABEL_INK = "oklch(0.18 0.01 260)";
+const TOP = 2_147_483_000;
 
 const WRAPPERS = new Set([
   "AbsoluteFill",
@@ -35,20 +39,10 @@ interface GrabSource {
 }
 
 interface GrabApi {
-  activate: () => void;
-  deactivate: () => void;
-  getPlugins: () => string[];
+  getDisplayName: (element: Element) => string | null;
   getSource: (element: Element) => Promise<GrabSource | null>;
-  isActive: () => boolean;
   registerPlugin: (plugin: unknown) => void;
 }
-
-export type InspectStatus =
-  | "armed"
-  | "disarmed"
-  | "inert"
-  | "no-canvas"
-  | "no-grab";
 
 interface GrabModule {
   getStack: (element: Element) => Promise<StackFrame[] | null>;
@@ -60,6 +54,8 @@ interface Fiber {
   return: Fiber | null;
   type: unknown;
 }
+
+export type InspectStatus = "armed" | "disarmed" | "no-canvas" | "no-grab";
 
 export interface Scene {
   durationInFrames: number;
@@ -74,7 +70,20 @@ export interface Stage {
   frame: () => number;
 }
 
+interface Session {
+  readonly box: HTMLElement;
+  readonly container: HTMLElement;
+  readonly label: HTMLElement;
+  readonly stop: () => void;
+}
+
 let api: GrabApi | null = null;
+let session: Session | null = null;
+let hovered: Element | null = null;
+let frozen = false;
+let exact = false;
+let point: { x: number; y: number } | null = null;
+let painting = 0;
 
 export function canvas(): HTMLElement | null {
   return document.querySelector<HTMLElement>(CANVAS);
@@ -82,43 +91,32 @@ export function canvas(): HTMLElement | null {
 
 export function armInspect(armed: boolean, stage: Stage): InspectStatus {
   if (!armed) {
-    api?.deactivate();
+    close();
     return "disarmed";
   }
 
-  if (grabModule() === null) {
-    return "no-grab";
-  }
+  const container = canvas();
 
-  if (canvas() === null) {
+  if (container === null) {
     return "no-canvas";
   }
 
-  const grab = open(stage);
+  close();
+  session = start(container, stage);
 
-  if (grab === null) {
-    return "no-grab";
-  }
-
-  grab.activate();
-
-  return grab.isActive() ? "armed" : "inert";
+  return grab() === null ? "no-grab" : "armed";
 }
 
-export function freezeInspect(frozen: boolean): void {
-  if (api === null) {
-    return;
-  }
+export function freezeInspect(next: boolean): void {
+  frozen = next;
 
   if (frozen) {
-    api.deactivate();
-    return;
+    hovered = null;
+    paint();
   }
-
-  api.activate();
 }
 
-function open(stage: Stage): GrabApi | null {
+function grab(): GrabApi | null {
   if (api !== null) {
     return api;
   }
@@ -137,43 +135,195 @@ function open(stage: Stage): GrabApi | null {
     enabled: true,
     maxContextLines: PARENTS,
     telemetry: false,
+  });
+
+  api.registerPlugin({
+    name: "remocn-studio",
     theme: {
       dragBox: { enabled: false },
       elementLabel: { enabled: false },
       grabbedBoxes: { enabled: false },
-      hue: REFERENCE_HUE,
+      selectionBox: { enabled: false },
       toolbar: { enabled: false },
     },
   });
 
-  const grab = api;
-
-  grab.registerPlugin({
-    hooks: {
-      onElementSelect: (element: Element) => {
-        report(grab, module, element, stage).catch(nothing);
-        return true;
-      },
-    },
-    name: "remocn-studio",
-  });
-
-  module.getStack(container).catch(nothing);
-
-  return grab;
+  return api;
 }
 
-async function report(
-  grab: GrabApi,
-  module: GrabModule,
-  element: Element,
-  stage: Stage
-): Promise<void> {
+function start(container: HTMLElement, stage: Stage): Session {
+  const { box, label } = overlay();
+
+  const onMove = (event: PointerEvent) => {
+    point = { x: event.clientX, y: event.clientY };
+    exact = event.altKey;
+    schedule(container);
+  };
+
+  const onLeave = () => {
+    point = null;
+    hovered = null;
+    paint();
+  };
+
+  const onKey = (event: KeyboardEvent) => {
+    if (event.key === "Alt") {
+      exact = event.type === "keydown";
+      schedule(container);
+    }
+  };
+
+  const onDown = (event: PointerEvent) => {
+    if (frozen || !container.contains(event.target as Node)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const picked =
+      pickAt(event.clientX, event.clientY, container, event.altKey) ?? hovered;
+
+    if (picked !== null) {
+      report(picked, stage).catch(nothing);
+    }
+  };
+
+  const swallow = (event: Event) => {
+    if (!frozen && container.contains(event.target as Node)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
+  window.addEventListener("pointermove", onMove, true);
+  window.addEventListener("pointerdown", onDown, true);
+  window.addEventListener("pointerup", swallow, true);
+  window.addEventListener("click", swallow, true);
+  window.addEventListener("keydown", onKey, true);
+  window.addEventListener("keyup", onKey, true);
+  container.addEventListener("pointerleave", onLeave);
+
+  return {
+    box,
+    container,
+    label,
+    stop: () => {
+      window.removeEventListener("pointermove", onMove, true);
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("pointerup", swallow, true);
+      window.removeEventListener("click", swallow, true);
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("keyup", onKey, true);
+      container.removeEventListener("pointerleave", onLeave);
+      box.remove();
+      label.remove();
+    },
+  };
+}
+
+function close(): void {
+  session?.stop();
+  session = null;
+  hovered = null;
+  point = null;
+  exact = false;
+  frozen = false;
+}
+
+function schedule(container: HTMLElement): void {
+  if (painting !== 0) {
+    return;
+  }
+
+  painting = requestAnimationFrame(() => {
+    painting = 0;
+
+    if (session === null || frozen || point === null) {
+      return;
+    }
+
+    hovered = pickAt(point.x, point.y, container, exact);
+    paint();
+  });
+}
+
+function overlay(): { box: HTMLElement; label: HTMLElement } {
+  const box = document.createElement("div");
+  const label = document.createElement("div");
+
+  for (const node of [box, label]) {
+    node.setAttribute(OVERLAY_ATTR, "");
+    node.style.position = "fixed";
+    node.style.pointerEvents = "none";
+    node.style.display = "none";
+    node.style.left = "0";
+    node.style.top = "0";
+  }
+
+  box.style.zIndex = String(TOP);
+  box.style.boxSizing = "border-box";
+  box.style.border = `1px solid ${ACCENT}`;
+  box.style.background = ACCENT_SOFT;
+  box.style.borderRadius = "2px";
+
+  label.style.zIndex = String(TOP + 1);
+  label.style.background = ACCENT;
+  label.style.color = LABEL_INK;
+  label.style.borderRadius = "4px";
+  label.style.padding = "2px 6px";
+  label.style.font =
+    "500 11px ui-sans-serif, system-ui, -apple-system, sans-serif";
+  label.style.whiteSpace = "nowrap";
+
+  document.body.append(box, label);
+
+  return { box, label };
+}
+
+function paint(): void {
+  if (session === null) {
+    return;
+  }
+
+  const { box, label } = session;
+
+  if (hovered === null) {
+    box.style.display = "none";
+    label.style.display = "none";
+    return;
+  }
+
+  const rect = hovered.getBoundingClientRect();
+
+  box.style.display = "block";
+  box.style.left = `${rect.left}px`;
+  box.style.top = `${rect.top}px`;
+  box.style.width = `${rect.width}px`;
+  box.style.height = `${rect.height}px`;
+
+  label.textContent = nameOf(hovered);
+  label.style.display = "block";
+  label.style.left = `${Math.max(0, rect.left)}px`;
+  label.style.top =
+    rect.top > 20 ? `${rect.top - 19}px` : `${rect.bottom + 4}px`;
+}
+
+function nameOf(element: Element): string {
+  const tag = element.tagName.toLowerCase();
+  const component = api?.getDisplayName(element) ?? null;
+
+  return component === null ? tag : `${component}.${tag}`;
+}
+
+async function report(element: Element, stage: Stage): Promise<void> {
+  const module = grabModule();
+  const found = grab();
   const root = rootPath();
 
   const [spot, frames] = await Promise.all([
-    grab.getSource(element).catch(nothing),
-    module.getStack(element).catch(nothing),
+    found === null ? null : found.getSource(element).catch(nothing),
+    module === null ? null : module.getStack(element).catch(nothing),
   ]);
 
   const stack = projectFrames(root, frames);

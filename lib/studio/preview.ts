@@ -27,7 +27,6 @@ export const PreviewRect = Schema.Struct({
 export const InspectStatus = Schema.Literals([
   "armed",
   "disarmed",
-  "inert",
   "no-canvas",
   "no-grab",
 ]);

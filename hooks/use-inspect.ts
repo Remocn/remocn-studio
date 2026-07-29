@@ -233,15 +233,11 @@ function troubleOf(
   }
 
   if (reported.status === "no-grab") {
-    return "The preview page loaded without React Grab, so nothing can be picked.";
+    return "React Grab did not load, so selections will carry no source location.";
   }
 
   if (reported.status === "no-canvas") {
     return "The player is not on screen yet, so there is nothing to pick from.";
-  }
-
-  if (reported.status === "inert") {
-    return "React Grab loaded but refused to turn on.";
   }
 
   return reported.paused

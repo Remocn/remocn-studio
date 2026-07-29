@@ -757,12 +757,26 @@ alongside `[Image #N]` (#18). The message is still sent by hand.
   `withoutWebFonts` **when the file is served**. `sidecar/preview/grab.test.ts` reads the
   installed bundle and fails if a version bump reintroduces one — the alternative, a CSP on
   the preview page, would also block fonts the *project* legitimately loads.
-- **`init({ enabled: false })` returns a dead API, and `setEnabled(true)` does not revive it.**
-  Measured against the shipped bundle: `isEnabled()` stays `false`, `activate()` is a no-op,
-  and — the part that bites — `getPlugins()` is `[]`, so `registerPlugin` never lands and
-  `onElementSelect` can never fire. `init` is therefore called with `enabled: true`, and
-  arming is `activate()`/`deactivate()` alone. Nothing is enabled early regardless, because
-  `open()` is lazy: it runs on the first arm, not at page load.
+- **`init({ enabled: false })` returns a stub, not a disabled API.** Read out of the bundle:
+  that branch hands back `{ getSource: () => Promise.resolve(null), getStackContext: () =>
+  Promise.resolve(""), … }`, `getPlugins()` is `[]`, and `setEnabled(true)` does not revive
+  any of it. So `enabled: false` would resolve every source location to `null` and look
+  exactly like a project whose sourcemaps are broken. `init` is always called with
+  `enabled: true`; it is lazy, running on the first arm rather than at page load.
+- **`init` does not take a `theme` — only plugins do.** The options `init` defaults are
+  `{activationMode, keyHoldDuration, allowActivationInsideInput, activationKey, getContent,
+  maxContextLines, freezeReactUpdates}`, and `Options` has no `theme` field either, so a
+  theme passed to `init` is silently dropped — which is how the toolbar, the label and
+  grab's default hue all survived being "turned off". The theme rides on
+  `registerPlugin({ name, theme })`.
+- **`theme.enabled` is a trap: turn the sections off, one by one.** It reads as the global
+  switch, but the bundle only consults it *once, synchronously inside `init`*, to decide
+  whether to mount the renderer at all — and a theme cannot be handed to `init`. A plugin
+  registered afterwards is always too late for it. The per-section flags
+  (`toolbar`, `selectionBox`, `elementLabel`, `dragBox`, `grabbedBoxes`) are reactive
+  getters, so those *do* take effect from a plugin. Measured in the shipped bundle by
+  counting nodes in grab's shadow root: control 25 nodes / 4 buttons, `theme.enabled: false`
+  25 / 4 — unchanged — and `theme.toolbar.enabled: false` 4 / 0.
 - **The container is `.__remotion-player`**, which is the Player's canvas div and not its
   outer container — `getContainerNode()` returns the outer one, which holds the transport
   controls too. That class name is `playerCssClassname`'s default and Remotion injects its
@@ -790,18 +804,53 @@ alongside `[Image #N]` (#18). The message is still sent by hand.
   transition series the inner sequence element is created by Remotion, so the nearest
   injected stack resolves into Remotion's code. The scene component's location is already
   correct in the element's own stack, which is where it comes from.
-- **Everything visible except the hover box is drawn by the app.** The hover highlight stays
-  grab's, because it lives in the same document as the cursor and cannot lag; grab's toolbar,
-  label, drag box and grabbed boxes are themed off. Markers and the comment card render in
-  the app window over the iframe, in an `inset-0 pointer-events-none` overlay so hover and
-  click still reach the page. Marker geometry is **normalised to the preview page's
-  viewport**, which is exactly the iframe element's box, so a resize keeps markers on their
-  elements; `cardPlacement` is a pure function over three rectangles and is tested without
-  rendering anything.
+- **Hit-testing and the hover box are ours; grab is only a source resolver.** Grab's overlay
+  is taken down wholesale (`theme.enabled: false`) and `activate()` is never called, so what
+  is left of it is `getSource`, `getStack` and `getDisplayName`. `preview/picker.ts` picks
+  the element and `preview/inspect.ts` draws the box, **inside the preview document**, so the
+  highlight still shares a document with the cursor and cannot lag. Grab's own hit-test could
+  not be steered: `Options` exposes no filter, its `ElementAtPointOptions.filter` is internal,
+  and its arrow keys are *spatial* navigation between neighbours, not a climb to the parent.
+- **The picker answers two questions grab got wrong.** First, *what is actually under the
+  cursor*: it walks `elementsFromPoint` and takes the first element that **paints something
+  at that point** — a background, a border, a shadow, a replaced element, or a text node whose
+  own client rect contains the point — instead of the topmost transparent wrapper. Grab
+  already drops `display:none`, `visibility:hidden` and `opacity:0`, and transparent overlays
+  — but only ones covering ≥90% of the viewport on both axes, which a mid-sized animated
+  wrapper sails past. Second, *how much of it you meant*: `climb` walks up while the element
+  is an **inline wrapper** — inline-level and painting no surface of its own — and stops at
+  the first block-level element, which is the line. That is deliberately *not* "a short
+  element with siblings sharing its tag": that earlier rule missed the two commonest shapes
+  a text animation actually has — a word wrapped in a wrapper of its own
+  (`<span class=word><span>mind</span></span>`, where the inner span has no siblings) and a
+  line that is one word long. Painting its own surface is what stops the climb at a
+  highlighted chip inside a sentence, and block-level is what keeps a grid of cards from
+  collapsing into the grid. Holding **Alt** turns both rules off and picks the literal
+  topmost node. The rules are pure over the DOM and tested in jsdom.
+- **Tags are compared by `localName`, never `tagName`, because of SVG.** `tagName` upper-cases
+  HTML elements but leaves SVG ones as authored, so `<svg>` reports `"svg"` and a set of
+  upper-cased names misses every icon in the project. That single mistake broke both halves
+  at once: an icon counted as painting nothing, so the hit test walked past it, and it
+  computed to `display: inline`, so `climb` stepped straight over it. Anything in the SVG
+  namespace is now **a drawing**: it always paints — the browser's own SVG hit-testing is
+  `visiblePainted`, so being returned by `elementsFromPoint` already proves the point is on
+  drawn geometry, and `fill` would never show up as a `background-color` anyway — it is never
+  an inline wrapper, and `climb` folds any shape inside it up to the outermost `<svg>`,
+  because what you pointed at is the icon and not one of its paths. Alt still picks the path.
+  HTML inside a `foreignObject` falls out of this by itself, being in the XHTML namespace.
+- **Pointer events are swallowed while armed.** `pointerdown`, `pointerup` and `click` are
+  captured on `window` and stopped inside the canvas — otherwise Remotion's `clickToPlay`
+  would toggle playback under every pick. Hover is recomputed on a `requestAnimationFrame`
+  tick rather than per event.
+- **Markers and the comment card render in the app window**, over the iframe, in an
+  `inset-0 pointer-events-none` overlay so hover and click still reach the page. Marker
+  geometry is **normalised to the preview page's viewport**, which is exactly the iframe
+  element's box, so a resize keeps markers on their elements; `cardPlacement` is a pure
+  function over three rectangles and is tested without rendering anything.
 - **The card is not a Popover on purpose.** A popover brings Esc-to-close, outside-click-to-
   close and a focus trap, and outside-click in this mode means "select the next element".
-  While it is open the page is sent `freeze`, which deactivates grab, so the frame does not
-  flicker with highlights while you type.
+  While it is open the page is sent `freeze`, which stops the picker tracking and ignores
+  clicks, so the frame does not flicker with highlights while you type.
 - **The prompt keeps the token in the sentence and appends a block per selection at the end.**
   Unlike an image, an element's payload is dozens of lines, and splicing it inline would tear
   the sentence apart. There is one block per entry in the list, not per mention, so two
