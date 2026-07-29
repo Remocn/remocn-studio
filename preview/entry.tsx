@@ -1,10 +1,12 @@
+import "@remotion/studio/renderEntry";
 import { Player, type PlayerRef } from "@remotion/player";
 import { useContext, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { Internals } from "remotion";
 import { onCommand, post } from "./bridge";
 import { connectHotReload } from "./hot";
-import { armInspect, type Stage as Frame, freezeInspect } from "./inspect";
+import { armInspect, freezeInspect, type Stage as Spot } from "./inspect";
+import { armSnapshot, type Frame } from "./snapshot";
 
 const MAIN_ID = "Main";
 
@@ -51,7 +53,12 @@ function Stage() {
     post(describe(picked, compositions.length));
   }, [compositions.length, picked]);
 
-  useInspectCommands(player, picked?.id ?? null, picked?.metadata?.fps ?? 30);
+  usePreviewCommands(player, {
+    composition: picked?.id ?? null,
+    fps: picked?.metadata?.fps ?? 30,
+    height: picked?.metadata?.height ?? 0,
+    width: picked?.metadata?.width ?? 0,
+  });
 
   if (picked === null || picked.metadata === null) {
     return null;
@@ -77,18 +84,31 @@ function Stage() {
   );
 }
 
-function useInspectCommands(
-  player: React.RefObject<PlayerRef | null>,
-  composition: string | null,
-  fps: number
-) {
-  const playing = useRef({ composition, fps });
-  playing.current = { composition, fps };
+interface Playing {
+  composition: string | null;
+  fps: number;
+  height: number;
+  width: number;
+}
 
-  const stage = useRef<Frame>({
+function usePreviewCommands(
+  player: React.RefObject<PlayerRef | null>,
+  video: Playing
+) {
+  const playing = useRef(video);
+  playing.current = video;
+
+  const spot = useRef<Spot>({
     composition: () => playing.current.composition ?? "",
     fps: () => playing.current.fps,
     frame: () => player.current?.getCurrentFrame() ?? 0,
+  });
+
+  const frame = useRef<Frame>({
+    composition: () => playing.current.composition ?? "",
+    frame: () => player.current?.getCurrentFrame() ?? 0,
+    height: () => playing.current.height,
+    width: () => playing.current.width,
   });
 
   useEffect(
@@ -100,8 +120,20 @@ function useInspectCommands(
           }
           post({
             paused: player.current !== null,
-            status: armInspect(command.armed, stage.current),
+            status: armInspect(command.armed, spot.current),
             type: "inspect",
+          });
+          return;
+        }
+
+        if (command.type === "snapshot") {
+          if (command.armed) {
+            player.current?.pause();
+          }
+          post({
+            paused: player.current !== null,
+            status: armSnapshot(command.armed, frame.current),
+            type: "snapshot",
           });
           return;
         }

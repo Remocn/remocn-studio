@@ -3,6 +3,7 @@ export const COMMAND_SOURCE = "remocn-studio";
 
 export type PreviewCommand =
   | { armed: boolean; type: "inspect" }
+  | { armed: boolean; type: "snapshot" }
   | { frame: number; type: "seek" }
   | { frozen: boolean; type: "freeze" };
 

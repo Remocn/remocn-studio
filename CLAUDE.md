@@ -883,6 +883,87 @@ alongside `[Image #N]` (#18). The message is still sent by hand.
 - **The first resolution after a rebuild costs ~210 ms** — the sourcemap fetch and parse —
   and every one after it is 0 ms, so arming warms it up with a throwaway `getStack`.
 
+### Taking a picture of the frame, and sending it
+
+Snapshot: pause, click the frame for the whole thing or drag a rectangle for part of it, and
+the pixels land in the composer as an ordinary attachment with an `[Image #N]` token (#21).
+It answers *look at this*, where Inspect answers *change this*, which is why the two are
+separate buttons and mutually exclusive rather than one mode with a switch.
+
+- **A snapshot is a `PromptAttachment` and nothing new.** The feature adds a way to *create*
+  one; `shared/ipc.ts`, the transcript fold, the history store, `content.ts`, the cards and
+  `[Image #N]` are all untouched, so history, deletion and renumbering are correct on day one
+  because they are not being changed. `useComposer.capture(file)` is `onPaste` without the
+  clipboard, so the file goes through the same raw-body invoke into `pasted-images` — which
+  is also why a snapshot survives on disk and old sessions keep their pictures.
+- **One bundle serves the Player and the renderer**, because `@remotion/bundler`'s `bundle()`
+  only puts `@remotion/studio/renderEntry` into the same `entry` slot `preview/entry.tsx`
+  occupies. Measured on `remocn-demo`: the hybrid costs ~20 KB over Player-only, against a
+  second full compile (~7 s, 1.67 GB peak) for a second bundle. Three things make it work,
+  and each cost a failed run:
+  - The alias `@remotion/studio/renderEntry$` goes **before** the base config's aliases —
+    Remotion pins `"@remotion/studio"` to a *file* and webpack matches by prefix, so the
+    subpath otherwise resolves to `dist/index.js/renderEntry`. It resolves to
+    `dist/esm/renderEntry.mjs`, exactly as `bundle()` does.
+  - A `{ include: renderEntry, sideEffects: true }` module rule, so nothing can tree-shake a
+    module imported purely for `window.getStaticCompositions`.
+  - The page needs `#video-container`, `window.siteVersion = "11"` and
+    `window.remotion_version`; `video-container` is read at module scope, so it has to be in
+    the HTML before the bundle loads.
+- **Two pages, one bundle, and each page is what decides which half runs.** The preview page
+  carries `#__remotion-studio-container` and no `#video-container`; the render page, served
+  at `/__remocn/render/index.html`, carries the opposite. Our entry already returns early
+  when `getPreviewDomElement()` is null, so the Player simply never mounts for a render — no
+  new flag was needed. The render page's siblings resolve from the same prefix, so
+  `bundle.js` and its sourcemap load next to it.
+- **The preview page sets `remotion_puppeteerTimeout` on purpose.** It is the only signal
+  `renderEntry` has for "headless", and in its absence the index branch mounts a read-only
+  **Studio** into `#video-container` and flips `remotion_isStudio`. Setting it to 30000 — the
+  value `delayRender` already defaults to — makes that branch return early and changes nothing
+  else, since `isRendering` additionally requires `NODE_ENV` to be production. Verified in a
+  real headless Chrome against `remocn-demo`: `remotion_isStudio` false, `#video-container`
+  absent, the Player mounted with a 1280×720 canvas.
+- **The render page declares `NODE_ENV=production`, and that is load-bearing.** The first
+  working end-to-end render came out **blank white**: the preview compiles with
+  `environment: "development"`, so `getRemotionEnvironment().isRendering` was false and
+  Remotion rendered nothing into the portal. The page sets
+  `window.process = {env:{NODE_ENV:"production"}}` before the bundle, and
+  `remotion_envVariables` to `""` — with a truthy value `setup-environment` overwrites
+  `NODE_ENV` with the compiled one, and with a falsy one it assigns nothing and ours survives.
+  With that, the still is **byte-identical** to `npx remotion still` on the same frame.
+- **Only frames may reach the host's stdout, and third parties do not know that.** Remotion
+  forwards browser console output to stdout during a render, which put `[Tab 0, …]` lines into
+  the frame channel. The host swaps `process.stdout.write` and the stdout `console` methods
+  onto stderr at startup, keeping the real writer for `write()`. Patching `console` as well as
+  the stream is not belt and braces: under bun `console.log` bypasses `process.stdout.write`.
+- **The host is asked over its own stdin**, in the frames it already answers in — no second
+  transport for one method. `preview.still` carries `{ projectId, composition, frame }` and
+  answers with a path; the supervisor keeps a registry of running hosts keyed by project and
+  a pending map keyed by request id, so a still for a project with no preview fails with a
+  sentence rather than hanging. Stopping the preview fails everything still pending.
+- **Cropping and downscaling happen in the webview, through `<canvas>`.** The host renders a
+  full frame to a temp file, the webview reads it over the asset protocol, crops, downscales
+  to ≈1568 px on the long edge and hands the bytes to the invoke that already stores pasted
+  images. No image library reaches the sidecar or Rust. Cropping *before* downscaling is what
+  keeps detail in a small region.
+- **The rectangle is normalised to the composition in the page**, which is why a box drawn on
+  a small preview crops the same region on a large render — the app only ever multiplies by
+  the resolution `selectComposition` reported. That is a different transform from Inspect's,
+  which normalises to the page viewport to draw markers; both are pure and tested.
+  `.__remotion-player`'s rect *is* the video box (the Player scales that div by transform), so
+  the contain-fit in `videoBox` is a no-op there and insurance if that ever changes.
+- **A tiny drag is a click**, so a shaky hand cannot hand you a four-pixel picture, and the
+  marquee is drawn inside the preview document for the same reason Inspect's box is.
+- **Each capture sweeps the stills folder first** and writes a uniquely named file, which is
+  safe because the composer refuses a second capture while one is in flight — and that refusal
+  is also what story "a second of work must not read as a dead button" is made of.
+- **`ensureBrowser` runs before every render with its progress surfaced.** It is the one place
+  this feature touches the network. The render also carries a `delayRender` timeout and the
+  whole capture an outer one, so a scene that never resolves fails with a sentence instead of
+  hanging the app.
+- **This is the first slice of Export**, which needs the same three things: the renderer
+  resolved from the project, the browser provisioned, and progress reported.
+
 ## Layout
 
 Flat root, no monorepo — per #218.
@@ -894,7 +975,8 @@ components/studio/    app-level components (panes, sidecar status, quit guard)
 hooks/                all behaviour: no logic inline in components
 lib/                  cn helper, error formatting, lib/studio/* clients
 preview/              what the *project's* webpack compiles instead of Studio's UI:
-                      entry.tsx, the two-way bridge, hot reload, grab, source paths
+                      entry.tsx, the two-way bridge, hot reload, grab, source paths,
+                      the element picker and the snapshot marquee
 shared/               ipc.ts: the typed contract; transcript.ts: the one fold;
                       references.ts: the one reader of `[Image #N]`/`[Element #N]`
 sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history

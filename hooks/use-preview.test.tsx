@@ -1,7 +1,11 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { type PreviewHandlers, usePreview } from "@/hooks/use-preview";
+import {
+  type PreviewListener,
+  useOnPreview,
+  usePreview,
+} from "@/hooks/use-preview";
 import type { PreviewEvent } from "@/shared/ipc";
 
 const FOLDER = "/Users/me/projects/my-video";
@@ -16,8 +20,8 @@ function internals(): Internals {
     .__TAURI_INTERNALS__;
 }
 
-function handlers(): PreviewHandlers {
-  return { onInspect: vi.fn(), onRebuilt: vi.fn(), onSelection: vi.fn() };
+function listener(): PreviewListener {
+  return vi.fn();
 }
 
 function mockPreview() {
@@ -88,9 +92,13 @@ const SELECTION = {
   type: "selection",
 };
 
-async function served(hooks: PreviewHandlers = handlers()) {
+async function served(listen: PreviewListener = listener()) {
   const host = mockPreview();
-  const rendered = renderHook(() => usePreview(FOLDER, hooks));
+  const rendered = renderHook(() => {
+    const preview = usePreview(FOLDER);
+    useOnPreview(preview, listen);
+    return preview;
+  });
 
   await waitFor(() => {
     expect(rendered.result.current.preview.phase).toBe("building");
@@ -136,7 +144,7 @@ describe("usePreview", () => {
   });
 
   it("stays idle without a folder", () => {
-    const { result } = renderHook(() => usePreview(null, handlers()));
+    const { result } = renderHook(() => usePreview(null));
 
     expect(result.current.preview).toEqual({ phase: "idle" });
     expect(result.current.isServing).toBe(false);
@@ -175,19 +183,19 @@ describe("usePreview", () => {
   });
 
   it("hands a selection to whoever is collecting them", async () => {
-    const hooks = handlers();
-    await served(hooks);
+    const listen = listener();
+    await served(listen);
 
     post(SELECTION);
 
-    expect(hooks.onSelection).toHaveBeenCalledWith(
+    expect(listen).toHaveBeenCalledWith(
       expect.objectContaining({ type: "selection" })
     );
   });
 
   it("hears the preview answer that it armed", async () => {
-    const hooks = handlers();
-    await served(hooks);
+    const listen = listener();
+    await served(listen);
 
     post({
       paused: true,
@@ -196,14 +204,14 @@ describe("usePreview", () => {
       type: "inspect",
     });
 
-    expect(hooks.onInspect).toHaveBeenCalledWith(
+    expect(listen).toHaveBeenCalledWith(
       expect.objectContaining({ paused: true, status: "armed" })
     );
   });
 
   it("hears the preview say it could not arm", async () => {
-    const hooks = handlers();
-    await served(hooks);
+    const listen = listener();
+    await served(listen);
 
     post({
       paused: true,
@@ -212,36 +220,59 @@ describe("usePreview", () => {
       type: "inspect",
     });
 
-    expect(hooks.onInspect).toHaveBeenCalledWith(
+    expect(listen).toHaveBeenCalledWith(
       expect.objectContaining({ status: "no-grab" })
     );
   });
 
+  it("hands a captured frame to whoever is collecting them", async () => {
+    const listen = listener();
+    await served(listen);
+
+    post({
+      composition: "Main",
+      frame: 42,
+      rect: { height: 0.2, width: 0.5, x: 0.25, y: 0.4 },
+      source: "remocn-preview",
+      type: "capture",
+    });
+
+    expect(listen).toHaveBeenCalledWith(
+      expect.objectContaining({ frame: 42, type: "capture" })
+    );
+  });
+
   it("says when the project recompiled, so the markers can go", async () => {
-    const hooks = handlers();
-    await served(hooks);
+    const listen = listener();
+    await served(listen);
 
     post({ source: "remocn-preview", type: "rebuilt" });
 
-    expect(hooks.onRebuilt).toHaveBeenCalled();
+    expect(listen).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "rebuilt" })
+    );
   });
 
   it("ignores a selection that did not come from the preview's origin", async () => {
-    const hooks = handlers();
-    await served(hooks);
+    const listen = listener();
+    await served(listen);
 
     post(SELECTION, "http://evil.example");
 
-    expect(hooks.onSelection).not.toHaveBeenCalled();
+    expect(listen).not.toHaveBeenCalled();
   });
 
   it("ignores anything posted before there is a preview to trust", () => {
-    const hooks = handlers();
+    const listen = listener();
     mockPreview();
-    renderHook(() => usePreview(FOLDER, hooks));
+    renderHook(() => {
+      const preview = usePreview(FOLDER);
+      useOnPreview(preview, listen);
+      return preview;
+    });
 
     post(SELECTION);
 
-    expect(hooks.onSelection).not.toHaveBeenCalled();
+    expect(listen).not.toHaveBeenCalled();
   });
 });

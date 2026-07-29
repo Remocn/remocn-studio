@@ -8,8 +8,7 @@ import {
   originOf,
   type PreviewCommand,
   type PreviewComposition,
-  type PreviewInspect,
-  type PreviewSelection,
+  type PreviewMessage,
   startPreview,
 } from "@/lib/studio/preview";
 
@@ -19,11 +18,7 @@ export type Preview =
   | { phase: "idle" }
   | { phase: "ready"; url: string };
 
-export interface PreviewHandlers {
-  onInspect: (inspect: PreviewInspect) => void;
-  onRebuilt: () => void;
-  onSelection: (selection: PreviewSelection) => void;
-}
+export type PreviewListener = (message: PreviewMessage) => void;
 
 export interface PreviewControl {
   hint: string | null;
@@ -32,23 +27,29 @@ export interface PreviewControl {
   restart: () => void;
   send: (command: PreviewCommand) => void;
   stage: RefObject<HTMLIFrameElement | null>;
+  subscribe: (listen: PreviewListener) => () => void;
 }
 
 const IDLE: Preview = { phase: "idle" };
 
 type Running = Fiber.Fiber<unknown, unknown>;
 
-export function usePreview(
-  projectId: string | null,
-  handlers: PreviewHandlers
-): PreviewControl {
+export function usePreview(projectId: string | null): PreviewControl {
   const [preview, setPreview] = useState<Preview>(IDLE);
   const [pick, setPick] = useState<PreviewComposition | null>(null);
   const running = useRef<Running | null>(null);
   const stage = useRef<HTMLIFrameElement>(null);
+  const listeners = useRef(new Set<PreviewListener>());
 
   const origin = preview.phase === "ready" ? originOf(preview.url) : null;
-  const { onInspect, onRebuilt, onSelection } = handlers;
+
+  const subscribe = useCallback((listen: PreviewListener) => {
+    listeners.current.add(listen);
+
+    return () => {
+      listeners.current.delete(listen);
+    };
+  }, []);
 
   const stop = useCallback(() => {
     if (running.current !== null) {
@@ -117,17 +118,11 @@ export function usePreview(
 
       if (decoded.value.type === "composition") {
         setPick(decoded.value);
-        return;
       }
-      if (decoded.value.type === "selection") {
-        onSelection(decoded.value);
-        return;
+
+      for (const listen of [...listeners.current]) {
+        listen(decoded.value);
       }
-      if (decoded.value.type === "inspect") {
-        onInspect(decoded.value);
-        return;
-      }
-      onRebuilt();
     };
 
     window.addEventListener("message", onMessage);
@@ -135,7 +130,7 @@ export function usePreview(
     return () => {
       window.removeEventListener("message", onMessage);
     };
-  }, [onInspect, onRebuilt, onSelection, origin]);
+  }, [origin]);
 
   const send = useCallback(
     (command: PreviewCommand) => {
@@ -163,9 +158,19 @@ export function usePreview(
       restart,
       send,
       stage,
+      subscribe,
     }),
-    [hint, preview, restart, send]
+    [hint, preview, restart, send, subscribe]
   );
+}
+
+export function useOnPreview(
+  preview: PreviewControl,
+  listen: PreviewListener
+): void {
+  const { subscribe } = preview;
+
+  useEffect(() => subscribe(listen), [listen, subscribe]);
 }
 
 function hintOf(message: PreviewComposition | null): string | null {

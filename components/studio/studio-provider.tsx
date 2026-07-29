@@ -5,13 +5,13 @@ import { type ClaudeEffort, useClaudeEffort } from "@/hooks/use-claude-effort";
 import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
 import { type Composer, useComposer } from "@/hooks/use-composer";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
-import { type Inspection, useInspect } from "@/hooks/use-inspect";
 import { type OpenTurn, useOpenTurn } from "@/hooks/use-open-turn";
+import { type Tools, useTools } from "@/hooks/use-tools";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
 
 export type Studio = ClaudeEffort &
   ClaudeModel &
-  Workspace & { composer: Composer; inspect: Inspection; turn: OpenTurn };
+  Workspace & { composer: Composer; tools: Tools; turn: OpenTurn };
 
 const StudioContext = createContext<Studio | null>(null);
 
@@ -46,7 +46,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     projectId: opened?.id ?? null,
   });
 
-  const inspect = useInspect({
+  const tools = useTools({
     composer,
     isMissing: opened?.missing ?? false,
     isWaiting: turn.permission !== null,
@@ -55,8 +55,8 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   });
 
   const studio = useMemo(
-    () => ({ ...workspace, ...model, ...effort, composer, inspect, turn }),
-    [composer, effort, inspect, model, turn, workspace]
+    () => ({ ...workspace, ...model, ...effort, composer, tools, turn }),
+    [composer, effort, model, tools, turn, workspace]
   );
 
   if (!workspace.isReady) {

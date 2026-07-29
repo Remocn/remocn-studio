@@ -87,9 +87,9 @@ export function Composer({
     claudeEffort,
     claudeModel,
     composer,
-    inspect,
     onEffortChange,
     onModelChange,
+    tools,
   } = useStudio();
   const sidecar = useSidecar();
   const isLocked = disabled || isWaiting;
@@ -114,7 +114,7 @@ export function Composer({
                 cwd={cwd}
                 items={composer.selections.items}
                 onRemove={composer.onRemoveSelection}
-                onSeek={inspect.seek}
+                onSeek={tools.inspect.seek}
               />
             </InputGroupAddon>
           ) : null}

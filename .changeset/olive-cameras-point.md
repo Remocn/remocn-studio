@@ -1,0 +1,19 @@
+---
+"remocn-studio": minor
+---
+
+Take a picture of the frame and send it with the message. Turn on **Snapshot** — the button next to Inspect — and the player pauses; click the frame to attach the whole thing, or drag a rectangle to attach just the part that is wrong. It lands in the composer as an ordinary attachment with an `[Image #N]` token, exactly like an image pasted from the clipboard, and goes when you send. Inspect answers *change this*; Snapshot answers *look at this*, so they are separate tools and only one can be on at a time.
+
+The pixels come from `renderStill` in **the project's own `@remotion/renderer`** — the path an export will take — so what Claude sees is what will be in the file, not what a webview happened to paint. Measured against `remocn-demo`: the still is byte-identical to what `npx remotion still` produces for the same frame.
+
+That needed no second bundle. `@remotion/bundler`'s `bundle()` merely drops `@remotion/studio/renderEntry` into the same webpack `entry` slot our preview entry already occupies, so one compile now serves both — about 20 KB more, against the ~7 s and 1.67 GB peak a second compile would cost. The preview page and the render page differ only in which container they declare, and our entry already declines to mount a Player when there is no studio container, so nothing new decides which half runs.
+
+Three findings were load-bearing and none were visible by reading. The `@remotion/studio/renderEntry` alias has to go **before** the base config's aliases, or webpack matches the broader `"@remotion/studio"` prefix — which points at a file — and cannot resolve the subpath. A `sideEffects: true` module rule is required, or the module imported purely for `window.getStaticCompositions` can be shaken away. And the preview page must declare `remotion_puppeteerTimeout`, because that is the only signal `renderEntry` has for "headless" and without it the preview would quietly mount a read-only Remotion Studio into the page.
+
+The first end-to-end render came out blank white. The preview compiles in development mode, so `getRemotionEnvironment().isRendering` was false and Remotion rendered nothing into the portal. The render page now declares `NODE_ENV=production` before the bundle loads, and hands over no env variables, so Remotion's own setup cannot overwrite it. A second thing that only showed up in a real render: Remotion forwards browser console output to stdout, which is the preview host's frame channel — the host now keeps stdout for frames and sends everything else to the log, patching `console` as well as the stream, because under bun `console.log` bypasses `process.stdout.write`.
+
+The rectangle is converted to a share of the composition **in the page**, where the player's scale is known, so a box drawn on a small preview crops the same region on a large render. Cropping and downscaling to ≈1568 px on the long edge happen in the webview through `<canvas>`, cropping first so detail survives in a small region, and the bytes go through the same invoke that already stores pasted images — no image library reaches the sidecar or Rust, and a snapshot survives on disk so reopening a session still shows it. A tiny drag counts as a click, so a shaky hand cannot hand you a four-pixel picture.
+
+Snapshot shares Inspect's availability rules — off while the composer is locked, while the preview is not serving, and while the preview is showing a different project than the open session — and says why on a disabled button's tooltip. The browser download the first capture may need is reported rather than silently stalling, a failed render says so, and a scene whose `delayRender()` never resolves times out instead of hanging the app.
+
+The renderer seam, the browser provisioning and the progress reporting are built here as their own pieces so Export can take them unchanged.

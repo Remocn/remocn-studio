@@ -1,7 +1,9 @@
 import { randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { Effect } from "effect";
+import { createInterface } from "node:readline";
+import { Effect, Exit, Stream } from "effect";
 import {
   GRAB_SCRIPT_ENV,
   PREVIEW_ENTRY_ENV,
@@ -18,7 +20,9 @@ import {
   type WebpackConfig,
   webpackOverrideOf,
 } from "./project";
+import { decodeHostCommand, type HostReply, RENDER_BASE } from "./protocol";
 import { serve } from "./server";
+import { captureStill, type Renderer } from "./still";
 
 export const PREVIEW_OUT_ENV = "REMOCN_PREVIEW_OUT";
 export const PREVIEW_PARENT_ENV = "REMOCN_PREVIEW_PARENT_PID";
@@ -48,17 +52,45 @@ interface Stats {
   };
 }
 
-const emit = (event: PreviewEvent) =>
+const frames = process.stdout.write.bind(process.stdout);
+
+const write = (frame: HostReply | PreviewEvent) =>
   Effect.sync(() => {
-    process.stdout.write(`${JSON.stringify(event)}\n`);
+    frames(`${JSON.stringify(frame)}\n`);
   });
+
+const emit = (event: PreviewEvent) => write(event);
 
 const log = (line: string) =>
   Effect.sync(() => {
     process.stderr.write(`${line}\n`);
   });
 
+const TALKATIVE = ["debug", "dir", "info", "log", "table"] as const;
+
+const keepStdoutForFrames: Effect.Effect<void> = Effect.sync(() => {
+  process.stdout.write = ((chunk: string | Uint8Array, ...rest: unknown[]) =>
+    (process.stderr.write as (...args: unknown[]) => boolean)(
+      chunk,
+      ...rest
+    )) as typeof process.stdout.write;
+
+  const onto = console.error.bind(console);
+
+  for (const name of TALKATIVE) {
+    (console as unknown as Record<string, unknown>)[name] = onto;
+  }
+});
+
+interface Booted {
+  dir: string;
+  root: string;
+  serveUrl: string;
+}
+
 export const runPreviewHost: Effect.Effect<void> = Effect.gen(function* () {
+  yield* keepStdoutForFrames;
+
   const opened = process.cwd();
   const root = remotionRootOf(opened);
 
@@ -71,14 +103,18 @@ export const runPreviewHost: Effect.Effect<void> = Effect.gen(function* () {
     );
   }
 
-  yield* boot(root, preferred).pipe(
+  const booted = yield* boot(root, preferred).pipe(
     Effect.catch((error) =>
       Effect.andThen(
         log(`preview host failed: ${error.message}`),
         emit({ message: error.message, type: "failed" })
-      )
+      ).pipe(Effect.as(null))
     )
   );
+
+  if (booted !== null) {
+    yield* Effect.forkScoped(commands(booted));
+  }
 
   const reason = yield* Effect.raceAll([
     untilStdinClosed,
@@ -109,6 +145,8 @@ function boot(root: string, preferred: string | null) {
     const override = yield* webpackOverrideOf(root);
     const bundler = yield* importFrom<Bundler>(root, "@remotion/bundler");
     const playerPath = yield* resolveFrom(root, "@remotion/player");
+    const renderEntry = yield* renderEntryOf(root);
+    const version = yield* remotionVersionOf(root);
     const staticBase = `/static-${randomBytes(6).toString("hex")}`;
     const grab = yield* grabScript;
 
@@ -120,6 +158,7 @@ function boot(root: string, preferred: string | null) {
       root,
       staticBase,
       title: path.basename(root),
+      version,
     });
 
     yield* log(`preview host serving on ${server.port}`);
@@ -151,12 +190,38 @@ function boot(root: string, preferred: string | null) {
           remotionRoot: root,
           userDefinedComponent,
           webpackOverride: async (input: WebpackConfig) =>
-            ours(await override(input), playerPath),
+            ours(await override(input), { playerPath, renderEntry }),
         }),
     });
 
     yield* watch(webpack, config, server.notifyRebuilt, server.port);
+
+    return {
+      dir: path.join(outDir, "..", "stills"),
+      root,
+      serveUrl: `http://127.0.0.1:${server.port}${RENDER_BASE}/index.html`,
+    } satisfies Booted;
   });
+}
+
+function renderEntryOf(root: string): Effect.Effect<string, PreviewError> {
+  return Effect.map(
+    resolveFrom(root, "@remotion/studio/renderEntry"),
+    (resolved) => {
+      const esm = path.join(resolved, "..", "esm", "renderEntry.mjs");
+      return existsSync(esm) ? esm : resolved;
+    }
+  );
+}
+
+function remotionVersionOf(root: string): Effect.Effect<string> {
+  return resolveFrom(root, "remotion/package.json").pipe(
+    Effect.flatMap((manifest) =>
+      Effect.tryPromise(() => readFile(manifest, "utf8"))
+    ),
+    Effect.map((source) => String(JSON.parse(source).version ?? "")),
+    Effect.catch(() => Effect.succeed(""))
+  );
 }
 
 const grabScript: Effect.Effect<string | null> = Effect.gen(function* () {
@@ -185,15 +250,28 @@ const grabScript: Effect.Effect<string | null> = Effect.gen(function* () {
   return stripped.source;
 });
 
-function ours(config: WebpackConfig, playerPath: string): WebpackConfig {
+function ours(
+  config: WebpackConfig,
+  paths: { playerPath: string; renderEntry: string }
+): WebpackConfig {
   const resolve = (config.resolve ?? {}) as Record<string, unknown>;
   const alias = (resolve.alias ?? {}) as Record<string, unknown>;
+  const modules = (config.module ?? {}) as Record<string, unknown>;
+  const rules = (modules.rules ?? []) as unknown[];
 
   return {
     ...config,
+    module: {
+      ...modules,
+      rules: [...rules, { include: paths.renderEntry, sideEffects: true }],
+    },
     resolve: {
       ...resolve,
-      alias: { ...alias, "@remotion/player": playerPath },
+      alias: {
+        "@remotion/studio/renderEntry$": paths.renderEntry,
+        ...alias,
+        "@remotion/player": paths.playerPath,
+      },
     },
   };
 }
@@ -248,6 +326,64 @@ function messagesOf(stats: Stats): string {
 
   return text.length > 0 ? text : "the project failed to compile";
 }
+
+function commands(booted: Booted): Effect.Effect<void> {
+  return Stream.runForEach(stdinLines, (line) => obey(booted, line)).pipe(
+    Effect.ignore
+  );
+}
+
+function obey(booted: Booted, line: string): Effect.Effect<void> {
+  if (line.trim().length === 0) {
+    return Effect.void;
+  }
+
+  const decoded = decodeHostCommand(line);
+
+  if (Exit.isFailure(decoded)) {
+    return log(`dropped a preview command it could not parse: ${line}`);
+  }
+
+  const { composition, frame, id } = decoded.value;
+
+  return importFrom<unknown>(booted.root, "@remotion/renderer").pipe(
+    Effect.flatMap((module) =>
+      captureStill({
+        dir: booted.dir,
+        onEvent: (event) =>
+          Effect.runSync(write({ event, id, type: "still-progress" })),
+        renderer: rendererOf(module),
+        request: { composition, frame },
+        serveUrl: booted.serveUrl,
+      })
+    ),
+    Effect.flatMap((still) => write({ id, still, type: "still-done" })),
+    Effect.catch((error) =>
+      Effect.andThen(
+        log(`preview still failed: ${error.message}`),
+        write({ id, message: error.message, type: "still-failed" })
+      )
+    )
+  );
+}
+
+function rendererOf(module: unknown): Renderer {
+  const found = module as Record<string, unknown> & { default?: unknown };
+
+  return (
+    typeof found.renderStill === "function" ? found : (found.default ?? found)
+  ) as Renderer;
+}
+
+const stdinLines: Stream.Stream<string> = Stream.suspend(() =>
+  Stream.fromAsyncIterable(
+    createInterface({
+      crlfDelay: Number.POSITIVE_INFINITY,
+      input: process.stdin,
+    }),
+    () => undefined
+  ).pipe(Stream.catch(() => Stream.empty))
+);
 
 const untilStdinClosed: Effect.Effect<string> = Effect.callback<string>(
   (resume) => {

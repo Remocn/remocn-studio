@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CameraIcon,
   DownloadIcon,
   FolderOpenIcon,
   MonitorPlayIcon,
@@ -24,8 +25,10 @@ import { SidecarStatus } from "./sidecar-status";
 import { useStudio } from "./studio-provider";
 
 export function PreviewPane() {
-  const { activeProject, inspect, openedProject } = useStudio();
-  const { hint, preview, restart, stage } = inspect.preview;
+  const { activeProject, openedProject, tools } = useStudio();
+  const { inspect, snapshot } = tools;
+  const { hint, preview, restart, stage } = tools.preview;
+  const trouble = inspect.trouble ?? snapshot.trouble;
 
   return (
     <Pane>
@@ -48,6 +51,21 @@ export function PreviewPane() {
           >
             <SquareDashedMousePointerIcon data-icon="inline-start" />
             Inspect
+          </Button>
+          <Button
+            aria-pressed={snapshot.isArmed}
+            disabled={!snapshot.canSnapshot}
+            onClick={snapshot.toggle}
+            size="sm"
+            title={snapshot.unavailable ?? "Capture the frame, or part of it"}
+            variant={snapshot.isArmed ? "default" : "ghost"}
+          >
+            {snapshot.isBusy ? (
+              <Spinner className="size-4" data-icon="inline-start" />
+            ) : (
+              <CameraIcon data-icon="inline-start" />
+            )}
+            Snapshot
           </Button>
           <SidecarStatus />
           <Button size="sm">
@@ -78,12 +96,21 @@ export function PreviewPane() {
           </div>
         </div>
 
-        {inspect.trouble === null ? null : (
+        {trouble === null ? null : (
           <p
             className="shrink-0 text-center text-destructive text-xs"
             role="alert"
           >
-            {inspect.trouble}
+            {trouble}
+          </p>
+        )}
+
+        {snapshot.status === null ? null : (
+          <p
+            className="shrink-0 text-center text-muted-foreground text-xs"
+            role="status"
+          >
+            {snapshot.status}
           </p>
         )}
 
