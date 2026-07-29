@@ -1,26 +1,91 @@
 import { readFile } from "node:fs/promises";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
-import type { PromptAttachment, PromptParams } from "@/shared/ipc";
-import { segmentsOf } from "@/shared/references";
+import type {
+  PromptAttachment,
+  PromptElement,
+  PromptParams,
+} from "@/shared/ipc";
+import { referenceOf, segmentsOf } from "@/shared/references";
+
+const MARKUP_LIMIT = 2000;
 
 type Content = SDKUserMessage["message"]["content"];
 
 type Part = { index: number; kind: "image" } | { kind: "text"; text: string };
 
 export async function contentOf(params: PromptParams): Promise<Content> {
-  if (params.attachments.length === 0) {
+  const trailer = elementsOf(params.elements);
+
+  if (params.attachments.length === 0 && trailer === null) {
     return params.prompt;
   }
 
-  const parts = partsOf(params.prompt, params.attachments.length);
-  const blocks = await Promise.all(
+  const parts = partsOf(
+    params.prompt,
+    params.attachments.length,
+    params.elements.length
+  );
+  const blocks: Exclude<Content, string> = await Promise.all(
     parts.map((part) => blockOf(part, params.attachments))
   );
+
+  if (trailer !== null) {
+    blocks.push({ text: trailer, type: "text" });
+  }
 
   return blocks.length === 0 ? params.prompt : blocks;
 }
 
-function partsOf(prompt: string, count: number): Part[] {
+function elementsOf(elements: readonly PromptElement[]): string | null {
+  if (elements.length === 0) {
+    return null;
+  }
+
+  const blocks = elements.map((element, index) => describe(element, index));
+
+  return `The elements referenced above, each picked in the running preview:\n\n${blocks.join("\n\n")}`;
+}
+
+function describe(element: PromptElement, index: number): string {
+  const lines = [
+    referenceOf("element", index),
+    `file: ${where(element)}`,
+    `component: ${element.component ?? "unknown"}`,
+    `composition: ${element.composition}, frame ${element.frame}`,
+  ];
+
+  if (element.scene !== null) {
+    const { durationInFrames, frame, from, name } = element.scene;
+    const called = name.length > 0 ? `${name}, ` : "";
+    lines.push(
+      `scene: ${called}from frame ${from} for ${durationInFrames} frames, at frame ${frame} within it`
+    );
+  }
+
+  if (element.stack.length > 0) {
+    lines.push(`rendered through: ${element.stack.join(" ← ")}`);
+  }
+
+  lines.push(`markup: ${truncate(element.html)}`);
+
+  return lines.join("\n");
+}
+
+function where(element: PromptElement): string {
+  if (element.file === null) {
+    return "unresolved — no source location for this element";
+  }
+
+  return [element.file, element.line, element.column]
+    .filter((part) => part !== null)
+    .join(":");
+}
+
+function truncate(html: string): string {
+  return html.length <= MARKUP_LIMIT ? html : `${html.slice(0, MARKUP_LIMIT)}…`;
+}
+
+function partsOf(prompt: string, images: number, elements: number): Part[] {
   const spliced: Part[] = [];
   const referenced = new Set<number>();
   let buffer = "";
@@ -32,8 +97,16 @@ function partsOf(prompt: string, count: number): Part[] {
     }
   };
 
-  for (const segment of segmentsOf(prompt, count)) {
-    if (segment.kind === "text" || referenced.has(segment.index)) {
+  for (const segment of segmentsOf(prompt, {
+    element: elements,
+    image: images,
+  })) {
+    const spliceable =
+      segment.kind === "reference" &&
+      segment.reference === "image" &&
+      !referenced.has(segment.index);
+
+    if (!spliceable) {
       buffer += segment.text;
       continue;
     }
@@ -45,7 +118,7 @@ function partsOf(prompt: string, count: number): Part[] {
 
   flush();
 
-  const unreferenced = Array.from({ length: count }, (_, index) => index)
+  const unreferenced = Array.from({ length: images }, (_, index) => index)
     .filter((index) => !referenced.has(index))
     .map((index): Part => ({ index, kind: "image" }));
 

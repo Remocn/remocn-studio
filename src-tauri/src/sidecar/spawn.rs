@@ -10,7 +10,7 @@ use tauri::{AppHandle, Manager};
 use tokio::process::{Child, Command};
 
 use crate::ipc::{
-    DATA_DIR_ENV, HOST_PID_ENV, PLUGIN_DIR_ENV, PREVIEW_ENTRY_ENV, TEMPLATE_DIR_ENV,
+    DATA_DIR_ENV, GRAB_SCRIPT_ENV, HOST_PID_ENV, PLUGIN_DIR_ENV, PREVIEW_ENTRY_ENV, TEMPLATE_DIR_ENV,
 };
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
@@ -79,6 +79,24 @@ pub fn resolve_preview_entry(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 #[cfg(debug_assertions)]
+pub fn resolve_grab_script(_app: &AppHandle) -> Result<PathBuf, String> {
+    let source =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../node_modules/grab/dist/index.global.js");
+    source
+        .canonicalize()
+        .map_err(|err| format!("no grab build at {}: {err}", source.display()))
+}
+
+#[cfg(not(debug_assertions))]
+pub fn resolve_grab_script(app: &AppHandle) -> Result<PathBuf, String> {
+    use tauri::path::BaseDirectory;
+
+    app.path()
+        .resolve("grab/index.global.js", BaseDirectory::Resource)
+        .map_err(|err| format!("the app bundle has no grab build: {err}"))
+}
+
+#[cfg(debug_assertions)]
 pub fn resolve_template_dir(_app: &AppHandle) -> Result<PathBuf, String> {
     let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../templates/remotion");
     source
@@ -127,6 +145,7 @@ pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
 pub struct Launch<'a> {
     pub bun: &'a Path,
     pub data_dir: &'a Path,
+    pub grab_script: Option<&'a Path>,
     pub plugin_dir: Option<&'a Path>,
     pub preview_entry: Option<&'a Path>,
     pub script: &'a Path,
@@ -137,6 +156,7 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
     let Launch {
         bun,
         data_dir,
+        grab_script,
         plugin_dir,
         preview_entry,
         script,
@@ -147,6 +167,10 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
 
     if let Some(entry) = preview_entry {
         command.env(PREVIEW_ENTRY_ENV, entry);
+    }
+
+    if let Some(grab) = grab_script {
+        command.env(GRAB_SCRIPT_ENV, grab);
     }
 
     if let Some(template) = template_dir {

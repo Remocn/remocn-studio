@@ -1,13 +1,23 @@
-import type { ClaudeEvent, PromptAttachment, TranscriptEntry } from "./ipc";
+import type {
+  ClaudeEvent,
+  PromptAttachment,
+  PromptElement,
+  TranscriptEntry,
+} from "./ipc";
 
 export function appendUser(
   entries: readonly TranscriptEntry[],
-  input: { attachments: readonly PromptAttachment[]; text: string }
+  input: {
+    attachments: readonly PromptAttachment[];
+    elements: readonly PromptElement[];
+    text: string;
+  }
 ): readonly TranscriptEntry[] {
   return [
     ...entries,
     {
       attachments: input.attachments,
+      elements: input.elements,
       id: `user-${entries.length}`,
       kind: "user",
       text: input.text,

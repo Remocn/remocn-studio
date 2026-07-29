@@ -106,3 +106,81 @@ describe("the mode on the wire", () => {
     expect(Exit.isSuccess(params) && params.value.mode).toBeNull();
   });
 });
+
+describe("the element selections on the wire", () => {
+  const SELECTION = {
+    column: 7,
+    component: "TitleCard",
+    composition: "Main",
+    file: "/Users/me/video/src/TitleCard.tsx",
+    fps: 30,
+    frame: 42,
+    html: "<h1>Hello</h1>",
+    line: 12,
+    scene: {
+      durationInFrames: 90,
+      frame: 12,
+      from: 30,
+      name: "TitleCard",
+    },
+    stack: ["TitleCard (/Users/me/video/src/TitleCard.tsx:12:7)"],
+  };
+
+  it("carries what the preview resolved", () => {
+    const params = codecsFor("claude.prompt").params({
+      ...TURN,
+      elements: [SELECTION],
+    });
+
+    expect(Exit.isSuccess(params) && params.value.elements[0]).toEqual(
+      SELECTION
+    );
+  });
+
+  it("carries a selection whose source could not be resolved", () => {
+    const params = codecsFor("claude.prompt").params({
+      ...TURN,
+      elements: [
+        { ...SELECTION, column: null, file: null, line: null, stack: [] },
+      ],
+    });
+
+    expect(Exit.isSuccess(params) && params.value.elements[0].file).toBeNull();
+  });
+
+  it("reads a turn that predates the feature as having none", () => {
+    const params = codecsFor("claude.prompt").params(TURN);
+
+    expect(Exit.isSuccess(params) && params.value.elements).toEqual([]);
+  });
+
+  it("reads a stored user block that predates the feature", () => {
+    const entries = codecsFor("history.blocks").result([
+      { attachments: [], id: "block-0", kind: "user", text: "hello" },
+    ]);
+
+    expect(
+      Exit.isSuccess(entries) &&
+        entries.value[0].kind === "user" &&
+        entries.value[0].elements
+    ).toEqual([]);
+  });
+
+  it("reads a stored user block that carries selections", () => {
+    const entries = codecsFor("history.blocks").result([
+      {
+        attachments: [],
+        elements: [SELECTION],
+        id: "block-0",
+        kind: "user",
+        text: "make [Element #1] bigger",
+      },
+    ]);
+
+    expect(
+      Exit.isSuccess(entries) &&
+        entries.value[0].kind === "user" &&
+        entries.value[0].elements
+    ).toEqual([SELECTION]);
+  });
+});

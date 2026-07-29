@@ -7,11 +7,17 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useCallback } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Composer } from "@/components/studio/composer";
-import { StudioProvider } from "@/components/studio/studio-provider";
+import { StudioProvider, useStudio } from "@/components/studio/studio-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { SessionMode } from "@/shared/ipc";
+import type {
+  Project,
+  PromptElement,
+  PromptParams,
+  SessionMode,
+} from "@/shared/ipc";
 
 interface ComposerShape {
   mode?: SessionMode;
@@ -19,6 +25,30 @@ interface ComposerShape {
 }
 
 const PICKED = ["/Users/me/Desktop/shot.png"];
+
+const PROJECT: Project = {
+  createdAt: 1_700_000_000_000,
+  id: "project-1",
+  missing: false,
+  name: "my-video",
+  path: "/Users/me/projects/my-video",
+  updatedAt: 1_700_000_000_000,
+};
+
+const ELEMENT: PromptElement = {
+  column: 7,
+  component: "TitleCard",
+  composition: "Main",
+  file: "/Users/me/projects/my-video/src/TitleCard.tsx",
+  fps: 30,
+  frame: 42,
+  html: "<h1>Hello</h1>",
+  line: 12,
+  scene: null,
+  stack: [],
+};
+
+const RECT = { height: 0.2, width: 0.5, x: 0.25, y: 0.4 };
 
 const READY = {
   attempt: 0,
@@ -38,6 +68,9 @@ const DOWN = {
 
 const PASTED = "/Users/me/Library/Application Support/studio/pasted-images";
 const ANY_REMOVE = /^Remove/;
+const ANY_SHOW = /^Show TitleCard/;
+
+const sent: PromptParams[] = [];
 
 function mockShell(
   status: unknown,
@@ -45,9 +78,10 @@ function mockShell(
   save: (at: number) => string = (at) => `${PASTED}/image-${at}.png`
 ) {
   let saved = 0;
+  sent.length = 0;
 
   mockIPC(
-    (cmd) => {
+    (cmd, payload) => {
       if (cmd === "plugin:dialog|open") {
         return picked;
       }
@@ -57,6 +91,26 @@ function mockShell(
       if (cmd === "save_pasted_image") {
         saved += 1;
         return save(saved);
+      }
+      if (cmd === "sidecar_request") {
+        const request = payload as { method: string; params: unknown };
+        if (request.method === "project.list") {
+          return [PROJECT];
+        }
+        if (request.method === "history.sessions") {
+          return [];
+        }
+        if (request.method === "history.blocks") {
+          return [];
+        }
+        if (request.method === "preview.start") {
+          return new Promise(() => undefined);
+        }
+        if (request.method === "claude.prompt") {
+          sent.push(request.params as PromptParams);
+          return { context: null, failure: null, sessionId: "sdk-1" };
+        }
+        throw new Error(`unexpected sidecar method: ${request.method}`);
       }
       throw new Error(`unexpected command: ${cmd}`);
     },
@@ -113,22 +167,38 @@ function mockShellReadyOnSecondLook() {
   );
 }
 
+function SelectProbe() {
+  const { composer } = useStudio();
+  const { select } = composer;
+
+  const pick = useCallback(() => {
+    select(ELEMENT, RECT, "make this bigger");
+  }, [select]);
+
+  return (
+    <button onClick={pick} type="button">
+      Pick element
+    </button>
+  );
+}
+
 async function renderComposer(
-  onSubmit = vi.fn(),
+  _onSubmit = vi.fn(),
   { mode = "auto", onModeChange = vi.fn() }: ComposerShape = {}
 ) {
   render(
     <StudioProvider>
       <TooltipProvider>
+        <SelectProbe />
         <Composer
           context={{ maxTokens: 200_000, totalTokens: 50_000 }}
+          cwd={PROJECT.path}
           disabled={false}
           isRunning={false}
           isWaiting={false}
           mode={mode}
           onModeChange={onModeChange}
           onStop={vi.fn()}
-          onSubmit={onSubmit}
         />
       </TooltipProvider>
     </StudioProvider>
@@ -136,7 +206,6 @@ async function renderComposer(
 
   return {
     onModeChange,
-    onSubmit,
     textarea: await screen.findByRole("textbox", { name: "Message Claude" }),
   };
 }
@@ -196,7 +265,7 @@ describe("Composer", () => {
   });
 
   it("attaches a picked image and sends it with the message", async () => {
-    const { onSubmit, textarea } = await renderComposer();
+    const { textarea } = await renderComposer();
 
     const user = userEvent.setup();
     await user.click(
@@ -213,7 +282,9 @@ describe("Composer", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
 
-    expect(onSubmit).toHaveBeenCalledWith("[Image #1] use this frame", [
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].prompt).toBe("[Image #1] use this frame");
+    expect(sent[0].attachments).toEqual([
       {
         mediaType: "image/png",
         name: "shot.png",
@@ -294,7 +365,7 @@ describe("Composer", () => {
   });
 
   it("attaches a pasted image and points at it from where the caret was", async () => {
-    const { onSubmit, textarea } = await renderComposer();
+    const { textarea } = await renderComposer();
 
     typeInto(textarea, "look at ");
     paste(textarea, [pngFile("shot.png")]);
@@ -310,7 +381,9 @@ describe("Composer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
 
-    expect(onSubmit).toHaveBeenCalledWith("look at [Image #1] ", [
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].prompt).toBe("look at [Image #1]");
+    expect(sent[0].attachments).toEqual([
       {
         mediaType: "image/png",
         name: "image-1.png",
@@ -456,5 +529,90 @@ describe("Composer", () => {
     expect(
       await screen.findByText("there is no app data directory")
     ).toBeVisible();
+  });
+
+  it("writes the comment and its token where the caret was", async () => {
+    const { textarea } = await renderComposer();
+
+    typeInto(textarea, "in the intro, ");
+    fireEvent.click(screen.getByRole("button", { name: "Pick element" }));
+
+    await waitFor(() =>
+      expect(textOf(textarea)).toBe(
+        "in the intro, make this bigger [Element #1] "
+      )
+    );
+  });
+
+  it("shows the selection as a chip naming the component and the time", async () => {
+    await renderComposer();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pick element" }));
+
+    expect(
+      await screen.findByRole("button", { name: "Show TitleCard at 0:01.4" })
+    ).toBeVisible();
+  });
+
+  it("numbers the tokens and the chips alike", async () => {
+    const { textarea } = await renderComposer();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pick element" }));
+    await waitFor(() => expect(textOf(textarea)).toContain("[Element #1]"));
+    fireEvent.click(screen.getByRole("button", { name: "Pick element" }));
+
+    await waitFor(() => expect(textOf(textarea)).toContain("[Element #2]"));
+    expect(screen.getAllByRole("button", { name: ANY_SHOW })).toHaveLength(2);
+  });
+
+  it("counts images and elements on separate ladders", async () => {
+    const { textarea } = await renderComposer();
+
+    paste(textarea, [pngFile("one.png")]);
+    await waitFor(() => expect(textOf(textarea)).toBe("[Image #1] "));
+    fireEvent.click(screen.getByRole("button", { name: "Pick element" }));
+
+    await waitFor(() =>
+      expect(textOf(textarea)).toBe("[Image #1] make this bigger [Element #1] ")
+    );
+  });
+
+  it("takes the selection with its token on one backspace", async () => {
+    const { textarea } = await renderComposer();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pick element" }));
+    await waitFor(() =>
+      expect(textOf(textarea)).toBe("make this bigger [Element #1] ")
+    );
+
+    setCaret(textarea, 29);
+    fireEvent.keyDown(textarea, { key: "Backspace" });
+
+    await waitFor(() => expect(textOf(textarea)).toBe("make this bigger "));
+    expect(screen.queryByRole("button", { name: ANY_SHOW })).toBeNull();
+  });
+
+  it("drops the selection when its chip is closed", async () => {
+    const { textarea } = await renderComposer();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pick element" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Remove TitleCard" })
+    );
+
+    await waitFor(() => expect(textOf(textarea)).toBe("make this bigger "));
+    expect(screen.queryByRole("button", { name: ANY_SHOW })).toBeNull();
+  });
+
+  it("sends the selection with the message", async () => {
+    const { textarea } = await renderComposer();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pick element" }));
+    await waitFor(() => expect(textOf(textarea)).toContain("[Element #1]"));
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].elements).toEqual([ELEMENT]);
+    expect(sent[0].prompt).toBe("make this bigger [Element #1]");
   });
 });

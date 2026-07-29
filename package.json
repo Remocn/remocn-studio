@@ -14,6 +14,7 @@
     "diff": "^9.0.0",
     "effect": "4.0.0-beta.101",
     "embla-carousel-react": "^8.6.0",
+    "grab": "0.1.50",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.7.0",
     "next": "16.2.11",

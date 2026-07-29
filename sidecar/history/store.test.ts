@@ -179,6 +179,7 @@ describe("HistoryStore", () => {
       history.write({
         entry: {
           attachments: [],
+          elements: [],
           id: "user-0",
           kind: "user",
           text: "make a title card",
@@ -205,6 +206,7 @@ describe("HistoryStore", () => {
     expect(await run(history.blocks(session.id))).toEqual([
       {
         attachments: [],
+        elements: [],
         id: "block-0",
         kind: "user",
         text: "make a title card",

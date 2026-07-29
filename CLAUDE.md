@@ -737,6 +737,152 @@ slot and mounts `<Player>` instead, so the pane is ours and the pixels are Remot
   compile finishes. `usePreview` ignores progress once served, or the pane would replace
   a live player with a spinner.
 
+### Pointing at an element, and commenting on it
+
+Inspect mode: hover the frame, click the thing you mean, write what should change, and the
+selection lands in the composer as `[Element #N]` — the second kind of composer reference,
+alongside `[Image #N]` (#18). The message is still sent by hand.
+
+- **Source resolution is React Grab, driven headlessly.** `grab`'s global build is served
+  by the preview host at `/__remocn/grab.js` from a Tauri resource, resolved the way the
+  template and the agent plugin are, and it goes in the page **before the project bundle**
+  — bippy's `Object.defineProperty` patch has to be in place before React defines the
+  DevTools hook. Measured: the hook is installed at script evaluation, so `init()` may be
+  called later, which is what lets the container be the player's canvas. Keeping it out of
+  the project's webpack is the point: that compile costs seconds and peaks over a
+  gigabyte, and this is 380 KB it would otherwise carry.
+- **Nothing reaches a third party.** `__REACT_GRAB_DISABLED__` is set in the page's globals
+  so the bundle does not self-initialise, `init` is called with `telemetry: false`, and the
+  `@import` of a Google-hosted font inside grab's shadow-DOM stylesheet is stripped by
+  `withoutWebFonts` **when the file is served**. `sidecar/preview/grab.test.ts` reads the
+  installed bundle and fails if a version bump reintroduces one — the alternative, a CSP on
+  the preview page, would also block fonts the *project* legitimately loads.
+- **`init({ enabled: false })` returns a stub, not a disabled API.** Read out of the bundle:
+  that branch hands back `{ getSource: () => Promise.resolve(null), getStackContext: () =>
+  Promise.resolve(""), … }`, `getPlugins()` is `[]`, and `setEnabled(true)` does not revive
+  any of it. So `enabled: false` would resolve every source location to `null` and look
+  exactly like a project whose sourcemaps are broken. `init` is always called with
+  `enabled: true`; it is lazy, running on the first arm rather than at page load.
+- **`init` does not take a `theme` — only plugins do.** The options `init` defaults are
+  `{activationMode, keyHoldDuration, allowActivationInsideInput, activationKey, getContent,
+  maxContextLines, freezeReactUpdates}`, and `Options` has no `theme` field either, so a
+  theme passed to `init` is silently dropped — which is how the toolbar, the label and
+  grab's default hue all survived being "turned off". The theme rides on
+  `registerPlugin({ name, theme })`.
+- **`theme.enabled` is a trap: turn the sections off, one by one.** It reads as the global
+  switch, but the bundle only consults it *once, synchronously inside `init`*, to decide
+  whether to mount the renderer at all — and a theme cannot be handed to `init`. A plugin
+  registered afterwards is always too late for it. The per-section flags
+  (`toolbar`, `selectionBox`, `elementLabel`, `dragBox`, `grabbedBoxes`) are reactive
+  getters, so those *do* take effect from a plugin. Measured in the shipped bundle by
+  counting nodes in grab's shadow root: control 25 nodes / 4 buttons, `theme.enabled: false`
+  25 / 4 — unchanged — and `theme.toolbar.enabled: false` 4 / 0.
+- **The container is `.__remotion-player`**, which is the Player's canvas div and not its
+  outer container — `getContainerNode()` returns the outer one, which holds the transport
+  controls too. That class name is `playerCssClassname`'s default and Remotion injects its
+  own preview CSS against it, so it is load-bearing for Remotion rather than incidental.
+- **`preview/` duplicates the message shape rather than importing it**, as it already
+  duplicates the hot-reload path: it is compiled by the project's webpack and has no access
+  to the app's alias. `lib/studio/preview.test.ts` decodes both directions, and that test is
+  the only thing keeping the two in step. Every file under `preview/` needs its own entry in
+  `tauri.conf.json`'s resources.
+- **The channel is two-way and typed.** Page → app is a union discriminated by `type`
+  (`composition`, `selection`, `rebuilt`); app → page is `inspect`, `freeze`, `seek`,
+  addressed to the preview origin rather than `*`. Incoming messages are checked against
+  the origin `preview.start` reported **before** decoding, because these payloads carry file
+  paths that end up in a prompt; with no origin yet, nothing is accepted.
+- **`getSource` gives the component, the stack gives the parents.** Grab's display-name
+  accessor returns a Remotion wrapper; the source lookup returns the real scene, so the
+  component name comes from there. `projectFrames` keeps only frames inside the Remotion
+  root and outside `node_modules`, and drops the `apply` frame Remotion's dev-mode JSX proxy
+  leaves in every stack. Sourcemap paths are relative to the Remotion root, which is not
+  necessarily the opened folder, so the page carries `window.remocn_root` next to
+  `remocn_preferred` and `absolutise` joins against it.
+- **The scene comes from the fiber, its file does not.** Walking `fiber.return` for props
+  that look like a `Sequence` (finite `from` *and* `durationInFrames`) gives the scene's
+  identity and timing cheaply. Its own file and line are *not* available that way — for a
+  transition series the inner sequence element is created by Remotion, so the nearest
+  injected stack resolves into Remotion's code. The scene component's location is already
+  correct in the element's own stack, which is where it comes from.
+- **Hit-testing and the hover box are ours; grab is only a source resolver.** Grab's overlay
+  is taken down wholesale (`theme.enabled: false`) and `activate()` is never called, so what
+  is left of it is `getSource`, `getStack` and `getDisplayName`. `preview/picker.ts` picks
+  the element and `preview/inspect.ts` draws the box, **inside the preview document**, so the
+  highlight still shares a document with the cursor and cannot lag. Grab's own hit-test could
+  not be steered: `Options` exposes no filter, its `ElementAtPointOptions.filter` is internal,
+  and its arrow keys are *spatial* navigation between neighbours, not a climb to the parent.
+- **The picker answers two questions grab got wrong.** First, *what is actually under the
+  cursor*: it walks `elementsFromPoint` and takes the first element that **paints something
+  at that point** — a background, a border, a shadow, a replaced element, or a text node whose
+  own client rect contains the point — instead of the topmost transparent wrapper. Grab
+  already drops `display:none`, `visibility:hidden` and `opacity:0`, and transparent overlays
+  — but only ones covering ≥90% of the viewport on both axes, which a mid-sized animated
+  wrapper sails past. Second, *how much of it you meant*: `climb` walks up while the element
+  is an **inline wrapper** — inline-level and painting no surface of its own — and stops at
+  the first block-level element, which is the line. That is deliberately *not* "a short
+  element with siblings sharing its tag": that earlier rule missed the two commonest shapes
+  a text animation actually has — a word wrapped in a wrapper of its own
+  (`<span class=word><span>mind</span></span>`, where the inner span has no siblings) and a
+  line that is one word long. Painting its own surface is what stops the climb at a
+  highlighted chip inside a sentence, and block-level is what keeps a grid of cards from
+  collapsing into the grid. Holding **Alt** turns both rules off and picks the literal
+  topmost node. The rules are pure over the DOM and tested in jsdom.
+- **Tags are compared by `localName`, never `tagName`, because of SVG.** `tagName` upper-cases
+  HTML elements but leaves SVG ones as authored, so `<svg>` reports `"svg"` and a set of
+  upper-cased names misses every icon in the project. That single mistake broke both halves
+  at once: an icon counted as painting nothing, so the hit test walked past it, and it
+  computed to `display: inline`, so `climb` stepped straight over it. Anything in the SVG
+  namespace is now **a drawing**: it always paints — the browser's own SVG hit-testing is
+  `visiblePainted`, so being returned by `elementsFromPoint` already proves the point is on
+  drawn geometry, and `fill` would never show up as a `background-color` anyway — it is never
+  an inline wrapper, and `climb` folds any shape inside it up to the outermost `<svg>`,
+  because what you pointed at is the icon and not one of its paths. Alt still picks the path.
+  HTML inside a `foreignObject` falls out of this by itself, being in the XHTML namespace.
+- **Pointer events are swallowed while armed.** `pointerdown`, `pointerup` and `click` are
+  captured on `window` and stopped inside the canvas — otherwise Remotion's `clickToPlay`
+  would toggle playback under every pick. Hover is recomputed on a `requestAnimationFrame`
+  tick rather than per event.
+- **Markers and the comment card render in the app window**, over the iframe, in an
+  `inset-0 pointer-events-none` overlay so hover and click still reach the page. Marker
+  geometry is **normalised to the preview page's viewport**, which is exactly the iframe
+  element's box, so a resize keeps markers on their elements; `cardPlacement` is a pure
+  function over three rectangles and is tested without rendering anything.
+- **The card is not a Popover on purpose.** A popover brings Esc-to-close, outside-click-to-
+  close and a focus trap, and outside-click in this mode means "select the next element".
+  While it is open the page is sent `freeze`, which stops the picker tracking and ignores
+  clicks, so the frame does not flicker with highlights while you type.
+- **The prompt keeps the token in the sentence and appends a block per selection at the end.**
+  Unlike an image, an element's payload is dozens of lines, and splicing it inline would tear
+  the sentence apart. There is one block per entry in the list, not per mention, so two
+  selections of the same element stay separate and a repeated mention does not duplicate the
+  payload. With no selections the content is byte-for-byte what it was.
+- **Availability is narrow, and the reasons differ.** Inspect is off while the composer is
+  locked, while the preview is not serving, and while the preview's project differs from the
+  open session's — the preview follows the *selected* project and the chat follows the *open
+  session's*, and those can diverge. Element references are dropped when the open session
+  moves to another project; text and images are left alone. That drop fires only on a real
+  switch, never on the first `null →` resolve at boot.
+- **A rebuild clears the markers and disarms**, because a box drawn over the old render lies
+  about the new one, and the page that comes back has forgotten it was armed. Unsent
+  references and whatever was being typed are untouched — an agent saving a file must not
+  delete your draft. Marking references *stale* per changed file is deliberately deferred.
+- **A selection with no source is still usable**, travelling with markup, component name and
+  frame, and says so on its chip. Failing closed would make the feature intermittently and
+  silently useless.
+- **Arming is acknowledged, so the button cannot lie.** The page answers every `inspect`
+  command with a status — `armed`, `disarmed`, `inert`, `no-canvas`, `no-grab` — and whether
+  it held a player ref to pause. The pane prints anything that is not a clean arm, including
+  "the preview never answered" once the silence outlasts `PATIENCE`, which is what a stale
+  compiled page looks like from the app's side. A disabled button carries the reason it is
+  disabled on its tooltip. Both exist because the first version of this failed silently in
+  three different places at once and none of them were distinguishable from the outside.
+- `PromptElement` carries `fps` as well as `frame`, which the prototype's shape did not: it is
+  what lets the chip read `0:01.4` rather than a frame number, and it makes the block's frame
+  counts interpretable. `file` is nullable for the same reason the chip needs to say "no
+  source".
+- **The first resolution after a rebuild costs ~210 ms** — the sourcemap fetch and parse —
+  and every one after it is 0 ms, so arming warms it up with a throwaway `getStack`.
+
 ## Layout
 
 Flat root, no monorepo — per #218.
@@ -747,9 +893,10 @@ components/ui/        shadcn/ui primitives (Base UI–backed)
 components/studio/    app-level components (panes, sidecar status, quit guard)
 hooks/                all behaviour: no logic inline in components
 lib/                  cn helper, error formatting, lib/studio/* clients
-preview/              the entry the *project's* webpack compiles instead of Studio's UI
+preview/              what the *project's* webpack compiles instead of Studio's UI:
+                      entry.tsx, the two-way bridge, hot reload, grab, source paths
 shared/               ipc.ts: the typed contract; transcript.ts: the one fold;
-                      references.ts: the one reader of `[Image #N]`
+                      references.ts: the one reader of `[Image #N]`/`[Element #N]`
 sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
 sidecar/history/      driver seam, migrations, project and session stores, recorder
 sidecar/scaffold/     what "New project…" expands and installs

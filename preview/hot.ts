@@ -1,3 +1,5 @@
+import { post } from "./bridge";
+
 declare const module: {
   hot?: {
     check: (autoApply: boolean) => Promise<unknown[] | null>;
@@ -10,6 +12,7 @@ export function connectHotReload(): void {
   const source = new EventSource(HOT_PATH);
 
   source.addEventListener("rebuilt", () => {
+    post({ type: "rebuilt" });
     apply();
   });
 }

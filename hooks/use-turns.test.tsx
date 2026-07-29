@@ -25,7 +25,13 @@ const STORED: HistorySession = {
 };
 
 const BLOCKS: TranscriptEntry[] = [
-  { attachments: [], id: "block-0", kind: "user", text: "make a title card" },
+  {
+    attachments: [],
+    elements: [],
+    id: "block-0",
+    kind: "user",
+    text: "make a title card",
+  },
   { id: "block-1", kind: "assistant", text: "Building it now." },
 ];
 
@@ -33,6 +39,7 @@ function turn(historyId: string, prompt = "make a title card"): StartTurn {
   return {
     attachments: [],
     effort: null,
+    elements: [],
     historyId,
     mode: "auto",
     model: null,

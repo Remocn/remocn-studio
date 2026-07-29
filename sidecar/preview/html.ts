@@ -1,15 +1,21 @@
+import { GRAB_PATH } from "./grab";
+
 const CONTAINER = "__remotion-studio-container";
 
 export interface PageOptions {
+  hasGrab: boolean;
   preferred: string | null;
   publicPath: string;
+  root: string;
   staticBase: string;
   title: string;
 }
 
 export function previewPage(options: PageOptions): string {
   const globals = {
+    __REACT_GRAB_DISABLED__: true,
     remocn_preferred: options.preferred,
+    remocn_root: options.root,
     remotion_audioEnabled: true,
     remotion_audioLatencyHint: "playback",
     remotion_envVariables: "{}",
@@ -27,6 +33,10 @@ export function previewPage(options: PageOptions): string {
     .map(([key, value]) => `window.${key} = ${JSON.stringify(value)};`)
     .join("\n      ");
 
+  const grab = options.hasGrab
+    ? `\n    <script src="${GRAB_PATH}"></script>`
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -41,7 +51,7 @@ export function previewPage(options: PageOptions): string {
   <body>
     <script>
       ${assigned}
-    </script>
+    </script>${grab}
     <div id="${CONTAINER}"></div>
     <script src="${options.publicPath}bundle.js"></script>
   </body>

@@ -7,6 +7,7 @@ import {
 import path from "node:path";
 import { Effect, type Scope } from "effect";
 import { errorMessage } from "@/lib/error-message";
+import { GRAB_PATH } from "./grab";
 import { previewPage } from "./html";
 import { PreviewError } from "./project";
 
@@ -46,9 +47,11 @@ export interface PreviewServer {
 }
 
 export interface ServerOptions {
+  grab: string | null;
   outDir: string;
   preferred: string | null;
   publicDir: string;
+  root: string;
   staticBase: string;
   title: string;
 }
@@ -120,10 +123,17 @@ function handle(
     return;
   }
 
+  if (pathname === GRAB_PATH) {
+    sendGrab(options.grab, response);
+    return;
+  }
+
   if (pathname === "/" || pathname === "/index.html") {
     const body = previewPage({
+      hasGrab: options.grab !== null,
       preferred: options.preferred,
       publicPath: "/",
+      root: options.root,
       staticBase: options.staticBase,
       title: options.title,
     });
@@ -142,6 +152,19 @@ function handle(
   }
 
   sendFile(options.outDir, pathname.replace(LEADING_SLASH, ""), response);
+}
+
+function sendGrab(source: string | null, response: ServerResponse): void {
+  if (source === null) {
+    response.writeHead(404).end();
+    return;
+  }
+
+  response.writeHead(200, {
+    "cache-control": "no-store",
+    "content-type": "text/javascript; charset=utf-8",
+  });
+  response.end(source);
 }
 
 function openStream(

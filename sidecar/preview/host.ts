@@ -1,8 +1,14 @@
 import { randomBytes } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Effect } from "effect";
-import { PREVIEW_ENTRY_ENV, type PreviewEvent } from "@/shared/ipc";
+import {
+  GRAB_SCRIPT_ENV,
+  PREVIEW_ENTRY_ENV,
+  type PreviewEvent,
+} from "@/shared/ipc";
 import { untilGone, untilOrphaned, untilSignalled } from "../lifecycle";
+import { withoutWebFonts } from "./grab";
 import {
   entryPointOf,
   importFrom,
@@ -104,11 +110,14 @@ function boot(root: string, preferred: string | null) {
     const bundler = yield* importFrom<Bundler>(root, "@remotion/bundler");
     const playerPath = yield* resolveFrom(root, "@remotion/player");
     const staticBase = `/static-${randomBytes(6).toString("hex")}`;
+    const grab = yield* grabScript;
 
     const server = yield* serve({
+      grab,
       outDir,
       preferred,
       publicDir: path.join(root, "public"),
+      root,
       staticBase,
       title: path.basename(root),
     });
@@ -149,6 +158,32 @@ function boot(root: string, preferred: string | null) {
     yield* watch(webpack, config, server.notifyRebuilt, server.port);
   });
 }
+
+const grabScript: Effect.Effect<string | null> = Effect.gen(function* () {
+  const file = process.env[GRAB_SCRIPT_ENV];
+
+  if (file === undefined) {
+    yield* log(`${GRAB_SCRIPT_ENV} is not set, so Inspect is unavailable`);
+    return null;
+  }
+
+  const source = yield* Effect.tryPromise(() => readFile(file, "utf8")).pipe(
+    Effect.catch((cause) =>
+      log(`could not read ${file}: ${String(cause)}`).pipe(Effect.as(null))
+    )
+  );
+
+  if (source === null) {
+    return null;
+  }
+
+  const stripped = withoutWebFonts(source);
+  yield* log(
+    `serving grab from ${file}, ${stripped.removed} web font import(s) removed`
+  );
+
+  return stripped.source;
+});
 
 function ours(config: WebpackConfig, playerPath: string): WebpackConfig {
   const resolve = (config.resolve ?? {}) as Record<string, unknown>;
