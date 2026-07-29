@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { captureBox, fitLongEdge, LONG_EDGE, stillName } from "./capture";
+import {
+  captureBox,
+  corsImage,
+  fitLongEdge,
+  LONG_EDGE,
+  stillName,
+} from "./capture";
 
 const FRAME = { height: 1080, width: 1920 };
 
@@ -94,5 +100,11 @@ describe("stillName", () => {
 
   it("still has a name when the composition id is all punctuation", () => {
     expect(stillName("///", 3)).toBe("still-frame-3.png");
+  });
+});
+
+describe("corsImage", () => {
+  it("asks for the frame across origins, or the canvas cannot be read back", () => {
+    expect(corsImage().crossOrigin).toBe("anonymous");
   });
 });

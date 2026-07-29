@@ -157,9 +157,15 @@ export function croppedImage(input: {
   });
 }
 
+export function corsImage(): HTMLImageElement {
+  const image = new Image();
+  image.crossOrigin = "anonymous";
+  return image;
+}
+
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const image = new Image();
+    const image = corsImage();
 
     image.onload = () => resolve(image);
     image.onerror = () =>
@@ -170,13 +176,21 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 
 function encode(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob === null) {
-        reject(new Error("the snapshot could not be encoded"));
-        return;
-      }
-      resolve(blob);
-    }, MEDIA_TYPE);
+    try {
+      canvas.toBlob((blob) => {
+        if (blob === null) {
+          reject(new Error("the snapshot could not be encoded"));
+          return;
+        }
+        resolve(blob);
+      }, MEDIA_TYPE);
+    } catch (cause) {
+      reject(
+        new Error(
+          `the rendered frame could not be read back out of the canvas: ${errorMessage(cause)}`
+        )
+      );
+    }
   });
 }
 

@@ -946,6 +946,13 @@ separate buttons and mutually exclusive rather than one mode with a switch.
   to ≈1568 px on the long edge and hands the bytes to the invoke that already stores pasted
   images. No image library reaches the sidecar or Rust. Cropping *before* downscaling is what
   keeps detail in a small region.
+  - **The still is loaded `crossOrigin="anonymous"`, and it has to be.** The asset protocol is
+    a different origin from the window, so a plain `<img>` load taints the canvas and
+    `toBlob()` throws `SecurityError` — WKWebView words it *"The operation is insecure."*, with
+    nothing in it to say which operation. Tauri answers every asset request with
+    `Access-Control-Allow-Origin: <window_origin>` (`protocol/asset.rs`), so asking for CORS is
+    all it takes. Displaying an attachment never needed this, which is why the cards worked
+    long before the first snapshot did.
 - **The rectangle is normalised to the composition in the page**, which is why a box drawn on
   a small preview crops the same region on a large render — the app only ever multiplies by
   the resolution `selectComposition` reported. That is a different transform from Inspect's,
