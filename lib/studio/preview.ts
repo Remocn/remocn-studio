@@ -13,6 +13,8 @@ import {
   type Still,
   type StillEvent,
   type StillParams,
+  type Warmed,
+  type WarmParams,
 } from "@/shared/ipc";
 
 export const PREVIEW_MESSAGE_SOURCE = "remocn-preview";
@@ -161,6 +163,18 @@ export function startPreview(
       onStream: onEvent,
       params,
     }).pipe(Effect.onInterrupt(() => Effect.ignore(cancelSidecarRequest(id))));
+  });
+}
+
+export function warmComposition(
+  params: WarmParams
+): Effect.Effect<Warmed, SidecarError> {
+  return Effect.gen(function* () {
+    const id = yield* newRequestId;
+
+    return yield* requestSidecar({ id, method: "preview.warm", params }).pipe(
+      Effect.onInterrupt(() => Effect.ignore(cancelSidecarRequest(id)))
+    );
   });
 }
 

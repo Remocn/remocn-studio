@@ -26,6 +26,7 @@ export const METHOD_NAMES = [
   "history.sessions",
   "preview.start",
   "preview.still",
+  "preview.warm",
   "project.create",
   "project.list",
   "project.open",
@@ -407,12 +408,21 @@ export const Still = Schema.Struct({
   width: Schema.Int,
 });
 
+export const WarmParams = Schema.Struct({
+  composition: Schema.NonEmptyString,
+  projectId: Schema.NonEmptyString,
+});
+
+export const Warmed = Schema.Struct({ warmed: Schema.Boolean });
+
 export type PreviewParams = (typeof PreviewParams)["Type"];
 export type PreviewEvent = (typeof PreviewEvent)["Type"];
 export type PreviewResult = (typeof PreviewResult)["Type"];
 export type StillParams = (typeof StillParams)["Type"];
 export type StillEvent = (typeof StillEvent)["Type"];
 export type Still = (typeof Still)["Type"];
+export type WarmParams = (typeof WarmParams)["Type"];
+export type Warmed = (typeof Warmed)["Type"];
 
 export const SIDECAR_METHODS = {
   "claude.permission": {
@@ -454,6 +464,11 @@ export const SIDECAR_METHODS = {
     params: StillParams,
     result: Still,
     stream: StillEvent,
+  },
+  "preview.warm": {
+    params: WarmParams,
+    result: Warmed,
+    stream: Schema.Never,
   },
   "project.create": {
     params: ProjectDraft,

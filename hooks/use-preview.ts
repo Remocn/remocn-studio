@@ -21,6 +21,7 @@ export type Preview =
 export type PreviewListener = (message: PreviewMessage) => void;
 
 export interface PreviewControl {
+  composition: string | null;
   hint: string | null;
   isServing: boolean;
   preview: Preview;
@@ -152,6 +153,7 @@ export function usePreview(projectId: string | null): PreviewControl {
 
   return useMemo(
     () => ({
+      composition: pick?.compositionId ?? null,
       hint,
       isServing: preview.phase === "ready",
       preview,
@@ -160,7 +162,7 @@ export function usePreview(projectId: string | null): PreviewControl {
       stage,
       subscribe,
     }),
-    [hint, preview, restart, send, subscribe]
+    [hint, pick, preview, restart, send, subscribe]
   );
 }
 

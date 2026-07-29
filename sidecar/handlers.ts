@@ -18,7 +18,7 @@ import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
 import { HandlerError, type Handlers } from "./host";
-import { previewEvents, stillFrom } from "./preview/supervisor";
+import { previewEvents, stillFrom, warmFrom } from "./preview/supervisor";
 import { installDependencies } from "./scaffold/install";
 import { expandTemplate, type ScaffoldError } from "./scaffold/template";
 
@@ -187,6 +187,12 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
       (event) => Effect.runSync(emit(event))
     ).pipe(
       Effect.mapError((error) => new HandlerError({ message: error.message }))
+    ),
+
+  "preview.warm": ({ params }) =>
+    warmFrom(params.projectId, params.composition).pipe(
+      Effect.as({ warmed: true }),
+      Effect.catch(() => Effect.succeed({ warmed: false }))
     ),
 
   "project.create": ({ params }) =>

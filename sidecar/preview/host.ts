@@ -23,7 +23,13 @@ import {
 } from "./project";
 import { decodeHostCommand, type HostReply, RENDER_BASE } from "./protocol";
 import { serve } from "./server";
-import { captureStill, type Renderer } from "./still";
+import {
+  type CompositionCache,
+  captureStill,
+  makeCompositionCache,
+  type Renderer,
+  warmComposition,
+} from "./still";
 
 export const PREVIEW_OUT_ENV = "REMOCN_PREVIEW_OUT";
 export const PREVIEW_PARENT_ENV = "REMOCN_PREVIEW_PARENT_PID";
@@ -84,6 +90,7 @@ const keepStdoutForFrames: Effect.Effect<void> = Effect.sync(() => {
 });
 
 interface Booted {
+  cache: CompositionCache;
   dir: string;
   root: string;
   serveUrl: string;
@@ -150,6 +157,7 @@ function boot(root: string, preferred: string | null) {
     const version = yield* remotionVersionOf(root);
     const staticBase = `/static-${randomBytes(6).toString("hex")}`;
     const grab = yield* grabScript;
+    const cache = makeCompositionCache();
 
     const server = yield* serve({
       grab,
@@ -195,9 +203,18 @@ function boot(root: string, preferred: string | null) {
         }),
     });
 
-    yield* watch(webpack, config, server.notifyRebuilt, server.port);
+    yield* watch(
+      webpack,
+      config,
+      () => {
+        cache.forget();
+        server.notifyRebuilt();
+      },
+      server.port
+    );
 
     return {
+      cache,
       dir: path.join(outDir, "..", "stills"),
       root,
       serveUrl: `http://127.0.0.1:${server.port}${RENDER_BASE}/index.html`,
@@ -345,27 +362,42 @@ function obey(booted: Booted, line: string): Effect.Effect<void> {
     return log(`dropped a preview command it could not parse: ${line}`);
   }
 
-  const { composition, frame, id } = decoded.value;
+  const command = decoded.value;
+  const { composition, id } = command;
 
   return Effect.all({
     module: importFrom<unknown>(booted.root, "@remotion/renderer"),
     options: renderOptionsOf(booted.root),
   }).pipe(
-    Effect.flatMap(({ module, options }) =>
-      captureStill({
+    Effect.flatMap(({ module, options }) => {
+      const renderer = rendererOf(module);
+
+      if (command.type === "warm") {
+        return warmComposition({
+          cache: booted.cache,
+          composition,
+          options,
+          renderer,
+          serveUrl: booted.serveUrl,
+        }).pipe(Effect.andThen(write({ id, type: "warm-done" })));
+      }
+
+      return captureStill({
+        cache: booted.cache,
         dir: booted.dir,
         onEvent: (event) =>
           Effect.runSync(write({ event, id, type: "still-progress" })),
         options,
-        renderer: rendererOf(module),
-        request: { composition, frame },
+        renderer,
+        request: { composition, frame: command.frame },
         serveUrl: booted.serveUrl,
-      })
-    ),
-    Effect.flatMap((still) => write({ id, still, type: "still-done" })),
+      }).pipe(
+        Effect.flatMap((still) => write({ id, still, type: "still-done" }))
+      );
+    }),
     Effect.catch((error) =>
       Effect.andThen(
-        log(`preview still failed: ${error.message}`),
+        log(`preview ${command.type} failed: ${error.message}`),
         write({ id, message: error.message, type: "still-failed" })
       )
     )

@@ -983,6 +983,28 @@ separate buttons and mutually exclusive rather than one mode with a switch.
     which is the tell that this is the project's setting to make and not ours to guess. The
     failure says so: a message mentioning `delayRender()` gets the reason and the config line
     appended to it.
+- **A capture costs one page load, and it used to cost two.** Measured on `remocn-demo`:
+  `openBrowser` 195 ms, `newPage` 187 ms, **`goto` 3319 ms** — the navigation *is* the cost, and
+  it is the project's doing, not Remotion's: that one page pulls **19.9 MB over 71 requests, 64
+  of them fonts**, because `@remotion/google-fonts` fetches at runtime and holds a
+  `delayRender` until it is done. `selectComposition` and `renderStill` are ~2.9 s each for
+  exactly that reason — one page load apiece.
+  - **Reusing the browser buys nothing** (5799 ms → 5900 ms across a shared instance, measured):
+    Remotion opens a fresh page per call and the cache does not carry, so there is no pool here
+    and no state to manage.
+  - **What does buy something is not measuring twice.** The `VideoConfig` from
+    `selectComposition` is cached per composition in the host and passed straight to
+    `renderStill`, so a capture navigates once: **8.4 s → ~3.6 s**. The cache is dropped in the
+    same callback that notifies the page of a rebuild, so a recompile can never be captured
+    against a stale composition.
+  - **And doing it before the click.** Arming Snapshot fires `preview.warm`, which measures the
+    composition while the user is still aiming — 4.4 s that used to sit inside the first click.
+    Commands are handled sequentially on the host's stdin, so a click that lands mid-warm waits
+    for it rather than starting a second navigation.
+  - **The floor is the project's.** ~3.6 s per capture is one navigation, and a project that
+    loads six Google font families with every weight pays most of it. Remotion says so in its
+    own log — *"Consider loading fewer weights and subsets by passing options to loadFont()"* —
+    and that is a change in the project, not here.
 - **This is the first slice of Export**, which needs the same three things: the renderer
   resolved from the project, the browser provisioned, and progress reported.
 

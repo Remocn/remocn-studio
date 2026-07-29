@@ -25,7 +25,7 @@ const decodeEvent = Schema.decodeExit(Schema.fromJsonString(PreviewEvent));
 interface Pending {
   fail: (message: string) => void;
   progress: (event: StillEvent) => void;
-  succeed: (still: Still) => void;
+  succeed: (still: Still | null) => void;
 }
 
 interface Host {
@@ -65,6 +65,41 @@ export function stillFrom(
   request: StillRequest,
   onEvent: (event: StillEvent) => void
 ): Effect.Effect<Still, PreviewError> {
+  return ask(
+    projectId,
+    (id) => ({ ...request, id, type: "still" }),
+    onEvent
+  ).pipe(
+    Effect.flatMap((still) =>
+      still === null
+        ? Effect.fail(
+            new PreviewError({
+              message: "the preview host answered without a frame",
+            })
+          )
+        : Effect.succeed(still)
+    )
+  );
+}
+
+export function warmFrom(
+  projectId: string,
+  composition: string
+): Effect.Effect<void, PreviewError> {
+  return Effect.asVoid(
+    ask(
+      projectId,
+      (id) => ({ composition, id, type: "warm" }),
+      () => undefined
+    )
+  );
+}
+
+function ask(
+  projectId: string,
+  command: (id: string) => HostCommand,
+  onEvent: (event: StillEvent) => void
+): Effect.Effect<Still | null, PreviewError> {
   return Effect.suspend(() => {
     const host = hosts.get(projectId);
 
@@ -77,10 +112,10 @@ export function stillFrom(
       );
     }
 
-    return Effect.callback<Still, PreviewError>((resume) => {
+    return Effect.callback<Still | null, PreviewError>((resume) => {
       const id = randomUUID();
 
-      const settle = (outcome: Effect.Effect<Still, PreviewError>) => {
+      const settle = (outcome: Effect.Effect<Still | null, PreviewError>) => {
         host.pending.delete(id);
         resume(outcome);
       };
@@ -91,7 +126,7 @@ export function stillFrom(
         succeed: (still) => settle(Effect.succeed(still)),
       });
 
-      if (!host.send({ ...request, id, type: "still" })) {
+      if (!host.send(command(id))) {
         settle(
           Effect.fail(
             new PreviewError({
@@ -176,6 +211,11 @@ function deliver(reply: HostReply, pending: Map<string, Pending>): void {
 
   if (reply.type === "still-done") {
     waiting.succeed(reply.still);
+    return;
+  }
+
+  if (reply.type === "warm-done") {
+    waiting.succeed(null);
     return;
   }
 

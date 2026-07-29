@@ -58,7 +58,26 @@ export interface StillRequest {
   frame: number;
 }
 
+export interface CompositionCache {
+  forget: () => void;
+  read: (composition: string) => Measured | null;
+  remember: (composition: string, measured: Measured) => void;
+}
+
+export function makeCompositionCache(): CompositionCache {
+  const known = new Map<string, Measured>();
+
+  return {
+    forget: () => known.clear(),
+    read: (composition) => known.get(composition) ?? null,
+    remember: (composition, measured) => {
+      known.set(composition, measured);
+    },
+  };
+}
+
 export interface StillInput {
+  cache: CompositionCache;
   dir: string;
   onEvent: (event: StillEvent) => void;
   options: RenderOptions;
@@ -66,6 +85,60 @@ export interface StillInput {
   request: StillRequest;
   serveUrl: string;
   timeoutMs?: number;
+}
+
+export interface WarmInput {
+  cache: CompositionCache;
+  composition: string;
+  options: RenderOptions;
+  renderer: Renderer;
+  serveUrl: string;
+}
+
+export function warmComposition(
+  input: WarmInput
+): Effect.Effect<Measured, PreviewError> {
+  return Effect.suspend(() => {
+    const known = input.cache.read(input.composition);
+
+    if (known !== null) {
+      return Effect.succeed(known);
+    }
+
+    return measure({
+      composition: input.composition,
+      options: input.options,
+      renderer: input.renderer,
+      serveUrl: input.serveUrl,
+    }).pipe(
+      Effect.tap((measured) =>
+        Effect.sync(() => input.cache.remember(input.composition, measured))
+      )
+    );
+  });
+}
+
+function measure(input: {
+  composition: string;
+  options: RenderOptions;
+  renderer: Renderer;
+  serveUrl: string;
+}): Effect.Effect<Measured, PreviewError> {
+  const { chromeMode, chromiumOptions } = input.options;
+
+  return Effect.tryPromise({
+    catch: failed,
+    try: () =>
+      input.renderer.selectComposition({
+        ...(chromeMode === null ? {} : { chromeMode }),
+        chromiumOptions,
+        id: input.composition,
+        logLevel: LOG_LEVEL,
+        serveUrl: input.serveUrl,
+        timeoutInMilliseconds:
+          input.options.timeoutInMilliseconds ?? DELAY_RENDER_TIMEOUT_MS,
+      }),
+  });
 }
 
 const failed = (cause: unknown) =>
@@ -107,17 +180,12 @@ export function captureStill(
 
     yield* Effect.sync(() => input.onEvent({ type: "rendering" }));
 
-    const measured = yield* Effect.tryPromise({
-      catch: failed,
-      try: () =>
-        input.renderer.selectComposition({
-          ...mode,
-          chromiumOptions,
-          id: input.request.composition,
-          logLevel: LOG_LEVEL,
-          serveUrl: input.serveUrl,
-          timeoutInMilliseconds,
-        }),
+    const measured = yield* warmComposition({
+      cache: input.cache,
+      composition: input.request.composition,
+      options: input.options,
+      renderer: input.renderer,
+      serveUrl: input.serveUrl,
     });
 
     yield* Effect.tryPromise({

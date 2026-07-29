@@ -1,6 +1,6 @@
 "use client";
 
-import { Effect, Exit } from "effect";
+import { Effect, Exit, Fiber } from "effect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Composer } from "@/hooks/use-composer";
 import { useNow } from "@/hooks/use-now";
@@ -12,6 +12,7 @@ import {
   type PreviewMessage,
   type PreviewSnapshot,
   snapshotCommand,
+  warmComposition,
 } from "@/lib/studio/preview";
 import type { StillEvent } from "@/shared/ipc";
 
@@ -104,7 +105,7 @@ export function useSnapshot({
 
   useOnPreview(preview, onMessage);
 
-  const { send } = preview;
+  const { composition, send } = preview;
 
   useEffect(() => {
     setReported(null);
@@ -112,6 +113,20 @@ export function useSnapshot({
     setFailure(null);
     send(snapshotCommand(isArmed));
   }, [isArmed, send]);
+
+  useEffect(() => {
+    if (!isArmed || composition === null || projectId === null) {
+      return;
+    }
+
+    const warming = Effect.runFork(
+      Effect.ignore(warmComposition({ composition, projectId }))
+    );
+
+    return () => {
+      Effect.runFork(Fiber.interrupt(warming));
+    };
+  }, [composition, isArmed, projectId]);
 
   const now = useNow(isArmed && reported === null ? SILENCE : null);
 

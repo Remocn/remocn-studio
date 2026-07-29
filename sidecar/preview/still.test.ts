@@ -13,7 +13,14 @@ import { Effect, Exit } from "effect";
 import { afterEach, describe, expect, it } from "vitest";
 import type { StillEvent } from "@/shared/ipc";
 import type { RenderOptions } from "./project";
-import { captureStill, DELAY_RENDER_TIMEOUT_MS, type Renderer } from "./still";
+import {
+  type CompositionCache,
+  captureStill,
+  DELAY_RENDER_TIMEOUT_MS,
+  makeCompositionCache,
+  type Renderer,
+  warmComposition,
+} from "./still";
 
 const SERVE_URL = "http://127.0.0.1:51749/__remocn/render/index.html";
 const STILL_NAME = /^Main-frame-42-[0-9a-f]+\.png$/;
@@ -109,12 +116,14 @@ function capture(
   renderer: Renderer,
   target: string,
   options: {
+    cache?: CompositionCache;
     onEvent?: (event: StillEvent) => void;
     project?: RenderOptions;
     timeoutMs?: number;
   } = {}
 ) {
   return captureStill({
+    cache: options.cache ?? makeCompositionCache(),
     dir: target,
     onEvent: options.onEvent ?? (() => undefined),
     options: options.project ?? NOTHING_CONFIGURED,
@@ -276,6 +285,53 @@ describe("captureStill", () => {
     const exit = await Effect.runPromiseExit(capture(state.renderer, dir()));
 
     expect(String(exit)).not.toContain("setChromiumOpenGlRenderer");
+  });
+
+  it("measures the composition once and reuses it for later captures", async () => {
+    const cache = makeCompositionCache();
+    const target = dir();
+    const state = fake();
+
+    await Effect.runPromise(capture(state.renderer, target, { cache }));
+    await Effect.runPromise(capture(state.renderer, target, { cache }));
+    await Effect.runPromise(capture(state.renderer, target, { cache }));
+
+    expect(state.selected).toEqual(["Main"]);
+    expect(state.rendered).toHaveLength(3);
+  });
+
+  it("measures again once the bundle has been rebuilt", async () => {
+    const cache = makeCompositionCache();
+    const target = dir();
+    const state = fake();
+
+    await Effect.runPromise(capture(state.renderer, target, { cache }));
+    cache.forget();
+    await Effect.runPromise(capture(state.renderer, target, { cache }));
+
+    expect(state.selected).toEqual(["Main", "Main"]);
+  });
+
+  it("lets a warm-up pay for the measurement before the click does", async () => {
+    const cache = makeCompositionCache();
+    const state = fake();
+
+    await Effect.runPromise(
+      warmComposition({
+        cache,
+        composition: "Main",
+        options: NOTHING_CONFIGURED,
+        renderer: state.renderer,
+        serveUrl: SERVE_URL,
+      })
+    );
+
+    expect(state.selected).toEqual(["Main"]);
+
+    await Effect.runPromise(capture(state.renderer, dir(), { cache }));
+
+    expect(state.selected).toEqual(["Main"]);
+    expect(state.rendered).toHaveLength(1);
   });
 
   it("gives up on a scene whose delayRender never resolves", async () => {

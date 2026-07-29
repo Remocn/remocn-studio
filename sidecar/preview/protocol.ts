@@ -3,12 +3,19 @@ import { Still, StillEvent } from "@/shared/ipc";
 
 export const RENDER_BASE = "/__remocn/render";
 
-export const HostCommand = Schema.Struct({
-  composition: Schema.NonEmptyString,
-  frame: Schema.Int,
-  id: Schema.NonEmptyString,
-  type: Schema.Literal("still"),
-});
+export const HostCommand = Schema.Union([
+  Schema.Struct({
+    composition: Schema.NonEmptyString,
+    frame: Schema.Int,
+    id: Schema.NonEmptyString,
+    type: Schema.Literal("still"),
+  }),
+  Schema.Struct({
+    composition: Schema.NonEmptyString,
+    id: Schema.NonEmptyString,
+    type: Schema.Literal("warm"),
+  }),
+]);
 
 export const HostReply = Schema.Union([
   Schema.Struct({
@@ -20,6 +27,10 @@ export const HostReply = Schema.Union([
     id: Schema.NonEmptyString,
     still: Still,
     type: Schema.Literal("still-done"),
+  }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    type: Schema.Literal("warm-done"),
   }),
   Schema.Struct({
     id: Schema.NonEmptyString,
