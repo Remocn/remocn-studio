@@ -12,7 +12,8 @@ import path from "node:path";
 import { Effect, Exit } from "effect";
 import { afterEach, describe, expect, it } from "vitest";
 import type { StillEvent } from "@/shared/ipc";
-import { captureStill, type Renderer } from "./still";
+import type { RenderOptions } from "./project";
+import { captureStill, DELAY_RENDER_TIMEOUT_MS, type Renderer } from "./still";
 
 const SERVE_URL = "http://127.0.0.1:51749/__remocn/render/index.html";
 const STILL_NAME = /^Main-frame-42-[0-9a-f]+\.png$/;
@@ -33,7 +34,13 @@ afterEach(() => {
 
 interface Fake {
   downloads: number;
-  rendered: { frame: number; output: string; serveUrl: string }[];
+  rendered: {
+    chromiumOptions: Record<string, unknown>;
+    frame: number;
+    output: string;
+    serveUrl: string;
+    timeoutInMilliseconds: number;
+  }[];
   renderer: Renderer;
   selected: string[];
 }
@@ -64,9 +71,11 @@ function fake(
     },
     renderStill: async (options) => {
       state.rendered.push({
+        chromiumOptions: options.chromiumOptions,
         frame: options.frame,
         output: options.output,
         serveUrl: options.serveUrl,
+        timeoutInMilliseconds: options.timeoutInMilliseconds,
       });
 
       if (overrides.onRender !== undefined) {
@@ -90,14 +99,25 @@ function fake(
   return state;
 }
 
+const NOTHING_CONFIGURED = {
+  chromeMode: null,
+  chromiumOptions: {},
+  timeoutInMilliseconds: null,
+};
+
 function capture(
   renderer: Renderer,
   target: string,
-  options: { onEvent?: (event: StillEvent) => void; timeoutMs?: number } = {}
+  options: {
+    onEvent?: (event: StillEvent) => void;
+    project?: RenderOptions;
+    timeoutMs?: number;
+  } = {}
 ) {
   return captureStill({
     dir: target,
     onEvent: options.onEvent ?? (() => undefined),
+    options: options.project ?? NOTHING_CONFIGURED,
     renderer,
     request: { composition: "Main", frame: 42 },
     serveUrl: SERVE_URL,
@@ -204,6 +224,58 @@ describe("captureStill", () => {
 
     expect(Exit.isFailure(exit)).toBe(true);
     expect(String(exit)).toContain("Cannot find module ./missing");
+  });
+
+  it("renders with the GL backend the project configured", async () => {
+    const state = fake();
+
+    await Effect.runPromise(
+      capture(state.renderer, dir(), {
+        project: {
+          chromeMode: "chrome-for-testing",
+          chromiumOptions: { gl: "angle" },
+          timeoutInMilliseconds: 90_000,
+        },
+      })
+    );
+
+    expect(state.rendered[0].chromiumOptions).toEqual({ gl: "angle" });
+    expect(state.rendered[0].timeoutInMilliseconds).toBe(90_000);
+  });
+
+  it("falls back to Remotion's own delayRender timeout", async () => {
+    const state = fake();
+
+    await Effect.runPromise(capture(state.renderer, dir()));
+
+    expect(state.rendered[0].timeoutInMilliseconds).toBe(
+      DELAY_RENDER_TIMEOUT_MS
+    );
+  });
+
+  it("says why a WebGL scene never finished compiling", async () => {
+    const state = fake({
+      onRender: () =>
+        Promise.reject(
+          new Error(
+            'A delayRender() "neon-aurora: compiling" was called but not cleared after 28000ms.'
+          )
+        ),
+    });
+
+    const exit = await Effect.runPromiseExit(capture(state.renderer, dir()));
+
+    expect(String(exit)).toContain("setChromiumOpenGlRenderer");
+  });
+
+  it("leaves an unrelated failure's message alone", async () => {
+    const state = fake({
+      onRender: () => Promise.reject(new Error("Cannot find module ./missing")),
+    });
+
+    const exit = await Effect.runPromiseExit(capture(state.renderer, dir()));
+
+    expect(String(exit)).not.toContain("setChromiumOpenGlRenderer");
   });
 
   it("gives up on a scene whose delayRender never resolves", async () => {

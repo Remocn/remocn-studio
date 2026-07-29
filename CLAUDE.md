@@ -961,6 +961,21 @@ separate buttons and mutually exclusive rather than one mode with a switch.
   this feature touches the network. The render also carries a `delayRender` timeout and the
   whole capture an outer one, so a scene that never resolves fails with a sentence instead of
   hanging the app.
+- **The render options come from `remotion.config.ts` too**, read the way the CLI reads them:
+  `renderOptionsOf` loads the config and then asks `@remotion/renderer`'s own option objects
+  for their values, so `Config.setChromiumOpenGlRenderer`, `setDelayRenderTimeoutInMilliseconds`,
+  the chrome mode and the rest apply to a snapshot exactly as they apply to `npx remotion
+  still`. That is the whole point of rendering through the project's renderer, and it is why
+  there is **no invented default**: `--gl=angle` changes the pixels of a render that uses no
+  WebGL at all (verified: different hash, visually identical antialiasing), so defaulting it
+  would move every project's snapshot away from what its own export produces.
+  - **A WebGL scene is the case this decides.** Remotion's default GL backend is `null` — no
+    `--use-gl` flag — so the render browser has no GL context, a shader never compiles, and a
+    component that only calls `continueRender()` after a successful draw hangs until the
+    timeout. `remocn-neon`'s aurora fails identically under the stock `npx remotion still`,
+    which is the tell that this is the project's setting to make and not ours to guess. The
+    failure says so: a message mentioning `delayRender()` gets the reason and the config line
+    appended to it.
 - **This is the first slice of Export**, which needs the same three things: the renderer
   resolved from the project, the browser provisioned, and progress reported.
 

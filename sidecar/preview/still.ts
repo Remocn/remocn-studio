@@ -4,13 +4,14 @@ import path from "node:path";
 import { Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { Still, StillEvent } from "@/shared/ipc";
-import { PreviewError } from "./project";
+import { PreviewError, type RenderOptions } from "./project";
 
-export const CAPTURE_TIMEOUT_MS = 120_000;
-export const DELAY_RENDER_TIMEOUT_MS = 20_000;
+export const CAPTURE_TIMEOUT_MS = 180_000;
+export const DELAY_RENDER_TIMEOUT_MS = 30_000;
 
 const LOG_LEVEL = "error";
 const UNSAFE = /[^a-zA-Z0-9._-]+/g;
+const STUCK = /delayRender\(\)/;
 
 export interface Measured {
   height: number;
@@ -23,6 +24,7 @@ export interface DownloadProgress {
 
 export interface Renderer {
   ensureBrowser: (options: {
+    chromeMode?: string;
     logLevel: string;
     onBrowserDownload: () => {
       onProgress: (progress: DownloadProgress) => void;
@@ -30,6 +32,8 @@ export interface Renderer {
     };
   }) => Promise<unknown>;
   renderStill: (options: {
+    chromeMode?: string;
+    chromiumOptions: Record<string, unknown>;
     composition: Measured;
     frame: number;
     imageFormat: string;
@@ -40,6 +44,8 @@ export interface Renderer {
     timeoutInMilliseconds: number;
   }) => Promise<unknown>;
   selectComposition: (options: {
+    chromeMode?: string;
+    chromiumOptions: Record<string, unknown>;
     id: string;
     logLevel: string;
     serveUrl: string;
@@ -55,6 +61,7 @@ export interface StillRequest {
 export interface StillInput {
   dir: string;
   onEvent: (event: StillEvent) => void;
+  options: RenderOptions;
   renderer: Renderer;
   request: StillRequest;
   serveUrl: string;
@@ -62,18 +69,30 @@ export interface StillInput {
 }
 
 const failed = (cause: unknown) =>
-  new PreviewError({ message: errorMessage(cause) });
+  new PreviewError({ message: explain(errorMessage(cause)) });
+
+function explain(message: string): string {
+  return STUCK.test(message)
+    ? `${message}\n\nThe render browser is not the preview's WebView: it has no GL backend unless the project asks for one, so a scene that draws with WebGL never finishes compiling and its delayRender() never clears. Add Config.setChromiumOpenGlRenderer("angle") to remotion.config.ts — npx remotion still needs the same thing — or raise Config.setDelayRenderTimeoutInMilliseconds() if the scene is merely slow.`
+    : message;
+}
 
 export function captureStill(
   input: StillInput
 ): Effect.Effect<Still, PreviewError> {
   return Effect.gen(function* () {
     const output = yield* freshFile(input.dir, input.request);
+    const { chromeMode, chromiumOptions } = input.options;
+    const timeoutInMilliseconds =
+      input.options.timeoutInMilliseconds ?? DELAY_RENDER_TIMEOUT_MS;
+
+    const mode = chromeMode === null ? {} : { chromeMode };
 
     yield* Effect.tryPromise({
       catch: failed,
       try: () =>
         input.renderer.ensureBrowser({
+          ...mode,
           logLevel: LOG_LEVEL,
           onBrowserDownload: () => ({
             onProgress: (progress) =>
@@ -92,10 +111,12 @@ export function captureStill(
       catch: failed,
       try: () =>
         input.renderer.selectComposition({
+          ...mode,
+          chromiumOptions,
           id: input.request.composition,
           logLevel: LOG_LEVEL,
           serveUrl: input.serveUrl,
-          timeoutInMilliseconds: DELAY_RENDER_TIMEOUT_MS,
+          timeoutInMilliseconds,
         }),
     });
 
@@ -103,6 +124,8 @@ export function captureStill(
       catch: failed,
       try: () =>
         input.renderer.renderStill({
+          ...mode,
+          chromiumOptions,
           composition: measured,
           frame: Math.max(0, Math.trunc(input.request.frame)),
           imageFormat: "png",
@@ -110,7 +133,7 @@ export function captureStill(
           output,
           overwrite: true,
           serveUrl: input.serveUrl,
-          timeoutInMilliseconds: DELAY_RENDER_TIMEOUT_MS,
+          timeoutInMilliseconds,
         }),
     });
 

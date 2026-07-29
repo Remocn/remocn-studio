@@ -16,6 +16,7 @@ import {
   importFrom,
   PreviewError,
   remotionRootOf,
+  renderOptionsOf,
   resolveFrom,
   type WebpackConfig,
   webpackOverrideOf,
@@ -346,12 +347,16 @@ function obey(booted: Booted, line: string): Effect.Effect<void> {
 
   const { composition, frame, id } = decoded.value;
 
-  return importFrom<unknown>(booted.root, "@remotion/renderer").pipe(
-    Effect.flatMap((module) =>
+  return Effect.all({
+    module: importFrom<unknown>(booted.root, "@remotion/renderer"),
+    options: renderOptionsOf(booted.root),
+  }).pipe(
+    Effect.flatMap(({ module, options }) =>
       captureStill({
         dir: booted.dir,
         onEvent: (event) =>
           Effect.runSync(write({ event, id, type: "still-progress" })),
+        options,
         renderer: rendererOf(module),
         request: { composition, frame },
         serveUrl: booted.serveUrl,

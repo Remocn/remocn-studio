@@ -92,10 +92,7 @@ export function webpackOverrideOf(
   root: string
 ): Effect.Effect<WebpackOverride, PreviewError> {
   return Effect.gen(function* () {
-    const file = configFile(root);
-    if (file !== null) {
-      yield* importFile(file);
-    }
+    yield* loadConfig(root);
 
     const config = yield* importFrom<{
       ConfigInternals: { getWebpackOverrideFn: () => WebpackOverride };
@@ -103,6 +100,97 @@ export function webpackOverrideOf(
 
     return config.ConfigInternals.getWebpackOverrideFn();
   });
+}
+
+function loadConfig(root: string): Effect.Effect<void, PreviewError> {
+  const file = configFile(root);
+  return file === null ? Effect.void : Effect.asVoid(importFile(file));
+}
+
+export interface RenderOptions {
+  chromeMode: string | null;
+  chromiumOptions: Record<string, unknown>;
+  timeoutInMilliseconds: number | null;
+}
+
+interface RemotionOption {
+  getValue: (input: { commandLine: Record<string, unknown> }) => {
+    source: string;
+    value: unknown;
+  };
+}
+
+const CHROMIUM_OPTIONS: Record<string, [string, string]> = {
+  darkMode: ["dark-mode", "darkModeOption"],
+  disableWebSecurity: ["disable-web-security", "disableWebSecurityOption"],
+  enableMultiProcessOnLinux: [
+    "enable-multiprocess-on-linux",
+    "enableMultiprocessOnLinuxOption",
+  ],
+  gl: ["gl", "glOption"],
+  headless: ["headless", "headlessOption"],
+  ignoreCertificateErrors: [
+    "ignore-certificate-errors",
+    "ignoreCertificateErrorsOption",
+  ],
+  userAgent: ["user-agent", "userAgentOption"],
+};
+
+export function renderOptionsOf(
+  root: string
+): Effect.Effect<RenderOptions, PreviewError> {
+  return Effect.gen(function* () {
+    yield* loadConfig(root);
+
+    const manifest = yield* resolveFrom(
+      root,
+      "@remotion/renderer/package.json"
+    );
+    const options = path.join(path.dirname(manifest), "dist/options");
+
+    const read = (file: string, name: string) =>
+      importFile<Record<string, unknown>>(
+        path.join(options, `${file}.js`)
+      ).pipe(
+        Effect.map((module) => configured(module, name)),
+        Effect.catch(() => Effect.succeed(null))
+      );
+
+    const chromiumOptions: Record<string, unknown> = {};
+
+    for (const [key, [file, name]] of Object.entries(CHROMIUM_OPTIONS)) {
+      const value = yield* read(file, name);
+      if (value !== null) {
+        chromiumOptions[key] = value;
+      }
+    }
+
+    const timeout = yield* read(
+      "timeout",
+      "delayRenderTimeoutInMillisecondsOption"
+    );
+
+    return {
+      chromeMode: asString(yield* read("chrome-mode", "chromeModeOption")),
+      chromiumOptions,
+      timeoutInMilliseconds: typeof timeout === "number" ? timeout : null,
+    };
+  });
+}
+
+function configured(module: Record<string, unknown>, name: string): unknown {
+  const found = module as { default?: Record<string, unknown> };
+  const option = (module[name] ?? found.default?.[name]) as
+    | RemotionOption
+    | undefined;
+
+  return option === undefined
+    ? null
+    : (option.getValue({ commandLine: {} }).value ?? null);
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
 }
 
 export function entryPointOf(
