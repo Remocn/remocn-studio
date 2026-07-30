@@ -130,12 +130,38 @@ what makes it work on a private package at all.
 1. `bun run changeset` to record what changed.
 2. On push to `main`, `.github/workflows/publish.yml` opens/refreshes a
    "Version Packages" PR that bumps `package.json` and writes `CHANGELOG.md`.
-3. Merging that PR is the decision to release; the action pushes a `v<version>` tag.
-4. The tag triggers the macOS build (Apple silicon + Intel) and publishes the
-   GitHub release with the bundles and `latest.json` attached.
+3. Merging that PR is the decision to release. The push it produces finds an
+   empty `.changeset/`, so the *same* workflow takes its publish branch instead:
+   `changeset tag` names `v<version>`, the job pushes it, and the action reports
+   `published`.
+4. That output — not the tag — releases the macOS build (Apple silicon + Intel)
+   in the same run, which publishes the GitHub release with the bundles and
+   `latest.json` attached.
 
 The version script is named `version:packages`, not `version`, because npm and
 bun treat a `version` script as an `npm version` lifecycle hook, which recurses.
+
+Two things about step 4 are the way they are because the obvious versions of them
+do not work, and both cost a silent non-release of 0.0.1 to find:
+
+- **The build cannot be triggered by the tag.** A tag pushed with `GITHUB_TOKEN`
+  does not start a workflow run, so `on: push: tags` never fires for a tag this
+  workflow created. Hence the gate on the `published` output and a build in the
+  same run — and hence no tag trigger in the file at all, since one would read as
+  the mechanism while never running.
+- **`changesets/action` is pinned to `v1.9.0` and takes v1's input names** —
+  `version`, `publish`, `commit`, `title`, `createGithubReleases`. The v2 line
+  renamed all of them to kebab-case, an unknown `with:` key is silently ignored,
+  and `@v1` is a *branch*, not a tag. So `version-script` / `commit-message` /
+  `pr-title` / `create-github-releases` did nothing, `push-git-tags` is not read
+  by v1 at all, and a missing `publish` meant the action logged "Not publishing
+  because no publish script found" and returned. `version PR` went green in 16s
+  and no tag was ever created.
+
+`publish` is `changeset tag`, not an npm publish — the package is private. The
+action greps its stdout for `New tag:` to decide `published`, and that command
+prints nothing once the tag is on the remote, which is what stops a later push to
+`main` from releasing the same version twice.
 
 ### Updating in place
 
