@@ -59,6 +59,7 @@
     "check": "ultracite check",
     "dev": "next dev",
     "fix": "ultracite fix",
+    "release:tag": "changeset tag",
     "sidecar:build": "bun build --target=bun --minify --outfile=sidecar-dist/main.js sidecar/index.ts",
     "skills:check": "bun run scripts/skills-sync.ts --check",
     "skills:sync": "bun run scripts/skills-sync.ts",

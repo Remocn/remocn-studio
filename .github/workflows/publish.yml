@@ -1,17 +1,31 @@
 name: publish
 
-# Two phases, deliberately split.
+# Two phases, and they are two runs of this workflow rather than two triggers.
 #
-#   1. push to main  → Changesets opens/refreshes a "Version Packages" PR that
-#      bumps package.json and writes CHANGELOG.md from the .changeset/*.md files.
-#      Merging that PR is the act of deciding to release; the action then pushes
-#      a `v<version>` tag.
-#   2. push of v*    → build macOS and publish the GitHub release with the
-#      artifacts attached, plus the `latest.json` the in-app updater reads.
+#   1. push to main with changesets pending → Changesets opens/refreshes a
+#      "Version Packages" PR that bumps package.json and writes CHANGELOG.md
+#      from the .changeset/*.md files.
+#   2. merging that PR empties .changeset/, so the push it produces finds no
+#      changesets and the action takes its *publish* branch instead: it tags the
+#      version and reports `published`, which is what releases the build below.
 #
 # Nothing is published to npm — the package is private. Changesets is used only
 # for versioning, changelog and tagging (`privatePackages` in
-# .changeset/config.json enables that for a private package).
+# .changeset/config.json enables that for a private package), so the publish
+# command is `changeset tag` and nothing more.
+#
+# **The build is gated on `published`, not on a tag push, and it has to be.** A
+# tag pushed with GITHUB_TOKEN does not start a workflow run, so `on: push:
+# tags` would never fire for a tag this workflow created. There is deliberately
+# no tag trigger left: it would read as the mechanism while never running.
+#
+# **The action is pinned to v1.9.0 and its inputs are v1's** — `version`,
+# `publish`, `commit`, `title`, `createGithubReleases`. The v2 line renamed every
+# one of them to kebab-case, and an unknown `with:` key is silently ignored, so
+# v2 names on v1 do nothing at all and say nothing about it. That is how a
+# missing `publish` went unnoticed through a whole release: `version PR`
+# succeeded in 16s, `release-macos` was skipped for want of a tag, and no tag was
+# ever created.
 #
 # The app version lives in ONE place: `package.json`. `src-tauri/tauri.conf.json`
 # sets `"version": "../package.json"`, which Tauri resolves at build time, so
@@ -21,7 +35,6 @@ name: publish
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   workflow_dispatch:
 
 concurrency:
@@ -31,15 +44,18 @@ concurrency:
 jobs:
   version:
     name: version PR
-    if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      released: ${{ steps.changesets.outputs.published }}
+      version: ${{ steps.tag.outputs.version }}
     steps:
       - uses: actions/checkout@v7
         with:
-          # Changesets needs history to work out what changed since the base branch.
+          # Changesets needs history to work out what changed since the base
+          # branch, and the tags to know which versions are already released.
           fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
@@ -49,23 +65,41 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - uses: changesets/action@v1
+      - id: changesets
+        uses: changesets/action@v1.9.0
         with:
           # Named `version:packages`, not `version`: npm and bun treat a `version`
           # script as a lifecycle hook for `npm version`, which would recurse.
-          version-script: bun run version:packages
-          commit-message: "chore: version packages"
-          pr-title: "chore: version packages"
-          # The release itself is created by the tag-triggered job below, which is
-          # the only place that has the built artifacts to attach.
-          create-github-releases: false
-          push-git-tags: true
+          version: bun run version:packages
+          # `changeset tag` creates the tag locally and prints `New tag: v<x>`,
+          # which is the only thing the action reads to decide `published` — it
+          # greps stdout for it. Once that tag is on the remote the command
+          # prints nothing at all, so `published` is false and a later push to
+          # main cannot release the same version twice. Measured both ways.
+          publish: bun run release:tag
+          commit: "chore: version packages"
+          title: "chore: version packages"
+          # The release is created by the build below, which is the only thing
+          # holding the artifacts to attach to it.
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # With `createGithubReleases: false` the action never pushes what
+      # `changeset tag` created, and an unpushed tag would let the next push to
+      # main mint the same version again. Pushing it here is what makes the
+      # publish branch fire exactly once per version.
+      - id: tag
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          git push origin "v$version"
+
   release-macos:
     name: macOS ${{ matrix.label }}
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: version
+    if: needs.version.outputs.released == 'true'
     runs-on: macos-latest
     permissions:
       contents: write
@@ -116,8 +150,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: remocn studio ${{ github.ref_name }}
+          tagName: v${{ needs.version.outputs.version }}
+          releaseName: remocn studio v${{ needs.version.outputs.version }}
           releaseBody: |
             Unsigned macOS build — see CHANGELOG.md for what changed.
 
