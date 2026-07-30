@@ -535,6 +535,18 @@ by tests that render nothing.
   half. That promotion is the one piece of ordering the *webview* owns, and it has
   to be — turn state exists nowhere else. With an empty turn map the output is
   byte-for-byte the store's order.
+- **A folder that is gone leaves the list.** `paneSections` splits `paneGroups`'
+  output into the projects still on disk and the ones that are not, and the pane
+  renders the second half under a *Moved or deleted* heading. It partitions
+  *after* the promotion above, so filtering preserves relative order and
+  promotion becomes per-section for free — a missing project with a waiting
+  session rises within its own half and can never outrank a live one. Splitting
+  is all it does: a moved project keeps its sessions, its rollup and its
+  transcripts, because the history is still worth reading and `Locate…` still
+  reconnects it. The heading is a plain `<h3>`, not `SidebarGroupLabel` with a
+  `render` prop: `useHeadingContent` cannot see children through `useRender`'s
+  indirection and fails the check, and the primitive's own behaviour is all
+  `collapsible=icon` handling that a `collapsible="none"` sidebar never uses.
 - **The cap counts only quiet rows.** Waiting, running and unread rows render
   regardless and are excluded from the "Show N more" count, so the number always
   matches what expanding reveals and the cap can only ever hide what you have
@@ -1107,8 +1119,82 @@ separate buttons and mutually exclusive rather than one mode with a switch.
     loads six Google font families with every weight pays most of it. Remotion says so in its
     own log — *"Consider loading fewer weights and subsets by passing options to loadFont()"* —
     and that is a change in the project, not here.
-- **This is the first slice of Export**, which needs the same three things: the renderer
-  resolved from the project, the browser provisioned, and progress reported.
+- **This was the first slice of Export**, which needs the same three things: the renderer
+  resolved from the project, the browser provisioned, and progress reported. See *Exporting*.
+
+### Exporting an mp4
+
+The Export button renders the playing composition to `out/<Composition>.mp4` through the
+**project's own** `@remotion/renderer`, with progress, cancellation and a reveal in Finder (#227).
+Format and quality settings, a queue and Lambda are out of scope: this renders h264, and every
+other knob comes from the project's `remotion.config.ts`, read the way a snapshot reads it.
+
+- **There is no second bundle, and that is the feature.** #227 says "bundle the project, render
+  the composition" — but the preview host has *already* compiled that project and is serving the
+  render page it compiled, so `preview.export` renders from the same `serveUrl` a snapshot uses.
+  A second `bundle()` would cost another ~7 s and 1.67 GB peak for a byte-identical result, and it
+  could differ from what is on screen — which is exactly what the acceptance criterion "content
+  matches the preview" forbids. So bundling progress is the preview's existing `building` events,
+  and Export is unavailable until the preview is serving rather than starting its own compile.
+- **The renderer is resolved, then checked.** `renderMedia` and `makeCancelSignal` come off the
+  same project module the stills already use; `exporterOf` refuses a Remotion too old to export
+  with rather than throwing `undefined is not a function` mid-render. `agreedVersionIn` then reads
+  `remotion`, `@remotion/renderer` and `@remotion/bundler` out of the project's `node_modules` and
+  refuses when they disagree, naming **every** package that drifted — a renderer a hundred patches
+  from the `remotion` the preview compiled would not match the preview, which is the one thing an
+  export must never do.
+- **The render writes a dotfile and is renamed at the end.** A cancel or a failure must not leave
+  a half-written `Main.mp4` that looks finished, and must not destroy the export from ten minutes
+  ago; rendering to `out/.Main-<token>.mp4` and renaming on success gets both, since the rename is
+  atomic and the cleanup only ever removes the partial. The removal is an `acquireRelease` acquired
+  *before* the render, so it releases *after* it — finalizers run in reverse.
+- **Cancelling waits for Remotion to stop before deleting anything.** `Effect.callback`'s cleanup
+  runs on interruption and is awaited, so it calls Remotion's `cancel()` and then awaits the
+  `renderMedia` promise settling. Without that wait the partial file would be removed while ffmpeg
+  was still writing it, and the write would recreate it. Ten seconds is the grace; past that the
+  file is removed anyway, because a renderer ignoring its own cancel signal must not hang a quit.
+- **The export is forked, because the host's stdin loop is sequential.** `Stream.runForEach` over
+  stdin serves one command at a time, so a `cancel` frame arriving during a three-minute render
+  would not be *read* until the render finished. The export therefore goes into a `FiberMap` keyed
+  by request id: `FiberMap.remove` is the interrupt, `FiberMap.size` is the one-at-a-time gate, and
+  keying by id means a late cancel for a finished export cannot kill the next one. The map belongs
+  to the host's scope, so quitting interrupts the render, which is what runs the cleanup above —
+  and the host is already in the sidecar's process group, so its Chrome goes with it.
+- **The webview cancels by interrupting a fiber, and the frame reaches the host.** `ask`'s
+  interruption finalizer in `sidecar/preview/supervisor.ts` now sends `{type:"cancel", id}` to the
+  host, guarded on `pending.delete(id)` returning true so a request that already answered cannot
+  emit a spurious cancel. `causeMessage` returns null for an interrupt, so a deliberate cancel
+  leaves no error on screen.
+- **Progress is folded in the host and worded in the webview.** `renderMedia` reports
+  `{renderedFrames, encodedFrames, progress, stitchStage}` and the host turns it into one
+  `progress` event; `exportStatus` in `lib/studio/export.ts` decides whether that reads
+  *Rendering — 64/300 frames*, *Encoding*, or *Combining the audio and the video*. Same split as
+  `lib/studio/runs.ts` against the transcript fold: numbers cross the wire, sentences do not. The
+  frame count is seeded from the measured composition so the first event already has a denominator,
+  and `stitchStage` is normalised to the two values the schema knows — an unknown future stage
+  would otherwise fail the stream decode and drop the chunk.
+- **There is no outer wall-clock timeout**, unlike a snapshot's. A long render is the normal case;
+  a frame that never resolves is already bounded by the project's own `delayRender` timeout, and
+  that failure arrives with the WebGL explanation the stills share.
+- **A rebuild does not cancel a running export.** Remotion loads the page once per tab when the
+  render starts, so an agent saving a file mid-render does not swap the code under it — and killing
+  a three-minute render because a file changed would be worse than the risk. The composition
+  measurement is still dropped on rebuild, so the *next* export measures again.
+- **The export state carries the project it belongs to.** Switching projects therefore hides that
+  result without a reset effect, and switching *back* shows a render that is still going. A running
+  export in another project is the reason the button can be disabled, and it says so rather than
+  going quiet.
+- **Measured against `remocn-demo`**, driving the host by hand: `thumb-introducing-remocn` exports
+  to a 29,974-byte h264 1280×720 mp4 with an AAC track, and the frame decoded out of it is the real
+  cover art — the *blank white* the render page's `NODE_ENV=production` exists to prevent. On the
+  1012-frame `introducing-remocn`, progress climbed by frame count and a cancel at 152 frames left
+  the 42 MB mp4 an earlier CLI render had put in `out/` **byte-identical**, with no partial beside
+  it. `SIGTERM` to the host alone — harsher than a quit, which signals the whole process group —
+  exited 0 and left no `chrome-headless-shell` behind.
+- **`contact-sheet` cannot be exported, and that is the project's doing**: it loads
+  `staticFile("thumb-previews/introducing-opus-5.png")`, which is not on disk, so the render fails
+  on the image and would fail the same way under `npx remotion render`. Worth knowing before
+  reaching for it as a cheap export target.
 
 ## Layout
 
@@ -1131,7 +1217,8 @@ sidecar/scaffold/     what "New project…" expands and installs
 templates/remotion/   that project, vendored here and shipped as a Tauri resource
 agent/                the Claude Code plugin we hand the SDK: vendored skills
 scripts/              build-time tooling; skills-sync.ts is the vendoring step
-sidecar/preview/      the --preview-host child: project resolution, webpack watch, server
+sidecar/preview/      the --preview-host child: project resolution, webpack watch, server,
+                      stills for Snapshot and the mp4 export
 src-tauri/            Rust core (Tauri v2), the sidecar supervisor, pasted-image writes
 public/               static assets
 ```

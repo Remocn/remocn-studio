@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -9,6 +10,8 @@ import type { WarmInternals } from "./session";
 export class PreviewError extends Data.TaggedError("PreviewError")<{
   message: string;
 }> {}
+
+export const RENDER_PACKAGES = ["@remotion/bundler", "@remotion/renderer"];
 
 export const CONFIG_FILES = ["remotion.config.ts", "remotion.config.js"];
 
@@ -62,6 +65,59 @@ export function importFile<A>(file: string): Effect.Effect<A, PreviewError> {
   return Effect.tryPromise({
     catch: (cause) => new PreviewError({ message: errorMessage(cause) }),
     try: () => import(pathToFileURL(file).href) as Promise<A>,
+  });
+}
+
+export function packageVersionOf(
+  root: string,
+  specifier: string
+): Effect.Effect<string, PreviewError> {
+  return Effect.flatMap(
+    resolveFrom(root, `${specifier}/package.json`).pipe(
+      Effect.mapError(() => missing(root, specifier))
+    ),
+    (manifest) =>
+      Effect.tryPromise({
+        catch: (cause) =>
+          new PreviewError({
+            message: `could not read ${manifest}: ${errorMessage(cause)}`,
+          }),
+        try: async () => {
+          const source = await readFile(manifest, "utf8");
+          return String(JSON.parse(source).version ?? "");
+        },
+      })
+  );
+}
+
+export function agreedVersionIn(
+  root: string
+): Effect.Effect<string, PreviewError> {
+  return Effect.gen(function* () {
+    const remotion = yield* packageVersionOf(root, "remotion");
+
+    const installed = yield* Effect.forEach(RENDER_PACKAGES, (specifier) =>
+      Effect.map(packageVersionOf(root, specifier), (version) => ({
+        specifier,
+        version,
+      }))
+    );
+
+    const apart = installed.filter(({ version }) => version !== remotion);
+
+    if (apart.length > 0) {
+      const listed = apart
+        .map(({ specifier, version }) => `${specifier} is ${version}`)
+        .join(" and ");
+
+      return yield* Effect.fail(
+        new PreviewError({
+          message: `remotion is ${remotion} in this project but ${listed}. An export renders with the project's own packages, so mismatched ones would not match the preview — run bun install in the project folder to bring them in step.`,
+        })
+      );
+    }
+
+    return remotion;
   });
 }
 

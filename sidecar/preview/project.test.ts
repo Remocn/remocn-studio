@@ -5,7 +5,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { Effect, Exit } from "effect";
 import { afterEach, describe, expect, it } from "vitest";
-import { configFile, entryPointOf, remotionRootOf } from "./project";
+import {
+  agreedVersionIn,
+  configFile,
+  entryPointOf,
+  packageVersionOf,
+  remotionRootOf,
+} from "./project";
 
 const made: string[] = [];
 
@@ -79,6 +85,95 @@ describe("entryPointOf", () => {
 
     expect(Exit.isFailure(exit)).toBe(true);
     expect(String(exit)).toContain("no Remotion entry point");
+  });
+});
+
+function installed(versions: Record<string, string | null>): string {
+  const files: Record<string, string> = { "package.json": "{}" };
+
+  for (const [name, version] of Object.entries(versions)) {
+    if (version !== null) {
+      files[`node_modules/${name}/package.json`] = JSON.stringify({
+        name,
+        version,
+      });
+    }
+  }
+
+  return project(files);
+}
+
+const ALL_AGREEING = {
+  "@remotion/bundler": "4.0.481",
+  "@remotion/renderer": "4.0.481",
+  remotion: "4.0.481",
+};
+
+describe("packageVersionOf", () => {
+  it("reads a version out of the project's own node_modules", async () => {
+    const root = installed(ALL_AGREEING);
+
+    const version = await Effect.runPromise(packageVersionOf(root, "remotion"));
+
+    expect(version).toBe("4.0.481");
+  });
+
+  it("says which package is not installed", async () => {
+    const exit = await Effect.runPromiseExit(
+      packageVersionOf(installed({ remotion: "4.0.481" }), "@remotion/renderer")
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    expect(String(exit)).toContain("@remotion/renderer is not installed");
+  });
+});
+
+describe("agreedVersionIn", () => {
+  it("agrees when the render packages match remotion", async () => {
+    const version = await Effect.runPromise(
+      agreedVersionIn(installed(ALL_AGREEING))
+    );
+
+    expect(version).toBe("4.0.481");
+  });
+
+  it("refuses a renderer that is a different version from remotion", async () => {
+    const root = installed({
+      ...ALL_AGREEING,
+      "@remotion/renderer": "4.0.100",
+    });
+
+    const exit = await Effect.runPromiseExit(agreedVersionIn(root));
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    expect(String(exit)).toContain("@remotion/renderer is 4.0.100");
+    expect(String(exit)).toContain("remotion is 4.0.481");
+  });
+
+  it("names every package that drifted, not just the first", async () => {
+    const root = installed({
+      "@remotion/bundler": "4.0.200",
+      "@remotion/renderer": "4.0.100",
+      remotion: "4.0.481",
+    });
+
+    const exit = await Effect.runPromiseExit(agreedVersionIn(root));
+
+    expect(String(exit)).toContain("@remotion/bundler is 4.0.200");
+    expect(String(exit)).toContain("@remotion/renderer is 4.0.100");
+  });
+
+  it("refuses a project with no renderer installed at all", async () => {
+    const root = installed({
+      "@remotion/bundler": "4.0.481",
+      "@remotion/renderer": null,
+      remotion: "4.0.481",
+    });
+
+    const exit = await Effect.runPromiseExit(agreedVersionIn(root));
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    expect(String(exit)).toContain("@remotion/renderer is not installed");
   });
 });
 

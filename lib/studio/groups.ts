@@ -39,6 +39,11 @@ export interface SessionMeta {
   readonly text: string;
 }
 
+export interface PaneSections {
+  readonly active: readonly PaneGroup[];
+  readonly gone: readonly PaneGroup[];
+}
+
 const ROLLUP_ORDER: readonly RollupStatus[] = [
   "waiting",
   "running",
@@ -90,6 +95,13 @@ export function paneGroups(
   });
 
   return promoted(groups);
+}
+
+export function paneSections(groups: readonly PaneGroup[]): PaneSections {
+  return {
+    active: groups.filter((group) => !group.project.missing),
+    gone: groups.filter((group) => group.project.missing),
+  };
 }
 
 export function sessionMeta(row: SessionRow, now: number): SessionMeta | null {

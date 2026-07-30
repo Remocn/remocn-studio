@@ -7,6 +7,7 @@ import {
   MonitorPlayIcon,
   RotateCwIcon,
   SquareDashedMousePointerIcon,
+  XIcon,
 } from "lucide-react";
 import type { RefObject } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,16 +18,17 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import type { Preview } from "@/hooks/use-preview";
+import { exportLabel } from "@/lib/studio/export";
 import { InspectOverlay } from "./inspect-overlay";
 import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
-import { SidecarStatus } from "./sidecar-status";
 import { useStudio } from "./studio-provider";
 
 export function PreviewPane() {
   const { activeProject, openedProject, tools } = useStudio();
-  const { inspect, snapshot } = tools;
+  const { exporting, inspect, snapshot } = tools;
   const { hint, preview, restart, stage } = tools.preview;
   const trouble = inspect.trouble ?? snapshot.trouble;
 
@@ -67,11 +69,24 @@ export function PreviewPane() {
             )}
             Snapshot
           </Button>
-          <SidecarStatus />
-          <Button size="sm">
-            <DownloadIcon data-icon="inline-start" />
-            Export
-          </Button>
+          {exporting.isRunning ? (
+            <Button onClick={exporting.cancel} size="sm" variant="outline">
+              <XIcon data-icon="inline-start" />
+              Cancel
+            </Button>
+          ) : (
+            <Button
+              disabled={!exporting.canExport}
+              onClick={exporting.start}
+              size="sm"
+              title={
+                exporting.unavailable ?? "Render this composition into out/"
+              }
+            >
+              <DownloadIcon data-icon="inline-start" />
+              Export
+            </Button>
+          )}
         </PaneActions>
       </PaneHeader>
 
@@ -112,6 +127,40 @@ export function PreviewPane() {
           >
             {snapshot.status}
           </p>
+        )}
+
+        {exporting.isRunning ? (
+          <div className="flex shrink-0 flex-col gap-2">
+            <p
+              className="text-center text-muted-foreground text-xs"
+              role="status"
+            >
+              {exporting.status}
+            </p>
+            <Progress value={exporting.percent} />
+          </div>
+        ) : null}
+
+        {exporting.result === null ? null : (
+          <div className="flex shrink-0 items-center justify-center gap-2 text-xs">
+            <span className="text-muted-foreground">Exported</span>
+            <span className="font-mono">
+              {exportLabel(exporting.result, activeProject?.path ?? null)}
+            </span>
+            <Button onClick={exporting.reveal} size="xs" variant="ghost">
+              <FolderOpenIcon data-icon="inline-start" />
+              Show in Finder
+            </Button>
+          </div>
+        )}
+
+        {exporting.trouble === null ? null : (
+          <pre
+            className="shrink-0 overflow-auto whitespace-pre-wrap text-destructive text-xs"
+            role="alert"
+          >
+            {exporting.trouble}
+          </pre>
         )}
 
         {hint === null ? null : (

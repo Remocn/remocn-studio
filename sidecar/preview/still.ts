@@ -55,6 +55,14 @@ export interface StillRequest {
   frame: number;
 }
 
+export type BrowserProgress = Extract<StillEvent, { type: "browser" }>;
+
+export interface BrowserInput {
+  onEvent: (event: BrowserProgress) => void;
+  options: RenderOptions;
+  renderer: Pick<Renderer, "ensureBrowser">;
+}
+
 export interface CompositionCache {
   forget: () => void;
   read: (composition: string) => Measured | null;
@@ -124,7 +132,7 @@ function measure(input: {
   const { chromeMode, chromiumOptions } = input.options;
 
   return Effect.tryPromise({
-    catch: failed,
+    catch: renderError,
     try: () =>
       input.renderer.selectComposition({
         ...(chromeMode === null ? {} : { chromeMode }),
@@ -138,7 +146,7 @@ function measure(input: {
   });
 }
 
-const failed = (cause: unknown) =>
+export const renderError = (cause: unknown) =>
   new PreviewError({ message: explain(errorMessage(cause)) });
 
 function explain(message: string): string {
@@ -155,13 +163,13 @@ export function stillFile(
 }
 
 export function readyBrowser(
-  input: Pick<StillInput, "onEvent" | "options" | "renderer">
+  input: BrowserInput
 ): Effect.Effect<void, PreviewError> {
   const { chromeMode } = input.options;
 
   return Effect.asVoid(
     Effect.tryPromise({
-      catch: failed,
+      catch: renderError,
       try: () =>
         input.renderer.ensureBrowser({
           ...(chromeMode === null ? {} : { chromeMode }),
@@ -191,7 +199,7 @@ export function captureStill(
     const mode = chromeMode === null ? {} : { chromeMode };
 
     yield* Effect.tryPromise({
-      catch: failed,
+      catch: renderError,
       try: () =>
         input.renderer.ensureBrowser({
           ...mode,
@@ -218,7 +226,7 @@ export function captureStill(
     });
 
     yield* Effect.tryPromise({
-      catch: failed,
+      catch: renderError,
       try: () =>
         input.renderer.renderStill({
           ...mode,
@@ -257,7 +265,7 @@ function freshFile(
   request: StillRequest
 ): Effect.Effect<string, PreviewError> {
   return Effect.tryPromise({
-    catch: failed,
+    catch: renderError,
     try: async () => {
       await mkdir(dir, { recursive: true });
 
@@ -277,7 +285,7 @@ function freshFile(
   });
 }
 
-function slug(composition: string): string {
+export function slug(composition: string): string {
   const cleaned = composition.replace(UNSAFE, "-").replace(/^-+|-+$/g, "");
   return cleaned.length > 0 ? cleaned : "still";
 }
