@@ -7,6 +7,7 @@ import {
   inspectCommand,
   originOf,
   seekCommand,
+  snapshotCommand,
 } from "./preview";
 
 const picked = {
@@ -43,6 +44,14 @@ const selected = {
   rect: { height: 0.2, width: 0.5, x: 0.25, y: 0.4 },
   source: "remocn-preview",
   type: "selection",
+};
+
+const captured = {
+  composition: "Main",
+  frame: 42,
+  rect: null,
+  source: "remocn-preview",
+  type: "capture",
 };
 
 describe("decodePreviewMessage", () => {
@@ -187,6 +196,69 @@ describe("decodePreviewMessage", () => {
     ).toBe(true);
   });
 
+  it("accepts the answer the entry sends back when Snapshot is armed", () => {
+    const decoded = decodePreviewMessage({
+      paused: true,
+      source: "remocn-preview",
+      status: "armed",
+      type: "snapshot",
+    });
+
+    expect(
+      Exit.isSuccess(decoded) &&
+        decoded.value.type === "snapshot" &&
+        decoded.value.status
+    ).toBe("armed");
+  });
+
+  it("refuses a snapshot answer blaming grab, which it never uses", () => {
+    expect(
+      Exit.isFailure(
+        decodePreviewMessage({
+          paused: true,
+          source: "remocn-preview",
+          status: "no-grab",
+          type: "snapshot",
+        })
+      )
+    ).toBe(true);
+  });
+
+  it("accepts a whole-frame capture, which carries no rectangle", () => {
+    const decoded = decodePreviewMessage(captured);
+
+    expect(
+      Exit.isSuccess(decoded) &&
+        decoded.value.type === "capture" &&
+        decoded.value.rect
+    ).toBeNull();
+  });
+
+  it("accepts a capture of the part that was dragged", () => {
+    const decoded = decodePreviewMessage({
+      ...captured,
+      rect: { height: 0.25, width: 0.5, x: 0.25, y: 0.5 },
+    });
+
+    expect(
+      Exit.isSuccess(decoded) &&
+        decoded.value.type === "capture" &&
+        decoded.value.rect?.width
+    ).toBe(0.5);
+  });
+
+  it("refuses a capture of a frame that is not a whole number", () => {
+    expect(
+      Exit.isFailure(decodePreviewMessage({ ...captured, frame: 4.5 }))
+    ).toBe(true);
+  });
+
+  it("refuses a capture with no composition to render", () => {
+    expect(
+      Exit.isFailure(decodePreviewMessage({ ...captured, composition: "" }))
+    ).toBe(true);
+  });
+
   it("accepts the rebuild notice that clears the markers", () => {
     expect(
       Exit.isSuccess(
@@ -204,6 +276,21 @@ describe("decodePreviewCommand", () => {
     expect(Exit.isSuccess(decodePreviewCommand(inspectCommand(false)))).toBe(
       true
     );
+  });
+
+  it("accepts arming and disarming snapshot", () => {
+    expect(Exit.isSuccess(decodePreviewCommand(snapshotCommand(true)))).toBe(
+      true
+    );
+    expect(Exit.isSuccess(decodePreviewCommand(snapshotCommand(false)))).toBe(
+      true
+    );
+  });
+
+  it("keeps arming inspect and arming snapshot apart", () => {
+    const decoded = decodePreviewCommand(snapshotCommand(true));
+
+    expect(Exit.isSuccess(decoded) && decoded.value.type).toBe("snapshot");
   });
 
   it("accepts freezing the frame while a card is open", () => {

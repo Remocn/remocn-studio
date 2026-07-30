@@ -39,6 +39,7 @@ export interface Composer {
   add: () => Promise<void>;
   attachments: Attachments;
   canSubmit: boolean;
+  capture: (file: File) => Promise<void>;
   caret: Caret;
   counts: ReferenceCounts;
   onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
@@ -114,6 +115,16 @@ export function useComposer({
     const first = attachments.items.length;
     refer(at, first, await attachments.add());
   }, [attachments, caret, refer]);
+
+  const capture = useCallback(
+    async (file: File) => {
+      const field = caret.ref.current;
+      const at = field?.selectionStart ?? field?.value.length ?? 0;
+      const first = attachments.items.length;
+      refer(at, first, await attachments.attach([file]));
+    },
+    [attachments, caret, refer]
+  );
 
   const onPaste = useCallback(
     async (event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -257,6 +268,7 @@ export function useComposer({
       add,
       attachments,
       canSubmit,
+      capture,
       caret,
       counts,
       onChange,
@@ -273,6 +285,7 @@ export function useComposer({
       add,
       attachments,
       canSubmit,
+      capture,
       caret,
       counts,
       onChange,

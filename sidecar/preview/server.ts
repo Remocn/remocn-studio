@@ -8,8 +8,9 @@ import path from "node:path";
 import { Effect, type Scope } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import { GRAB_PATH } from "./grab";
-import { previewPage } from "./html";
+import { previewPage, renderPage } from "./html";
 import { PreviewError } from "./project";
+import { RENDER_BASE } from "./protocol";
 
 export const HOT_PATH = "/__remocn/hot";
 
@@ -54,6 +55,7 @@ export interface ServerOptions {
   root: string;
   staticBase: string;
   title: string;
+  version: string;
 }
 
 export function serve(
@@ -129,19 +131,17 @@ function handle(
   }
 
   if (pathname === "/" || pathname === "/index.html") {
-    const body = previewPage({
-      hasGrab: options.grab !== null,
-      preferred: options.preferred,
-      publicPath: "/",
-      root: options.root,
-      staticBase: options.staticBase,
-      title: options.title,
-    });
-    response.writeHead(200, {
-      "cache-control": "no-store",
-      "content-type": "text/html; charset=utf-8",
-    });
-    response.end(body);
+    sendPage(previewPage(pageOptions(options)), response);
+    return;
+  }
+
+  if (isRenderPage(pathname)) {
+    sendPage(renderPage(pageOptions(options)), response);
+    return;
+  }
+
+  if (pathname.startsWith(`${RENDER_BASE}/`)) {
+    sendFile(options.outDir, pathname.slice(RENDER_BASE.length + 1), response);
     return;
   }
 
@@ -152,6 +152,34 @@ function handle(
   }
 
   sendFile(options.outDir, pathname.replace(LEADING_SLASH, ""), response);
+}
+
+function isRenderPage(pathname: string): boolean {
+  return (
+    pathname === RENDER_BASE ||
+    pathname === `${RENDER_BASE}/` ||
+    pathname === `${RENDER_BASE}/index.html`
+  );
+}
+
+function pageOptions(options: ServerOptions) {
+  return {
+    hasGrab: options.grab !== null,
+    preferred: options.preferred,
+    publicPath: "/",
+    root: options.root,
+    staticBase: options.staticBase,
+    title: options.title,
+    version: options.version,
+  };
+}
+
+function sendPage(body: string, response: ServerResponse): void {
+  response.writeHead(200, {
+    "cache-control": "no-store",
+    "content-type": "text/html; charset=utf-8",
+  });
+  response.end(body);
 }
 
 function sendGrab(source: string | null, response: ServerResponse): void {

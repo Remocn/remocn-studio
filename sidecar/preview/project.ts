@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Data, Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
+import type { WarmInternals } from "./session";
 
 export class PreviewError extends Data.TaggedError("PreviewError")<{
   message: string;
@@ -92,10 +93,7 @@ export function webpackOverrideOf(
   root: string
 ): Effect.Effect<WebpackOverride, PreviewError> {
   return Effect.gen(function* () {
-    const file = configFile(root);
-    if (file !== null) {
-      yield* importFile(file);
-    }
+    yield* loadConfig(root);
 
     const config = yield* importFrom<{
       ConfigInternals: { getWebpackOverrideFn: () => WebpackOverride };
@@ -103,6 +101,181 @@ export function webpackOverrideOf(
 
     return config.ConfigInternals.getWebpackOverrideFn();
   });
+}
+
+function loadConfig(root: string): Effect.Effect<void, PreviewError> {
+  const file = configFile(root);
+  return file === null ? Effect.void : Effect.asVoid(importFile(file));
+}
+
+export interface RenderOptions {
+  chromeMode: string | null;
+  chromiumOptions: Record<string, unknown>;
+  timeoutInMilliseconds: number | null;
+}
+
+export type Measured = Record<string, unknown> & {
+  height: number;
+  width: number;
+};
+
+interface RemotionOption {
+  getValue: (input: { commandLine: Record<string, unknown> }) => {
+    source: string;
+    value: unknown;
+  };
+}
+
+const CHROMIUM_OPTIONS: Record<string, [string, string]> = {
+  darkMode: ["dark-mode", "darkModeOption"],
+  disableWebSecurity: ["disable-web-security", "disableWebSecurityOption"],
+  enableMultiProcessOnLinux: [
+    "enable-multiprocess-on-linux",
+    "enableMultiprocessOnLinuxOption",
+  ],
+  gl: ["gl", "glOption"],
+  headless: ["headless", "headlessOption"],
+  ignoreCertificateErrors: [
+    "ignore-certificate-errors",
+    "ignoreCertificateErrorsOption",
+  ],
+  userAgent: ["user-agent", "userAgentOption"],
+};
+
+export function renderOptionsOf(
+  root: string
+): Effect.Effect<RenderOptions, PreviewError> {
+  return Effect.gen(function* () {
+    yield* loadConfig(root);
+
+    const manifest = yield* resolveFrom(
+      root,
+      "@remotion/renderer/package.json"
+    );
+    const options = path.join(path.dirname(manifest), "dist/options");
+
+    const read = (file: string, name: string) =>
+      importFile<Record<string, unknown>>(
+        path.join(options, `${file}.js`)
+      ).pipe(
+        Effect.map((module) => configured(module, name)),
+        Effect.catch(() => Effect.succeed(null))
+      );
+
+    const chromiumOptions: Record<string, unknown> = {};
+
+    for (const [key, [file, name]] of Object.entries(CHROMIUM_OPTIONS)) {
+      const value = yield* read(file, name);
+      if (value !== null) {
+        chromiumOptions[key] = value;
+      }
+    }
+
+    const timeout = yield* read(
+      "timeout",
+      "delayRenderTimeoutInMillisecondsOption"
+    );
+
+    return {
+      chromeMode: asString(yield* read("chrome-mode", "chromeModeOption")),
+      chromiumOptions,
+      timeoutInMilliseconds: typeof timeout === "number" ? timeout : null,
+    };
+  });
+}
+
+function configured(module: Record<string, unknown>, name: string): unknown {
+  const found = module as { default?: Record<string, unknown> };
+  const option = (module[name] ?? found.default?.[name]) as
+    | RemotionOption
+    | undefined;
+
+  return option === undefined
+    ? null
+    : (option.getValue({ commandLine: {} }).value ?? null);
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+const WARM_MODULES = {
+  evaluate: ["puppeteer-evaluate", "puppeteerEvaluateWithCatch"],
+  seekToFrame: ["seek-to-frame", "seekToFrame"],
+  setPropsAndEnv: ["set-props-and-env", "setPropsAndEnv"],
+  takeFrame: ["take-frame", "takeFrame"],
+} as const;
+
+export function warmInternalsOf(
+  root: string
+): Effect.Effect<WarmInternals | null, PreviewError> {
+  return Effect.gen(function* () {
+    const manifest = yield* resolveFrom(
+      root,
+      "@remotion/renderer/package.json"
+    );
+    const dist = path.join(path.dirname(manifest), "dist");
+
+    const found: Record<string, unknown> = {};
+
+    for (const [key, [file, name]] of Object.entries(WARM_MODULES)) {
+      const module = yield* importFile<Record<string, unknown>>(
+        path.join(dist, `${file}.js`)
+      ).pipe(Effect.catch(() => Effect.succeed({})));
+
+      const exported = exportOf(module, name);
+
+      if (typeof exported !== "function") {
+        yield* Effect.void;
+        return null;
+      }
+
+      found[key] = exported;
+    }
+
+    const renderer = yield* importFrom<Record<string, unknown>>(
+      root,
+      "@remotion/renderer"
+    );
+    const openBrowser = exportOf(renderer, "openBrowser");
+
+    const noReact = yield* importFrom<Record<string, unknown>>(
+      root,
+      "remotion/no-react"
+    );
+    const internals = exportOf(noReact, "NoReactInternals") as
+      | {
+          serializeJSONWithSpecialTypes: (input: {
+            data: unknown;
+            indent: undefined;
+            staticBase: null;
+          }) => { serializedString: string };
+        }
+      | undefined;
+
+    if (
+      typeof openBrowser !== "function" ||
+      typeof internals?.serializeJSONWithSpecialTypes !== "function"
+    ) {
+      return null;
+    }
+
+    return {
+      ...(found as unknown as Omit<WarmInternals, "openBrowser" | "serialize">),
+      openBrowser: openBrowser as WarmInternals["openBrowser"],
+      serialize: (data: unknown) =>
+        internals.serializeJSONWithSpecialTypes({
+          data,
+          indent: undefined,
+          staticBase: null,
+        }).serializedString,
+    };
+  });
+}
+
+function exportOf(module: Record<string, unknown>, name: string): unknown {
+  const found = module as { default?: Record<string, unknown> };
+  return module[name] ?? found.default?.[name];
 }
 
 export function entryPointOf(

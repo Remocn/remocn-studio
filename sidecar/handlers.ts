@@ -18,7 +18,7 @@ import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
 import { HandlerError, type Handlers } from "./host";
-import { previewEvents } from "./preview/supervisor";
+import { previewEvents, stillFrom, warmFrom } from "./preview/supervisor";
 import { installDependencies } from "./scaffold/install";
 import { expandTemplate, type ScaffoldError } from "./scaffold/template";
 
@@ -171,10 +171,28 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
 
   "preview.start": ({ emit, log, params }) =>
     Effect.flatMap(located(params.projectId), (project) =>
-      Stream.runForEach(previewEvents(project.path, log), emit).pipe(
+      Stream.runForEach(
+        previewEvents(params.projectId, project.path, log),
+        emit
+      ).pipe(
         Effect.as({ reason: "the preview host stopped" }),
         Effect.mapError((error) => new HandlerError({ message: error.message }))
       )
+    ),
+
+  "preview.still": ({ emit, params }) =>
+    stillFrom(
+      params.projectId,
+      { composition: params.composition, frame: params.frame },
+      (event) => Effect.runSync(emit(event))
+    ).pipe(
+      Effect.mapError((error) => new HandlerError({ message: error.message }))
+    ),
+
+  "preview.warm": ({ params }) =>
+    warmFrom(params.projectId, params.composition).pipe(
+      Effect.as({ warmed: true }),
+      Effect.catch(() => Effect.succeed({ warmed: false }))
     ),
 
   "project.create": ({ params }) =>

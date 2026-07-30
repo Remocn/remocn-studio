@@ -167,6 +167,21 @@ function mockShellReadyOnSecondLook() {
   );
 }
 
+function CaptureProbe() {
+  const { composer } = useStudio();
+  const { capture } = composer;
+
+  const take = useCallback(() => {
+    capture(pngFile("Main-frame-42.png")).catch(() => undefined);
+  }, [capture]);
+
+  return (
+    <button onClick={take} type="button">
+      Take snapshot
+    </button>
+  );
+}
+
 function SelectProbe() {
   const { composer } = useStudio();
   const { select } = composer;
@@ -190,6 +205,7 @@ async function renderComposer(
     <StudioProvider>
       <TooltipProvider>
         <SelectProbe />
+        <CaptureProbe />
         <Composer
           context={{ maxTokens: 200_000, totalTokens: 50_000 }}
           cwd={PROJECT.path}
@@ -390,6 +406,46 @@ describe("Composer", () => {
         path: `${PASTED}/image-1.png`,
       },
     ]);
+  });
+
+  it("lands a snapshot in the composer as an ordinary attachment", async () => {
+    mockShell(READY, PICKED, () => `${PASTED}/Main-frame-42.png`);
+    const { textarea } = await renderComposer();
+
+    typeInto(textarea, "this is too cramped ");
+    fireEvent.click(screen.getByRole("button", { name: "Take snapshot" }));
+
+    expect(
+      await screen.findByRole("img", { name: "Main-frame-42.png" })
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(textOf(textarea)).toBe("this is too cramped [Image #1] ")
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].prompt).toBe("this is too cramped [Image #1]");
+    expect(sent[0].attachments).toEqual([
+      {
+        mediaType: "image/png",
+        name: "Main-frame-42.png",
+        path: `${PASTED}/Main-frame-42.png`,
+      },
+    ]);
+  });
+
+  it("drops a bad snapshot the way any attachment is dropped", async () => {
+    mockShell(READY, PICKED, () => `${PASTED}/Main-frame-42.png`);
+    const { textarea } = await renderComposer();
+
+    fireEvent.click(screen.getByRole("button", { name: "Take snapshot" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Remove Main-frame-42.png" })
+    );
+
+    expect(screen.queryByRole("img", { name: "Main-frame-42.png" })).toBeNull();
+    expect(textOf(textarea)).toBe("");
   });
 
   it("keeps the file's own name", async () => {

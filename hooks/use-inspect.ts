@@ -4,13 +4,13 @@ import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Composer } from "@/hooks/use-composer";
 import { useNow } from "@/hooks/use-now";
-import { type PreviewControl, usePreview } from "@/hooks/use-preview";
+import { type PreviewControl, useOnPreview } from "@/hooks/use-preview";
 import {
   freezeCommand,
   inspectCommand,
   type PreviewInspect,
+  type PreviewMessage,
   type PreviewRect,
-  type PreviewSelection,
   seekCommand,
 } from "@/lib/studio/preview";
 import type { PromptElement } from "@/shared/ipc";
@@ -35,7 +35,6 @@ export interface Inspection {
   card: PendingComment | null;
   isArmed: boolean;
   markers: readonly Marker[];
-  preview: PreviewControl;
   seek: (event: MouseEvent<HTMLButtonElement>) => void;
   submitComment: (comment: string) => void;
   toggle: () => void;
@@ -45,20 +44,19 @@ export interface Inspection {
 
 export interface InspectSettings {
   composer: Composer;
-  isMissing: boolean;
-  isWaiting: boolean;
-  openedProjectId: string | null;
-  previewProjectId: string | null;
+  isArmed: boolean;
+  preview: PreviewControl;
+  toggle: () => void;
+  unavailable: string | null;
 }
 
 export function useInspect({
   composer,
-  isMissing,
-  isWaiting,
-  openedProjectId,
-  previewProjectId,
+  isArmed,
+  preview,
+  toggle,
+  unavailable,
 }: InspectSettings): Inspection {
-  const [isArmed, setArmed] = useState(false);
   const [card, setCard] = useState<PendingComment | null>(null);
   const [drawn, setDrawn] = useState<readonly string[]>([]);
   const [asked, setAsked] = useState<number | null>(null);
@@ -66,43 +64,26 @@ export function useInspect({
 
   const { select, selections } = composer;
 
-  const onSelection = useCallback((selection: PreviewSelection) => {
-    setCard({ element: selection.element, rect: selection.rect });
+  const onMessage = useCallback((message: PreviewMessage) => {
+    if (message.type === "selection") {
+      setCard({ element: message.element, rect: message.rect });
+      return;
+    }
+
+    if (message.type === "inspect") {
+      setReported(message);
+      return;
+    }
+
+    if (message.type === "rebuilt") {
+      setDrawn([]);
+      setCard(null);
+    }
   }, []);
 
-  const onInspect = useCallback((inspect: PreviewInspect) => {
-    setReported(inspect);
-  }, []);
-
-  const onRebuilt = useCallback(() => {
-    setDrawn([]);
-    setCard(null);
-    setArmed(false);
-  }, []);
-
-  const handlers = useMemo(
-    () => ({ onInspect, onRebuilt, onSelection }),
-    [onInspect, onRebuilt, onSelection]
-  );
-
-  const preview = usePreview(previewProjectId, handlers);
-
-  const unavailable = unavailableOf({
-    isMissing,
-    isServing: preview.isServing,
-    isWaiting,
-    openedProjectId,
-    previewProjectId,
-  });
-  const canInspect = unavailable === null;
+  useOnPreview(preview, onMessage);
 
   const { send } = preview;
-
-  useEffect(() => {
-    if (!canInspect && isArmed) {
-      setArmed(false);
-    }
-  }, [canInspect, isArmed]);
 
   useEffect(() => {
     setReported(null);
@@ -136,10 +117,6 @@ export function useInspect({
 
   const cancelComment = useCallback(() => setCard(null), []);
 
-  const toggle = useCallback(() => {
-    setArmed((current) => !current);
-  }, []);
-
   const seek = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
       const found = selections.items[Number(event.currentTarget.value)];
@@ -164,11 +141,10 @@ export function useInspect({
   return useMemo(
     () => ({
       cancelComment,
-      canInspect,
+      canInspect: unavailable === null,
       card,
       isArmed,
       markers,
-      preview,
       seek,
       submitComment,
       toggle,
@@ -176,12 +152,10 @@ export function useInspect({
       unavailable,
     }),
     [
-      canInspect,
       card,
       cancelComment,
       isArmed,
       markers,
-      preview,
       seek,
       submitComment,
       toggle,
@@ -189,31 +163,6 @@ export function useInspect({
       unavailable,
     ]
   );
-}
-
-function unavailableOf(state: {
-  isMissing: boolean;
-  isServing: boolean;
-  isWaiting: boolean;
-  openedProjectId: string | null;
-  previewProjectId: string | null;
-}): string | null {
-  if (state.openedProjectId === null) {
-    return "Open a project to inspect its preview.";
-  }
-  if (state.isMissing) {
-    return "The project folder is not on disk anymore.";
-  }
-  if (state.isWaiting) {
-    return "Answer the approval request first.";
-  }
-  if (!state.isServing) {
-    return "The preview is not running yet.";
-  }
-  if (state.openedProjectId !== state.previewProjectId) {
-    return "The preview is showing a different project than this session.";
-  }
-  return null;
 }
 
 function troubleOf(

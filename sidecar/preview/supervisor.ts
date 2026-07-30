@@ -1,13 +1,20 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
-import { Effect, Exit, Schema, Stream } from "effect";
-import { DATA_DIR_ENV, PREVIEW_ENTRY_ENV, PreviewEvent } from "@/shared/ipc";
+import { Effect, Exit, Schema, type Scope, Stream } from "effect";
+import {
+  DATA_DIR_ENV,
+  PREVIEW_ENTRY_ENV,
+  PreviewEvent,
+  type Still,
+  type StillEvent,
+} from "@/shared/ipc";
 import { PREVIEW_OUT_ENV, PREVIEW_PARENT_ENV } from "./host";
 import { PreviewError } from "./project";
+import { decodeHostReply, type HostCommand, type HostReply } from "./protocol";
 
 export const PREVIEW_HOST_FLAG = "--preview-host";
 
@@ -15,20 +22,204 @@ const KILL_GRACE_MS = 2000;
 
 const decodeEvent = Schema.decodeExit(Schema.fromJsonString(PreviewEvent));
 
+interface Pending {
+  fail: (message: string) => void;
+  progress: (event: StillEvent) => void;
+  succeed: (still: Still | null) => void;
+}
+
+interface Host {
+  pending: Map<string, Pending>;
+  send: (command: HostCommand) => boolean;
+}
+
+const hosts = new Map<string, Host>();
+
+export interface StillRequest {
+  composition: string;
+  frame: number;
+}
+
 export function previewEvents(
+  projectId: string,
   folder: string,
   log: (message: string) => Effect.Effect<void>
 ): Stream.Stream<PreviewEvent, PreviewError> {
   return Stream.unwrap(
-    Effect.map(child(folder, log), (process_) =>
-      Stream.flatMap(lines(process_), (line) => {
-        const decoded = decodeEvent(line);
-        return Exit.isSuccess(decoded)
-          ? Stream.succeed(decoded.value)
-          : Stream.empty;
-      })
+    Effect.gen(function* () {
+      const process_ = yield* child(folder, log);
+      const host = hostOf(process_);
+
+      yield* enrol(projectId, host);
+
+      return Stream.flatMap(lines(process_), (line) => {
+        const event = route(line, host.pending);
+        return event === null ? Stream.empty : Stream.succeed(event);
+      });
+    })
+  );
+}
+
+export function stillFrom(
+  projectId: string,
+  request: StillRequest,
+  onEvent: (event: StillEvent) => void
+): Effect.Effect<Still, PreviewError> {
+  return ask(
+    projectId,
+    (id) => ({ ...request, id, type: "still" }),
+    onEvent
+  ).pipe(
+    Effect.flatMap((still) =>
+      still === null
+        ? Effect.fail(
+            new PreviewError({
+              message: "the preview host answered without a frame",
+            })
+          )
+        : Effect.succeed(still)
     )
   );
+}
+
+export function warmFrom(
+  projectId: string,
+  composition: string
+): Effect.Effect<void, PreviewError> {
+  return Effect.asVoid(
+    ask(
+      projectId,
+      (id) => ({ composition, id, type: "warm" }),
+      () => undefined
+    )
+  );
+}
+
+function ask(
+  projectId: string,
+  command: (id: string) => HostCommand,
+  onEvent: (event: StillEvent) => void
+): Effect.Effect<Still | null, PreviewError> {
+  return Effect.suspend(() => {
+    const host = hosts.get(projectId);
+
+    if (host === undefined) {
+      return Effect.fail(
+        new PreviewError({
+          message:
+            "the preview is not running for this project, so there is no frame to capture",
+        })
+      );
+    }
+
+    return Effect.callback<Still | null, PreviewError>((resume) => {
+      const id = randomUUID();
+
+      const settle = (outcome: Effect.Effect<Still | null, PreviewError>) => {
+        host.pending.delete(id);
+        resume(outcome);
+      };
+
+      host.pending.set(id, {
+        fail: (message) => settle(Effect.fail(new PreviewError({ message }))),
+        progress: onEvent,
+        succeed: (still) => settle(Effect.succeed(still)),
+      });
+
+      if (!host.send(command(id))) {
+        settle(
+          Effect.fail(
+            new PreviewError({
+              message: "the preview host is not accepting commands",
+            })
+          )
+        );
+        return;
+      }
+
+      return Effect.sync(() => {
+        host.pending.delete(id);
+      });
+    });
+  });
+}
+
+function hostOf(process_: ChildProcess): Host {
+  return {
+    pending: new Map<string, Pending>(),
+    send: (command) => {
+      const { stdin } = process_;
+
+      if (stdin === null || !stdin.writable) {
+        return false;
+      }
+
+      stdin.write(`${JSON.stringify(command)}\n`);
+      return true;
+    },
+  };
+}
+
+function enrol(
+  projectId: string,
+  host: Host
+): Effect.Effect<void, never, Scope.Scope> {
+  return Effect.acquireRelease(
+    Effect.sync(() => {
+      hosts.set(projectId, host);
+    }),
+    () =>
+      Effect.sync(() => {
+        if (hosts.get(projectId) === host) {
+          hosts.delete(projectId);
+        }
+
+        for (const waiting of [...host.pending.values()]) {
+          waiting.fail("the preview stopped before the frame was captured");
+        }
+      })
+  );
+}
+
+function route(
+  line: string,
+  pending: Map<string, Pending>
+): PreviewEvent | null {
+  const reply = decodeHostReply(line);
+
+  if (Exit.isSuccess(reply)) {
+    deliver(reply.value, pending);
+    return null;
+  }
+
+  const event = decodeEvent(line);
+
+  return Exit.isSuccess(event) ? event.value : null;
+}
+
+function deliver(reply: HostReply, pending: Map<string, Pending>): void {
+  const waiting = pending.get(reply.id);
+
+  if (waiting === undefined) {
+    return;
+  }
+
+  if (reply.type === "still-progress") {
+    waiting.progress(reply.event);
+    return;
+  }
+
+  if (reply.type === "still-done") {
+    waiting.succeed(reply.still);
+    return;
+  }
+
+  if (reply.type === "warm-done") {
+    waiting.succeed(null);
+    return;
+  }
+
+  waiting.fail(reply.message);
 }
 
 function child(folder: string, log: (message: string) => Effect.Effect<void>) {
