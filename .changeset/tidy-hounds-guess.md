@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Permission cards. The app opens **any** folder, including real repositories, so the agent no longer runs on `acceptEdits`: a `canUseTool` gate in the sidecar decides every call. Read, Glob, Grep, Write and Edit run silently as long as every path resolves inside the opened folder; Bash, any path outside the folder, and any tool the gate has no path rule for stop and ask.

@@ -75,3 +75,17 @@ pub struct SidecarNotification {
     pub channel: String,
     pub data: Value,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AppEnvironment {
+    Development,
+    Production,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StudioBuild {
+    pub environment: AppEnvironment,
+    pub version: String,
+}

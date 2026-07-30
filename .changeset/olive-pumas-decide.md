@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 The composer picks a mode, and it belongs to the session rather than to the app.

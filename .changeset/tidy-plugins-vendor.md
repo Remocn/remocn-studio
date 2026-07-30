@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 The agent now knows remocn without the project having to install anything. A Claude Code plugin ships inside the app bundle carrying three vendored skills — `remocn`, `remotion-best-practices` and `remotion-interactivity` — and the sidecar hands it to the Agent SDK as the `plugins` option. In a fresh Remotion project the agent knows the registry components and installs them with `npx shadcn add @remocn/…`.

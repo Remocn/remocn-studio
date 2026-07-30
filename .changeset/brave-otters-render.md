@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Chat transcript: assistant answers render as markdown — headings, lists and syntax-highlighted code — instead of raw text, streamed with a per-word reveal so an 85-character delta arriving every 470 ms reads as typing rather than stepping. Highlighting is Shiki loaded through a custom Streamdown plugin over `createHighlighterCore` with a fixed language set (tsx, ts, jsx, js, json, bash, css); `@streamdown/code` as it ships pulls every bundled grammar and costs 9.1 MB.

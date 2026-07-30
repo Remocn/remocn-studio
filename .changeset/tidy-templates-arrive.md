@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 "New project…" produces a project, not an empty folder. `templates/remotion` is

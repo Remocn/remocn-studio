@@ -26,12 +26,15 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             commands::quit_studio,
+            commands::restart_studio,
             commands::sidecar_cancel,
             commands::sidecar_request,
             commands::sidecar_restart,
             commands::sidecar_status,
+            commands::studio_build,
             paste::save_pasted_image,
         ])
         .on_window_event(|window, event| {

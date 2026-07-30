@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Live Remotion preview in the right pane. The sidecar starts a host per project that

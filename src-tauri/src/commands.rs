@@ -1,7 +1,11 @@
 use serde_json::Value;
-use tauri::{ipc::Channel, AppHandle, State};
+use tauri::{ipc::Channel, AppHandle, Manager, State};
 
-use crate::{confirm_quit, ipc::SidecarStatus, sidecar::Sidecar};
+use crate::{
+    confirm_quit,
+    ipc::{AppEnvironment, SidecarStatus, StudioBuild},
+    sidecar::Sidecar,
+};
 
 #[tauri::command]
 pub async fn sidecar_request(
@@ -33,4 +37,23 @@ pub fn sidecar_restart(sidecar: State<'_, Sidecar>) {
 pub fn quit_studio(app: AppHandle) {
     confirm_quit();
     app.exit(0);
+}
+
+#[tauri::command]
+pub fn restart_studio(app: AppHandle) {
+    confirm_quit();
+    app.state::<Sidecar>().shutdown();
+    app.restart();
+}
+
+#[tauri::command]
+pub fn studio_build(app: AppHandle) -> StudioBuild {
+    StudioBuild {
+        environment: if cfg!(debug_assertions) {
+            AppEnvironment::Development
+        } else {
+            AppEnvironment::Production
+        },
+        version: app.package_info().version.to_string(),
+    }
 }

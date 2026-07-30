@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Activity lines you can read. A path-shaped target now renders as its folder,

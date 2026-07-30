@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Claude Agent SDK session stream: the sidecar now runs `@anthropic-ai/claude-agent-sdk` against the opened folder and streams a turn into the app — assistant text, tool calls and their results — while the agent writes real files on disk. Auth comes from the already logged-in Claude Code; there is no API key and no custom OAuth. The model is the CLI default unless overridden from the picker in the chat pane.

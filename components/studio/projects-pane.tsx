@@ -49,6 +49,7 @@ import { LogoWordmark } from "./logo-mark";
 import { NewProjectDialog } from "./new-project-dialog";
 import { ProjectGroup } from "./project-group";
 import { useStudio } from "./studio-provider";
+import { UpdateStatus } from "./update-status";
 
 const PLACEHOLDERS = ["one", "two", "three", "four"];
 
@@ -141,6 +142,9 @@ export function ProjectsPane() {
 
         <SidebarFooter>
           <SidebarMenu>
+            <SidebarMenuItem>
+              <UpdateStatus />
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton className="text-muted-foreground" disabled>
                 <SettingsIcon />

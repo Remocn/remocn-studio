@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Point at an element in the preview and comment on it in the chat. Turn on **Inspect**, hover the frame, click the thing you mean, write what should change, and the selection lands in the composer as an `[Element #N]` token you can point at from your sentence — exactly the way pasted images already work. You send the message yourself.

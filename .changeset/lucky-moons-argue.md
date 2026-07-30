@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 The shadcn registry moves from the `base-luma` style to `base-vega`. Base UI is
