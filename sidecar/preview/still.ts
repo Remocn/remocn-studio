@@ -4,7 +4,9 @@ import path from "node:path";
 import { Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { Still, StillEvent } from "@/shared/ipc";
-import { PreviewError, type RenderOptions } from "./project";
+import { type Measured, PreviewError, type RenderOptions } from "./project";
+
+export type { Measured } from "./project";
 
 export const CAPTURE_TIMEOUT_MS = 180_000;
 export const DELAY_RENDER_TIMEOUT_MS = 30_000;
@@ -12,11 +14,6 @@ export const DELAY_RENDER_TIMEOUT_MS = 30_000;
 const LOG_LEVEL = "error";
 const UNSAFE = /[^a-zA-Z0-9._-]+/g;
 const STUCK = /delayRender\(\)/;
-
-export interface Measured {
-  height: number;
-  width: number;
-}
 
 export interface DownloadProgress {
   percent: number;
@@ -148,6 +145,38 @@ function explain(message: string): string {
   return STUCK.test(message)
     ? `${message}\n\nThe render browser is not the preview's WebView: it has no GL backend unless the project asks for one, so a scene that draws with WebGL never finishes compiling and its delayRender() never clears. Add Config.setChromiumOpenGlRenderer("angle") to remotion.config.ts — npx remotion still needs the same thing — or raise Config.setDelayRenderTimeoutInMilliseconds() if the scene is merely slow.`
     : message;
+}
+
+export function stillFile(
+  dir: string,
+  request: StillRequest
+): Effect.Effect<string, PreviewError> {
+  return freshFile(dir, request);
+}
+
+export function readyBrowser(
+  input: Pick<StillInput, "onEvent" | "options" | "renderer">
+): Effect.Effect<void, PreviewError> {
+  const { chromeMode } = input.options;
+
+  return Effect.asVoid(
+    Effect.tryPromise({
+      catch: failed,
+      try: () =>
+        input.renderer.ensureBrowser({
+          ...(chromeMode === null ? {} : { chromeMode }),
+          logLevel: LOG_LEVEL,
+          onBrowserDownload: () => ({
+            onProgress: (progress) =>
+              input.onEvent({
+                percent: Math.round(progress.percent * 100),
+                type: "browser",
+              }),
+            version: null,
+          }),
+        }),
+    })
+  );
 }
 
 export function captureStill(

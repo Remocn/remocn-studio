@@ -3,11 +3,13 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
-import { Effect, Exit, Stream } from "effect";
+import { Effect, Exit, Ref, Stream } from "effect";
 import {
   GRAB_SCRIPT_ENV,
   PREVIEW_ENTRY_ENV,
   type PreviewEvent,
+  type Still,
+  type StillEvent,
 } from "@/shared/ipc";
 import { untilGone, untilOrphaned, untilSignalled } from "../lifecycle";
 import { withoutWebFonts } from "./grab";
@@ -15,19 +17,25 @@ import {
   entryPointOf,
   importFrom,
   PreviewError,
+  type RenderOptions,
   remotionRootOf,
   renderOptionsOf,
   resolveFrom,
   type WebpackConfig,
+  warmInternalsOf,
   webpackOverrideOf,
 } from "./project";
 import { decodeHostCommand, type HostReply, RENDER_BASE } from "./protocol";
 import { serve } from "./server";
+import { openSession, type Session, type WarmInternals } from "./session";
 import {
   type CompositionCache,
   captureStill,
+  DELAY_RENDER_TIMEOUT_MS,
   makeCompositionCache,
   type Renderer,
+  readyBrowser,
+  stillFile,
   warmComposition,
 } from "./still";
 
@@ -94,6 +102,13 @@ interface Booted {
   dir: string;
   root: string;
   serveUrl: string;
+  session: Ref.Ref<Session | null>;
+}
+
+interface Tools {
+  internals: WarmInternals | null;
+  options: RenderOptions;
+  renderer: Renderer;
 }
 
 export const runPreviewHost: Effect.Effect<void> = Effect.gen(function* () {
@@ -158,6 +173,9 @@ function boot(root: string, preferred: string | null) {
     const staticBase = `/static-${randomBytes(6).toString("hex")}`;
     const grab = yield* grabScript;
     const cache = makeCompositionCache();
+    const session = yield* Ref.make<Session | null>(null);
+
+    yield* Effect.addFinalizer(() => drop(session));
 
     const server = yield* serve({
       grab,
@@ -208,6 +226,7 @@ function boot(root: string, preferred: string | null) {
       config,
       () => {
         cache.forget();
+        Effect.runFork(drop(session));
         server.notifyRebuilt();
       },
       server.port
@@ -218,6 +237,7 @@ function boot(root: string, preferred: string | null) {
       dir: path.join(outDir, "..", "stills"),
       root,
       serveUrl: `http://127.0.0.1:${server.port}${RENDER_BASE}/index.html`,
+      session,
     } satisfies Booted;
   });
 }
@@ -365,42 +385,136 @@ function obey(booted: Booted, line: string): Effect.Effect<void> {
   const command = decoded.value;
   const { composition, id } = command;
 
-  return Effect.all({
-    module: importFrom<unknown>(booted.root, "@remotion/renderer"),
-    options: renderOptionsOf(booted.root),
-  }).pipe(
-    Effect.flatMap(({ module, options }) => {
-      const renderer = rendererOf(module);
+  const progress = (event: StillEvent) =>
+    Effect.runSync(write({ event, id, type: "still-progress" }));
 
-      if (command.type === "warm") {
-        return warmComposition({
-          cache: booted.cache,
-          composition,
-          options,
-          renderer,
-          serveUrl: booted.serveUrl,
-        }).pipe(Effect.andThen(write({ id, type: "warm-done" })));
-      }
-
-      return captureStill({
-        cache: booted.cache,
-        dir: booted.dir,
-        onEvent: (event) =>
-          Effect.runSync(write({ event, id, type: "still-progress" })),
-        options,
-        renderer,
-        request: { composition, frame: command.frame },
-        serveUrl: booted.serveUrl,
-      }).pipe(
-        Effect.flatMap((still) => write({ id, still, type: "still-done" }))
-      );
-    }),
+  return toolsFor(booted.root).pipe(
+    Effect.flatMap((tools) =>
+      command.type === "warm"
+        ? Effect.andThen(
+            warmed(booted, composition, tools, progress),
+            write({ id, type: "warm-done" })
+          )
+        : shoot(booted, command, tools, progress).pipe(
+            Effect.flatMap((still) => write({ id, still, type: "still-done" }))
+          )
+    ),
     Effect.catch((error) =>
       Effect.andThen(
         log(`preview ${command.type} failed: ${error.message}`),
         write({ id, message: error.message, type: "still-failed" })
       )
     )
+  );
+}
+
+function toolsFor(root: string): Effect.Effect<Tools, PreviewError> {
+  return Effect.all({
+    internals: warmInternalsOf(root).pipe(
+      Effect.catch(() => Effect.succeed(null))
+    ),
+    module: importFrom<unknown>(root, "@remotion/renderer"),
+    options: renderOptionsOf(root),
+  }).pipe(
+    Effect.map(({ internals, module, options }) => ({
+      internals,
+      options,
+      renderer: rendererOf(module),
+    }))
+  );
+}
+
+function warmed(
+  booted: Booted,
+  composition: string,
+  tools: Tools,
+  onEvent: (event: StillEvent) => void
+): Effect.Effect<Session | null, PreviewError> {
+  return Effect.gen(function* () {
+    yield* readyBrowser({
+      onEvent,
+      options: tools.options,
+      renderer: tools.renderer,
+    });
+
+    if (tools.internals === null) {
+      yield* log(
+        "this Remotion build does not expose what a warm render page needs, so every capture will load its own"
+      );
+      return null;
+    }
+
+    const held = yield* Ref.get(booted.session);
+
+    if (held !== null && held.composition === composition) {
+      return held;
+    }
+
+    const measured = yield* warmComposition({
+      cache: booted.cache,
+      composition,
+      options: tools.options,
+      renderer: tools.renderer,
+      serveUrl: booted.serveUrl,
+    });
+
+    yield* drop(booted.session);
+
+    const opened = yield* openSession({
+      composition,
+      internals: tools.internals,
+      measured,
+      options: tools.options,
+      serveUrl: booted.serveUrl,
+      timeoutMs: tools.options.timeoutInMilliseconds ?? DELAY_RENDER_TIMEOUT_MS,
+    });
+
+    yield* Ref.set(booted.session, opened);
+    yield* log(`preview render page warmed for ${composition}`);
+
+    return opened;
+  });
+}
+
+function shoot(
+  booted: Booted,
+  command: { composition: string; frame: number },
+  tools: Tools,
+  onEvent: (event: StillEvent) => void
+): Effect.Effect<Still, PreviewError> {
+  return Effect.gen(function* () {
+    const session = yield* warmed(
+      booted,
+      command.composition,
+      tools,
+      onEvent
+    ).pipe(Effect.catch(() => Effect.succeed(null)));
+
+    if (session === null) {
+      return yield* captureStill({
+        cache: booted.cache,
+        dir: booted.dir,
+        onEvent,
+        options: tools.options,
+        renderer: tools.renderer,
+        request: command,
+        serveUrl: booted.serveUrl,
+      });
+    }
+
+    yield* Effect.sync(() => onEvent({ type: "rendering" }));
+
+    const output = yield* stillFile(booted.dir, command);
+
+    yield* session.capture(Math.max(0, Math.trunc(command.frame)), output);
+
+    return { height: session.height, path: output, width: session.width };
+  });
+}
+
+function drop(session: Ref.Ref<Session | null>): Effect.Effect<void> {
+  return Effect.flatMap(Ref.getAndSet(session, null), (held) =>
+    held === null ? Effect.void : held.close
   );
 }
 

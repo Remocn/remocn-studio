@@ -1001,7 +1001,32 @@ separate buttons and mutually exclusive rather than one mode with a switch.
     composition while the user is still aiming — 4.4 s that used to sit inside the first click.
     Commands are handled sequentially on the host's stdin, so a click that lands mid-warm waits
     for it rather than starting a second navigation.
-  - **The floor is the project's.** ~3.6 s per capture is one navigation, and a project that
+  - **A capture navigates zero times, because the page stays open.** `renderStill` is a
+    sequence — size the page, `setPropsAndEnv` (which navigates), `remotion_setBundleMode`,
+    `seekToFrame`, `takeFrame` — and only the navigation is slow. `sidecar/preview/session.ts`
+    holds the page open past the first four steps, so a capture is just the last two:
+    **83–122 ms**, byte-identical to `npx remotion still` on the same frame. That is the whole
+    point of Snapshot being a *look at this* gesture: it has to answer at the speed of a click.
+  - **The price is naming five of Remotion's internal modules** — `set-props-and-env`,
+    `seek-to-frame`, `take-frame`, `puppeteer-evaluate` and `openBrowser` — reached the way
+    `dist/options/*` and `@remotion/cli/dist/entry-point.js` already are. `warmInternalsOf`
+    returns `null` if any export moves, and the host then falls back to `renderStill` per
+    capture: slower, never wrong. An upgrade can cost the speed but not the feature.
+  - **The session is keyed by composition and dropped on rebuild**, in the same callback that
+    forgets the measurement — a page holding the old bundle would capture code that no longer
+    exists. The webview already disarms on rebuild, so re-arming re-warms.
+  - **Two orderings are load-bearing and cost three iterations to find.** The viewport is set
+    *before* navigating, as `renderStill` does. And `remotion_calculateComposition` cannot
+    replace `selectComposition` on the warm page without `waitForReady` between the evaluation
+    `setBundleMode` and the call — without it the page reports *"Available compositions:"* and
+    nothing else, because `setBundleMode` re-renders asynchronously. Measuring still costs its
+    own navigation; it is cached, so only the first arm pays.
+  - **Do not trust a stored hash as a fidelity baseline.** A PNG rendered hours earlier
+    disagreed with a fresh one, and the warm session was blamed for it — but the stock CLI
+    produced the *new* hash twice in a row. Whatever the project's runtime font loading resolves
+    to is machine state, not a property of the renderer. Compare against a control rendered in
+    the same session, or the comparison measures the clock.
+  - **The floor for the warm-up is the project's.** One navigation is ~3.3 s, and a project that
     loads six Google font families with every weight pays most of it. Remotion says so in its
     own log — *"Consider loading fewer weights and subsets by passing options to loadFont()"* —
     and that is a change in the project, not here.
