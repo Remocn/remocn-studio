@@ -597,6 +597,19 @@ export const SidecarNotification = Schema.Struct({
 
 export type SidecarNotification = (typeof SidecarNotification)["Type"];
 
+export const APP_ENVIRONMENTS = ["development", "production"] as const;
+
+export const AppEnvironment = Schema.Literals(APP_ENVIRONMENTS);
+
+export type AppEnvironment = (typeof AppEnvironment)["Type"];
+
+export const StudioBuild = Schema.Struct({
+  environment: AppEnvironment,
+  version: Schema.String,
+});
+
+export type StudioBuild = (typeof StudioBuild)["Type"];
+
 export type Decoded<A> = Exit.Exit<A, SchemaError.SchemaError>;
 
 type Decoder<A> = (input: unknown) => Decoded<A>;
@@ -634,3 +647,6 @@ export const decodeSidecarStatus: Decoder<SidecarStatus> =
 
 export const decodeSidecarNotification: Decoder<SidecarNotification> =
   Schema.decodeUnknownExit(SidecarNotification);
+
+export const decodeStudioBuild: Decoder<StudioBuild> =
+  Schema.decodeUnknownExit(StudioBuild);

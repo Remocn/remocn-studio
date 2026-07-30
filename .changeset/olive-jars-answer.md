@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 The projects pane says what it knows. With background turns a session could be

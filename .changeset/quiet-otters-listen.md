@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Sidecar runtime and IPC: the Tauri core owns one bun process, supervises it across crashes, and bridges it to the webview over a single typed message contract — request/response plus streaming. The title bar shows whether the sidecar is up, and opens onto its pid, its log file and a restart.

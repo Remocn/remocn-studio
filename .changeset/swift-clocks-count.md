@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 The thinking marker now says how long the turn has been running, ticking once a second: `Thinking… 12s`, then `2m 5s`, and `1h 5m` once seconds stop meaning anything. Judging a turn no longer means remembering when you pressed send, and the first minute — where most turns live — reads as a number that moves rather than as the session row's one unchanging `<1m`.

@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Sessions and history: every conversation is kept in the app's own SQLite, so

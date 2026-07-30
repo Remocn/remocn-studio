@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 A folder is now a row, not a string. `project (id, path UNIQUE, name, …)` joins the

@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Cmd+V in the composer attaches whatever image is on the clipboard and drops a reference to it — `[Image #1]` — at the caret, in its own colour. A screenshot no longer has to be saved to disk and found again in a file dialog, and a file copied in Finder pastes the same way, keeping its own name. Pasting text is untouched: without an image on the clipboard the event is left alone.

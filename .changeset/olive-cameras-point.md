@@ -1,5 +1,5 @@
 ---
-"remocn-studio": minor
+"remocn-studio": patch
 ---
 
 Take a picture of the frame and send it with the message. Turn on **Snapshot** — the button next to Inspect — and the player pauses; click the frame to attach the whole thing, or drag a rectangle to attach just the part that is wrong. It lands in the composer as an ordinary attachment with an `[Image #N]` token, exactly like an image pasted from the clipboard, and goes when you send. Inspect answers *change this*; Snapshot answers *look at this*, so they are separate tools and only one can be on at a time.

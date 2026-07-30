@@ -7,7 +7,7 @@ name: publish
 #      Merging that PR is the act of deciding to release; the action then pushes
 #      a `v<version>` tag.
 #   2. push of v*    → build macOS and publish the GitHub release with the
-#      artifacts attached.
+#      artifacts attached, plus the `latest.json` the in-app updater reads.
 #
 # Nothing is published to npm — the package is private. Changesets is used only
 # for versioning, changelog and tagging (`privatePackages` in
@@ -71,6 +71,12 @@ jobs:
       contents: write
     strategy:
       fail-fast: false
+      # One at a time, deliberately. Both jobs upload to the same release and
+      # `latest.json` holds a key per platform, which tauri-action produces by
+      # reading the existing asset and merging its own entries into it. Run in
+      # parallel, both read the file before either has written, and the loser's
+      # platform is silently dropped — an update that 404s for half the users.
+      max-parallel: 1
       matrix:
         include:
           - target: aarch64-apple-darwin
@@ -102,17 +108,28 @@ jobs:
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The updater's own minisign key — not Apple code signing, which this
+          # build still does not do. `bundle.createUpdaterArtifacts` makes the
+          # CLI produce `.app.tar.gz` and a `.sig` next to it, and it fails the
+          # build outright when the pubkey in tauri.conf.json has no private
+          # counterpart here.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: remocn studio ${{ github.ref_name }}
           releaseBody: |
             Unsigned macOS build — see CHANGELOG.md for what changed.
 
-            macOS will refuse to open this on first launch because it is not
+            macOS will refuse to open this on **first** install because it is not
             signed or notarized: right-click the app and choose Open, or run
             `xattr -dr com.apple.quarantine /Applications/remocn-studio.app`.
-          releaseDraft: true
+            In-app updates are not affected — the app replaces its own bundle,
+            so nothing is quarantined.
+          # Published, not a draft: a draft's assets have no reachable download
+          # URL, so the updater could fetch neither `latest.json` nor the
+          # `.app.tar.gz` it points at.
+          releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }}
-          # Nothing here is signed, so there are no updater signatures to publish.
-          uploadUpdaterJson: false
+          uploadUpdaterJson: true
