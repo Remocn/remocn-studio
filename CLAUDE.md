@@ -732,8 +732,33 @@ What makes this remocn studio and not a generic Claude Code GUI (#225). `agent/`
 Claude Code **plugin** checked in here and mapped into the bundle by `tauri.conf.json`; Rust
 resolves it the way it resolves the template and passes it as `REMOCN_STUDIO_PLUGIN_DIR`, and
 `pluginsFor` in `sidecar/claude/knowledge.ts` turns it into the SDK's `plugins` option. It
-carries three vendored skills: `remocn`, `remotion-best-practices` and
-`remotion-interactivity`.
+carries three vendored skills — `remocn`, `remotion-best-practices` and
+`remotion-interactivity` — and one of our own, `video-lessons`.
+
+- **`video-lessons` is ours, and it sits *beside* the vendored three rather than inside one.**
+  `skills:check` walks each vendored skill and reports any file upstream does not have as
+  `extra`, so a page added under `remotion-best-practices/` fails CI — and `skills:sync` would
+  `rm -rf` it on the next refresh. The sync script only ever touches the skills named in its
+  own `SOURCES`, so a sibling folder is invisible to both halves. `VENDORED` therefore stays
+  the vendored three (it is also the collision check `pluginsFor` runs against a project's own
+  `.claude/skills`) and `SHIPPED` is what the plugin actually carries; a test pins that the
+  folder list equals `SHIPPED` and that every skill names itself after its folder.
+- **The whole document lives in `SKILL.md`, not split across reference pages.** A skill's own
+  body is injected by the harness, but a page it points at is fetched with the `Read` tool —
+  and the plugin dir is outside the opened folder, so every such read would raise an
+  Allow/Deny card mid-turn. One self-contained file is what makes the knowledge free to use.
+  Read out of the CLI binary: plugin skills are discovered by scanning `skills/` for
+  `SKILL.md` (no `plugin.json` entry needed, which is why the vendored three work with none),
+  and one is skipped when it *"exceeds N byte limit"* — the limits in the binary are 128 KB
+  and up, against 44 KB here.
+- **The mandate to read it is a system-prompt line, and it is conditional.** `conventionsFor`
+  appends it only when `pluginsFor` actually returned the plugin, because a project that
+  installed its own copy of a vendored skill gets the plugin dropped *wholesale* — ordering a
+  turn to invoke `remocn-studio:video-lessons` when nothing loaded it would be an instruction
+  to fail. `LESSONS_SKILL` lives in `knowledge.ts` with the rest of the inventory and the
+  prompt reads it from there, so the name in the sentence and the folder on disk cannot drift.
+- **`"../agent": "agent"` maps the whole folder** in `tauri.conf.json`, so a new skill needs no
+  resource entry — unlike `preview/`, which is listed file by file.
 
 - **A plugin, not the user's `~/.claude`.** Skills installed globally are invisible here:
   measured with an empty folder, `settingSources: ["project"]` lists 45 commands and none of
@@ -1215,7 +1240,8 @@ sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite histor
 sidecar/history/      driver seam, migrations, project and session stores, recorder
 sidecar/scaffold/     what "New project…" expands and installs
 templates/remotion/   that project, vendored here and shipped as a Tauri resource
-agent/                the Claude Code plugin we hand the SDK: vendored skills
+agent/                the Claude Code plugin we hand the SDK: vendored skills, plus
+                      video-lessons — our own record of what failed on screen
 scripts/              build-time tooling; skills-sync.ts is the vendoring step
 sidecar/preview/      the --preview-host child: project resolution, webpack watch, server,
                       stills for Snapshot and the mp4 export

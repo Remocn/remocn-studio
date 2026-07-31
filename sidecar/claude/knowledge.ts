@@ -9,6 +9,10 @@ export const VENDORED = [
   "remotion-interactivity",
 ] as const;
 
+export const LESSONS_SKILL = "video-lessons";
+
+export const SHIPPED = [...VENDORED, LESSONS_SKILL] as const;
+
 export function pluginsFor(cwd: string): NonNullable<Options["plugins"]> {
   const dir = process.env[PLUGIN_DIR_ENV];
 

@@ -4,7 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { PLUGIN_DIR_ENV } from "@/shared/ipc";
-import { installedIn, pluginsFor, VENDORED } from "@/sidecar/claude/knowledge";
+import {
+  installedIn,
+  LESSONS_SKILL,
+  pluginsFor,
+  SHIPPED,
+  VENDORED,
+} from "@/sidecar/claude/knowledge";
 
 const PLUGIN = join(process.cwd(), "agent");
 const NAME = /^name:\s*(\S+)/m;
@@ -43,12 +49,12 @@ describe("the vendored plugin", () => {
   it("carries a skill folder for every name the sidecar expects", async () => {
     const entries = await readdir(join(PLUGIN, "skills"));
 
-    expect(entries.sort()).toEqual([...VENDORED].sort());
+    expect(entries.sort()).toEqual([...SHIPPED].sort());
   });
 
   it("names each skill the way its folder is named", async () => {
     const names = await Promise.all(
-      VENDORED.map(async (skill) => {
+      SHIPPED.map(async (skill) => {
         const source = await readFile(
           join(PLUGIN, "skills", skill, "SKILL.md"),
           "utf8"
@@ -58,7 +64,12 @@ describe("the vendored plugin", () => {
       })
     );
 
-    expect(names).toEqual([...VENDORED]);
+    expect(names).toEqual([...SHIPPED]);
+  });
+
+  it("keeps our own skill out of the vendored list, so a sync cannot delete it", () => {
+    expect(VENDORED).not.toContain(LESSONS_SKILL);
+    expect(SHIPPED).toContain(LESSONS_SKILL);
   });
 
   it("holds real files, never symlinks into a store that is not shipped", async () => {
