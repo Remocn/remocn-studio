@@ -1221,6 +1221,56 @@ other knob comes from the project's `remotion.config.ts`, read the way a snapsho
   on the image and would fail the same way under `npx remotion render`. Worth knowing before
   reaching for it as a cheap export target.
 
+### The environment checklist
+
+`project.check` runs when a folder is opened and answers, in one report, the things the app depends
+on but does not own (#228). It renders above the composer — an approval is a thing to answer, and so
+is this — and renders **nothing at all** once every row is `ok` or `pending`, which is what "gets out
+of the way" means. It re-runs on opening a project, on Recheck and after an install, never per turn.
+
+- **Authentication is a control request, not a turn.** `Query.accountInfo()` opens the CLI, asks, and
+  closes: measured 1.6 s logged in, 0.7 s logged out, and no model call in either. Logged out answers
+  `{ tokenSource: "none", apiProvider: "firstParty" }`; logged in answers `email` +
+  `subscriptionType` + `apiProvider` and **no `tokenSource` at all**, so `tokenSource === "none"` is
+  the discriminator and everything else is authenticated. A non-`firstParty` `apiProvider` is
+  authenticated externally (AWS creds, gcloud ADC) and says so.
+- **"claude on PATH" is not the check, because the SDK carries its own CLI** (`extractFromBunfs.js`
+  and `manifest.zst.json`; `pathToClaudeCodeExecutable` is only an override). #228's two distinct
+  states are therefore *could not start* and *not logged in* — a launch failure and a login failure,
+  which is the split that matters since the fixes differ.
+- **Only being logged out locks the composer.** A folder that is not a Remotion project does not:
+  asking Claude to set one up is a reasonable next move, and refusing to talk to it would remove the
+  only tool that could fix it.
+- **`bun install --dry-run --frozen-lockfile` never looks at `node_modules`.** Measured: byte-identical
+  output and exit 0 with `node_modules` deleted, because it only resolves the graph. It exits 1 for
+  exactly one thing — `package.json` drifted from `bun.lock` — and it writes nothing at all, no
+  lockfile and no `node_modules`, which is what makes it safe to run against the user's project. So it
+  is the *drift* half of the dependency check and cannot be the *installed* half.
+- **Resolution cannot be the installed half either, and that one is a trap.** Under bun,
+  `createRequire(…).resolve()` answers out of **`~/.bun/install/cache`** — `typescript` resolved to
+  `~/.bun/install/cache/typescript@7.0.2@@@1/package.json` for a project with no `node_modules`
+  directory whatsoever. Worse, the drift check *populates* that cache, so running it made the next
+  installed-check lie about the same project. `isInstalled` therefore looks for
+  `<dir>/node_modules/<name>/package.json` on disk, walking up so a workspace hoist still counts, and
+  bun's cache never does. This is also why `resolveFrom` in `sidecar/preview/project.ts` is a
+  can-I-import check and not an is-it-installed one.
+- **Offline is not an accusation.** `driftFrom` reports drift only when bun's error line mentions the
+  lockfile; any other non-zero exit — a network failure, most likely — reports nothing rather than
+  telling the user their lockfile is wrong.
+- **One root cause is one row.** A folder with no `package.json` used to produce three failures
+  (not a Remotion project, dependencies unknown, no entry point) for one fact. `checksFor` now omits
+  the rows that are unanswerable rather than failing them: no manifest drops dependencies *and*
+  entry, and a manifest without `remotion` drops entry alone, since dependencies is still true and
+  still fixable.
+- **The composition row is the preview's answer, not a second one.** The page already posts
+  `{ compositionId, reason, total }` and `usePreview` already keeps it; `compositionRow` folds that
+  into the checklist, so `total === 0` fails and `reason !== "main"` warns. Until the preview has
+  compiled, the row is `pending` — which is quiet, or a project whose preview is not running would
+  show the checklist forever. It is folded in **only when the preview's project is the open session's
+  project**, because those two can diverge exactly as they do for Inspect.
+- **The account probe is cached per sidecar process** and `force` — Recheck — is what clears it, so
+  switching projects does not pay for it again. Warm, a whole report costs 250–800 ms.
+
 ## Layout
 
 Flat root, no monorepo — per #218.

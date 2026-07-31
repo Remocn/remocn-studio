@@ -17,11 +17,13 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Environment } from "@/hooks/use-environment";
 import { useLocateProject } from "@/hooks/use-locate-project";
 import { useNow } from "@/hooks/use-now";
 import type { OpenTurn } from "@/hooks/use-open-turn";
 import type { HistorySession, Project } from "@/shared/ipc";
 import { Composer } from "./composer";
+import { EnvironmentChecklist } from "./environment-checklist";
 import { LogoMark } from "./logo-mark";
 import { MarkdownProvider } from "./markdown";
 import { Pane, PaneBody, PaneHeader, PaneTitle } from "./pane";
@@ -33,7 +35,8 @@ const PLACEHOLDERS = ["one", "two", "three"];
 const TICK = "1 second";
 
 export function ChatPane() {
-  const { activeSession, openedProject, relocateProject, turn } = useStudio();
+  const { activeSession, environment, openedProject, relocateProject, turn } =
+    useStudio();
   const { locate } = useLocateProject(
     openedProject?.id ?? null,
     relocateProject
@@ -50,6 +53,7 @@ export function ChatPane() {
       ) : (
         <Conversation
           cwd={openedProject?.path ?? null}
+          environment={environment}
           hasProject={openedProject !== null}
           missing={openedProject?.missing ?? false}
           onLocate={locate}
@@ -84,12 +88,14 @@ function LoadingTranscript() {
 
 function Conversation({
   cwd,
+  environment,
   hasProject,
   missing,
   onLocate,
   turn,
 }: {
   cwd: string | null;
+  environment: Environment;
   hasProject: boolean;
   missing: boolean;
   onLocate: () => void;
@@ -141,6 +147,8 @@ function Conversation({
         </div>
       ) : null}
 
+      <EnvironmentChecklist environment={environment} />
+
       {turn.permission === null ? null : (
         <div className="mb-2 shrink-0 px-4 pt-1">
           <div className="mx-auto w-full max-w-2xl">
@@ -156,7 +164,7 @@ function Conversation({
       <Composer
         context={turn.context}
         cwd={cwd}
-        disabled={!hasProject || missing}
+        disabled={!hasProject || missing || environment.isBlocking}
         isRunning={turn.isRunning}
         isWaiting={turn.permission !== null}
         mode={turn.mode}

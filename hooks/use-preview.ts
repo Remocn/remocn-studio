@@ -24,6 +24,7 @@ export interface PreviewControl {
   composition: string | null;
   hint: string | null;
   isServing: boolean;
+  pick: PreviewComposition | null;
   preview: Preview;
   restart: () => void;
   send: (command: PreviewCommand) => void;
@@ -156,6 +157,7 @@ export function usePreview(projectId: string | null): PreviewControl {
       composition: pick?.compositionId ?? null,
       hint,
       isServing: preview.phase === "ready",
+      pick,
       preview,
       restart,
       send,

@@ -14,6 +14,7 @@ import { failureFromText, failureOf } from "./claude/failure";
 import { makeGate, permissionGuard } from "./claude/gate";
 import { makeModeSwitch } from "./claude/mode";
 import { messages } from "./claude/session";
+import { checksFor, makeAccountCache } from "./environment";
 import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
@@ -47,6 +48,8 @@ const MAX_COUNT = 500;
 const MAX_DELAY_MS = 2000;
 
 const gate = makeGate();
+
+const account = Effect.runSync(makeAccountCache());
 
 const unstored = (error: HistoryError) =>
   new HandlerError({ message: error.message });
@@ -207,6 +210,22 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
       Effect.catch(() => Effect.succeed({ warmed: false }))
     ),
 
+  "project.check": ({ params }) =>
+    Effect.gen(function* () {
+      const project = yield* located(params.projectId);
+
+      if (params.force) {
+        yield* account.clear;
+      }
+
+      return {
+        checks: yield* checksFor(
+          project.path,
+          yield* account.row(project.path)
+        ),
+      };
+    }),
+
   "project.create": ({ params }) =>
     Effect.gen(function* () {
       const projects = yield* ProjectStore;
@@ -218,6 +237,23 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
       });
 
       return yield* Effect.mapError(projects.open(path), unstored);
+    }),
+
+  "project.install": ({ emit, log, params }) =>
+    Effect.gen(function* () {
+      const project = yield* located(params.projectId);
+
+      yield* Effect.mapError(
+        installDependencies(project.path, (line) =>
+          Effect.andThen(
+            log(`install: ${line}`),
+            emit({ line, type: "output" })
+          )
+        ),
+        unscaffolded
+      );
+
+      return { installed: true };
     }),
 
   "project.list": () =>
@@ -258,7 +294,7 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
 
       yield* emit({ step: "install", type: "started" });
       yield* Effect.mapError(
-        installDependencies(project.path, log),
+        installDependencies(project.path, (line) => log(`install: ${line}`)),
         unscaffolded
       );
       yield* emit({ step: "install", type: "done" });
