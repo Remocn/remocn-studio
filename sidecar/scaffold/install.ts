@@ -31,7 +31,7 @@ export function installDependencies(
         if (tail.length > TAIL_LINES) {
           tail.shift();
         }
-        Effect.runSync(log(`install: ${line}`));
+        Effect.runSync(log(line));
       });
     };
 

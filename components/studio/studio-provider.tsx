@@ -4,6 +4,7 @@ import { createContext, use, useMemo } from "react";
 import { type ClaudeEffort, useClaudeEffort } from "@/hooks/use-claude-effort";
 import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
 import { type Composer, useComposer } from "@/hooks/use-composer";
+import { type Environment, useEnvironment } from "@/hooks/use-environment";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
 import { type OpenTurn, useOpenTurn } from "@/hooks/use-open-turn";
 import { type Tools, useTools } from "@/hooks/use-tools";
@@ -11,7 +12,12 @@ import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
 
 export type Studio = ClaudeEffort &
   ClaudeModel &
-  Workspace & { composer: Composer; tools: Tools; turn: OpenTurn };
+  Workspace & {
+    composer: Composer;
+    environment: Environment;
+    tools: Tools;
+    turn: OpenTurn;
+  };
 
 const StudioContext = createContext<Studio | null>(null);
 
@@ -46,17 +52,32 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     projectId: opened?.id ?? null,
   });
 
+  const previewProjectId = previewTarget(workspace);
+
   const tools = useTools({
     composer,
     isMissing: opened?.missing ?? false,
     isWaiting: turn.permission !== null,
     openedProjectId: opened?.id ?? null,
-    previewProjectId: previewTarget(workspace),
+    previewProjectId,
   });
 
+  const environment = useEnvironment(
+    opened === null || opened.missing ? null : opened.id,
+    previewProjectId === opened?.id ? tools.preview.pick : null
+  );
+
   const studio = useMemo(
-    () => ({ ...workspace, ...model, ...effort, composer, tools, turn }),
-    [composer, effort, model, tools, turn, workspace]
+    () => ({
+      ...workspace,
+      ...model,
+      ...effort,
+      composer,
+      environment,
+      tools,
+      turn,
+    }),
+    [composer, effort, environment, model, tools, turn, workspace]
   );
 
   if (!workspace.isReady) {

@@ -1,6 +1,6 @@
 import { Effect, type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 11;
+export const SIDECAR_PROTOCOL = 12;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -28,7 +28,9 @@ export const METHOD_NAMES = [
   "preview.start",
   "preview.still",
   "preview.warm",
+  "project.check",
   "project.create",
+  "project.install",
   "project.list",
   "project.open",
   "project.relocate",
@@ -257,6 +259,55 @@ export const ScaffoldEvent = Schema.Union([
   }),
 ]);
 
+export const ENVIRONMENT_CHECKS = [
+  "claude",
+  "runtime",
+  "remotion",
+  "dependencies",
+  "entry",
+  "compositions",
+] as const;
+
+export const EnvironmentCheckId = Schema.Literals(ENVIRONMENT_CHECKS);
+
+export const ENVIRONMENT_STATES = ["ok", "warn", "failed", "pending"] as const;
+
+export const EnvironmentState = Schema.Literals(ENVIRONMENT_STATES);
+
+export const EnvironmentFix = Schema.Union([
+  Schema.Struct({
+    type: Schema.Literal("install"),
+  }),
+  Schema.Struct({
+    command: Schema.NonEmptyString,
+    type: Schema.Literal("command"),
+  }),
+]);
+
+export const EnvironmentCheck = Schema.Struct({
+  detail: Schema.NullOr(Schema.String),
+  fix: Schema.NullOr(EnvironmentFix),
+  id: EnvironmentCheckId,
+  state: EnvironmentState,
+  title: Schema.String,
+});
+
+export const EnvironmentReport = Schema.Struct({
+  checks: Schema.Array(EnvironmentCheck),
+});
+
+export const EnvironmentParams = Schema.Struct({
+  force: Schema.Boolean,
+  projectId: Schema.NonEmptyString,
+});
+
+export const InstallEvent = Schema.Struct({
+  line: Schema.String,
+  type: Schema.Literal("output"),
+});
+
+export const Installed = Schema.Struct({ installed: Schema.Boolean });
+
 export const ContextUsage = Schema.Struct({
   maxTokens: Schema.Int,
   totalTokens: Schema.Int,
@@ -360,6 +411,14 @@ export type ProjectMove = (typeof ProjectMove)["Type"];
 export type ProjectRemoved = (typeof ProjectRemoved)["Type"];
 export type ScaffoldStep = (typeof ScaffoldStep)["Type"];
 export type ScaffoldEvent = (typeof ScaffoldEvent)["Type"];
+export type EnvironmentCheckId = (typeof EnvironmentCheckId)["Type"];
+export type EnvironmentState = (typeof EnvironmentState)["Type"];
+export type EnvironmentFix = (typeof EnvironmentFix)["Type"];
+export type EnvironmentCheck = (typeof EnvironmentCheck)["Type"];
+export type EnvironmentReport = (typeof EnvironmentReport)["Type"];
+export type EnvironmentParams = (typeof EnvironmentParams)["Type"];
+export type InstallEvent = (typeof InstallEvent)["Type"];
+export type Installed = (typeof Installed)["Type"];
 export type ContextUsage = (typeof ContextUsage)["Type"];
 export type ClaudeFailureKind = (typeof ClaudeFailureKind)["Type"];
 export type ClaudeFailure = (typeof ClaudeFailure)["Type"];
@@ -508,10 +567,20 @@ export const SIDECAR_METHODS = {
     result: Warmed,
     stream: Schema.Never,
   },
+  "project.check": {
+    params: EnvironmentParams,
+    result: EnvironmentReport,
+    stream: Schema.Never,
+  },
   "project.create": {
     params: ProjectDraft,
     result: Project,
     stream: Schema.Never,
+  },
+  "project.install": {
+    params: ProjectRef,
+    result: Installed,
+    stream: InstallEvent,
   },
   "project.list": {
     params: Schema.Null,
