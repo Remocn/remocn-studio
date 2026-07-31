@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Composer } from "@/hooks/use-composer";
+import { type Exporting, useExport } from "@/hooks/use-export";
 import { type Inspection, useInspect } from "@/hooks/use-inspect";
 import {
   type PreviewControl,
@@ -14,6 +15,7 @@ import type { PreviewMessage } from "@/lib/studio/preview";
 type Tool = "inspect" | "snapshot" | null;
 
 export interface Tools {
+  exporting: Exporting;
   inspect: Inspection;
   preview: PreviewControl;
   snapshot: Snapshot;
@@ -86,9 +88,15 @@ export function useTools({
     unavailable,
   });
 
+  const exporting = useExport({
+    composition: preview.composition,
+    isServing: preview.isServing,
+    projectId: previewProjectId,
+  });
+
   return useMemo(
-    () => ({ inspect, preview, snapshot }),
-    [inspect, preview, snapshot]
+    () => ({ exporting, inspect, preview, snapshot }),
+    [exporting, inspect, preview, snapshot]
   );
 }
 

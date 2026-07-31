@@ -7,6 +7,8 @@ import { createInterface } from "node:readline";
 import { Effect, Exit, Schema, type Scope, Stream } from "effect";
 import {
   DATA_DIR_ENV,
+  type ExportEvent,
+  type Exported,
   PREVIEW_ENTRY_ENV,
   PreviewEvent,
   type Still,
@@ -22,11 +24,24 @@ const KILL_GRACE_MS = 2000;
 
 const decodeEvent = Schema.decodeExit(Schema.fromJsonString(PreviewEvent));
 
-interface Pending {
-  fail: (message: string) => void;
-  progress: (event: StillEvent) => void;
-  succeed: (still: Still | null) => void;
-}
+type Pending =
+  | {
+      fail: (message: string) => void;
+      kind: "export";
+      progress: (event: ExportEvent) => void;
+      succeed: (exported: Exported) => void;
+    }
+  | {
+      fail: (message: string) => void;
+      kind: "still";
+      progress: (event: StillEvent) => void;
+      succeed: (still: Still | null) => void;
+    };
+
+type ExportPending = Extract<Pending, { kind: "export" }>;
+type StillPending = Extract<Pending, { kind: "still" }>;
+
+const failed = (message: string) => new PreviewError({ message });
 
 interface Host {
   pending: Map<string, Pending>;
@@ -65,18 +80,19 @@ export function stillFrom(
   request: StillRequest,
   onEvent: (event: StillEvent) => void
 ): Effect.Effect<Still, PreviewError> {
-  return ask(
+  return ask<Still | null>(
     projectId,
     (id) => ({ ...request, id, type: "still" }),
-    onEvent
+    (settle) => ({
+      fail: (message) => settle(Effect.fail(failed(message))),
+      kind: "still",
+      progress: onEvent,
+      succeed: (still) => settle(Effect.succeed(still)),
+    })
   ).pipe(
     Effect.flatMap((still) =>
       still === null
-        ? Effect.fail(
-            new PreviewError({
-              message: "the preview host answered without a frame",
-            })
-          )
+        ? Effect.fail(failed("the preview host answered without a frame"))
         : Effect.succeed(still)
     )
   );
@@ -87,58 +103,75 @@ export function warmFrom(
   composition: string
 ): Effect.Effect<void, PreviewError> {
   return Effect.asVoid(
-    ask(
+    ask<Still | null>(
       projectId,
       (id) => ({ composition, id, type: "warm" }),
-      () => undefined
+      (settle) => ({
+        fail: (message) => settle(Effect.fail(failed(message))),
+        kind: "still",
+        progress: () => undefined,
+        succeed: (still) => settle(Effect.succeed(still)),
+      })
     )
   );
 }
 
-function ask(
+export function exportFrom(
+  projectId: string,
+  composition: string,
+  onEvent: (event: ExportEvent) => void
+): Effect.Effect<Exported, PreviewError> {
+  return ask<Exported>(
+    projectId,
+    (id) => ({ composition, id, type: "export" }),
+    (settle) => ({
+      fail: (message) => settle(Effect.fail(failed(message))),
+      kind: "export",
+      progress: onEvent,
+      succeed: (exported) => settle(Effect.succeed(exported)),
+    })
+  );
+}
+
+function ask<A>(
   projectId: string,
   command: (id: string) => HostCommand,
-  onEvent: (event: StillEvent) => void
-): Effect.Effect<Still | null, PreviewError> {
+  waiting: (
+    settle: (outcome: Effect.Effect<A, PreviewError>) => void
+  ) => Pending
+): Effect.Effect<A, PreviewError> {
   return Effect.suspend(() => {
     const host = hosts.get(projectId);
 
     if (host === undefined) {
       return Effect.fail(
-        new PreviewError({
-          message:
-            "the preview is not running for this project, so there is no frame to capture",
-        })
+        failed(
+          "the preview is not running for this project, so there is nothing to render"
+        )
       );
     }
 
-    return Effect.callback<Still | null, PreviewError>((resume) => {
+    return Effect.callback<A, PreviewError>((resume) => {
       const id = randomUUID();
 
-      const settle = (outcome: Effect.Effect<Still | null, PreviewError>) => {
+      const settle = (outcome: Effect.Effect<A, PreviewError>) => {
         host.pending.delete(id);
         resume(outcome);
       };
 
-      host.pending.set(id, {
-        fail: (message) => settle(Effect.fail(new PreviewError({ message }))),
-        progress: onEvent,
-        succeed: (still) => settle(Effect.succeed(still)),
-      });
+      host.pending.set(id, waiting(settle));
 
       if (!host.send(command(id))) {
         settle(
-          Effect.fail(
-            new PreviewError({
-              message: "the preview host is not accepting commands",
-            })
-          )
+          Effect.fail(failed("the preview host is not accepting commands"))
         );
         return;
       }
 
       return Effect.sync(() => {
-        host.pending.delete(id);
+        if (host.pending.delete(id)) {
+          host.send({ id, type: "cancel" });
+        }
       });
     });
   });
@@ -175,7 +208,7 @@ function enrol(
         }
 
         for (const waiting of [...host.pending.values()]) {
-          waiting.fail("the preview stopped before the frame was captured");
+          waiting.fail("the preview stopped before it finished");
         }
       })
   );
@@ -204,6 +237,31 @@ function deliver(reply: HostReply, pending: Map<string, Pending>): void {
     return;
   }
 
+  if (reply.type === "still-failed" || reply.type === "export-failed") {
+    waiting.fail(reply.message);
+    return;
+  }
+
+  if (waiting.kind === "export") {
+    toExport(reply, waiting);
+    return;
+  }
+
+  toStill(reply, waiting);
+}
+
+function toExport(reply: HostReply, waiting: ExportPending): void {
+  if (reply.type === "export-progress") {
+    waiting.progress(reply.event);
+    return;
+  }
+
+  if (reply.type === "export-done") {
+    waiting.succeed(reply.exported);
+  }
+}
+
+function toStill(reply: HostReply, waiting: StillPending): void {
   if (reply.type === "still-progress") {
     waiting.progress(reply.event);
     return;
@@ -216,10 +274,7 @@ function deliver(reply: HostReply, pending: Map<string, Pending>): void {
 
   if (reply.type === "warm-done") {
     waiting.succeed(null);
-    return;
   }
-
-  waiting.fail(reply.message);
 }
 
 function child(folder: string, log: (message: string) => Effect.Effect<void>) {

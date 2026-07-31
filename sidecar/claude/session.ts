@@ -10,7 +10,7 @@ import { Data, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { ContextUsage, PromptParams } from "@/shared/ipc";
 import { contentOf } from "./content";
-import { STUDIO_CONVENTIONS } from "./conventions";
+import { conventionsFor } from "./conventions";
 import { pluginsFor } from "./knowledge";
 import type { ApplyMode } from "./mode";
 
@@ -98,16 +98,18 @@ function open(params: PromptParams, callbacks: TurnCallbacks): Turn {
 }
 
 function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
+  const plugins = pluginsFor(callbacks.cwd);
+
   return {
     canUseTool: callbacks.canUseTool,
     cwd: callbacks.cwd,
     includePartialMessages: true,
     permissionMode: params.mode,
-    plugins: pluginsFor(callbacks.cwd),
+    plugins,
     settingSources: ["project"],
     stderr: (data) => callbacks.log(`claude: ${data.trimEnd()}`),
     systemPrompt: {
-      append: STUDIO_CONVENTIONS,
+      append: conventionsFor(plugins.length > 0),
       preset: "claude_code",
       type: "preset",
     },

@@ -1,6 +1,6 @@
 import { Effect, type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 10;
+export const SIDECAR_PROTOCOL = 11;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -24,6 +24,7 @@ export const METHOD_NAMES = [
   "history.mode",
   "history.remove",
   "history.sessions",
+  "preview.export",
   "preview.start",
   "preview.still",
   "preview.warm",
@@ -415,6 +416,33 @@ export const WarmParams = Schema.Struct({
 
 export const Warmed = Schema.Struct({ warmed: Schema.Boolean });
 
+export const ExportParams = Schema.Struct({
+  composition: Schema.NonEmptyString,
+  projectId: Schema.NonEmptyString,
+});
+
+export const ExportStage = Schema.Literals(["encoding", "muxing"]);
+
+export const ExportEvent = Schema.Union([
+  Schema.Struct({
+    percent: Schema.Int,
+    type: Schema.Literal("browser"),
+  }),
+  Schema.Struct({
+    encoded: Schema.Int,
+    percent: Schema.Int,
+    rendered: Schema.Int,
+    stage: ExportStage,
+    total: Schema.Int,
+    type: Schema.Literal("progress"),
+  }),
+]);
+
+export const Exported = Schema.Struct({
+  bytes: Schema.Int,
+  path: Schema.NonEmptyString,
+});
+
 export type PreviewParams = (typeof PreviewParams)["Type"];
 export type PreviewEvent = (typeof PreviewEvent)["Type"];
 export type PreviewResult = (typeof PreviewResult)["Type"];
@@ -423,6 +451,11 @@ export type StillEvent = (typeof StillEvent)["Type"];
 export type Still = (typeof Still)["Type"];
 export type WarmParams = (typeof WarmParams)["Type"];
 export type Warmed = (typeof Warmed)["Type"];
+export type ExportParams = (typeof ExportParams)["Type"];
+export type ExportStage = (typeof ExportStage)["Type"];
+export type ExportEvent = (typeof ExportEvent)["Type"];
+export type ExportProgress = Extract<ExportEvent, { type: "progress" }>;
+export type Exported = (typeof Exported)["Type"];
 
 export const SIDECAR_METHODS = {
   "claude.permission": {
@@ -454,6 +487,11 @@ export const SIDECAR_METHODS = {
     params: Schema.Null,
     result: Schema.Array(HistorySession),
     stream: Schema.Never,
+  },
+  "preview.export": {
+    params: ExportParams,
+    result: Exported,
+    stream: ExportEvent,
   },
   "preview.start": {
     params: PreviewParams,

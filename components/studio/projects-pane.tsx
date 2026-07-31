@@ -44,7 +44,7 @@ import { useNewProject } from "@/hooks/use-new-project";
 import { useNow } from "@/hooks/use-now";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
-import type { PaneGroup } from "@/lib/studio/groups";
+import { type PaneGroup, paneSections } from "@/lib/studio/groups";
 import { LogoWordmark } from "./logo-mark";
 import { NewProjectDialog } from "./new-project-dialog";
 import { ProjectGroup } from "./project-group";
@@ -307,24 +307,42 @@ function ProjectsBody({
     );
   }
 
+  const { active, gone } = paneSections(groups);
+
+  const item = (group: PaneGroup) => (
+    <ProjectGroup
+      activeSessionId={activeSessionId}
+      commands={commands}
+      group={group}
+      isExpanded={expanded.has(group.project.id)}
+      key={group.project.id}
+      now={now}
+      onNewSession={onNewSession}
+      onRemoveSession={onRemoveSession}
+      onRetryScaffold={onRetryScaffold}
+      onSelectSession={onSelectSession}
+      onToggle={onToggle}
+      scaffold={scaffolds.get(group.project.id)}
+    />
+  );
+
   return (
-    <SidebarMenu>
-      {groups.map((group) => (
-        <ProjectGroup
-          activeSessionId={activeSessionId}
-          commands={commands}
-          group={group}
-          isExpanded={expanded.has(group.project.id)}
-          key={group.project.id}
-          now={now}
-          onNewSession={onNewSession}
-          onRemoveSession={onRemoveSession}
-          onRetryScaffold={onRetryScaffold}
-          onSelectSession={onSelectSession}
-          onToggle={onToggle}
-          scaffold={scaffolds.get(group.project.id)}
-        />
-      ))}
-    </SidebarMenu>
+    <>
+      {active.length === 0 ? null : (
+        <SidebarMenu>{active.map(item)}</SidebarMenu>
+      )}
+
+      {gone.length === 0 ? null : (
+        <>
+          <h3
+            className="mt-2 flex h-8 shrink-0 items-center px-2 font-medium text-sidebar-foreground/70 text-xs"
+            title="These folders are not where the studio left them. Locate… reconnects one that moved."
+          >
+            Moved or deleted
+          </h3>
+          <SidebarMenu>{gone.map(item)}</SidebarMenu>
+        </>
+      )}
+    </>
   );
 }

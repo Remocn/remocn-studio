@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { paneGroups, sessionMeta } from "@/lib/studio/groups";
+import { paneGroups, paneSections, sessionMeta } from "@/lib/studio/groups";
 import { IDLE_TURN, type TurnState } from "@/lib/studio/turns";
 import type { HistorySession, Project } from "@/shared/ipc";
 
@@ -226,6 +226,72 @@ describe("paneGroups", () => {
     ]);
     expect(groups[0].hidden).toBe(4);
     expect(groups[0].rows).toHaveLength(8);
+  });
+});
+
+describe("paneSections", () => {
+  const gone = (id: string): Project => ({ ...project(id), missing: true });
+
+  const names = (list: readonly { project: Project }[]) =>
+    list.map((group) => group.project.id);
+
+  it("keeps the projects that are still on disk apart from the ones that are not", () => {
+    const sections = paneSections(
+      paneGroups([project("promo"), gone("teaser")], [], new Map())
+    );
+
+    expect(names(sections.active)).toEqual(["promo"]);
+    expect(names(sections.gone)).toEqual(["teaser"]);
+  });
+
+  it("keeps the store's order inside each half", () => {
+    const sections = paneSections(
+      paneGroups(
+        [
+          gone("first-gone"),
+          project("first-here"),
+          gone("second-gone"),
+          project("second-here"),
+        ],
+        [],
+        new Map()
+      )
+    );
+
+    expect(names(sections.active)).toEqual(["first-here", "second-here"]);
+    expect(names(sections.gone)).toEqual(["first-gone", "second-gone"]);
+  });
+
+  it("does not let a missing project's waiting session lift it above the live ones", () => {
+    const sections = paneSections(
+      paneGroups(
+        [project("promo"), gone("teaser")],
+        [session("asking", "teaser"), session("quiet", "promo")],
+        new Map([["asking", waiting(NOW - MINUTE)]])
+      )
+    );
+
+    expect(names(sections.active)).toEqual(["promo"]);
+    expect(names(sections.gone)).toEqual(["teaser"]);
+  });
+
+  it("still promotes a waiting project within the half it belongs to", () => {
+    const sections = paneSections(
+      paneGroups(
+        [project("quiet-one"), project("asking-one")],
+        [session("asking", "asking-one"), session("quiet", "quiet-one")],
+        new Map([["asking", waiting(NOW - MINUTE)]])
+      )
+    );
+
+    expect(names(sections.active)).toEqual(["asking-one", "quiet-one"]);
+  });
+
+  it("has both halves empty when there are no projects", () => {
+    const sections = paneSections(paneGroups([], [], new Map()));
+
+    expect(sections.active).toEqual([]);
+    expect(sections.gone).toEqual([]);
   });
 });
 

@@ -18,7 +18,12 @@ import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
 import { HandlerError, type Handlers } from "./host";
-import { previewEvents, stillFrom, warmFrom } from "./preview/supervisor";
+import {
+  exportFrom,
+  previewEvents,
+  stillFrom,
+  warmFrom,
+} from "./preview/supervisor";
 import { installDependencies } from "./scaffold/install";
 import { expandTemplate, type ScaffoldError } from "./scaffold/template";
 
@@ -167,6 +172,13 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
   "history.sessions": () =>
     Effect.flatMap(HistoryStore, (store) => store.sessions).pipe(
       Effect.mapError(unstored)
+    ),
+
+  "preview.export": ({ emit, params }) =>
+    exportFrom(params.projectId, params.composition, (event) =>
+      Effect.runSync(emit(event))
+    ).pipe(
+      Effect.mapError((error) => new HandlerError({ message: error.message }))
     ),
 
   "preview.start": ({ emit, log, params }) =>

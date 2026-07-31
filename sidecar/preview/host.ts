@@ -3,8 +3,9 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
-import { Effect, Exit, Ref, Stream } from "effect";
+import { Effect, Exit, FiberMap, Ref, Stream } from "effect";
 import {
+  type ExportEvent,
   GRAB_SCRIPT_ENV,
   PREVIEW_ENTRY_ENV,
   type PreviewEvent,
@@ -12,11 +13,14 @@ import {
   type StillEvent,
 } from "@/shared/ipc";
 import { untilGone, untilOrphaned, untilSignalled } from "../lifecycle";
+import { exporterOf, exportMedia } from "./export";
 import { withoutWebFonts } from "./grab";
 import {
+  agreedVersionIn,
   entryPointOf,
   importFrom,
   PreviewError,
+  packageVersionOf,
   type RenderOptions,
   remotionRootOf,
   renderOptionsOf,
@@ -25,7 +29,13 @@ import {
   warmInternalsOf,
   webpackOverrideOf,
 } from "./project";
-import { decodeHostCommand, type HostReply, RENDER_BASE } from "./protocol";
+import {
+  decodeHostCommand,
+  type ExportCommand,
+  type HostReply,
+  RENDER_BASE,
+  type StillCommand,
+} from "./protocol";
 import { serve } from "./server";
 import { openSession, type Session, type WarmInternals } from "./session";
 import {
@@ -101,6 +111,7 @@ interface Booted {
   cache: CompositionCache;
   dir: string;
   root: string;
+  running: FiberMap.FiberMap<string>;
   serveUrl: string;
   session: Ref.Ref<Session | null>;
 }
@@ -174,6 +185,7 @@ function boot(root: string, preferred: string | null) {
     const grab = yield* grabScript;
     const cache = makeCompositionCache();
     const session = yield* Ref.make<Session | null>(null);
+    const running = yield* FiberMap.make<string>();
 
     yield* Effect.addFinalizer(() => drop(session));
 
@@ -236,6 +248,7 @@ function boot(root: string, preferred: string | null) {
       cache,
       dir: path.join(outDir, "..", "stills"),
       root,
+      running,
       serveUrl: `http://127.0.0.1:${server.port}${RENDER_BASE}/index.html`,
       session,
     } satisfies Booted;
@@ -253,11 +266,7 @@ function renderEntryOf(root: string): Effect.Effect<string, PreviewError> {
 }
 
 function remotionVersionOf(root: string): Effect.Effect<string> {
-  return resolveFrom(root, "remotion/package.json").pipe(
-    Effect.flatMap((manifest) =>
-      Effect.tryPromise(() => readFile(manifest, "utf8"))
-    ),
-    Effect.map((source) => String(JSON.parse(source).version ?? "")),
+  return packageVersionOf(root, "remotion").pipe(
     Effect.catch(() => Effect.succeed(""))
   );
 }
@@ -383,6 +392,70 @@ function obey(booted: Booted, line: string): Effect.Effect<void> {
   }
 
   const command = decoded.value;
+
+  if (command.type === "cancel") {
+    return FiberMap.remove(booted.running, command.id);
+  }
+
+  return command.type === "export"
+    ? begin(booted, command)
+    : answer(booted, command);
+}
+
+function begin(booted: Booted, command: ExportCommand): Effect.Effect<void> {
+  return Effect.flatMap(FiberMap.size(booted.running), (busy) =>
+    busy > 0
+      ? write({
+          id: command.id,
+          message:
+            "an export is already running in this project — cancel it before starting another",
+          type: "export-failed",
+        })
+      : Effect.asVoid(
+          FiberMap.run(booted.running, command.id, ship(booted, command))
+        )
+  );
+}
+
+function ship(booted: Booted, command: ExportCommand): Effect.Effect<void> {
+  const { composition, id } = command;
+
+  const progress = (event: ExportEvent) =>
+    Effect.runSync(write({ event, id, type: "export-progress" }));
+
+  return Effect.gen(function* () {
+    yield* agreedVersionIn(booted.root);
+
+    const tools = yield* toolsFor(booted.root);
+    const renderer = yield* exporterOf(tools.renderer);
+
+    yield* log(`export of ${composition} starting`);
+
+    const exported = yield* exportMedia({
+      cache: booted.cache,
+      composition,
+      onEvent: progress,
+      options: tools.options,
+      renderer,
+      root: booted.root,
+      serveUrl: booted.serveUrl,
+    });
+
+    yield* log(`export wrote ${exported.bytes} bytes to ${exported.path}`);
+
+    return yield* write({ exported, id, type: "export-done" });
+  }).pipe(
+    Effect.catch((error) =>
+      Effect.andThen(
+        log(`export failed: ${error.message}`),
+        write({ id, message: error.message, type: "export-failed" })
+      )
+    ),
+    Effect.onInterrupt(() => log(`export of ${composition} was cancelled`))
+  );
+}
+
+function answer(booted: Booted, command: StillCommand): Effect.Effect<void> {
   const { composition, id } = command;
 
   const progress = (event: StillEvent) =>
