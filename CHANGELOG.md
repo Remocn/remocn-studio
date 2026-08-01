@@ -1,5 +1,49 @@
 # remocn-studio
 
+## 0.1.0
+
+### Minor Changes
+
+- 3e8a7cd: Export the previewed composition to mp4 from the preview pane, rendered by the project's own
+  `@remotion/renderer`.
+
+  The render reuses the bundle the preview is already serving, so the file cannot drift from what is
+  on screen, and it refuses with a clear message when the project's `remotion`,
+  `@remotion/renderer` and `@remotion/bundler` versions disagree. Progress reports frames rendered,
+  then encoding, then the final combine; Cancel stops the render and removes the partial file, and
+  the finished `out/<Composition>.mp4` is revealed in Finder. One export runs at a time.
+
+- d7c9f7e: Check the environment when a folder is opened, and say what is wrong above the composer instead of
+  letting it fail as a blank pane or a stack trace.
+
+  The checklist covers the things the app depends on but does not own: whether Claude Code is logged
+  in, which bun is running the sidecar, whether the folder is a Remotion project, whether its
+  dependencies are installed and agree with the lockfile, whether a Remotion entry point is
+  registered, and — once the preview has compiled — whether any composition is registered and whether
+  one of them is called `Main`.
+
+  Only being logged out locks the composer, because that is the one failure that would otherwise
+  happen on send. Missing dependencies can be installed from the card, with the output streaming as
+  it runs. Everything that passes is silent: the card renders nothing at all once there is nothing to
+  act on, and it re-runs on opening a project, on Recheck and after an install — never per message.
+
+- c47cd73: Ship a `video-lessons` skill in the bundled agent plugin: the production lessons from remocn-demo
+  and its spun-off films, where every rule is there because the opposite was tried and had to be
+  re-rendered.
+
+  The turn's system prompt now tells the agent to work from it before writing or changing any video
+  code, so the same corrections no longer have to be pasted into a prompt by hand. The instruction is
+  added only when the plugin actually loaded, since a project carrying its own copy of a bundled skill
+  drops the plugin wholesale.
+
+### Patch Changes
+
+- 3e8a7cd: Split the projects pane in two: the projects still on disk stay at the top, and the ones whose
+  folder moved or was deleted collect under a "Moved or deleted" heading below them.
+
+  They keep their sessions and transcripts — the history is still worth reading, and `Locate…` still
+  reconnects a folder that only moved.
+
 ## 0.0.1
 
 ### Patch Changes
