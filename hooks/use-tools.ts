@@ -61,15 +61,34 @@ export function useTools({
 
   useOnPreview(preview, onMessage);
 
-  const toggleInspect = useCallback(
-    () => setTool((current) => (current === "inspect" ? null : "inspect")),
-    []
-  );
+  const toggleInspect = useCallback(() => {
+    if (unavailable === null) {
+      setTool((current) => (current === "inspect" ? null : "inspect"));
+    }
+  }, [unavailable]);
 
-  const toggleSnapshot = useCallback(
-    () => setTool((current) => (current === "snapshot" ? null : "snapshot")),
-    []
-  );
+  const toggleSnapshot = useCallback(() => {
+    if (unavailable === null) {
+      setTool((current) => (current === "snapshot" ? null : "snapshot"));
+    }
+  }, [unavailable]);
+
+  // The comment card and the composer answer Escape themselves and prevent the
+  // default; anything they left alone disarms the mode.
+  useEffect(() => {
+    if (tool === null) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        setTool(null);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [tool]);
 
   const inspect = useInspect({
     composer,

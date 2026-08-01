@@ -7,7 +7,7 @@ import { toast } from "@/components/ui/toast";
 import { listSessions, removeSession } from "@/lib/studio/history";
 import type { HistorySession } from "@/shared/ipc";
 
-const UNDO_WINDOW = "6 seconds";
+const UNDO_WINDOW = "10 seconds";
 
 interface Held {
   fiber: Fiber.Fiber<void, never>;

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useLocateProject } from "@/hooks/use-locate-project";
 import { useRevealInFinder } from "@/hooks/use-reveal-in-finder";
@@ -20,6 +20,7 @@ export interface ProjectMenu {
   locate: () => void;
   name: string;
   onNameChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onRenameSubmit: (event: FormEvent<HTMLFormElement>) => void;
   openRemove: () => void;
   openRename: () => void;
   reveal: () => void;
@@ -68,6 +69,14 @@ export function useProjectMenu(
     await removeProject(id);
   }, [id, removeProject]);
 
+  const onRenameSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      submitRename();
+    },
+    [submitRename]
+  );
+
   return useMemo(
     () => ({
       canRename: trimmed.length > 0,
@@ -77,6 +86,7 @@ export function useProjectMenu(
       locate,
       name,
       onNameChange,
+      onRenameSubmit,
       openRemove,
       openRename,
       reveal,
@@ -91,6 +101,7 @@ export function useProjectMenu(
       locate,
       name,
       onNameChange,
+      onRenameSubmit,
       openRemove,
       openRename,
       reveal,

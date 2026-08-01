@@ -418,7 +418,7 @@ event.
   hanging, and after four the phase is `down` until someone hits Restart.
   A request made while the sidecar is still starting waits for `ready` (20s cap)
   instead of failing.
-- Fonts come from `next/font/google` (Manrope → `--font-manrope`, Geist Mono →
+- Fonts come from `next/font/google` (DM Sans → `--font-sans`, Geist Mono →
   `--font-geist-mono`) and are self-hosted into the export at build time. Note
   this means **`bun run build` needs network on a cold cache.**
 

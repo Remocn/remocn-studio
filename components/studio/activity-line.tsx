@@ -34,7 +34,7 @@ export function ActivityLine({
         aria-label={
           target === null ? entry.name : `${entry.name} ${targetText(target)}`
         }
-        className="group flex w-full min-w-0 items-center gap-2 text-left font-mono text-xs disabled:cursor-default"
+        className="group flex w-full min-w-0 items-center gap-2 rounded-md text-left font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-default"
         disabled={detail === null}
         onClick={disclosure.toggle}
         type="button"

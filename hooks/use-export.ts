@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRevealInFinder } from "@/hooks/use-reveal-in-finder";
 import { causeMessage } from "@/lib/error-message";
 import { exportPercent, exportStatus, renderExport } from "@/lib/studio/export";
-import { revealInFinder } from "@/lib/studio/shell";
 import type { SidecarError } from "@/lib/studio/sidecar";
 import type { ExportEvent, Exported } from "@/shared/ipc";
 
@@ -52,8 +51,20 @@ export function useExport({
     }
   }, []);
 
+  const mine = ownedBy(state, projectId);
+  const result = mine?.phase === "done" ? mine.exported : null;
+  const { error, reveal } = useRevealInFinder(result?.path ?? null);
+
+  const unavailable = unavailableOf({
+    busyElsewhere: state.phase === "running" && mine === null,
+    composition,
+    isServing,
+    projectId,
+  });
+
   const start = useCallback(() => {
     if (
+      unavailable !== null ||
       inflight.current !== null ||
       projectId === null ||
       composition === null
@@ -70,7 +81,6 @@ export function useExport({
           : current
       )
     ).pipe(
-      Effect.tap((exported) => Effect.ignore(revealInFinder(exported.path))),
       Effect.onExit((exit) =>
         Effect.sync(() => {
           inflight.current = null;
@@ -80,20 +90,9 @@ export function useExport({
     );
 
     inflight.current = Effect.runFork(shipping);
-  }, [composition, projectId]);
+  }, [composition, projectId, unavailable]);
 
   useEffect(() => cancel, [cancel]);
-
-  const mine = ownedBy(state, projectId);
-  const result = mine?.phase === "done" ? mine.exported : null;
-  const { error, reveal } = useRevealInFinder(result?.path ?? null);
-
-  const unavailable = unavailableOf({
-    busyElsewhere: state.phase === "running" && mine === null,
-    composition,
-    isServing,
-    projectId,
-  });
 
   return useMemo(
     () => ({

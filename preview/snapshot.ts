@@ -1,10 +1,6 @@
 import { post } from "./bridge";
-import { canvas } from "./inspect";
+import { ACCENT, ACCENT_SOFT, canvas, TOP } from "./inspect";
 import { OVERLAY_ATTR } from "./picker";
-
-const ACCENT = "oklch(0.715 0.143 215.221)";
-const ACCENT_SOFT = "oklch(0.715 0.143 215.221 / 0.12)";
-const TOP = 2_147_483_000;
 
 export const DRAG_THRESHOLD = 6;
 
@@ -162,6 +158,14 @@ function start(container: HTMLElement, frame: Frame): Session {
     marquee.style.display = "none";
   };
 
+  const onKey = (event: KeyboardEvent) => {
+    if (event.key === "Escape" && dragging !== null) {
+      event.preventDefault();
+      event.stopPropagation();
+      onCancel();
+    }
+  };
+
   const swallow = (event: Event) => {
     if (container.contains(event.target as Node)) {
       event.preventDefault();
@@ -173,6 +177,7 @@ function start(container: HTMLElement, frame: Frame): Session {
   window.addEventListener("pointermove", onMove, true);
   window.addEventListener("pointerup", onUp, true);
   window.addEventListener("pointercancel", onCancel, true);
+  window.addEventListener("keydown", onKey, true);
   window.addEventListener("click", swallow, true);
 
   return {
@@ -183,6 +188,7 @@ function start(container: HTMLElement, frame: Frame): Session {
       window.removeEventListener("pointermove", onMove, true);
       window.removeEventListener("pointerup", onUp, true);
       window.removeEventListener("pointercancel", onCancel, true);
+      window.removeEventListener("keydown", onKey, true);
       window.removeEventListener("click", swallow, true);
       container.style.cursor = cursor;
       marquee.remove();

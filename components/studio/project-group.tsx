@@ -9,6 +9,7 @@ import {
   UnplugIcon,
 } from "lucide-react";
 import type { MouseEvent } from "react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { DotmSquare1 } from "@/components/ui/dotm-square-1";
 import {
@@ -31,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { ProjectMenu } from "./project-menu";
 import { SessionItem } from "./session-item";
 
-export function ProjectGroup({
+function ProjectGroupBlock({
   activeSessionId,
   commands,
   group,
@@ -56,7 +57,7 @@ export function ProjectGroup({
   onToggle: (event: MouseEvent<HTMLButtonElement>) => void;
   scaffold: ScaffoldState | undefined;
 }) {
-  const { hidden, showAll, visible } = useVisibleSessions(group);
+  const { hidden, isFull, toggle, visible } = useVisibleSessions(group);
   const { project } = group;
   const panelId = `project-${project.id}`;
 
@@ -65,7 +66,7 @@ export function ProjectGroup({
       <SidebarMenuButton
         aria-controls={panelId}
         aria-expanded={isExpanded}
-        className={cn("pr-14 font-medium", project.missing && "opacity-50")}
+        className="pr-14 font-medium"
         onClick={onToggle}
         value={project.id}
       >
@@ -74,11 +75,24 @@ export function ProjectGroup({
         ) : (
           <ChevronRight className="text-muted-foreground" />
         )}
-        <span className="min-w-0 flex-1 truncate">{project.name}</span>
+        {/* Only the name dims for a missing project: the chevron and the menu
+            are still the way to its history and to Locate…, so they keep full
+            contrast. */}
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate",
+            project.missing && "text-sidebar-foreground/70"
+          )}
+        >
+          {project.name}
+        </span>
         {project.missing ? (
           <Tooltip>
             <TooltipTrigger render={<span className="shrink-0" />}>
               <UnplugIcon className="size-3 text-muted-foreground" />
+              <span className="sr-only">
+                {project.path} is not on disk anymore
+              </span>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               <span className="break-all">
@@ -90,7 +104,10 @@ export function ProjectGroup({
         {isExpanded ? null : <Rollup rollup={group.rollup} />}
       </SidebarMenuButton>
 
-      <div className="absolute top-1 right-1 flex items-center opacity-0 focus-within:opacity-100 group-hover/menu-item:opacity-100">
+      {/* `has-[[data-popup-open]]` keeps the cluster visible while its menu is
+          open: the popup is portalled, so hover and focus-within both read
+          false the moment it opens. */}
+      <div className="absolute top-1 right-1 flex items-center opacity-0 focus-within:opacity-100 group-hover/menu-item:opacity-100 has-[[data-popup-open]]:opacity-100">
         <Tooltip>
           <TooltipTrigger
             render={
@@ -148,15 +165,15 @@ export function ProjectGroup({
             </SidebarMenuSubItem>
           ) : null}
 
-          {hidden > 0 ? (
+          {hidden > 0 || isFull ? (
             <SidebarMenuSubItem>
               <Button
                 className="h-7 w-full justify-start pl-7 text-muted-foreground text-xs hover:bg-transparent hover:text-foreground"
-                onClick={showAll}
+                onClick={toggle}
                 size="sm"
                 variant="ghost"
               >
-                Show {hidden} more
+                {hidden > 0 ? `Show ${hidden} more` : "Show less"}
               </Button>
             </SidebarMenuSubItem>
           ) : null}
@@ -165,6 +182,8 @@ export function ProjectGroup({
     </SidebarMenuItem>
   );
 }
+
+export const ProjectGroup = memo(ProjectGroupBlock);
 
 const ROLLUP_WORD: Record<GroupRollup["status"], string> = {
   failed: "failed",
@@ -185,22 +204,27 @@ function Rollup({ rollup }: { rollup: GroupRollup | null }) {
     <span
       aria-label={label}
       className="flex shrink-0 items-center gap-1 font-normal text-[0.6875rem] text-muted-foreground tabular-nums"
-      role="status"
+      role="img"
     >
       {status === "waiting" ? (
         <>
-          <CircleQuestionMarkIcon className="size-4 shrink-0 text-primary" />
+          <CircleQuestionMarkIcon className="size-4 shrink-0 text-sidebar-primary" />
           <span aria-hidden="true">{count}</span>
         </>
       ) : null}
       {status === "running" ? (
-        <DotmSquare1 className="shrink-0 text-primary" dotSize={2} size={16} />
+        <DotmSquare1
+          ariaLabel=""
+          className="shrink-0 text-sidebar-primary"
+          dotSize={2}
+          size={16}
+        />
       ) : null}
       {status === "failed" ? (
         <CircleAlertIcon className="size-4 shrink-0 text-destructive" />
       ) : null}
       {status === "unread" ? (
-        <span className="size-1.5 rounded-full bg-primary" />
+        <span className="size-1.5 rounded-full bg-sidebar-primary" />
       ) : null}
     </span>
   );
@@ -238,7 +262,7 @@ function Scaffolding({
     <div className="flex flex-col gap-1 py-1 pl-7">
       <p className="text-destructive text-xs">{FAILED[scaffold.step]}</p>
       {scaffold.error === null ? null : (
-        <p className="line-clamp-3 break-all font-mono text-[10px] text-muted-foreground">
+        <p className="line-clamp-3 break-all font-mono text-[0.6875rem] text-muted-foreground">
           {scaffold.error}
         </p>
       )}

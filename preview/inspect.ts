@@ -13,10 +13,12 @@ const CANVAS = ".__remotion-player";
 const MARKUP_LIMIT = 4000;
 const PARENTS = 3;
 const FIBER_KEY = "__reactFiber$";
-const ACCENT = "oklch(0.715 0.143 215.221)";
-const ACCENT_SOFT = "oklch(0.715 0.143 215.221 / 0.12)";
+// Hand-copied from --reference's dark value in app/globals.css — this file is
+// compiled by the project's webpack and cannot import the app's theme.
+export const ACCENT = "oklch(0.715 0.143 215.221)";
+export const ACCENT_SOFT = "oklch(0.715 0.143 215.221 / 0.12)";
 const LABEL_INK = "oklch(0.18 0.01 260)";
-const TOP = 2_147_483_000;
+export const TOP = 2_147_483_000;
 
 const WRAPPERS = new Set([
   "AbsoluteFill",

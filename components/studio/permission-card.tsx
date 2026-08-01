@@ -9,6 +9,7 @@ import {
   planText,
 } from "@/lib/studio/permission";
 import type { PendingPermission } from "@/lib/studio/turns";
+import { cn } from "@/lib/utils";
 import type { SessionMode } from "@/shared/ipc";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Markdown } from "./markdown";
@@ -35,6 +36,7 @@ export function PermissionCard({
       aria-label={permissionTitle(permission.reason)}
       className="bg-input/50 ring-none"
       data-slot="permission-card"
+      onKeyDown={card.onKeyDown}
       size="sm"
     >
       <CardHeader>
@@ -60,15 +62,24 @@ export function PermissionCard({
 
       <CardContent>
         <div className="flex flex-col">
-          {permissionChoices(permission.reason).map((choice) => (
+          {permissionChoices(permission.reason).map((choice, index) => (
             <button
-              className="-mx-1 flex items-baseline gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-muted"
+              className="-mx-1 flex items-baseline gap-2 rounded-lg px-2 py-1.5 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
               key={choice.id}
               onClick={card.onChoose}
+              ref={index === 0 ? card.first : undefined}
               type="button"
               value={choice.id}
             >
-              <span className="shrink-0 text-sm">{choice.label}</span>
+              <span
+                className={cn(
+                  "shrink-0 text-sm",
+                  index === 0 && "font-medium",
+                  choice.action === "cancel" && "text-destructive"
+                )}
+              >
+                {choice.label}
+              </span>
               <span className="truncate text-muted-foreground text-xs">
                 {choice.description}
               </span>

@@ -3,6 +3,7 @@
 import { createContext, use, useMemo } from "react";
 import { type CodeHighlighterPlugin, Streamdown } from "streamdown";
 import { useCodeHighlighter } from "@/hooks/use-code-highlighter";
+import { usePrefersReducedMotion } from "@/lib/dotmatrix-hooks";
 import { cn } from "@/lib/utils";
 
 const ANIMATION = {
@@ -33,12 +34,14 @@ export function Markdown({
 }) {
   const code = use(HighlighterContext);
   const plugins = useMemo(() => (code === null ? {} : { code }), [code]);
+  const reducedMotion = usePrefersReducedMotion();
 
   return (
     <Streamdown
-      animated={ANIMATION}
+      animated={reducedMotion ? false : ANIMATION}
       className={cn(
         "markdown-stream space-y-3 text-sm leading-relaxed [&_pre]:text-xs",
+        isStreaming && !reducedMotion && "code-reveal",
         className
       )}
       isAnimating={isStreaming}

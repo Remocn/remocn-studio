@@ -20,7 +20,10 @@ export function ContextMeter({ usage }: { usage: ContextUsage }) {
     <Tooltip>
       <TooltipTrigger
         render={
-          <span className="flex size-7 items-center justify-center text-muted-foreground" />
+          <button
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            type="button"
+          />
         }
       >
         <svg className="size-4 -rotate-90" role="img" viewBox="0 0 16 16">
@@ -35,7 +38,7 @@ export function ContextMeter({ usage }: { usage: ContextUsage }) {
           />
           <circle
             className={cn(
-              "stroke-current transition-[stroke-dashoffset] duration-500",
+              "stroke-current transition-[stroke-dashoffset] duration-200",
               reading.percent >= CROWDED && "stroke-destructive"
             )}
             cx="8"

@@ -26,7 +26,7 @@ export function Thinking({
       />
       <MarkerContent className="shimmer">Thinking…</MarkerContent>
       {startedAt === null ? null : (
-        <span className="shrink-0 text-muted-foreground/70 text-xs tabular-nums">
+        <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
           {runningTime(startedAt, now)}
         </span>
       )}

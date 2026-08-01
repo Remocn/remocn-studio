@@ -32,12 +32,23 @@ export function ActivityDetail({ detail }: { detail: ToolDetail }) {
   return <OutputText text={detail.text} />;
 }
 
+// The three scroll containers below carry `role="region"` + `tabIndex={0}`:
+// axe's scrollable-region-focusable rule requires exactly this, or a wide diff
+// and long command output cannot be scrolled from the keyboard at all.
+// biome-ignore-start lint/a11y/useSemanticElements: a labelled region is the ARIA pattern for a focusable scroll container
+// biome-ignore-start lint/a11y/noNoninteractiveTabindex: axe's scrollable-region-focusable requires it
+
 function DiffLines({ lines }: { lines: DiffLine[] }) {
   const visible = useTruncatedLines(lines);
 
   return (
     <Frame>
-      <div className="overflow-x-auto py-1">
+      <div
+        aria-label="Diff"
+        className="overflow-x-auto py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        role="region"
+        tabIndex={0}
+      >
         {visible.shown.map((line) => (
           <div
             className={cn("whitespace-pre px-2", DIFF_STYLES[line.kind])}
@@ -72,7 +83,12 @@ function CommandOutput({
         </span>
       </div>
       {visible.shown.length > 0 ? (
-        <pre className="overflow-x-auto border-t px-2 py-1 text-muted-foreground">
+        <pre
+          aria-label="Command output"
+          className="overflow-x-auto border-t px-2 py-1 text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          role="region"
+          tabIndex={0}
+        >
           {visible.shown}
         </pre>
       ) : null}
@@ -86,13 +102,21 @@ function OutputText({ text }: { text: string }) {
 
   return (
     <Frame>
-      <pre className="overflow-x-auto px-2 py-1 text-muted-foreground">
+      <pre
+        aria-label="Tool output"
+        className="overflow-x-auto px-2 py-1 text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        role="region"
+        tabIndex={0}
+      >
         {visible.shown}
       </pre>
       <MoreLines hidden={visible.hidden} onExpand={visible.expand} />
     </Frame>
   );
 }
+
+// biome-ignore-end lint/a11y/useSemanticElements: scroll containers above
+// biome-ignore-end lint/a11y/noNoninteractiveTabindex: scroll containers above
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
@@ -118,7 +142,7 @@ function MoreLines({
 
   return (
     <button
-      className="w-full border-t px-2 py-1 text-left text-muted-foreground hover:text-foreground"
+      className="w-full border-t px-2 py-1 text-left text-muted-foreground underline decoration-dotted underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
       onClick={onExpand}
       type="button"
     >

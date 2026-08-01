@@ -154,6 +154,7 @@ function Conversation({
           <div className="mx-auto w-full max-w-2xl">
             <PermissionCard
               cwd={cwd}
+              key={turn.permission.id}
               onAnswer={turn.answer}
               permission={turn.permission}
             />
@@ -184,7 +185,10 @@ function ChatEmptyState({ hasProject }: { hasProject: boolean }) {
             <FolderOpenIcon />
           </EmptyMedia>
           <EmptyTitle>No folder open</EmptyTitle>
-          <EmptyDescription>
+          {/* The panes are resizable, so these two blocks are the app's only
+              prose that reflows to arbitrary widths — `pretty` is what keeps a
+              lone word off the last line as the divider moves. */}
+          <EmptyDescription className="text-pretty">
             Claude works inside one Remotion project at a time. Open a folder to
             give it somewhere to write.
           </EmptyDescription>
@@ -200,7 +204,7 @@ function ChatEmptyState({ hasProject }: { hasProject: boolean }) {
           <LogoMark className="size-10 text-foreground" />
         </EmptyMedia>
         <EmptyTitle className="text-2xl">What should we make?</EmptyTitle>
-        <EmptyDescription>
+        <EmptyDescription className="text-pretty">
           Describe the video you want and Claude builds it as real Remotion
           components in your project.
         </EmptyDescription>

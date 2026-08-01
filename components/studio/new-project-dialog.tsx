@@ -27,41 +27,52 @@ export function NewProjectDialog({ control }: { control: NewProject }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="new-project-name">Name</Label>
-            <Input
-              autoFocus
-              id="new-project-name"
-              onChange={control.onNameChange}
-              placeholder="launch-film"
-              value={control.name}
-            />
+        <form className="contents" onSubmit={control.onSubmit}>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="new-project-name">Name</Label>
+              {/* A folder name is a slug, not prose or an identity: spelling
+                  suggestions, autofill and a password manager's overlay are all
+                  noise on top of a field where they can never be right. */}
+              <Input
+                autoComplete="off"
+                autoFocus
+                data-1p-ignore
+                data-lpignore="true"
+                id="new-project-name"
+                onChange={control.onNameChange}
+                placeholder="launch-film"
+                spellCheck="false"
+                value={control.name}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="new-project-location">Location</Label>
+              <Button
+                className="justify-start font-normal"
+                id="new-project-location"
+                onClick={control.pickParent}
+                type="button"
+                variant="outline"
+              >
+                <FolderOpenIcon data-icon="inline-start" />
+                <span className="truncate">
+                  {control.parent ?? "Choose a folder…"}
+                </span>
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label>Location</Label>
-            <Button
-              className="justify-start font-normal"
-              onClick={control.pickParent}
-              variant="outline"
-            >
-              <FolderOpenIcon data-icon="inline-start" />
-              <span className="truncate">
-                {control.parent ?? "Choose a folder…"}
-              </span>
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button disabled={!control.canCreate} type="submit">
+              Create
             </Button>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>
-            Cancel
-          </DialogClose>
-          <Button disabled={!control.canCreate} onClick={control.submit}>
-            Create
-          </Button>
-        </DialogFooter>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

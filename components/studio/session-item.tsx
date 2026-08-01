@@ -6,6 +6,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { DotmSquare1 } from "@/components/ui/dotm-square-1";
 import { type SessionRow, sessionMeta } from "@/lib/studio/groups";
@@ -20,7 +21,7 @@ interface RowProps {
   row: SessionRow;
 }
 
-export function SessionItem(props: RowProps) {
+function SessionItemBlock(props: RowProps) {
   const { now, row } = props;
   const meta = sessionMeta(row, now);
 
@@ -35,20 +36,25 @@ export function SessionItem(props: RowProps) {
               "truncate text-xs tabular-nums",
               meta.isError ? "text-destructive" : "text-muted-foreground"
             )}
+            id={`session-meta-${row.session.id}`}
           >
             {meta.text}
           </p>
         )
       }
+      metaId={meta === null ? null : `session-meta-${row.session.id}`}
       time={meta === null ? relativeTime(row.session.updatedAt, now) : null}
     />
   );
 }
 
+export const SessionItem = memo(SessionItemBlock);
+
 function RowShell({
   isActive,
   marker,
   meta,
+  metaId,
   onRemove,
   onSelect,
   row,
@@ -56,6 +62,7 @@ function RowShell({
 }: RowProps & {
   marker: ReactNode;
   meta: ReactNode;
+  metaId: string | null;
   time: string | null;
 }) {
   const { session, status } = row;
@@ -96,8 +103,9 @@ function RowShell({
 
       <button
         aria-current={isActive ? "true" : undefined}
+        aria-describedby={metaId ?? undefined}
         aria-labelledby={titleId}
-        className="absolute inset-0 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+        className="absolute inset-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
         onClick={onSelect}
         type="button"
         value={session.id}
@@ -129,12 +137,16 @@ function Marker({ row }: { row: SessionRow }) {
     return null;
   }
 
+  // `role="img"`, not `role="status"`: a live region per row would re-announce
+  // as `paneGroups` promotes rows, and one with no text content never announces
+  // reliably anyway. The label still names the state when the row is read.
   if (row.status === "running") {
     return (
       <DotmSquare1
         ariaLabel={label}
-        className={cn(className, "text-primary")}
+        className={cn(className, "text-sidebar-primary")}
         dotSize={2}
+        role="img"
         size={16}
       />
     );
@@ -144,8 +156,8 @@ function Marker({ row }: { row: SessionRow }) {
     return (
       <CircleQuestionMarkIcon
         aria-label={label}
-        className={cn(className, "size-4 text-primary")}
-        role="status"
+        className={cn(className, "size-4 text-sidebar-primary")}
+        role="img"
       />
     );
   }
@@ -155,7 +167,7 @@ function Marker({ row }: { row: SessionRow }) {
       <CircleAlertIcon
         aria-label={label}
         className={cn(className, "size-4 text-destructive")}
-        role="status"
+        role="img"
       />
     );
   }
@@ -165,9 +177,9 @@ function Marker({ row }: { row: SessionRow }) {
       aria-label={label}
       className={cn(
         className,
-        "top-3.5 left-3 size-1.5 rounded-full bg-primary"
+        "top-3.5 left-3 size-1.5 rounded-full bg-sidebar-primary"
       )}
-      role="status"
+      role="img"
     />
   );
 }

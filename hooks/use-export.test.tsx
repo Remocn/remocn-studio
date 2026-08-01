@@ -140,7 +140,7 @@ describe("useExport", () => {
     expect(rendered.result.current.percent).toBe(21);
   });
 
-  it("shows the finished file and reveals it in Finder", async () => {
+  it("shows the finished file without yanking Finder over the screen", async () => {
     const { host, rendered } = await started();
 
     await host.finish();
@@ -151,6 +151,22 @@ describe("useExport", () => {
 
     expect(rendered.result.current.isRunning).toBe(false);
     expect(rendered.result.current.status).toBeNull();
+    expect(host.state.revealed).toEqual([]);
+  });
+
+  it("reveals the finished file when asked to", async () => {
+    const { host, rendered } = await started();
+
+    await host.finish();
+
+    await waitFor(() => {
+      expect(rendered.result.current.result).toEqual(EXPORTED);
+    });
+
+    await act(async () => {
+      await rendered.result.current.reveal();
+    });
+
     expect(host.state.revealed).toEqual([OUTPUT]);
   });
 

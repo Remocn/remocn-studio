@@ -95,6 +95,7 @@ export function resolveDmxColorTokens(
 
 export interface DotMatrixCommonProps {
   animated?: boolean;
+  /** An empty label marks the matrix decorative: the root renders aria-hidden. */
   ariaLabel?: string;
   /**
    * Adds a glow on dots from opacity 0.6 (weakest) through 1 (strongest), after remapping.
@@ -117,6 +118,8 @@ export interface DotMatrixCommonProps {
   opacityMid?: number;
   opacityPeak?: number;
   pattern?: MatrixPattern;
+  /** "status" makes the root a polite live region; "img" is a named, silent state marker. */
+  role?: "img" | "status";
   size?: number;
   speed?: number;
 }
@@ -757,6 +760,18 @@ interface DotMatrixBaseProps extends DotMatrixCommonProps {
   reducedMotion?: boolean;
 }
 
+function rootA11y(ariaLabel: string, role: "img" | "status") {
+  if (ariaLabel === "") {
+    return { "aria-hidden": true } as const;
+  }
+
+  return {
+    "aria-label": ariaLabel,
+    "aria-live": role === "status" ? ("polite" as const) : undefined,
+    role,
+  };
+}
+
 export function DotMatrixBase({
   size = 24,
   dotSize = 3,
@@ -764,6 +779,7 @@ export function DotMatrixBase({
   colorPreset,
   speed = 1,
   ariaLabel = "Loading",
+  role = "status",
   className,
   pattern = "diamond",
   dotShape = "circle",
@@ -934,15 +950,15 @@ export function DotMatrixBase({
     </div>
   );
 
+  const a11y = rootA11y(ariaLabel, role);
+
   if (useWrapper) {
     return (
       <div
-        aria-label={ariaLabel}
-        aria-live="polite"
+        {...a11y}
         className={className}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        role="status"
         style={{
           alignItems: "center",
           display: "inline-flex",
@@ -961,8 +977,7 @@ export function DotMatrixBase({
 
   return (
     <div
-      aria-label={ariaLabel}
-      aria-live="polite"
+      {...a11y}
       className={cx(
         "dmx-root",
         `dmx-dot-shape-${dotShape}`,
@@ -973,7 +988,6 @@ export function DotMatrixBase({
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      role="status"
       style={dmxVarStyle}
     >
       <div className="dmx-grid" style={{ gap }}>
@@ -1264,6 +1278,7 @@ export function DotMatrix3Base({
   colorPreset,
   speed = 1,
   ariaLabel = "Loading",
+  role = "status",
   className,
   pattern = "full",
   dotShape = "circle",
@@ -1442,15 +1457,15 @@ export function DotMatrix3Base({
     </div>
   );
 
+  const a11y = rootA11y(ariaLabel, role);
+
   if (useWrapper) {
     return (
       <div
-        aria-label={ariaLabel}
-        aria-live="polite"
+        {...a11y}
         className={className}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        role="status"
         style={{
           alignItems: "center",
           display: "inline-flex",
@@ -1469,8 +1484,7 @@ export function DotMatrix3Base({
 
   return (
     <div
-      aria-label={ariaLabel}
-      aria-live="polite"
+      {...a11y}
       className={cx(
         "dmx-root",
         "dmx-matrix-3",
@@ -1482,7 +1496,6 @@ export function DotMatrix3Base({
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      role="status"
       style={dmxVarStyle}
     >
       <div className="dmx-grid" style={gridStyle}>

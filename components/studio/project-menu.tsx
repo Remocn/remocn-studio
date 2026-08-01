@@ -91,24 +91,26 @@ export function ProjectMenu({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`rename-${project.id}`}>Name</Label>
-            <Input
-              autoFocus
-              id={`rename-${project.id}`}
-              onChange={menu.onNameChange}
-              value={menu.name}
-            />
-          </div>
+          <form className="contents" onSubmit={menu.onRenameSubmit}>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`rename-${project.id}`}>Name</Label>
+              <Input
+                autoFocus
+                id={`rename-${project.id}`}
+                onChange={menu.onNameChange}
+                value={menu.name}
+              />
+            </div>
 
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              Cancel
-            </DialogClose>
-            <Button disabled={!menu.canRename} onClick={menu.submitRename}>
-              Rename
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <DialogClose render={<Button type="button" variant="outline" />}>
+                Cancel
+              </DialogClose>
+              <Button disabled={!menu.canRename} type="submit">
+                Rename
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

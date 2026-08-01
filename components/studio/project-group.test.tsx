@@ -131,6 +131,11 @@ describe("ProjectGroup", () => {
     expect(
       screen.queryByRole("button", { name: SHOW_MORE })
     ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show less" }));
+
+    expect(screen.queryByText("Session 10")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show 3 more" })).toBeVisible();
   });
 
   it("counts only the quiet rows it hides, and never hides a busy one", () => {
@@ -163,7 +168,7 @@ describe("ProjectGroup", () => {
     });
 
     expect(
-      screen.getByRole("status", { name: "2 sessions waiting" })
+      screen.getByRole("img", { name: "2 sessions waiting" })
     ).toBeVisible();
     expect(screen.getByRole("button", { name: PROJECT_ROW })).toHaveTextContent(
       "2"
@@ -173,7 +178,7 @@ describe("ProjectGroup", () => {
   it("keeps a settled group's row free of any rollup", () => {
     renderGroup({ isExpanded: false, rows: sessions(3) });
 
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
   it("marks a session whose turn is running in the background", () => {
@@ -182,9 +187,9 @@ describe("ProjectGroup", () => {
     });
 
     expect(
-      screen.getByRole("status", { name: "Session 1 is running" })
+      screen.getByRole("img", { name: "Session 1 is running" })
     ).toBeVisible();
-    expect(screen.queryByRole("status", { name: OTHER_ROW })).toBeNull();
+    expect(screen.queryByRole("img", { name: OTHER_ROW })).toBeNull();
   });
 
   it("says which scaffold step is running", () => {

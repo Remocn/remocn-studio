@@ -81,7 +81,7 @@ function CommentCard({
   onSubmit: (comment: string) => void;
   placement: { x: number; y: number };
 }) {
-  const comment = useComment(onSubmit);
+  const comment = useComment(onSubmit, onCancel);
 
   return (
     <div

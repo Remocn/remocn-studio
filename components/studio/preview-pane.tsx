@@ -43,9 +43,14 @@ export function PreviewPane() {
               Restart
             </Button>
           ) : null}
+          {/* `aria-disabled`, not `disabled`: a native disabled control fires
+              no mouse events, so the `title` explaining *why* it is off could
+              never show, and the button fell out of the tab order. The click
+              handlers no-op while unavailable. */}
           <Button
+            aria-disabled={!inspect.canInspect}
             aria-pressed={inspect.isArmed}
-            disabled={!inspect.canInspect}
+            className="aria-disabled:opacity-50"
             onClick={inspect.toggle}
             size="sm"
             title={inspect.unavailable ?? "Pick an element to comment on"}
@@ -55,15 +60,20 @@ export function PreviewPane() {
             Inspect
           </Button>
           <Button
+            aria-disabled={!snapshot.canSnapshot}
             aria-pressed={snapshot.isArmed}
-            disabled={!snapshot.canSnapshot}
+            className="aria-disabled:opacity-50"
             onClick={snapshot.toggle}
             size="sm"
             title={snapshot.unavailable ?? "Capture the frame, or part of it"}
             variant={snapshot.isArmed ? "default" : "ghost"}
           >
             {snapshot.isBusy ? (
-              <Spinner className="size-4" data-icon="inline-start" />
+              <Spinner
+                aria-hidden="true"
+                className="size-4"
+                data-icon="inline-start"
+              />
             ) : (
               <CameraIcon data-icon="inline-start" />
             )}
@@ -76,7 +86,8 @@ export function PreviewPane() {
             </Button>
           ) : (
             <Button
-              disabled={!exporting.canExport}
+              aria-disabled={!exporting.canExport}
+              className="aria-disabled:opacity-50"
               onClick={exporting.start}
               size="sm"
               title={
@@ -111,63 +122,68 @@ export function PreviewPane() {
           </div>
         </div>
 
-        {trouble === null ? null : (
-          <p
-            className="shrink-0 text-center text-destructive text-xs"
-            role="alert"
-          >
-            {trouble}
-          </p>
-        )}
-
-        {snapshot.status === null ? null : (
-          <p
-            className="shrink-0 text-center text-muted-foreground text-xs"
-            role="status"
-          >
-            {snapshot.status}
-          </p>
-        )}
-
-        {exporting.isRunning ? (
-          <div className="flex shrink-0 flex-col gap-2">
+        {/* The frame's width derives from the container's height, so a status
+            row appearing in the flow would rescale the video. This slot keeps
+            one row's height reserved whether or not anything is being said. */}
+        <div className="flex min-h-9 shrink-0 flex-col justify-center gap-2">
+          {trouble === null ? null : (
             <p
-              className="text-center text-muted-foreground text-xs"
+              className="shrink-0 text-center text-destructive text-xs"
+              role="alert"
+            >
+              {trouble}
+            </p>
+          )}
+
+          {snapshot.status === null ? null : (
+            <p
+              className="shrink-0 text-center text-muted-foreground text-xs"
               role="status"
             >
-              {exporting.status}
+              {snapshot.status}
             </p>
-            <Progress value={exporting.percent} />
-          </div>
-        ) : null}
+          )}
 
-        {exporting.result === null ? null : (
-          <div className="flex shrink-0 items-center justify-center gap-2 text-xs">
-            <span className="text-muted-foreground">Exported</span>
-            <span className="font-mono">
-              {exportLabel(exporting.result, activeProject?.path ?? null)}
-            </span>
-            <Button onClick={exporting.reveal} size="xs" variant="ghost">
-              <FolderOpenIcon data-icon="inline-start" />
-              Show in Finder
-            </Button>
-          </div>
-        )}
+          {exporting.isRunning ? (
+            <div className="flex shrink-0 flex-col gap-2">
+              <p className="text-muted-foreground text-xs tabular-nums">
+                {exporting.status}
+              </p>
+              <Progress value={exporting.percent} />
+            </div>
+          ) : null}
 
-        {exporting.trouble === null ? null : (
-          <pre
-            className="shrink-0 overflow-auto whitespace-pre-wrap text-destructive text-xs"
-            role="alert"
-          >
-            {exporting.trouble}
-          </pre>
-        )}
+          {exporting.result === null ? null : (
+            <div
+              className="flex shrink-0 items-center justify-center gap-2 text-xs"
+              role="status"
+            >
+              <span className="text-muted-foreground">Exported</span>
+              <span className="font-mono">
+                {exportLabel(exporting.result, activeProject?.path ?? null)}
+              </span>
+              <Button onClick={exporting.reveal} size="xs" variant="ghost">
+                <FolderOpenIcon data-icon="inline-start" />
+                Show in Finder
+              </Button>
+            </div>
+          )}
 
-        {hint === null ? null : (
-          <p className="shrink-0 text-center text-muted-foreground text-xs">
-            {hint}
-          </p>
-        )}
+          {exporting.trouble === null ? null : (
+            <pre
+              className="max-h-32 shrink-0 overflow-auto whitespace-pre-wrap text-destructive text-xs"
+              role="alert"
+            >
+              {exporting.trouble}
+            </pre>
+          )}
+
+          {hint === null ? null : (
+            <p className="shrink-0 text-center text-muted-foreground text-xs">
+              {hint}
+            </p>
+          )}
+        </div>
       </PaneBody>
     </Pane>
   );
@@ -207,10 +223,10 @@ function Stage({
       <Empty className="h-full p-6">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <Spinner className="size-4" />
+            <Spinner className="size-6" />
           </EmptyMedia>
           <EmptyTitle>Building the project</EmptyTitle>
-          <EmptyDescription>
+          <EmptyDescription className="tabular-nums">
             {preview.percent > 0
               ? `Compiling — ${preview.percent}%`
               : "Starting the compiler."}
