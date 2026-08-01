@@ -56,7 +56,7 @@ describe("SessionItem", () => {
   it("shows no marker while the session is idle and read", () => {
     renderItem({ isActive: true });
 
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
   it("says when a settled session was last touched", () => {
@@ -69,7 +69,7 @@ describe("SessionItem", () => {
     renderItem({ status: "running" });
 
     expect(
-      screen.getByRole("status", { name: "A promo for the launch is running" })
+      screen.getByRole("img", { name: "A promo for the launch is running" })
     ).toBeVisible();
   });
 
@@ -84,7 +84,7 @@ describe("SessionItem", () => {
     renderItem({ status: "waiting" });
 
     expect(
-      screen.getByRole("status", {
+      screen.getByRole("img", {
         name: "A promo for the launch is waiting for an answer",
       })
     ).toBeVisible();
@@ -104,7 +104,7 @@ describe("SessionItem", () => {
     renderItem({ error: "the sidecar is not running", status: "failed" });
 
     expect(
-      screen.getByRole("status", { name: "A promo for the launch failed" })
+      screen.getByRole("img", { name: "A promo for the launch failed" })
     ).toBeVisible();
   });
 
@@ -122,7 +122,7 @@ describe("SessionItem", () => {
     renderItem({ unread: true });
 
     expect(
-      screen.getByRole("status", { name: "A promo for the launch has news" })
+      screen.getByRole("img", { name: "A promo for the launch has news" })
     ).toBeVisible();
   });
 
@@ -137,7 +137,7 @@ describe("SessionItem", () => {
   it("keeps the marker and the delete button on the same row", () => {
     renderItem({ error: "boom", status: "failed" });
 
-    const marker = screen.getByRole("status", {
+    const marker = screen.getByRole("img", {
       name: "A promo for the launch failed",
     });
 

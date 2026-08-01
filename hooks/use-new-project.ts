@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useFolderPicker } from "@/hooks/use-folder-picker";
 import type { Project, ProjectDraft } from "@/shared/ipc";
@@ -12,6 +12,7 @@ export interface NewProject {
   isOpen: boolean;
   name: string;
   onNameChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   open: () => void;
   parent: string | null;
   pickParent: () => void;
@@ -55,18 +56,37 @@ export function useNewProject(
     await create({ name: trimmed, parent });
   }, [create, parent, trimmed]);
 
+  const onSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      submit();
+    },
+    [submit]
+  );
+
   return useMemo(
     () => ({
       canCreate,
       isOpen,
       name,
       onNameChange,
+      onSubmit,
       open,
       parent,
       pickParent,
       setOpen,
       submit,
     }),
-    [canCreate, isOpen, name, onNameChange, open, parent, pickParent, submit]
+    [
+      canCreate,
+      isOpen,
+      name,
+      onNameChange,
+      onSubmit,
+      open,
+      parent,
+      pickParent,
+      submit,
+    ]
   );
 }

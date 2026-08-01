@@ -36,14 +36,14 @@ export function ActivityRun({
       <button
         aria-expanded={disclosure.isOpen}
         aria-label={`${label}, ${hidden} more`}
-        className="group flex w-full min-w-0 items-center gap-2 text-left font-mono text-xs"
+        className="group flex w-full min-w-0 items-center gap-2 rounded-md text-left font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         onClick={disclosure.toggle}
         type="button"
       >
         <ActivityIcon name={newest.name} state={state} />
         <span className="shrink-0 text-foreground">{newest.name}</span>
         {target === null ? null : <ActivityTarget target={target} />}
-        <span className="shrink-0 text-muted-foreground">{`+${hidden}`}</span>
+        <span className="shrink-0 text-muted-foreground tabular-nums">{`+${hidden}`}</span>
         <ChevronDownIcon
           className={cn(
             "size-3 shrink-0 text-muted-foreground transition-transform",

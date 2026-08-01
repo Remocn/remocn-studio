@@ -66,7 +66,7 @@ export function UpdateStatus() {
 
         {download === null ? null : (
           <Progress className="gap-1.5" value={downloadedShare(download)}>
-            <span className="text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-xs tabular-nums">
               {downloadedLabel(download)}
             </span>
           </Progress>

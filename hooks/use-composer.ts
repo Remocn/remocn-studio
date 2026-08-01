@@ -27,6 +27,7 @@ import {
 } from "@/shared/references";
 
 export interface ComposerSettings {
+  onEscape?: () => void;
   onSubmit: (
     text: string,
     attachments: readonly PromptAttachment[],
@@ -77,6 +78,7 @@ function deleting(
 }
 
 export function useComposer({
+  onEscape,
   onSubmit,
   projectId,
 }: ComposerSettings): Composer {
@@ -235,6 +237,12 @@ export function useComposer({
         return;
       }
 
+      if (event.key === "Escape" && onEscape !== undefined) {
+        event.preventDefault();
+        onEscape();
+        return;
+      }
+
       const span = deleting(event, counts);
       if (span === null) {
         return;
@@ -258,7 +266,7 @@ export function useComposer({
       }
       selections.removeAt(span.index);
     },
-    [attachments, caret, counts, selections, submit]
+    [attachments, caret, counts, onEscape, selections, submit]
   );
 
   useForgetSelections(projectId, counts, selections.clear, setValue);

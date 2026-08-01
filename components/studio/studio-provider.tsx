@@ -48,6 +48,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const opened = workspace.openedProject;
 
   const composer = useComposer({
+    onEscape: turn.isRunning ? turn.stop : undefined,
     onSubmit: turn.send,
     projectId: opened?.id ?? null,
   });

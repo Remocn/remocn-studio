@@ -53,7 +53,17 @@ function AttachmentCard({
       orientation="vertical"
       title={item.name}
     >
-      <AttachmentMedia variant={preview.src === null ? "icon" : "image"}>
+      {/* The hairline goes on the media box, not the <img>: the box owns the
+          radius and clips the picture, so an outline on the image itself would
+          square off the corners it is meant to trace. */}
+      <AttachmentMedia
+        className={
+          preview.src === null
+            ? undefined
+            : "outline-1 outline-black/10 -outline-offset-1 dark:outline-white/10"
+        }
+        variant={preview.src === null ? "icon" : "image"}
+      >
         {preview.src === null ? (
           <ImageIcon />
         ) : (

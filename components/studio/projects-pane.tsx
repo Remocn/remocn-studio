@@ -3,11 +3,11 @@
 import {
   FolderOpenIcon,
   FolderPlusIcon,
-  Search,
   SettingsIcon,
   SquarePenIcon,
 } from "lucide-react";
 import type { MouseEvent } from "react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -16,12 +16,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { Kbd } from "@/components/ui/kbd";
 import {
   Sidebar,
   SidebarContent,
@@ -82,11 +76,10 @@ export function ProjectsPane() {
   const now = useNow();
   const newProject = useNewProject(createProject);
   const paneError = actionError ?? folderError;
-  const commands: ProjectCommands = {
-    relocateProject,
-    removeProject,
-    renameProject,
-  };
+  const commands: ProjectCommands = useMemo(
+    () => ({ relocateProject, removeProject, renameProject }),
+    [relocateProject, removeProject, renameProject]
+  );
 
   return (
     // `collapsible="none"` is what makes this a sidebar inside a resizable
@@ -104,7 +97,6 @@ export function ProjectsPane() {
             canStart={activeProject !== null}
             onNewSession={startSession}
           />
-          <SidebarSearch />
           <SidebarActions onNewProject={newProject.open} />
         </SidebarHeader>
 
@@ -193,22 +185,6 @@ function SidebarBrand({
         </TooltipTrigger>
         <TooltipContent side="bottom">New session</TooltipContent>
       </Tooltip>
-    </div>
-  );
-}
-
-function SidebarSearch() {
-  return (
-    <div className="flex shrink-0 items-center gap-1 p-2">
-      <InputGroup className="border-none">
-        <InputGroupInput />
-        <InputGroupAddon align="inline-start">
-          <Search />
-        </InputGroupAddon>
-        <InputGroupAddon align="inline-end">
-          <Kbd>⌘ + K</Kbd>
-        </InputGroupAddon>
-      </InputGroup>
     </div>
   );
 }

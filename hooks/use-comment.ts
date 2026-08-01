@@ -11,12 +11,23 @@ export interface Comment {
   value: string;
 }
 
-export function useComment(onSubmit: (comment: string) => void): Comment {
+export function useComment(
+  onSubmit: (comment: string) => void,
+  onCancel: () => void
+): Comment {
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
 
+  // The card is not a popover, so returning focus on close is ours to do.
   useEffect(() => {
+    const previous = document.activeElement;
     ref.current?.focus();
+
+    return () => {
+      if (previous instanceof HTMLElement) {
+        previous.focus();
+      }
+    };
   }, []);
 
   const onChange = useCallback((event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -32,9 +43,15 @@ export function useComment(onSubmit: (comment: string) => void): Comment {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
         submit();
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCancel();
       }
     },
-    [submit]
+    [onCancel, submit]
   );
 
   return useMemo(

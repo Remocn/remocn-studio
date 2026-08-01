@@ -104,7 +104,6 @@
 }
 
 .dark {
-  /* Warm obsidian palette — matches the remocn.dev landing page (#141318). */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -154,6 +153,11 @@
   body {
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
+    /* Both families are variable and carry their whole weight axis, so a
+       fabricated bold can only ever mean a weight failed to load. Style
+       synthesis stays on: assistant markdown renders <em> and no italic face
+       is loaded, so switching it off would silently drop the emphasis. */
+    font-synthesis-weight: none;
     text-rendering: optimizeLegibility;
     @apply bg-background text-foreground;
   }
@@ -163,9 +167,26 @@
   /* Streamdown's animate plugin skips every text node inside `code`, `pre`,
      `svg`, `math` and `annotation`, so an inline code span pops in with no fade
      while the words around it are still arriving. Give it the same reveal; the
-     duration mirrors `ANIMATION` in components/studio/markdown.tsx. */
-  .markdown-stream :not(pre) > code {
+     duration mirrors `ANIMATION` in components/studio/markdown.tsx.
+     `.code-reveal` is set by that component only while the entry streams, so a
+     session loaded from history renders its code spans still. */
+  .code-reveal :not(pre) > code {
     animation: sd-fadeIn 260ms var(--sd-easing, ease) both;
+  }
+}
+
+/* macOS Reduce Motion. Spinners keep turning — a frozen loader glyph reads as
+   a hang, and rotation in place is status, not motion across the screen. The
+   word-by-word reveal is switched off in components/studio/markdown.tsx, which
+   also withholds `.code-reveal`; the belt below catches anything it missed. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
+  }
+  .code-reveal :not(pre) > code,
+  [data-sd-animate] {
+    opacity: 1;
+    animation: none;
   }
 }
 

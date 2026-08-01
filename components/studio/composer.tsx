@@ -10,6 +10,7 @@ import {
   SparklesIcon,
   SquareIcon,
 } from "lucide-react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -64,7 +65,7 @@ const EFFORTS = [
   { label: "Max", value: "max" },
 ];
 
-export function Composer({
+function ComposerBlock({
   context,
   cwd,
   disabled,
@@ -130,7 +131,7 @@ export function Composer({
 
             <InputGroupTextarea
               aria-label="Message Claude"
-              className="relative text-transparent caret-foreground"
+              className="relative max-h-64 text-transparent caret-foreground selection:bg-primary/30"
               disabled={isLocked}
               onChange={composer.onChange}
               onKeyDown={composer.onKeyDown}
@@ -238,6 +239,8 @@ export function Composer({
     </div>
   );
 }
+
+export const Composer = memo(ComposerBlock);
 
 function MenuChip({
   icon: Icon,

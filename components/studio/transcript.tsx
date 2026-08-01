@@ -35,9 +35,12 @@ export function Transcript({
   const isThinking = isRunning && !isWaiting && last?.kind !== "assistant";
   const lastId = items.at(-1)?.id ?? null;
 
-  return (
-    <>
-      {items.map((item) => (
+  // The pane re-renders every second for the Thinking timer; the transcript
+  // rows depend on none of that, so the element array is kept stable across
+  // ticks rather than reconciling hundreds of items per second.
+  const rows = useMemo(
+    () =>
+      items.map((item) => (
         <MessageScrollerItem key={item.id} messageId={item.id}>
           {item.kind === "run" ? (
             <Run cwd={cwd} entries={item.entries} />
@@ -49,7 +52,13 @@ export function Transcript({
             />
           )}
         </MessageScrollerItem>
-      ))}
+      )),
+    [cwd, isRunning, items, lastId]
+  );
+
+  return (
+    <>
+      {rows}
 
       {isThinking ? (
         <MessageScrollerItem>

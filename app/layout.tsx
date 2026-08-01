@@ -1,20 +1,10 @@
 import type { Metadata } from "next";
-import { DM_Sans, Geist_Mono, Manrope } from "next/font/google";
+import { DM_Sans, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-const manropeHeading = Manrope({
-  subsets: ["latin"],
-  variable: "--font-heading",
-});
-
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-manrope",
-});
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
@@ -36,11 +26,11 @@ export default function RootLayout({
     // `suppressHydrationWarning` is required by next-themes: it writes the
     // theme class onto <html> before React hydrates.
     <html
-      className={cn("font-sans", dmSans.variable, manropeHeading.variable)}
+      className={cn("font-sans", dmSans.variable)}
       lang="en"
       suppressHydrationWarning
     >
-      <body className={cn(manrope.variable, geistMono.variable, "antialiased")}>
+      <body className={cn(geistMono.variable, "antialiased")}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
