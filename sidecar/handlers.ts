@@ -289,7 +289,13 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
       const project = yield* located(params.projectId);
 
       yield* emit({ step: "template", type: "started" });
-      yield* Effect.mapError(expandTemplate(project.path), unscaffolded);
+      yield* Effect.mapError(
+        expandTemplate(project.path, {
+          height: params.height,
+          width: params.width,
+        }),
+        unscaffolded
+      );
       yield* emit({ step: "template", type: "done" });
 
       yield* emit({ step: "install", type: "started" });

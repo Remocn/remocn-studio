@@ -5,7 +5,12 @@ import {
   requestSidecar,
   type SidecarError,
 } from "@/lib/studio/sidecar";
-import type { Project, ProjectDraft, ScaffoldEvent } from "@/shared/ipc";
+import type {
+  Project,
+  ProjectDraft,
+  ScaffoldEvent,
+  VideoSize,
+} from "@/shared/ipc";
 
 export const listProjects: Effect.Effect<readonly Project[], SidecarError> =
   Effect.gen(function* () {
@@ -55,6 +60,7 @@ export function renameProject(
 
 export function scaffoldProject(
   projectId: string,
+  size: VideoSize,
   onEvent: (event: ScaffoldEvent) => void
 ): Effect.Effect<Project, SidecarError> {
   return Effect.gen(function* () {
@@ -64,7 +70,7 @@ export function scaffoldProject(
       id,
       method: "project.scaffold",
       onStream: onEvent,
-      params: { projectId },
+      params: { height: size.height, projectId, width: size.width },
     }).pipe(Effect.onInterrupt(() => Effect.ignore(cancelSidecarRequest(id))));
   });
 }
