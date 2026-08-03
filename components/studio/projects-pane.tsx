@@ -187,23 +187,6 @@ function SidebarBrand({
           </TooltipTrigger>
           <TooltipContent side="bottom">Hide the project list</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                aria-label="New session"
-                className="text-muted-foreground"
-                disabled={!canStart}
-                onClick={onNewSession}
-                size="icon-sm"
-                variant="ghost"
-              />
-            }
-          >
-            <SquarePenIcon />
-          </TooltipTrigger>
-          <TooltipContent side="bottom">New session</TooltipContent>
-        </Tooltip>
       </div>
     </div>
   );
