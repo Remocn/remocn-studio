@@ -5,7 +5,6 @@ import {
   FolderPlusIcon,
   PanelLeftCloseIcon,
   SettingsIcon,
-  SquarePenIcon,
 } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useMemo } from "react";
@@ -50,7 +49,6 @@ const PLACEHOLDERS = ["one", "two", "three", "four"];
 export function ProjectsPane() {
   const {
     actionError,
-    activeProject,
     activeSession,
     expandedProjects,
     folderError,
@@ -71,7 +69,6 @@ export function ProjectsPane() {
     renameProject,
     scaffolds,
     sessionsError,
-    startSession,
     toggleProjects,
     turns,
   } = useStudio();
@@ -92,11 +89,7 @@ export function ProjectsPane() {
       <Sidebar className="w-full" collapsible="none">
         <SidebarHeader className="gap-0 p-0">
           <Titlebar mood={projects.length === 0 ? null : shellMood(turns)} />
-          <SidebarBrand
-            canStart={activeProject !== null}
-            onHide={toggleProjects}
-            onNewSession={startSession}
-          />
+          <SidebarBrand onHide={toggleProjects} />
           <SidebarActions
             onNewProject={newProject.open}
             onOpenFolder={openFolder}
@@ -155,15 +148,7 @@ export function ProjectsPane() {
 // The traffic lights are cleared by the header's top inset, above this row, so
 // the wordmark can sit on the same left edge as the group label and the project
 // names below it rather than being pushed out of the column.
-function SidebarBrand({
-  canStart,
-  onHide,
-  onNewSession,
-}: {
-  canStart: boolean;
-  onHide: () => void;
-  onNewSession: () => void;
-}) {
+function SidebarBrand({ onHide }: { onHide: () => void }) {
   return (
     <div
       className="flex h-10 shrink-0 items-center justify-between gap-2 pr-2 pl-4"
