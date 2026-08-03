@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderOpenIcon } from "lucide-react";
+import { PanelLeftOpenIcon, PanelRightOpenIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -17,6 +17,11 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Environment } from "@/hooks/use-environment";
 import { useLocateProject } from "@/hooks/use-locate-project";
 import { useNow } from "@/hooks/use-now";
@@ -26,8 +31,10 @@ import { Composer } from "./composer";
 import { EnvironmentChecklist } from "./environment-checklist";
 import { LogoMark } from "./logo-mark";
 import { MarkdownProvider } from "./markdown";
-import { Pane, PaneBody, PaneHeader, PaneTitle } from "./pane";
+import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { PermissionCard } from "./permission-card";
+import { Startup } from "./startup";
+import { StartupBackdrop } from "./startup-backdrop";
 import { useStudio } from "./studio-provider";
 import { Transcript } from "./transcript";
 
@@ -35,8 +42,19 @@ const PLACEHOLDERS = ["one", "two", "three"];
 const TICK = "1 second";
 
 export function ChatPane() {
-  const { activeSession, environment, openedProject, relocateProject, turn } =
-    useStudio();
+  const {
+    activeSession,
+    environment,
+    isPreviewShown,
+    isProjectsShown,
+    newProject,
+    openedProject,
+    openFolder,
+    relocateProject,
+    togglePreview,
+    toggleProjects,
+    turn,
+  } = useStudio();
   const { locate } = useLocateProject(
     openedProject?.id ?? null,
     relocateProject
@@ -44,8 +62,53 @@ export function ChatPane() {
 
   return (
     <Pane>
-      <PaneHeader data-tauri-drag-region>
-        <PaneTitle>{titleOf(openedProject, activeSession)}</PaneTitle>
+      <PaneHeader
+        className={isProjectsShown ? undefined : "pl-(--titlebar-inline-inset)"}
+        data-tauri-drag-region
+      >
+        <div className="flex min-w-0 items-center gap-1">
+          {isProjectsShown ? null : (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label="Show the project list"
+                    className="shrink-0 text-muted-foreground"
+                    onClick={toggleProjects}
+                    size="icon-sm"
+                    variant="ghost"
+                  />
+                }
+              >
+                <PanelLeftOpenIcon />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                Show the project list
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <PaneTitle>{titleOf(openedProject, activeSession)}</PaneTitle>
+        </div>
+        {isPreviewShown ? null : (
+          <PaneActions>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label="Show the preview"
+                    className="text-muted-foreground"
+                    onClick={togglePreview}
+                    size="icon-sm"
+                    variant="ghost"
+                  />
+                }
+              >
+                <PanelRightOpenIcon />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Show the preview</TooltipContent>
+            </Tooltip>
+          </PaneActions>
+        )}
       </PaneHeader>
 
       {turn.isLoadingTranscript ? (
@@ -57,6 +120,8 @@ export function ChatPane() {
           hasProject={openedProject !== null}
           missing={openedProject?.missing ?? false}
           onLocate={locate}
+          onNewProject={newProject.open}
+          onOpenFolder={openFolder}
           turn={turn}
         />
       )}
@@ -92,6 +157,8 @@ function Conversation({
   hasProject,
   missing,
   onLocate,
+  onNewProject,
+  onOpenFolder,
   turn,
 }: {
   cwd: string | null;
@@ -99,13 +166,23 @@ function Conversation({
   hasProject: boolean;
   missing: boolean;
   onLocate: () => void;
+  onNewProject: () => void;
+  onOpenFolder: () => void;
   turn: OpenTurn;
 }) {
   const hasTranscript = turn.entries.length > 0 || turn.turnError !== null;
+  const isStartup = !(hasProject || hasTranscript);
   const now = useNow(turn.isRunning ? TICK : null);
 
   return (
-    <PaneBody>
+    // `isolate` keeps the backdrop's negative z-index inside the pane; without
+    // a stacking context here it would sink behind the pane itself.
+    <PaneBody className="isolate">
+      {/* The shader is decoration on the startup screen and nothing else, so
+          it reads the same flag the screen does rather than a condition of its
+          own that could drift into rendering behind a conversation. */}
+      {isStartup ? <StartupBackdrop /> : null}
+
       <MarkdownProvider>
         <MessageScrollerProvider>
           <MessageScroller>
@@ -125,7 +202,11 @@ function Conversation({
                     startedAt={turn.startedAt}
                   />
                 ) : (
-                  <ChatEmptyState hasProject={hasProject} />
+                  <ChatEmptyState
+                    hasProject={hasProject}
+                    onNewProject={onNewProject}
+                    onOpenFolder={onOpenFolder}
+                  />
                 )}
               </MessageScrollerContent>
             </MessageScrollerViewport>
@@ -176,25 +257,17 @@ function Conversation({
   );
 }
 
-function ChatEmptyState({ hasProject }: { hasProject: boolean }) {
+function ChatEmptyState({
+  hasProject,
+  onNewProject,
+  onOpenFolder,
+}: {
+  hasProject: boolean;
+  onNewProject: () => void;
+  onOpenFolder: () => void;
+}) {
   if (!hasProject) {
-    return (
-      <Empty>
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <FolderOpenIcon />
-          </EmptyMedia>
-          <EmptyTitle>No folder open</EmptyTitle>
-          {/* The panes are resizable, so these two blocks are the app's only
-              prose that reflows to arbitrary widths — `pretty` is what keeps a
-              lone word off the last line as the divider moves. */}
-          <EmptyDescription className="text-pretty">
-            Claude works inside one Remotion project at a time. Open a folder to
-            give it somewhere to write.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
+    return <Startup onNewProject={onNewProject} onOpenFolder={onOpenFolder} />;
   }
 
   return (
@@ -204,6 +277,9 @@ function ChatEmptyState({ hasProject }: { hasProject: boolean }) {
           <LogoMark className="size-10 text-foreground" />
         </EmptyMedia>
         <EmptyTitle className="text-2xl">What should we make?</EmptyTitle>
+        {/* The panes are resizable, so this block is the app's only prose that
+            reflows to arbitrary widths — `pretty` is what keeps a lone word off
+            the last line as the divider moves. */}
         <EmptyDescription className="text-pretty">
           Describe the video you want and Claude builds it as real Remotion
           components in your project.

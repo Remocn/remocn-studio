@@ -35,6 +35,23 @@ globalThis.matchMedia ??= ((media: string) => ({
   removeListener: () => undefined,
 })) as typeof matchMedia;
 
+// jsdom defines `getContext` and answers null from it — so this is an
+// assignment, not a `??=`. `MiddleTruncation` measures text through it and
+// throws on null, which is what stops anything containing a truncated path —
+// the New project dialog — from rendering in a test at all. The width is a
+// stand-in: jsdom lays out no text either, so a real measurement would be as
+// fictional as this one.
+// The guard is for the `node` environment suites, which have no DOM globals.
+if (typeof HTMLCanvasElement !== "undefined") {
+  HTMLCanvasElement.prototype.getContext = ((kind: string) =>
+    kind === "2d"
+      ? {
+          font: "",
+          measureText: (text: string) => ({ width: text.length * 7 }),
+        }
+      : null) as typeof HTMLCanvasElement.prototype.getContext;
+}
+
 // jsdom is not a Tauri webview: there is no `window.__TAURI_INTERNALS__`, so any
 // `invoke()` reaching the real transport throws. Tests that render components
 // touching IPC must install a fake with `mockIPC(...)` from

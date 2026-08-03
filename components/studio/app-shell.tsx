@@ -8,12 +8,14 @@ import {
 } from "@/components/ui/resizable";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { panelIdsOf } from "@/lib/studio/panes";
 import { layoutStorage } from "@/lib/studio/settings";
 import { ChatPane } from "./chat-pane";
+import { NewProjectDialog } from "./new-project-dialog";
 import { PreviewPane } from "./preview-pane";
 import { ProjectsPane } from "./projects-pane";
 import { QuitGuard } from "./quit-guard";
-import { StudioProvider } from "./studio-provider";
+import { StudioProvider, useStudio } from "./studio-provider";
 
 const SHELL_LAYOUT_ID = "shell";
 
@@ -23,6 +25,10 @@ export function AppShell() {
       <TooltipProvider delay={500}>
         <Toaster>
           <ShellLayout />
+          {/* App chrome, not pane chrome: this used to live in the projects
+              pane, where hiding the pane took the dialog with it and every
+              New Project button went dead. */}
+          <NewProject />
           <QuitGuard />
         </Toaster>
       </TooltipProvider>
@@ -30,10 +36,18 @@ export function AppShell() {
   );
 }
 
+function NewProject() {
+  const { newProject } = useStudio();
+
+  return <NewProjectDialog control={newProject} />;
+}
+
 function ShellLayout() {
+  const { isPreviewShown, isProjectsShown } = useStudio();
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: SHELL_LAYOUT_ID,
     onlySaveAfterUserInteractions: true,
+    panelIds: panelIdsOf(isProjectsShown, isPreviewShown),
     storage: layoutStorage,
   });
 
@@ -44,27 +58,35 @@ function ShellLayout() {
         defaultLayout={defaultLayout}
         onLayoutChanged={onLayoutChanged}
       >
-        <ResizablePanel
-          defaultSize="240px"
-          groupResizeBehavior="preserve-pixel-size"
-          id="projects"
-          maxSize="380px"
-          minSize="200px"
-        >
-          <ProjectsPane />
-        </ResizablePanel>
+        {isProjectsShown ? (
+          <>
+            <ResizablePanel
+              defaultSize="240px"
+              groupResizeBehavior="preserve-pixel-size"
+              id="projects"
+              maxSize="380px"
+              minSize="200px"
+            >
+              <ProjectsPane />
+            </ResizablePanel>
 
-        <ResizableHandle className="bg-pane-border" />
+            <ResizableHandle className="bg-pane-border" />
+          </>
+        ) : null}
 
         <ResizablePanel defaultSize="46%" id="chat" minSize="380px">
           <ChatPane />
         </ResizablePanel>
 
-        <ResizableHandle className="bg-pane-border" />
+        {isPreviewShown ? (
+          <>
+            <ResizableHandle className="bg-pane-border" />
 
-        <ResizablePanel defaultSize="36%" id="preview" minSize="360px">
-          <PreviewPane />
-        </ResizablePanel>
+            <ResizablePanel defaultSize="36%" id="preview" minSize="360px">
+              <PreviewPane />
+            </ResizablePanel>
+          </>
+        ) : null}
       </ResizablePanelGroup>
     </div>
   );

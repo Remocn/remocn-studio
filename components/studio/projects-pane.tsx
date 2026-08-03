@@ -3,8 +3,8 @@
 import {
   FolderOpenIcon,
   FolderPlusIcon,
+  PanelLeftCloseIcon,
   SettingsIcon,
-  SquarePenIcon,
 } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useMemo } from "react";
@@ -13,7 +13,6 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
 import {
@@ -34,15 +33,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useNewProject } from "@/hooks/use-new-project";
 import { useNow } from "@/hooks/use-now";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
 import { type PaneGroup, paneSections } from "@/lib/studio/groups";
+import { shellMood } from "@/lib/studio/mood";
 import { LogoWordmark } from "./logo-mark";
-import { NewProjectDialog } from "./new-project-dialog";
 import { ProjectGroup } from "./project-group";
 import { useStudio } from "./studio-provider";
+import { Titlebar } from "./titlebar";
 import { UpdateStatus } from "./update-status";
 
 const PLACEHOLDERS = ["one", "two", "three", "four"];
@@ -50,19 +49,19 @@ const PLACEHOLDERS = ["one", "two", "three", "four"];
 export function ProjectsPane() {
   const {
     actionError,
-    activeProject,
     activeSession,
-    createProject,
     expandedProjects,
     folderError,
     groups,
     isLoadingProjects,
+    newProject,
     onNewSession,
     onRemoveSession,
     onRetryScaffold,
     onSelectSession,
     onToggleProject,
     openFolder,
+    projects,
     projectsError,
     relocateProject,
     reloadProjects,
@@ -70,11 +69,11 @@ export function ProjectsPane() {
     renameProject,
     scaffolds,
     sessionsError,
-    startSession,
+    toggleProjects,
+    turns,
   } = useStudio();
 
   const now = useNow();
-  const newProject = useNewProject(createProject);
   const paneError = actionError ?? folderError;
   const commands: ProjectCommands = useMemo(
     () => ({ relocateProject, removeProject, renameProject }),
@@ -89,15 +88,12 @@ export function ProjectsPane() {
     <SidebarProvider className="h-full min-h-0">
       <Sidebar className="w-full" collapsible="none">
         <SidebarHeader className="gap-0 p-0">
-          <div
-            className="h-(--titlebar-block-inset) shrink-0"
-            data-tauri-drag-region
+          <Titlebar mood={projects.length === 0 ? null : shellMood(turns)} />
+          <SidebarBrand onHide={toggleProjects} />
+          <SidebarActions
+            onNewProject={newProject.open}
+            onOpenFolder={openFolder}
           />
-          <SidebarBrand
-            canStart={activeProject !== null}
-            onNewSession={startSession}
-          />
-          <SidebarActions onNewProject={newProject.open} />
         </SidebarHeader>
 
         <SidebarContent>
@@ -114,7 +110,6 @@ export function ProjectsPane() {
                 isLoading={isLoadingProjects}
                 now={now}
                 onNewSession={onNewSession}
-                onOpenFolder={openFolder}
                 onRemoveSession={onRemoveSession}
                 onRetry={reloadProjects}
                 onRetryScaffold={onRetryScaffold}
@@ -145,8 +140,6 @@ export function ProjectsPane() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
-
-        <NewProjectDialog control={newProject} />
       </Sidebar>
     </SidebarProvider>
   );
@@ -155,51 +148,68 @@ export function ProjectsPane() {
 // The traffic lights are cleared by the header's top inset, above this row, so
 // the wordmark can sit on the same left edge as the group label and the project
 // names below it rather than being pushed out of the column.
-function SidebarBrand({
-  canStart,
-  onNewSession,
-}: {
-  canStart: boolean;
-  onNewSession: () => void;
-}) {
+function SidebarBrand({ onHide }: { onHide: () => void }) {
   return (
     <div
       className="flex h-10 shrink-0 items-center justify-between gap-2 pr-2 pl-4"
       data-tauri-drag-region
     >
       <LogoWordmark className="pointer-events-none shrink-0" />
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              aria-label="New session"
-              className="shrink-0 text-muted-foreground"
-              disabled={!canStart}
-              onClick={onNewSession}
-              size="icon-sm"
-              variant="ghost"
-            />
-          }
-        >
-          <SquarePenIcon />
-        </TooltipTrigger>
-        <TooltipContent side="bottom">New session</TooltipContent>
-      </Tooltip>
+      <div className="flex shrink-0 items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label="Hide the project list"
+                className="text-muted-foreground"
+                onClick={onHide}
+                size="icon-sm"
+                variant="ghost"
+              />
+            }
+          >
+            <PanelLeftCloseIcon />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Hide the project list</TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 }
 
-function SidebarActions({ onNewProject }: { onNewProject: () => void }) {
+function SidebarActions({
+  onNewProject,
+  onOpenFolder,
+}: {
+  onNewProject: () => void;
+  onOpenFolder: () => void;
+}) {
   return (
-    <div className="flex flex-col gap-2 px-2 pb-2">
+    <div className="flex items-center gap-2 px-2 pb-2">
       <Button
-        className="bg-input/30"
+        className="flex-1 bg-input/30"
         onClick={onNewProject}
         variant="secondary"
       >
         <FolderPlusIcon data-icon="inline-start" />
         New Project
       </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label="Open an existing project"
+              className="shrink-0 text-muted-foreground"
+              onClick={onOpenFolder}
+              size="icon"
+              variant="ghost"
+            />
+          }
+        >
+          <FolderOpenIcon />
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Open an existing project</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
@@ -213,7 +223,6 @@ function ProjectsBody({
   isLoading,
   now,
   onNewSession,
-  onOpenFolder,
   onRemoveSession,
   onRetry,
   onRetryScaffold,
@@ -229,7 +238,6 @@ function ProjectsBody({
   isLoading: boolean;
   now: number;
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
-  onOpenFolder: () => void;
   onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onRetry: () => void;
   onRetryScaffold: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -260,26 +268,6 @@ function ProjectsBody({
           </SidebarMenuItem>
         ))}
       </SidebarMenu>
-    );
-  }
-
-  if (groups.length === 0) {
-    return (
-      <Empty className="px-4 py-8">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <FolderOpenIcon />
-          </EmptyMedia>
-          <EmptyTitle>No projects yet</EmptyTitle>
-          <EmptyDescription>
-            Point the studio at a Remotion project to begin.
-          </EmptyDescription>
-        </EmptyHeader>
-        <Button onClick={onOpenFolder} size="sm" variant="outline">
-          <FolderOpenIcon data-icon="inline-start" />
-          Open folder
-        </Button>
-      </Empty>
     );
   }
 

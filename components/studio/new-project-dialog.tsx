@@ -1,6 +1,7 @@
 "use client";
 
 import { FolderOpenIcon } from "lucide-react";
+import { MiddleTruncation } from "@/components/middle-truncation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,8 +29,8 @@ export function NewProjectDialog({ control }: { control: NewProject }) {
         </DialogHeader>
 
         <form className="contents" onSubmit={control.onSubmit}>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex min-w-0 flex-col gap-2">
               <Label htmlFor="new-project-name">Name</Label>
               {/* A folder name is a slug, not prose or an identity: spelling
                   suggestions, autofill and a password manager's overlay are all
@@ -47,19 +48,19 @@ export function NewProjectDialog({ control }: { control: NewProject }) {
               />
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex min-w-0 flex-col gap-2">
               <Label htmlFor="new-project-location">Location</Label>
               <Button
-                className="justify-start font-normal"
+                className="w-full min-w-0 justify-start font-normal"
                 id="new-project-location"
                 onClick={control.pickParent}
                 type="button"
                 variant="outline"
               >
                 <FolderOpenIcon data-icon="inline-start" />
-                <span className="truncate">
+                <MiddleTruncation className="min-w-0 flex-1 text-left">
                   {control.parent ?? "Choose a folder…"}
-                </span>
+                </MiddleTruncation>
               </Button>
             </div>
           </div>

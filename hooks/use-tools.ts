@@ -24,6 +24,7 @@ export interface Tools {
 export interface ToolSettings {
   composer: Composer;
   isMissing: boolean;
+  isShown: boolean;
   isWaiting: boolean;
   openedProjectId: string | null;
   previewProjectId: string | null;
@@ -32,6 +33,7 @@ export interface ToolSettings {
 export function useTools({
   composer,
   isMissing,
+  isShown,
   isWaiting,
   openedProjectId,
   previewProjectId,
@@ -42,6 +44,7 @@ export function useTools({
   const unavailable = unavailableOf({
     isMissing,
     isServing: preview.isServing,
+    isShown,
     isWaiting,
     openedProjectId,
     previewProjectId,
@@ -122,10 +125,14 @@ export function useTools({
 function unavailableOf(state: {
   isMissing: boolean;
   isServing: boolean;
+  isShown: boolean;
   isWaiting: boolean;
   openedProjectId: string | null;
   previewProjectId: string | null;
 }): string | null {
+  if (!state.isShown) {
+    return "The preview pane is hidden.";
+  }
   if (state.openedProjectId === null) {
     return "Open a project to work on its preview.";
   }
