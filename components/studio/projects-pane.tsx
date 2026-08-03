@@ -3,6 +3,7 @@
 import {
   FolderOpenIcon,
   FolderPlusIcon,
+  PanelLeftCloseIcon,
   SettingsIcon,
   SquarePenIcon,
 } from "lucide-react";
@@ -69,6 +70,7 @@ export function ProjectsPane() {
     scaffolds,
     sessionsError,
     startSession,
+    toggleProjects,
   } = useStudio();
 
   const now = useNow();
@@ -92,6 +94,7 @@ export function ProjectsPane() {
           />
           <SidebarBrand
             canStart={activeProject !== null}
+            onHide={toggleProjects}
             onNewSession={startSession}
           />
           <SidebarActions
@@ -156,9 +159,11 @@ export function ProjectsPane() {
 // names below it rather than being pushed out of the column.
 function SidebarBrand({
   canStart,
+  onHide,
   onNewSession,
 }: {
   canStart: boolean;
+  onHide: () => void;
   onNewSession: () => void;
 }) {
   return (
@@ -167,23 +172,41 @@ function SidebarBrand({
       data-tauri-drag-region
     >
       <LogoWordmark className="pointer-events-none shrink-0" />
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              aria-label="New session"
-              className="shrink-0 text-muted-foreground"
-              disabled={!canStart}
-              onClick={onNewSession}
-              size="icon-sm"
-              variant="ghost"
-            />
-          }
-        >
-          <SquarePenIcon />
-        </TooltipTrigger>
-        <TooltipContent side="bottom">New session</TooltipContent>
-      </Tooltip>
+      <div className="flex shrink-0 items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label="Hide the project list"
+                className="text-muted-foreground"
+                onClick={onHide}
+                size="icon-sm"
+                variant="ghost"
+              />
+            }
+          >
+            <PanelLeftCloseIcon />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Hide the project list</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label="New session"
+                className="text-muted-foreground"
+                disabled={!canStart}
+                onClick={onNewSession}
+                size="icon-sm"
+                variant="ghost"
+              />
+            }
+          >
+            <SquarePenIcon />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">New session</TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 }

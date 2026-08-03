@@ -6,6 +6,7 @@ import {
   FolderOpenIcon,
   FolderPlusIcon,
   MonitorPlayIcon,
+  PanelRightCloseIcon,
   RotateCwIcon,
   SquareDashedMousePointerIcon,
   XIcon,
@@ -21,6 +22,11 @@ import {
 } from "@/components/ui/empty";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Preview } from "@/hooks/use-preview";
 import { exportLabel } from "@/lib/studio/export";
 import { InspectOverlay } from "./inspect-overlay";
@@ -28,7 +34,7 @@ import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { useStudio } from "./studio-provider";
 
 export function PreviewPane() {
-  const { activeProject, openedProject, tools } = useStudio();
+  const { activeProject, openedProject, togglePreview, tools } = useStudio();
   const { exporting, inspect, snapshot } = tools;
   const { hint, preview, restart, stage } = tools.preview;
   const trouble = inspect.trouble ?? snapshot.trouble;
@@ -99,6 +105,22 @@ export function PreviewPane() {
               Export
             </Button>
           )}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  aria-label="Hide the preview"
+                  className="text-muted-foreground"
+                  onClick={togglePreview}
+                  size="icon-sm"
+                  variant="ghost"
+                />
+              }
+            >
+              <PanelRightCloseIcon />
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Hide the preview</TooltipContent>
+          </Tooltip>
         </PaneActions>
       </PaneHeader>
 

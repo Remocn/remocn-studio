@@ -1,6 +1,10 @@
 "use client";
 
-import { FolderPlusIcon } from "lucide-react";
+import {
+  FolderPlusIcon,
+  PanelLeftOpenIcon,
+  PanelRightOpenIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -17,6 +21,11 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Environment } from "@/hooks/use-environment";
 import { useLocateProject } from "@/hooks/use-locate-project";
 import { useNow } from "@/hooks/use-now";
@@ -26,7 +35,7 @@ import { Composer } from "./composer";
 import { EnvironmentChecklist } from "./environment-checklist";
 import { LogoMark } from "./logo-mark";
 import { MarkdownProvider } from "./markdown";
-import { Pane, PaneBody, PaneHeader, PaneTitle } from "./pane";
+import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { PermissionCard } from "./permission-card";
 import { useStudio } from "./studio-provider";
 import { Transcript } from "./transcript";
@@ -38,9 +47,13 @@ export function ChatPane() {
   const {
     activeSession,
     environment,
+    isPreviewShown,
+    isProjectsShown,
     newProject,
     openedProject,
     relocateProject,
+    togglePreview,
+    toggleProjects,
     turn,
   } = useStudio();
   const { locate } = useLocateProject(
@@ -50,8 +63,53 @@ export function ChatPane() {
 
   return (
     <Pane>
-      <PaneHeader data-tauri-drag-region>
-        <PaneTitle>{titleOf(openedProject, activeSession)}</PaneTitle>
+      <PaneHeader
+        className={isProjectsShown ? undefined : "pl-(--titlebar-inline-inset)"}
+        data-tauri-drag-region
+      >
+        <div className="flex min-w-0 items-center gap-1">
+          {isProjectsShown ? null : (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label="Show the project list"
+                    className="shrink-0 text-muted-foreground"
+                    onClick={toggleProjects}
+                    size="icon-sm"
+                    variant="ghost"
+                  />
+                }
+              >
+                <PanelLeftOpenIcon />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                Show the project list
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <PaneTitle>{titleOf(openedProject, activeSession)}</PaneTitle>
+        </div>
+        {isPreviewShown ? null : (
+          <PaneActions>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label="Show the preview"
+                    className="text-muted-foreground"
+                    onClick={togglePreview}
+                    size="icon-sm"
+                    variant="ghost"
+                  />
+                }
+              >
+                <PanelRightOpenIcon />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Show the preview</TooltipContent>
+            </Tooltip>
+          </PaneActions>
+        )}
       </PaneHeader>
 
       {turn.isLoadingTranscript ? (

@@ -8,6 +8,8 @@ const PROJECT_FOLDER_KEY = "projectFolder";
 const EXPANDED_PROJECTS_KEY = "expandedProjects";
 const CLAUDE_MODEL_KEY = "claudeModel";
 const CLAUDE_EFFORT_KEY = "claudeEffort";
+const PREVIEW_PANE_KEY = "previewPane";
+const PROJECTS_PANE_KEY = "projectsPane";
 const LAYOUT_KEY_PREFIX = "layout:";
 
 const cache = new Map<string, string>();
@@ -21,6 +23,8 @@ export interface StudioSettings {
   claudeModel: string | null;
   expandedProjects: readonly string[];
   legacyProjectFolder: string | null;
+  previewPane: boolean | null;
+  projectsPane: boolean | null;
 }
 
 export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
@@ -38,12 +42,24 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
       claudeModel: cache.get(CLAUDE_MODEL_KEY) ?? null,
       expandedProjects: idsOf(cache.get(EXPANDED_PROJECTS_KEY)),
       legacyProjectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
+      previewPane: shownOf(cache.get(PREVIEW_PANE_KEY)),
+      projectsPane: shownOf(cache.get(PROJECTS_PANE_KEY)),
     };
   })
 );
 
 function effortOf(value: string | undefined): EffortLevel | null {
   return isEffortLevel(value) ? value : null;
+}
+
+function shownOf(value: string | undefined): boolean | null {
+  if (value === "shown") {
+    return true;
+  }
+  if (value === "hidden") {
+    return false;
+  }
+  return null;
 }
 
 function idsOf(value: string | undefined): readonly string[] {
@@ -91,6 +107,14 @@ export function saveExpandedProjects(
 
 export function saveClaudeModel(model: string | null): Effect.Effect<void> {
   return remember(CLAUDE_MODEL_KEY, model);
+}
+
+export function savePreviewPane(shown: boolean): Effect.Effect<void> {
+  return remember(PREVIEW_PANE_KEY, shown ? "shown" : "hidden");
+}
+
+export function saveProjectsPane(shown: boolean): Effect.Effect<void> {
+  return remember(PROJECTS_PANE_KEY, shown ? "shown" : "hidden");
 }
 
 export function saveClaudeEffort(

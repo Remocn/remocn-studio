@@ -196,6 +196,10 @@
        sidebar. This is the band kept clear for them — vertical, not horizontal,
        so the sidebar's own content still starts on the pane's left edge. */
     --titlebar-block-inset: 2.5rem;
+    /* With the sidebar hidden the chat pane is what the buttons are drawn over,
+       and a band there would drop its header below every other pane's. This is
+       the width they need instead: their own inset plus the three of them. */
+    --titlebar-inline-inset: 5rem;
   }
 
   /* This is an app window, not a web page: the shell owns the viewport and the

@@ -80,11 +80,17 @@ function mockStudio(
 
 async function renderShell() {
   render(<Page />);
-  await screen.findByRole("button", { name: "Export" });
+  await screen.findByRole("heading", { name: "Projects" });
 }
 
 function openFolderButton() {
   return screen.findByRole("button", { name: "Open an existing project" });
+}
+
+// The preview leaves once the project list comes back empty, so its own
+// "show" button is the marker for a settled, project-less shell.
+function showPreviewButton() {
+  return screen.findByRole("button", { name: "Show the preview" });
 }
 
 describe("app shell", () => {
@@ -93,16 +99,79 @@ describe("app shell", () => {
   });
 
   it("renders the three panes", async () => {
+    mockStudio({ projects: [PROJECT] });
     await renderShell();
 
     expect(screen.getByRole("heading", { name: "Projects" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Chat" })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Preview" })
+    ).toBeVisible();
+  });
+
+  it("keeps the preview out of the way until there is a project", async () => {
+    await renderShell();
+    await showPreviewButton();
+
+    expect(
+      screen.queryByRole("heading", { name: "Preview" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("brings the preview back, and lets it be dismissed again", async () => {
+    mockStudio({ projects: [PROJECT] });
+    await renderShell();
+    await screen.findByRole("heading", { name: "Preview" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide the preview" }));
+
+    expect(
+      screen.queryByRole("heading", { name: "Preview" })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show the preview" }));
+
     expect(screen.getByRole("heading", { name: "Preview" })).toBeVisible();
+  });
+
+  it("lets the project list be dismissed and brought back", async () => {
+    mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
+    await renderShell();
+    await screen.findByText("my-video");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Hide the project list" })
+    );
+
+    expect(
+      screen.queryByRole("heading", { name: "Projects" })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("my-video")).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show the project list" })
+    );
+
+    expect(screen.getByRole("heading", { name: "Projects" })).toBeVisible();
+    expect(await screen.findByText("my-video")).toBeVisible();
+  });
+
+  it("keeps the chat clear of the window buttons on its own", async () => {
+    const { container } = render(<Page />);
+    await screen.findByRole("heading", { name: "Chat" });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Hide the project list" })
+    );
+
+    expect(container.querySelector('[data-slot="pane-header"]')).toHaveClass(
+      "pl-(--titlebar-inline-inset)"
+    );
   });
 
   it("lets the transcript be selected, unlike the rest of the shell", async () => {
     const { container } = render(<Page />);
-    await screen.findByRole("button", { name: "Export" });
+    await screen.findByRole("heading", { name: "Chat" });
 
     expect(
       container.querySelector('[data-slot="message-scroller-content"]')
@@ -111,10 +180,11 @@ describe("app shell", () => {
 
   it("leaves the projects pane bare and offers to create one instead", async () => {
     await renderShell();
+    await showPreviewButton();
 
     const create = screen.getAllByRole("button", { name: "New Project" });
 
-    expect(await screen.findAllByText("No project open")).toHaveLength(2);
+    expect(screen.getAllByText("No project open")).toHaveLength(1);
     expect(create).toHaveLength(2);
     expect(screen.queryByText("No projects yet")).not.toBeInTheDocument();
   });
@@ -143,10 +213,11 @@ describe("app shell", () => {
   it("keeps the empty states when the picker is dismissed", async () => {
     mockStudio({ folder: null });
     await renderShell();
+    await showPreviewButton();
 
     fireEvent.click(await openFolderButton());
 
-    expect(await screen.findAllByText("No project open")).toHaveLength(2);
+    expect(await screen.findAllByText("No project open")).toHaveLength(1);
     expect(screen.queryByText("my-video")).not.toBeInTheDocument();
   });
 
