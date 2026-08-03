@@ -13,7 +13,6 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
 import {
@@ -34,7 +33,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useNewProject } from "@/hooks/use-new-project";
 import { useNow } from "@/hooks/use-now";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
@@ -52,11 +50,11 @@ export function ProjectsPane() {
     actionError,
     activeProject,
     activeSession,
-    createProject,
     expandedProjects,
     folderError,
     groups,
     isLoadingProjects,
+    newProject,
     onNewSession,
     onRemoveSession,
     onRetryScaffold,
@@ -74,7 +72,6 @@ export function ProjectsPane() {
   } = useStudio();
 
   const now = useNow();
-  const newProject = useNewProject(createProject);
   const paneError = actionError ?? folderError;
   const commands: ProjectCommands = useMemo(
     () => ({ relocateProject, removeProject, renameProject }),
@@ -97,7 +94,10 @@ export function ProjectsPane() {
             canStart={activeProject !== null}
             onNewSession={startSession}
           />
-          <SidebarActions onNewProject={newProject.open} />
+          <SidebarActions
+            onNewProject={newProject.open}
+            onOpenFolder={openFolder}
+          />
         </SidebarHeader>
 
         <SidebarContent>
@@ -114,7 +114,6 @@ export function ProjectsPane() {
                 isLoading={isLoadingProjects}
                 now={now}
                 onNewSession={onNewSession}
-                onOpenFolder={openFolder}
                 onRemoveSession={onRemoveSession}
                 onRetry={reloadProjects}
                 onRetryScaffold={onRetryScaffold}
@@ -189,17 +188,39 @@ function SidebarBrand({
   );
 }
 
-function SidebarActions({ onNewProject }: { onNewProject: () => void }) {
+function SidebarActions({
+  onNewProject,
+  onOpenFolder,
+}: {
+  onNewProject: () => void;
+  onOpenFolder: () => void;
+}) {
   return (
-    <div className="flex flex-col gap-2 px-2 pb-2">
+    <div className="flex items-center gap-2 px-2 pb-2">
       <Button
-        className="bg-input/30"
+        className="flex-1 bg-input/30"
         onClick={onNewProject}
         variant="secondary"
       >
         <FolderPlusIcon data-icon="inline-start" />
         New Project
       </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label="Open an existing project"
+              className="shrink-0 text-muted-foreground"
+              onClick={onOpenFolder}
+              size="icon"
+              variant="ghost"
+            />
+          }
+        >
+          <FolderOpenIcon />
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Open an existing project</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
@@ -213,7 +234,6 @@ function ProjectsBody({
   isLoading,
   now,
   onNewSession,
-  onOpenFolder,
   onRemoveSession,
   onRetry,
   onRetryScaffold,
@@ -229,7 +249,6 @@ function ProjectsBody({
   isLoading: boolean;
   now: number;
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
-  onOpenFolder: () => void;
   onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onRetry: () => void;
   onRetryScaffold: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -260,26 +279,6 @@ function ProjectsBody({
           </SidebarMenuItem>
         ))}
       </SidebarMenu>
-    );
-  }
-
-  if (groups.length === 0) {
-    return (
-      <Empty className="px-4 py-8">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <FolderOpenIcon />
-          </EmptyMedia>
-          <EmptyTitle>No projects yet</EmptyTitle>
-          <EmptyDescription>
-            Point the studio at a Remotion project to begin.
-          </EmptyDescription>
-        </EmptyHeader>
-        <Button onClick={onOpenFolder} size="sm" variant="outline">
-          <FolderOpenIcon data-icon="inline-start" />
-          Open folder
-        </Button>
-      </Empty>
     );
   }
 

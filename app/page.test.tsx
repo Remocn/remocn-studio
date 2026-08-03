@@ -84,7 +84,7 @@ async function renderShell() {
 }
 
 function openFolderButton() {
-  return screen.findByRole("button", { name: "Open folder" });
+  return screen.findByRole("button", { name: "Open an existing project" });
 }
 
 describe("app shell", () => {
@@ -109,12 +109,14 @@ describe("app shell", () => {
     ).toHaveAttribute("data-selectable");
   });
 
-  it("says every pane is empty when no project is open", async () => {
+  it("leaves the projects pane bare and offers to create one instead", async () => {
     await renderShell();
 
-    expect(await screen.findByText("No projects yet")).toBeVisible();
-    expect(screen.getAllByText("No folder open")).toHaveLength(2);
-    expect(await openFolderButton()).toBeVisible();
+    const create = screen.getAllByRole("button", { name: "New Project" });
+
+    expect(await screen.findAllByText("No project open")).toHaveLength(2);
+    expect(create).toHaveLength(2);
+    expect(screen.queryByText("No projects yet")).not.toBeInTheDocument();
   });
 
   it("names the app at the head of the sidebar, and never a folder", async () => {
@@ -125,9 +127,6 @@ describe("app shell", () => {
     // the glyph starts at "emocn" — nothing else in the shell draws that.
     expect(await screen.findByText(WORDMARK)).toBeVisible();
     expect(screen.getAllByText("my-video")).toHaveLength(1);
-    expect(
-      screen.queryByRole("button", { name: "Open folder" })
-    ).not.toBeInTheDocument();
   });
 
   it("opens the picked folder into the pane", async () => {
@@ -137,7 +136,7 @@ describe("app shell", () => {
     fireEvent.click(await openFolderButton());
 
     expect(await screen.findByText("my-video")).toBeVisible();
-    expect(screen.queryByText("No folder open")).not.toBeInTheDocument();
+    expect(screen.queryByText("No project open")).not.toBeInTheDocument();
     expect(screen.queryByText("No projects yet")).not.toBeInTheDocument();
   });
 
@@ -147,8 +146,8 @@ describe("app shell", () => {
 
     fireEvent.click(await openFolderButton());
 
-    expect(await screen.findByText("No projects yet")).toBeVisible();
-    expect(screen.getAllByText("No folder open")).toHaveLength(2);
+    expect(await screen.findAllByText("No project open")).toHaveLength(2);
+    expect(screen.queryByText("my-video")).not.toBeInTheDocument();
   });
 
   it("lists stored sessions and opens the one that is clicked", async () => {
@@ -211,9 +210,11 @@ describe("app shell", () => {
   it("offers a way to start a project from the header", async () => {
     await renderShell();
 
-    expect(
-      await screen.findByRole("button", { name: "New Project" })
-    ).toBeVisible();
+    const [header] = await screen.findAllByRole("button", {
+      name: "New Project",
+    });
+
+    expect(header).toBeVisible();
   });
 
   it("says so when the history cannot be read", async () => {

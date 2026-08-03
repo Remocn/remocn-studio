@@ -4,6 +4,7 @@ import {
   CameraIcon,
   DownloadIcon,
   FolderOpenIcon,
+  FolderPlusIcon,
   MonitorPlayIcon,
   RotateCwIcon,
   SquareDashedMousePointerIcon,
@@ -256,9 +257,9 @@ function NoFolder() {
     <Empty className="h-full p-6">
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <FolderOpenIcon />
+          <FolderPlusIcon />
         </EmptyMedia>
-        <EmptyTitle>No folder open</EmptyTitle>
+        <EmptyTitle>No project open</EmptyTitle>
         <EmptyDescription>
           The preview mirrors the project on disk.
         </EmptyDescription>

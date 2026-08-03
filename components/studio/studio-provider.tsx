@@ -6,6 +6,7 @@ import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
 import { type Composer, useComposer } from "@/hooks/use-composer";
 import { type Environment, useEnvironment } from "@/hooks/use-environment";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
+import { type NewProject, useNewProject } from "@/hooks/use-new-project";
 import { type OpenTurn, useOpenTurn } from "@/hooks/use-open-turn";
 import { type Tools, useTools } from "@/hooks/use-tools";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
@@ -15,6 +16,7 @@ export type Studio = ClaudeEffort &
   Workspace & {
     composer: Composer;
     environment: Environment;
+    newProject: NewProject;
     tools: Tools;
     turn: OpenTurn;
   };
@@ -34,6 +36,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const workspace = useWorkspace(settings);
   const model = useClaudeModel(settings);
   const effort = useClaudeEffort(settings);
+  const newProject = useNewProject(workspace.createProject);
 
   const turn = useOpenTurn({
     changeMode: workspace.changeSessionMode,
@@ -75,10 +78,11 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       ...effort,
       composer,
       environment,
+      newProject,
       tools,
       turn,
     }),
-    [composer, effort, environment, model, tools, turn, workspace]
+    [composer, effort, environment, model, newProject, tools, turn, workspace]
   );
 
   if (!workspace.isReady) {

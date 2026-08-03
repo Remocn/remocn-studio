@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderOpenIcon } from "lucide-react";
+import { FolderPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -35,8 +35,14 @@ const PLACEHOLDERS = ["one", "two", "three"];
 const TICK = "1 second";
 
 export function ChatPane() {
-  const { activeSession, environment, openedProject, relocateProject, turn } =
-    useStudio();
+  const {
+    activeSession,
+    environment,
+    newProject,
+    openedProject,
+    relocateProject,
+    turn,
+  } = useStudio();
   const { locate } = useLocateProject(
     openedProject?.id ?? null,
     relocateProject
@@ -57,6 +63,7 @@ export function ChatPane() {
           hasProject={openedProject !== null}
           missing={openedProject?.missing ?? false}
           onLocate={locate}
+          onNewProject={newProject.open}
           turn={turn}
         />
       )}
@@ -92,6 +99,7 @@ function Conversation({
   hasProject,
   missing,
   onLocate,
+  onNewProject,
   turn,
 }: {
   cwd: string | null;
@@ -99,6 +107,7 @@ function Conversation({
   hasProject: boolean;
   missing: boolean;
   onLocate: () => void;
+  onNewProject: () => void;
   turn: OpenTurn;
 }) {
   const hasTranscript = turn.entries.length > 0 || turn.turnError !== null;
@@ -125,7 +134,10 @@ function Conversation({
                     startedAt={turn.startedAt}
                   />
                 ) : (
-                  <ChatEmptyState hasProject={hasProject} />
+                  <ChatEmptyState
+                    hasProject={hasProject}
+                    onNewProject={onNewProject}
+                  />
                 )}
               </MessageScrollerContent>
             </MessageScrollerViewport>
@@ -176,23 +188,33 @@ function Conversation({
   );
 }
 
-function ChatEmptyState({ hasProject }: { hasProject: boolean }) {
+function ChatEmptyState({
+  hasProject,
+  onNewProject,
+}: {
+  hasProject: boolean;
+  onNewProject: () => void;
+}) {
   if (!hasProject) {
     return (
       <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <FolderOpenIcon />
+            <FolderPlusIcon />
           </EmptyMedia>
-          <EmptyTitle>No folder open</EmptyTitle>
+          <EmptyTitle>No project open</EmptyTitle>
           {/* The panes are resizable, so these two blocks are the app's only
               prose that reflows to arbitrary widths — `pretty` is what keeps a
               lone word off the last line as the divider moves. */}
           <EmptyDescription className="text-pretty">
-            Claude works inside one Remotion project at a time. Open a folder to
+            Claude works inside one Remotion project at a time. Create one to
             give it somewhere to write.
           </EmptyDescription>
         </EmptyHeader>
+        <Button onClick={onNewProject} size="sm" variant="outline">
+          <FolderPlusIcon data-icon="inline-start" />
+          New Project
+        </Button>
       </Empty>
     );
   }
