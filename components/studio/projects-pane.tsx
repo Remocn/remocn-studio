@@ -39,7 +39,6 @@ import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
 import { type PaneGroup, paneSections } from "@/lib/studio/groups";
 import { LogoWordmark } from "./logo-mark";
-import { NewProjectDialog } from "./new-project-dialog";
 import { ProjectGroup } from "./project-group";
 import { useStudio } from "./studio-provider";
 import { UpdateStatus } from "./update-status";
@@ -147,8 +146,6 @@ export function ProjectsPane() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
-
-        <NewProjectDialog control={newProject} />
       </Sidebar>
     </SidebarProvider>
   );

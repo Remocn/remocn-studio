@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  FolderPlusIcon,
-  PanelLeftOpenIcon,
-  PanelRightOpenIcon,
-} from "lucide-react";
+import { PanelLeftOpenIcon, PanelRightOpenIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -37,6 +33,7 @@ import { LogoMark } from "./logo-mark";
 import { MarkdownProvider } from "./markdown";
 import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { PermissionCard } from "./permission-card";
+import { Startup } from "./startup";
 import { useStudio } from "./studio-provider";
 import { Transcript } from "./transcript";
 
@@ -51,6 +48,7 @@ export function ChatPane() {
     isProjectsShown,
     newProject,
     openedProject,
+    openFolder,
     relocateProject,
     togglePreview,
     toggleProjects,
@@ -122,6 +120,7 @@ export function ChatPane() {
           missing={openedProject?.missing ?? false}
           onLocate={locate}
           onNewProject={newProject.open}
+          onOpenFolder={openFolder}
           turn={turn}
         />
       )}
@@ -158,6 +157,7 @@ function Conversation({
   missing,
   onLocate,
   onNewProject,
+  onOpenFolder,
   turn,
 }: {
   cwd: string | null;
@@ -166,6 +166,7 @@ function Conversation({
   missing: boolean;
   onLocate: () => void;
   onNewProject: () => void;
+  onOpenFolder: () => void;
   turn: OpenTurn;
 }) {
   const hasTranscript = turn.entries.length > 0 || turn.turnError !== null;
@@ -195,6 +196,7 @@ function Conversation({
                   <ChatEmptyState
                     hasProject={hasProject}
                     onNewProject={onNewProject}
+                    onOpenFolder={onOpenFolder}
                   />
                 )}
               </MessageScrollerContent>
@@ -249,32 +251,14 @@ function Conversation({
 function ChatEmptyState({
   hasProject,
   onNewProject,
+  onOpenFolder,
 }: {
   hasProject: boolean;
   onNewProject: () => void;
+  onOpenFolder: () => void;
 }) {
   if (!hasProject) {
-    return (
-      <Empty>
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <FolderPlusIcon />
-          </EmptyMedia>
-          <EmptyTitle>No project open</EmptyTitle>
-          {/* The panes are resizable, so these two blocks are the app's only
-              prose that reflows to arbitrary widths — `pretty` is what keeps a
-              lone word off the last line as the divider moves. */}
-          <EmptyDescription className="text-pretty">
-            Claude works inside one Remotion project at a time. Create one to
-            give it somewhere to write.
-          </EmptyDescription>
-        </EmptyHeader>
-        <Button onClick={onNewProject} size="sm" variant="outline">
-          <FolderPlusIcon data-icon="inline-start" />
-          New Project
-        </Button>
-      </Empty>
-    );
+    return <Startup onNewProject={onNewProject} onOpenFolder={onOpenFolder} />;
   }
 
   return (
@@ -284,6 +268,9 @@ function ChatEmptyState({
           <LogoMark className="size-10 text-foreground" />
         </EmptyMedia>
         <EmptyTitle className="text-2xl">What should we make?</EmptyTitle>
+        {/* The panes are resizable, so this block is the app's only prose that
+            reflows to arbitrary widths — `pretty` is what keeps a lone word off
+            the last line as the divider moves. */}
         <EmptyDescription className="text-pretty">
           Describe the video you want and Claude builds it as real Remotion
           components in your project.

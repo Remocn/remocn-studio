@@ -22,7 +22,7 @@ export function LogoWordmark({
     >
       <svg
         aria-hidden="true"
-        className="h-4 w-auto"
+        className="h-[1em] w-auto"
         fill="none"
         viewBox="0 0 124.06 134.26"
         xmlns="http://www.w3.org/2000/svg"

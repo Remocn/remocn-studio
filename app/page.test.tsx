@@ -1,5 +1,5 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import Page from "@/app/page";
 import type { HistorySession, Project } from "@/shared/ipc";
@@ -7,6 +7,7 @@ import type { HistorySession, Project } from "@/shared/ipc";
 const PICKED_FOLDER = "/Users/me/projects/my-video";
 const SESSION_ROW = /^A promo for the launch/;
 const WORDMARK = /^emocn/;
+const STARTUP = "Make a video by describing it";
 
 const SIDECAR_READY = {
   attempt: 0,
@@ -83,8 +84,13 @@ async function renderShell() {
   await screen.findByRole("heading", { name: "Projects" });
 }
 
-function openFolderButton() {
-  return screen.findByRole("button", { name: "Open an existing project" });
+// The startup state offers the same action, so this names the sidebar's copy —
+// the one that is there whether or not a project is open.
+async function openFolderButton() {
+  const [sidebar] = await screen.findAllByRole("button", {
+    name: "Open an existing project",
+  });
+  return sidebar;
 }
 
 // The preview leaves once the project list comes back empty, so its own
@@ -132,6 +138,21 @@ describe("app shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show the preview" }));
 
     expect(screen.getByRole("heading", { name: "Preview" })).toBeVisible();
+  });
+
+  it("opens the new project dialog with the project list hidden", async () => {
+    await renderShell();
+    await showPreviewButton();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Hide the project list" })
+    );
+
+    const [cta] = screen.getAllByRole("button", { name: "New Project" });
+    fireEvent.click(cta);
+
+    expect(
+      await screen.findByRole("heading", { name: "New project" })
+    ).toBeVisible();
   });
 
   it("lets the project list be dismissed and brought back", async () => {
@@ -184,9 +205,23 @@ describe("app shell", () => {
 
     const create = screen.getAllByRole("button", { name: "New Project" });
 
-    expect(screen.getAllByText("No project open")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: STARTUP })).toBeVisible();
     expect(create).toHaveLength(2);
     expect(screen.queryByText("No projects yet")).not.toBeInTheDocument();
+  });
+
+  it("walks a first-time user through the steps, ending on the CTA", async () => {
+    await renderShell();
+    await showPreviewButton();
+
+    const steps = screen.getByRole("list", { name: "Getting started" });
+
+    expect(within(steps).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(steps).getByText("Start a project")).toBeVisible();
+    expect(within(steps).getByText("Export the mp4")).toBeVisible();
+    expect(
+      screen.getAllByRole("button", { name: "Open an existing project" })
+    ).toHaveLength(2);
   });
 
   it("names the app at the head of the sidebar, and never a folder", async () => {
@@ -206,7 +241,9 @@ describe("app shell", () => {
     fireEvent.click(await openFolderButton());
 
     expect(await screen.findByText("my-video")).toBeVisible();
-    expect(screen.queryByText("No project open")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: STARTUP })
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("No projects yet")).not.toBeInTheDocument();
   });
 
@@ -217,7 +254,7 @@ describe("app shell", () => {
 
     fireEvent.click(await openFolderButton());
 
-    expect(await screen.findAllByText("No project open")).toHaveLength(1);
+    expect(await screen.findByRole("heading", { name: STARTUP })).toBeVisible();
     expect(screen.queryByText("my-video")).not.toBeInTheDocument();
   });
 

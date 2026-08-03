@@ -11,6 +11,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { panelIdsOf } from "@/lib/studio/panes";
 import { layoutStorage } from "@/lib/studio/settings";
 import { ChatPane } from "./chat-pane";
+import { NewProjectDialog } from "./new-project-dialog";
 import { PreviewPane } from "./preview-pane";
 import { ProjectsPane } from "./projects-pane";
 import { QuitGuard } from "./quit-guard";
@@ -24,11 +25,21 @@ export function AppShell() {
       <TooltipProvider delay={500}>
         <Toaster>
           <ShellLayout />
+          {/* App chrome, not pane chrome: this used to live in the projects
+              pane, where hiding the pane took the dialog with it and every
+              New Project button went dead. */}
+          <NewProject />
           <QuitGuard />
         </Toaster>
       </TooltipProvider>
     </StudioProvider>
   );
+}
+
+function NewProject() {
+  const { newProject } = useStudio();
+
+  return <NewProjectDialog control={newProject} />;
 }
 
 function ShellLayout() {
