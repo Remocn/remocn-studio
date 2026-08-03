@@ -45,7 +45,10 @@ globalThis.matchMedia ??= ((media: string) => ({
 if (typeof HTMLCanvasElement !== "undefined") {
   HTMLCanvasElement.prototype.getContext = ((kind: string) =>
     kind === "2d"
-      ? { font: "", measureText: (text: string) => ({ width: text.length * 7 }) }
+      ? {
+          font: "",
+          measureText: (text: string) => ({ width: text.length * 7 }),
+        }
       : null) as typeof HTMLCanvasElement.prototype.getContext;
 }
 

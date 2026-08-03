@@ -96,7 +96,11 @@ function Step({
       {/* The rule stretches to whatever the copy beside it needs, which is what
           makes four rows read as one sequence rather than four cards. */}
       <div className="flex flex-col items-center gap-1">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full border bg-card font-medium text-muted-foreground text-xs tabular-nums">
+        {/* No `tabular-nums`: these four never change, and DM Sans pads a
+            tabular "1" to the right of its slot, which reads as off-centre in
+            a circle. `leading-none` drops the line box onto the glyph so the
+            flex centring has nothing else to average. */}
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full border bg-card font-medium text-muted-foreground text-xs leading-none">
           {index + 1}
         </span>
         {isLast ? null : <span className="w-px flex-1 bg-border" />}

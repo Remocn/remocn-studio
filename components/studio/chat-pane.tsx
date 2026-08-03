@@ -34,6 +34,7 @@ import { MarkdownProvider } from "./markdown";
 import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { PermissionCard } from "./permission-card";
 import { Startup } from "./startup";
+import { StartupBackdrop } from "./startup-backdrop";
 import { useStudio } from "./studio-provider";
 import { Transcript } from "./transcript";
 
@@ -173,7 +174,11 @@ function Conversation({
   const now = useNow(turn.isRunning ? TICK : null);
 
   return (
-    <PaneBody>
+    // `isolate` keeps the backdrop's negative z-index inside the pane; without
+    // a stacking context here it would sink behind the pane itself.
+    <PaneBody className="isolate">
+      {hasProject ? null : <StartupBackdrop />}
+
       <MarkdownProvider>
         <MessageScrollerProvider>
           <MessageScroller>
