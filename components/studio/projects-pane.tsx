@@ -38,9 +38,11 @@ import { useNow } from "@/hooks/use-now";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
 import { type PaneGroup, paneSections } from "@/lib/studio/groups";
+import { shellMood } from "@/lib/studio/mood";
 import { LogoWordmark } from "./logo-mark";
 import { ProjectGroup } from "./project-group";
 import { useStudio } from "./studio-provider";
+import { Titlebar } from "./titlebar";
 import { UpdateStatus } from "./update-status";
 
 const PLACEHOLDERS = ["one", "two", "three", "four"];
@@ -61,6 +63,7 @@ export function ProjectsPane() {
     onSelectSession,
     onToggleProject,
     openFolder,
+    projects,
     projectsError,
     relocateProject,
     reloadProjects,
@@ -70,6 +73,7 @@ export function ProjectsPane() {
     sessionsError,
     startSession,
     toggleProjects,
+    turns,
   } = useStudio();
 
   const now = useNow();
@@ -87,10 +91,7 @@ export function ProjectsPane() {
     <SidebarProvider className="h-full min-h-0">
       <Sidebar className="w-full" collapsible="none">
         <SidebarHeader className="gap-0 p-0">
-          <div
-            className="h-(--titlebar-block-inset) shrink-0"
-            data-tauri-drag-region
-          />
+          <Titlebar mood={projects.length === 0 ? null : shellMood(turns)} />
           <SidebarBrand
             canStart={activeProject !== null}
             onHide={toggleProjects}

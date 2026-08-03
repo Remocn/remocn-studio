@@ -171,13 +171,17 @@ function Conversation({
   turn: OpenTurn;
 }) {
   const hasTranscript = turn.entries.length > 0 || turn.turnError !== null;
+  const isStartup = !(hasProject || hasTranscript);
   const now = useNow(turn.isRunning ? TICK : null);
 
   return (
     // `isolate` keeps the backdrop's negative z-index inside the pane; without
     // a stacking context here it would sink behind the pane itself.
     <PaneBody className="isolate">
-      {hasProject ? null : <StartupBackdrop />}
+      {/* The shader is decoration on the startup screen and nothing else, so
+          it reads the same flag the screen does rather than a condition of its
+          own that could drift into rendering behind a conversation. */}
+      {isStartup ? <StartupBackdrop /> : null}
 
       <MarkdownProvider>
         <MessageScrollerProvider>

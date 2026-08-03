@@ -60,6 +60,7 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --animate-titlebar: titlebar-in 900ms ease-out both;
 }
 
 :root {
@@ -179,8 +180,21 @@
    a hang, and rotation in place is status, not motion across the screen. The
    word-by-word reveal is switched off in components/studio/markdown.tsx, which
    also withholds `.code-reveal`; the belt below catches anything it missed. */
+/* The band under the traffic lights is the same height empty or not, so the
+   first project only ever fades the shader into a space that was already
+   there. Nothing below it moves — which is the whole trick. */
+@keyframes titlebar-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-pulse {
+  .animate-pulse,
+  .animate-titlebar {
     animation: none;
   }
   .code-reveal :not(pre) > code,
@@ -194,8 +208,11 @@
   :root {
     /* The window has no title bar, so macOS draws its buttons straight over the
        sidebar. This is the band kept clear for them — vertical, not horizontal,
-       so the sidebar's own content still starts on the pane's left edge. */
-    --titlebar-block-inset: 2.5rem;
+       so the sidebar's own content still starts on the pane's left edge. It is
+       taller than the buttons need because it is also the state indicator's
+       canvas, and one height for both states is what keeps the first project
+       from moving anything. */
+    --titlebar-block-inset: 3.25rem;
     /* With the sidebar hidden the chat pane is what the buttons are drawn over,
        and a band there would drop its header below every other pane's. This is
        the width they need instead: their own inset plus the three of them. */

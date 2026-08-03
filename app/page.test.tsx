@@ -140,6 +140,26 @@ describe("app shell", () => {
     expect(screen.getByRole("heading", { name: "Preview" })).toBeVisible();
   });
 
+  // The band itself is there either way — it is what clears the traffic
+  // lights. What arrives with the first project is the state indicator in it.
+  it("keeps the state indicator out of an empty app", async () => {
+    const { container } = render(<Page />);
+    await showPreviewButton();
+
+    expect(container.querySelector('[data-slot="titlebar"]')).toBeVisible();
+    expect(container.querySelector('[data-slot="titlebar-mood"]')).toBeNull();
+  });
+
+  it("lights the band once there is a project", async () => {
+    mockStudio({ projects: [PROJECT] });
+    const { container } = render(<Page />);
+    await screen.findByText("my-video");
+
+    expect(
+      container.querySelector('[data-slot="titlebar-mood"]')
+    ).toBeInTheDocument();
+  });
+
   it("opens the new project dialog with the project list hidden", async () => {
     await renderShell();
     await showPreviewButton();
