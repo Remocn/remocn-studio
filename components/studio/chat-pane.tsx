@@ -28,6 +28,7 @@ import { useLocateProject } from "@/hooks/use-locate-project";
 import type { NewProject } from "@/hooks/use-new-project";
 import { useNow } from "@/hooks/use-now";
 import type { OpenTurn } from "@/hooks/use-open-turn";
+import { usePipeline } from "@/hooks/use-pipeline";
 import type { StudioSettings } from "@/lib/studio/settings";
 import { currentTasks } from "@/lib/studio/tasks";
 import type { HistorySession, Project } from "@/shared/ipc";
@@ -184,6 +185,7 @@ function Conversation({
   const isCreating = newProject.isOpen;
   const isStartup = !(hasProject || hasTranscript);
   const now = useNow(turn.isRunning ? TICK : null);
+  const pipeline = usePipeline(turn.openId, turn.isRunning);
 
   return (
     // `isolate` keeps the backdrop's negative z-index inside the pane; without
@@ -255,7 +257,11 @@ function Conversation({
               hand, and opens upwards into the whole list. It reads the same
               `currentTasks` the transcript and the projects pane read, so the
               three cannot disagree about what the plan is. */}
-          <TaskDock settings={settings} tasks={currentTasks(turn.entries)} />
+          <TaskDock
+            settings={settings}
+            stages={pipeline.stages}
+            tasks={currentTasks(turn.entries)}
+          />
 
           <Composer
             context={turn.context}

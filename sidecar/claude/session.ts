@@ -13,6 +13,7 @@ import { contentOf } from "./content";
 import { conventionsFor } from "./conventions";
 import { pluginsFor } from "./knowledge";
 import type { ApplyMode } from "./mode";
+import { PIPELINE_SERVER, type pipelineServer } from "./pipeline-tools";
 
 export class ClaudeError extends Data.TaggedError("ClaudeError")<{
   message: string;
@@ -24,12 +25,14 @@ interface Turn {
 }
 
 export interface TurnCallbacks {
+  readonly brief: string | null;
   readonly canUseTool: CanUseTool;
   readonly cwd: string;
   readonly log: (line: string) => void;
   readonly onContext: (usage: ContextUsage) => void;
   readonly onMode: (apply: ApplyMode) => void;
   readonly onStop: () => void;
+  readonly pipeline: ReturnType<typeof pipelineServer>;
 }
 
 export function messages(
@@ -104,12 +107,16 @@ function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
     canUseTool: callbacks.canUseTool,
     cwd: callbacks.cwd,
     includePartialMessages: true,
+    mcpServers: { [PIPELINE_SERVER]: callbacks.pipeline },
     permissionMode: params.mode,
     plugins,
     settingSources: ["project"],
     stderr: (data) => callbacks.log(`claude: ${data.trimEnd()}`),
     systemPrompt: {
-      append: conventionsFor(plugins.length > 0),
+      append:
+        callbacks.brief === null
+          ? conventionsFor(plugins.length > 0)
+          : `${conventionsFor(plugins.length > 0)}\n\n${callbacks.brief}`,
       preset: "claude_code",
       type: "preset",
     },

@@ -5,6 +5,13 @@ import {
   type SessionMode,
   TranscriptEntry,
 } from "@/shared/ipc";
+import {
+  orderedStages,
+  PipelineStage,
+  type PipelineStageId,
+  type PipelineStatus,
+  startedStages,
+} from "@/shared/pipeline";
 import type { SqlDriver, SqlRow } from "./driver";
 
 export class HistoryError extends Data.TaggedError("HistoryError")<{
@@ -38,12 +45,23 @@ export interface HistoryStore {
   readonly open: (
     input: OpenSession
   ) => Effect.Effect<HistorySession, HistoryError>;
+  readonly pipeline: (
+    sessionId: string
+  ) => Effect.Effect<readonly PipelineStage[], HistoryError>;
   readonly remove: (sessionId: string) => Effect.Effect<boolean, HistoryError>;
   readonly sessions: Effect.Effect<readonly HistorySession[], HistoryError>;
   readonly setMode: (
     sessionId: string,
     mode: SessionMode
   ) => Effect.Effect<HistorySession, HistoryError>;
+  readonly setStage: (
+    sessionId: string,
+    stage: PipelineStageId,
+    status: PipelineStatus
+  ) => Effect.Effect<readonly PipelineStage[], HistoryError>;
+  readonly startPipeline: (
+    sessionId: string
+  ) => Effect.Effect<readonly PipelineStage[], HistoryError>;
   readonly write: (block: StoredBlock) => Effect.Effect<void, HistoryError>;
 }
 
@@ -56,6 +74,7 @@ const COLUMNS =
 
 const decodeSession = Schema.decodeUnknownEffect(HistorySession);
 const decodeEntry = Schema.decodeUnknownEffect(TranscriptEntry);
+const decodeStage = Schema.decodeUnknownEffect(PipelineStage);
 
 const failed = (cause: unknown) =>
   new HistoryError({ message: errorMessage(cause) });
@@ -79,6 +98,23 @@ export function make(driver: SqlDriver): HistoryStore {
             )
           : sessionOf(row);
       })
+    );
+
+  const stagesOf = (sessionId: string) =>
+    attempt(() =>
+      driver.all(
+        "SELECT stage, status FROM pipeline_stage WHERE session_id = ?",
+        [sessionId]
+      )
+    ).pipe(
+      Effect.flatMap((rows) =>
+        Effect.forEach(rows, (row) =>
+          decodeStage({ stage: row.stage, status: row.status }).pipe(
+            Effect.mapError(failed)
+          )
+        )
+      ),
+      Effect.map(orderedStages)
     );
 
   return {
@@ -125,6 +161,8 @@ export function make(driver: SqlDriver): HistoryStore {
         return yield* read(input.id);
       }),
 
+    pipeline: stagesOf,
+
     remove: (sessionId) =>
       attempt(() =>
         driver.run("DELETE FROM session WHERE id = ?", [sessionId])
@@ -143,6 +181,36 @@ export function make(driver: SqlDriver): HistoryStore {
           sessionId,
         ])
       ).pipe(Effect.andThen(read(sessionId))),
+
+    setStage: (sessionId, stage, status) =>
+      attempt(() =>
+        driver.run(
+          "UPDATE pipeline_stage SET status = ? WHERE session_id = ? AND stage = ?",
+          [status, sessionId, stage]
+        )
+      ).pipe(
+        Effect.flatMap((changes) =>
+          changes > 0
+            ? stagesOf(sessionId)
+            : Effect.fail(
+                new HistoryError({
+                  message: `session ${sessionId} has no pipeline stage called ${stage}`,
+                })
+              )
+        )
+      ),
+
+    startPipeline: (sessionId) =>
+      Effect.forEach(startedStages(), (row) =>
+        attempt(() =>
+          driver.run(
+            `INSERT INTO pipeline_stage (session_id, stage, status)
+             VALUES (?, ?, ?)
+             ON CONFLICT (session_id, stage) DO NOTHING`,
+            [sessionId, row.stage, row.status]
+          )
+        )
+      ).pipe(Effect.andThen(stagesOf(sessionId))),
 
     write: (block) =>
       Effect.gen(function* () {
@@ -176,9 +244,12 @@ export function broken(message: string): HistoryStore {
     blocks: () => fail,
     nextOrdinal: () => fail,
     open: () => fail,
+    pipeline: () => fail,
     remove: () => fail,
     sessions: fail,
     setMode: () => fail,
+    setStage: () => fail,
+    startPipeline: () => fail,
     write: () => fail,
   };
 }
