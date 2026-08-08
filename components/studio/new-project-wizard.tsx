@@ -12,9 +12,15 @@ import { cn } from "@/lib/utils";
 
 const RATIO_LABEL = "new-project-ratio";
 
-export function NewProjectWizard({ control }: { control: NewProject }) {
+export function NewProjectWizard({
+  control,
+  entrance,
+}: {
+  control: NewProject;
+  entrance: string | null;
+}) {
   return (
-    <div className="flex w-full min-w-0 flex-1 flex-col">
+    <div className={cn("flex w-full min-w-0 flex-1 flex-col", entrance)}>
       <div className="m-auto flex w-full min-w-0 flex-col gap-6 py-6">
         <div className="flex flex-col items-start gap-3">
           <Button

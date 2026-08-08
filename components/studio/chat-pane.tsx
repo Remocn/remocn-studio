@@ -22,6 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useEntrance } from "@/hooks/use-entrance";
 import type { Environment } from "@/hooks/use-environment";
 import { useLocateProject } from "@/hooks/use-locate-project";
 import type { NewProject } from "@/hooks/use-new-project";
@@ -275,8 +276,10 @@ function ConversationBody({
   onOpenFolder: () => void;
   turn: OpenTurn;
 }) {
+  const entrance = useEntrance(newProject.isOpen);
+
   if (newProject.isOpen) {
-    return <NewProjectWizard control={newProject} />;
+    return <NewProjectWizard control={newProject} entrance={entrance} />;
   }
 
   if (hasTranscript) {
@@ -295,6 +298,7 @@ function ConversationBody({
 
   return (
     <ChatEmptyState
+      entrance={entrance}
       hasProject={hasProject}
       onNewProject={newProject.open}
       onOpenFolder={onOpenFolder}
@@ -303,16 +307,24 @@ function ConversationBody({
 }
 
 function ChatEmptyState({
+  entrance,
   hasProject,
   onNewProject,
   onOpenFolder,
 }: {
+  entrance: string | null;
   hasProject: boolean;
   onNewProject: () => void;
   onOpenFolder: () => void;
 }) {
   if (!hasProject) {
-    return <Startup onNewProject={onNewProject} onOpenFolder={onOpenFolder} />;
+    return (
+      <Startup
+        entrance={entrance}
+        onNewProject={onNewProject}
+        onOpenFolder={onOpenFolder}
+      />
+    );
   }
 
   return (

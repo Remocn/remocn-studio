@@ -29,9 +29,11 @@ const STEPS = [
 ];
 
 export function Startup({
+  entrance,
   onNewProject,
   onOpenFolder,
 }: {
+  entrance: string | null;
   onNewProject: () => void;
   onOpenFolder: () => void;
 }) {
@@ -39,7 +41,7 @@ export function Startup({
     // Centred with `auto` margins rather than `justify-center`: the pane is a
     // scroll viewport, and a centred flex child taller than it loses its top
     // edge instead of scrolling to it.
-    <div className="flex w-full min-w-0 flex-1 flex-col">
+    <div className={cn("flex w-full min-w-0 flex-1 flex-col", entrance)}>
       {/* No width of its own: the scroller column is already the composer's
           `max-w-2xl`, and this is the thing the composer is waiting under. */}
       <div className="m-auto flex w-full flex-col gap-10 py-6">

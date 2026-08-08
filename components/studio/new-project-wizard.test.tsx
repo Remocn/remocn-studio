@@ -26,7 +26,7 @@ function control(shape: Partial<NewProject> = {}): NewProject {
 
 function renderWizard(shape: Partial<NewProject> = {}) {
   const value = control(shape);
-  render(<NewProjectWizard control={value} />);
+  render(<NewProjectWizard control={value} entrance={null} />);
   return value;
 }
 
