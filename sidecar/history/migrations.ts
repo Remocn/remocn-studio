@@ -46,6 +46,14 @@ export const MIGRATIONS: readonly (readonly Migration[])[] = [
     "CREATE INDEX session_by_project ON session (project_id)",
   ],
   ["ALTER TABLE session ADD COLUMN mode TEXT NOT NULL DEFAULT 'auto'"],
+  [
+    `CREATE TABLE pipeline_stage (
+      session_id TEXT NOT NULL REFERENCES session (id) ON DELETE CASCADE,
+      stage TEXT NOT NULL,
+      status TEXT NOT NULL,
+      PRIMARY KEY (session_id, stage)
+    )`,
+  ],
 ];
 
 export function prepare(driver: SqlDriver): void {

@@ -9,10 +9,12 @@ import {
   type SessionMode,
   SIDECAR_PROTOCOL,
 } from "@/shared/ipc";
+import { pipelineBrief } from "./claude/conventions";
 import { eventsOf } from "./claude/events";
 import { failureFromText, failureOf } from "./claude/failure";
 import { makeGate, permissionGuard } from "./claude/gate";
 import { makeModeSwitch } from "./claude/mode";
+import { pipelineServer } from "./claude/pipeline-tools";
 import { messages } from "./claude/session";
 import { checksFor, makeAccountCache } from "./environment";
 import { ProjectStore } from "./history/projects";
@@ -95,6 +97,10 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
 
       const switcher = yield* makeModeSwitch();
 
+      const stages = yield* store
+        .pipeline(params.historyId)
+        .pipe(Effect.catch(() => Effect.succeed([])));
+
       const approved = (mode: SessionMode) =>
         switcher.set(mode).pipe(
           Effect.andThen(
@@ -107,6 +113,7 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
 
       yield* Stream.runForEach(
         messages(params, {
+          brief: pipelineBrief(stages),
           canUseTool: permissionGuard({
             cwd: project.path,
             emit,
@@ -119,6 +126,14 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
           onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
           onMode: (apply) => Effect.runSync(switcher.bind(apply)),
           onStop: () => Effect.runSync(gate.abandon(turnId)),
+          pipeline: pipelineServer({
+            setStage: (stage, status) =>
+              Effect.runPromise(
+                store.setStage(params.historyId, stage, status)
+              ),
+            start: () =>
+              Effect.runPromise(store.startPipeline(params.historyId)),
+          }),
         }),
         (message) =>
           Effect.gen(function* () {
@@ -174,6 +189,30 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
 
   "history.sessions": () =>
     Effect.flatMap(HistoryStore, (store) => store.sessions).pipe(
+      Effect.mapError(unstored)
+    ),
+
+  "pipeline.get": ({ params }) =>
+    Effect.flatMap(HistoryStore, (store) =>
+      store.pipeline(params.sessionId)
+    ).pipe(
+      Effect.map((stages) => ({ sessionId: params.sessionId, stages })),
+      Effect.mapError(unstored)
+    ),
+
+  "pipeline.set": ({ params }) =>
+    Effect.flatMap(HistoryStore, (store) =>
+      store.setStage(params.sessionId, params.stage, params.status)
+    ).pipe(
+      Effect.map((stages) => ({ sessionId: params.sessionId, stages })),
+      Effect.mapError(unstored)
+    ),
+
+  "pipeline.start": ({ params }) =>
+    Effect.flatMap(HistoryStore, (store) =>
+      store.startPipeline(params.sessionId)
+    ).pipe(
+      Effect.map((stages) => ({ sessionId: params.sessionId, stages })),
       Effect.mapError(unstored)
     ),
 

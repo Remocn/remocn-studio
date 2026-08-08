@@ -1,3 +1,8 @@
+import {
+  activeStage,
+  type PipelineStage,
+  stageTemplate,
+} from "@/shared/pipeline";
 import { LESSONS_SKILL } from "./knowledge";
 
 export const STUDIO_CONVENTIONS = `You are running inside remocn studio, which previews a Remotion project live and
@@ -20,7 +25,19 @@ message says which file, component, scene and frame it came from. Read the
 token as "this element" in the sentence around it. Its line and column are a
 hint taken from a live render, not a contract: they locate the JSX that produced
 the node, so start there, but confirm against the file before editing, and edit
-the component the block names rather than a wrapper it renders through.`;
+the component the block names rather than a wrapper it renders through.
+
+Making a video here runs through a fixed six-stage production pipeline:
+analysis, brand, script, motion, build, review. When the person asks to create
+a video — or to rework one from the ground up — and no active stage is named in
+this prompt, call \`mcp__remocn-pipeline__start_video_pipeline\` before anything
+else and follow the instructions it returns. A small, pointed edit needs no
+pipeline; when in doubt, ask. Stages move only through
+\`mcp__remocn-pipeline__set_pipeline_stage\`, and they move on their own: the
+moment a stage's done-condition holds, mark it done, mark the next one active,
+and keep working in the same turn — never park the pipeline to ask whether to
+continue. Stop only when a stage cannot proceed without something only the
+person can give. A review note can reopen an earlier stage the same way.`;
 
 const LESSONS = `Before you write or change any video code, invoke the \`remocn-studio:${LESSONS_SKILL}\`
 skill and work from it. It is this studio's own record of what has already failed on
@@ -33,4 +50,38 @@ thing above it is what the person asks for in this session.`;
 
 export function conventionsFor(hasSkills: boolean): string {
   return hasSkills ? `${STUDIO_CONVENTIONS}\n\n${LESSONS}` : STUDIO_CONVENTIONS;
+}
+
+export function pipelineBrief(stages: readonly PipelineStage[]): string | null {
+  const running = activeStage(stages);
+  if (running === null) {
+    return null;
+  }
+
+  const template = stageTemplate(running.stage);
+  const done = stages
+    .filter((row) => row.status === "done")
+    .map((row) => stageTemplate(row.stage).title);
+
+  return `This video is built through a fixed production pipeline, and the session is in
+its **${template.title}** stage${done.length > 0 ? ` (already done: ${done.join(", ")})` : ""}.
+
+Goal: ${template.goal}
+The stage is done when: ${template.doneWhen}
+Write the result to: ${template.outputs.join(", ")} — a file in the project, not
+only a message, so a reopened session loses nothing.
+
+Start the stage by finding out what is already known, in this order, and create
+your task list with TaskCreate from what you find:
+1. ${template.discover}
+2. Whatever you infer from the project is a working assumption: write it down,
+   say plainly what you assumed so the person can correct it, and carry on.
+3. Only when neither source answers: ${template.ask}
+
+Never invent facts the discovery did not surface; asking and ending your turn
+is a normal way for a turn to finish when something essential is missing — the
+stage stays open for the answer. Otherwise do not wait: the moment the
+done-condition above holds, call \`mcp__remocn-pipeline__set_pipeline_stage\`
+to mark this stage done and the next one active, and keep going in the same
+turn until the whole pipeline is done or you are genuinely blocked.`;
 }

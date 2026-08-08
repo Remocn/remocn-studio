@@ -320,6 +320,75 @@ describe("HistoryStore", () => {
   });
 });
 
+describe("pipeline", () => {
+  it("answers no stages for a session without one", async () => {
+    const { history, open } = await studio();
+    const session = await run(open("Plain chat"));
+
+    expect(await run(history.pipeline(session.id))).toEqual([]);
+  });
+
+  it("starts with analysis active and the rest pending, in template order", async () => {
+    const { history, open } = await studio();
+    const session = await run(open("A video"));
+
+    const stages = await run(history.startPipeline(session.id));
+
+    expect(stages.map((row) => row.stage)).toEqual([
+      "analysis",
+      "brand",
+      "script",
+      "motion",
+      "build",
+      "review",
+    ]);
+    expect(stages[0]).toEqual({ stage: "analysis", status: "active" });
+    expect(stages.slice(1).every((row) => row.status === "pending")).toBe(true);
+  });
+
+  it("keeps moved stages when started twice", async () => {
+    const { history, open } = await studio();
+    const session = await run(open("A video"));
+
+    await run(history.startPipeline(session.id));
+    await run(history.setStage(session.id, "analysis", "done"));
+    const stages = await run(history.startPipeline(session.id));
+
+    expect(stages[0]).toEqual({ stage: "analysis", status: "done" });
+  });
+
+  it("moves a stage and answers the whole pipeline", async () => {
+    const { history, open } = await studio();
+    const session = await run(open("A video"));
+    await run(history.startPipeline(session.id));
+
+    const stages = await run(history.setStage(session.id, "brand", "active"));
+
+    expect(stages[1]).toEqual({ stage: "brand", status: "active" });
+  });
+
+  it("refuses to move a stage of a pipeline that was never started", async () => {
+    const { history, open } = await studio();
+    const session = await run(open("Plain chat"));
+
+    const exit = await Effect.runPromiseExit(
+      history.setStage(session.id, "brand", "done")
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
+  });
+
+  it("goes with its session when the session is removed", async () => {
+    const { history, open } = await studio();
+    const session = await run(open("A video"));
+    await run(history.startPipeline(session.id));
+
+    await run(history.remove(session.id));
+
+    expect(await run(history.pipeline(session.id))).toEqual([]);
+  });
+});
+
 describe("broken", () => {
   it("answers every call with the reason it could not open", async () => {
     const exit = await Effect.runPromiseExit(broken("no disk").sessions);

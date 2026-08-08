@@ -1,6 +1,7 @@
 import { Effect, type Exit, Schema, type SchemaError } from "effect";
+import { PipelineStage, PipelineStageId, PipelineStatus } from "./pipeline";
 
-export const SIDECAR_PROTOCOL = 13;
+export const SIDECAR_PROTOCOL = 14;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -24,6 +25,9 @@ export const METHOD_NAMES = [
   "history.mode",
   "history.remove",
   "history.sessions",
+  "pipeline.get",
+  "pipeline.set",
+  "pipeline.start",
   "preview.export",
   "preview.start",
   "preview.still",
@@ -200,6 +204,17 @@ export const HistorySessionMode = Schema.Struct({
 
 export const HistoryRemoved = Schema.Struct({ removed: Schema.Boolean });
 
+export const PipelineState = Schema.Struct({
+  sessionId: Schema.NonEmptyString,
+  stages: Schema.Array(PipelineStage),
+});
+
+export const PipelineStageChange = Schema.Struct({
+  sessionId: Schema.NonEmptyString,
+  stage: PipelineStageId,
+  status: PipelineStatus,
+});
+
 export type ActivityState = (typeof ActivityState)["Type"];
 export type TranscriptEntry = (typeof TranscriptEntry)["Type"];
 export type ActivityEntry = Extract<TranscriptEntry, { kind: "activity" }>;
@@ -209,6 +224,8 @@ export type HistorySession = (typeof HistorySession)["Type"];
 export type HistorySessionRef = (typeof HistorySessionRef)["Type"];
 export type HistorySessionMode = (typeof HistorySessionMode)["Type"];
 export type HistoryRemoved = (typeof HistoryRemoved)["Type"];
+export type PipelineState = (typeof PipelineState)["Type"];
+export type PipelineStageChange = (typeof PipelineStageChange)["Type"];
 
 export const Project = Schema.Struct({
   createdAt: Schema.Int,
@@ -558,6 +575,21 @@ export const SIDECAR_METHODS = {
   "history.sessions": {
     params: Schema.Null,
     result: Schema.Array(HistorySession),
+    stream: Schema.Never,
+  },
+  "pipeline.get": {
+    params: HistorySessionRef,
+    result: PipelineState,
+    stream: Schema.Never,
+  },
+  "pipeline.set": {
+    params: PipelineStageChange,
+    result: PipelineState,
+    stream: Schema.Never,
+  },
+  "pipeline.start": {
+    params: HistorySessionRef,
+    result: PipelineState,
     stream: Schema.Never,
   },
   "preview.export": {
