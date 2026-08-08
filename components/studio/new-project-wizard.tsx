@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { NewProject } from "@/hooks/use-new-project";
 import { VIDEO_FORMATS, type VideoFormat } from "@/lib/studio/formats";
 import { cn } from "@/lib/utils";
+import { Scrim } from "./scrim";
 
 const RATIO_LABEL = "new-project-ratio";
 
@@ -21,7 +22,7 @@ export function NewProjectWizard({
 }) {
   return (
     <div className={cn("flex w-full min-w-0 flex-1 flex-col", entrance)}>
-      <div className="m-auto flex w-full min-w-0 flex-col gap-6 py-6">
+      <Scrim className="@container m-auto flex w-full min-w-0 flex-col gap-6">
         <div className="flex flex-col items-start gap-3">
           <Button
             className="-ml-2 text-muted-foreground"
@@ -88,7 +89,7 @@ export function NewProjectWizard({
             </span>
             <RadioGroup
               aria-labelledby={RATIO_LABEL}
-              className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+              className="grid @lg:grid-cols-4 grid-cols-2 gap-2"
               onValueChange={control.onFormatChange}
               value={control.format.id}
             >
@@ -104,7 +105,7 @@ export function NewProjectWizard({
             </Button>
           </div>
         </form>
-      </div>
+      </Scrim>
     </div>
   );
 }

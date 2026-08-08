@@ -4,6 +4,7 @@ import { FolderOpenIcon, FolderPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LogoWordmark } from "./logo-mark";
+import { Scrim } from "./scrim";
 
 const STEPS = [
   {
@@ -44,7 +45,7 @@ export function Startup({
     <div className={cn("flex w-full min-w-0 flex-1 flex-col", entrance)}>
       {/* No width of its own: the scroller column is already the composer's
           `max-w-2xl`, and this is the thing the composer is waiting under. */}
-      <div className="m-auto flex w-full flex-col gap-10 py-6">
+      <Scrim className="m-auto flex w-full flex-col gap-8">
         <header className="flex flex-col gap-4">
           <LogoWordmark />
           <h3 className="text-balance font-semibold text-2xl leading-tight tracking-tight">
@@ -79,7 +80,7 @@ export function Startup({
             Needs bun, and a Claude Code you are already signed in to.
           </p>
         </div>
-      </div>
+      </Scrim>
     </div>
   );
 }

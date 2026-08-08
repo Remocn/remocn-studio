@@ -182,10 +182,11 @@ function Conversation({
     // `isolate` keeps the backdrop's negative z-index inside the pane; without
     // a stacking context here it would sink behind the pane itself.
     <PaneBody className="isolate">
-      {/* The shader is decoration on the startup screen and nothing else, so
-          it reads the same flag the screen does rather than a condition of its
-          own that could drift into rendering behind a conversation. */}
-      {isStartup ? <StartupBackdrop /> : null}
+      {/* The shader is decoration on the two screens that replace the
+          conversation, and nothing else, so it reads the same flags those
+          screens do rather than a condition of its own that could drift into
+          rendering behind a transcript. */}
+      {isStartup || isCreating ? <StartupBackdrop /> : null}
 
       <MarkdownProvider>
         <MessageScrollerProvider>
