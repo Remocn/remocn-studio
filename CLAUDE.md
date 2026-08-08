@@ -454,6 +454,72 @@ public contract and would break the left pane on any CLI update. Only
   put presentation into SQLite and make the stored transcript lossy — and because
   the grouper is a pure function over the entries, a session loaded from history
   groups identically to one folded live.
+- **The plan Claude writes is one checklist, derived the same way.** Claude Code
+  plans with `TaskCreate`/`TaskUpdate`, not `TodoWrite`, and those calls used to
+  render as a wall of wrench rows labelled with a truncated *description*.
+  `lib/studio/tasks.ts` folds every task call of a turn into one checklist
+  anchored at the first `TaskCreate`, which `lib/studio/runs.ts` emits in place of
+  those entries before it groups the rest. Identity comes from the id in the
+  create's `result` (`Task #1 created successfully: …`), with position among the
+  creates as the fallback while the result is still in flight, since ids are
+  assigned in order; an update naming an unknown id changes nothing rather than
+  inventing a row. Because it is a pure function over the stored entries, a
+  session reopened from SQLite renders the checklist the live turn showed, no
+  `TranscriptEntry` variant was added and no migration was needed. A **failed**
+  task call is not folded: it stays its own row with its error, as every failure
+  does. **The task list belongs to the session, not the turn** — the tool numbers
+  ids sequentially for the whole session and a plan written in one turn is
+  routinely moved by updates in the next, so only where a plan is *anchored* is
+  per turn: a later burst of creates opens its own checklist, in the order the
+  conversation happened, while an update reaches its task wherever that task was
+  written. Settling the list on every user message instead was the first version
+  of this, and it cost every `TaskUpdate` of a second turn: the id matched
+  nothing, so the call fell out of the checklist and drew a row saying "Updated
+  task #6 description, status" while the plan above it stayed all-pending.
+- **The plan also sits on top of the composer.** `TaskDock` is a strip in the
+  composer's own `max-w-2xl` column, collapsed to the task in hand — its
+  `activeForm` — with the count on the right, and it opens *upwards* into the
+  whole list. It has no bottom radius and no gap under it, so it abuts the
+  composer and reads as a drawer behind it; overlapping the composer to get that
+  effect is what the first two versions did, and each of them ended up putting an
+  edge or a shadow of ours across the input. It lived in the transcript's
+  left gutter first, measured against the pane with a `ResizeObserver` and three
+  visibility rules; sharing the composer's column deletes all of that — a pane
+  resize reflows both together and there is nothing left to measure. Expanded or
+  collapsed is `taskDock` in `settings.json`, so a plan left open comes back open.
+  The checklist **stays in the transcript too**: there it is a record of what
+  happened, and it is the only copy a session reopened from history can anchor in
+  the right place.
+- **A subject wraps; it never truncates.** A plan whose every row ends in an
+  ellipsis is a plan you cannot read, and the block is free to grow downwards
+  where it is not free to grow sideways — so rows wrap, the running one carries a
+  surface, and the whole list scrolls with no fade over it. That is also why
+  `PANEL_MIN` is a *readability* floor rather than exactly half of `PANEL_MAX`:
+  below it a wrapped 14px line stops being worth reading, and the button says
+  more than four clipped words would.
+- **Depth is a token, not a border.** `--elevation-floating` in `app/globals.css`
+  is a translucent ring plus ambient layers, so it composites over whatever of
+  the transcript is behind it instead of being tuned to one background; the dark
+  palette collapses it to a white ring with one wide ambient shadow, because a
+  stacked shadow cannot be seen on a dark surface but this one floats over
+  scrolling content. The shell's `rounded-xl` over `p-1.5` puts the rows'
+  `rounded-lg` exactly a padding's width inside it, so the corner gap stays even.
+- **Hiding is the user's, and it is remembered.** The panel's × folds it into the
+  button, whose popover carries a pin to bring it back, and the choice is
+  `taskDock` in `settings.json`. Hiding by hand can only ever *narrow* what the
+  room allows, never widen it: with no room for the button either, there is
+  nothing to hide and nothing to restore.
+- **The pane's running row reads the same plan.** `rowOf` in `lib/studio/groups.ts`
+  derives the open plan from the turn's entries with the same `currentTasks`, so
+  `Running · 2m` becomes `Registering the scene · 1/3 · 2m` — the running task's
+  `activeForm`, how many of the plan are done, and the elapsed time it already
+  showed. It is derived **only while the turn runs**: a settled row stays one
+  quiet line, and walking a finished session's entries on every minute tick would
+  cost the whole pane something nobody is reading. The row is still one line; the
+  checklist itself belongs to the transcript.
+- **The thinking marker reads the running task's `activeForm`** — the
+  present-continuous phrase the tool carries — falling back to its subject, and to
+  "Thinking…" when nothing is in progress.
 - **Every tool call folds, and only a failure breaks a run.** An earlier rule
   folded a named set of read-only tools and kept every command on screen. Two
   turns' worth of screenshots killed it: a real turn is walls of `Bash`, and the

@@ -25,6 +25,7 @@ const TARGET_KEYS = [
   "pattern",
   "url",
   "path",
+  "subject",
   "description",
 ];
 

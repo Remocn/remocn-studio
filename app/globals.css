@@ -102,6 +102,12 @@
   --code-number: oklch(0.556 0 0);
   --reference: oklch(0.52 0.105 223.128);
   --pane-border: oklch(0.922 0 0);
+  /* A floating surface over content: the 1px spread stands in for a border, so
+     it composites against whatever it covers rather than being tuned to one
+     background, then a tight layer and a wide ambient one. */
+  --elevation-floating:
+    0 0 0 1px oklch(0 0 0 / 0.06), 0 1px 3px oklch(0 0 0 / 0.06),
+    0 12px 32px -12px oklch(0 0 0 / 0.18);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
 }
@@ -138,6 +144,11 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* Dark surfaces cannot show a stacked shadow, so depth collapses to a white
+     ring — kept alongside one wide ambient layer, because this surface floats
+     over a scrolling transcript rather than sitting on the page. */
+  --elevation-floating:
+    0 0 0 1px oklch(1 0 0 / 0.1), 0 16px 40px -12px oklch(0 0 0 / 0.7);
   --code: oklch(0.16 0.008 290);
   --code-foreground: oklch(0.95 0 0);
   --code-highlight: oklch(0.24 0.008 290);

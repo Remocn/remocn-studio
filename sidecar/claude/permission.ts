@@ -22,7 +22,13 @@ const PATH_FIELDS: Record<string, readonly string[]> = {
   Write: ["file_path"],
 };
 
-const FREE_TOOLS = new Set(["TodoWrite"]);
+const FREE_TOOLS = new Set([
+  "TaskCreate",
+  "TaskGet",
+  "TaskList",
+  "TaskUpdate",
+  "TodoWrite",
+]);
 
 export const EXIT_PLAN_TOOL = "ExitPlanMode";
 

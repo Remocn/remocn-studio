@@ -13,6 +13,8 @@ const CWD = "/Users/me/projects/my-video";
 const NOW = Date.UTC(2026, 6, 25, 12, 0, 0);
 const STARTED = NOW - 12_000;
 const TIMER = /^\d+[dhms]( \d+[hms])?$/;
+const BACKEND = /Backend/;
+const FRONTEND = /Frontend/;
 
 const ANSWER = [
   "## Done",
@@ -329,5 +331,77 @@ describe("Transcript", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "the sidecar is not running"
     );
+  });
+  it("shows the plan as one checklist of subjects, with states and detail", () => {
+    renderTranscript([
+      {
+        id: "c1",
+        input: {
+          activeForm: "Building the backend",
+          description: "Create promotions table migration",
+          subject: "Backend",
+        },
+        kind: "activity",
+        name: "TaskCreate",
+        result: "Task #1 created successfully: Backend",
+        state: "done",
+      },
+      {
+        id: "c2",
+        input: { description: "Wire the scene", subject: "Frontend" },
+        kind: "activity",
+        name: "TaskCreate",
+        result: "Task #2 created successfully: Frontend",
+        state: "done",
+      },
+      {
+        id: "u1",
+        input: { status: "in_progress", taskId: "1" },
+        kind: "activity",
+        name: "TaskUpdate",
+        result: "Updated task #1 status",
+        state: "done",
+      },
+    ]);
+
+    expect(screen.queryByText("TaskCreate")).not.toBeInTheDocument();
+    expect(screen.queryByText("TaskUpdate")).not.toBeInTheDocument();
+
+    const backend = screen.getByRole("button", { name: BACKEND });
+    expect(backend).toBeVisible();
+    expect(screen.getByRole("button", { name: FRONTEND })).toBeVisible();
+    expect(screen.getByLabelText("In progress")).toBeVisible();
+    expect(screen.getAllByLabelText("Pending")).toHaveLength(1);
+
+    fireEvent.click(backend);
+
+    expect(screen.getByText("Create promotions table migration")).toBeVisible();
+  });
+
+  it("says which task is running instead of Thinking", () => {
+    renderTranscript(
+      [
+        {
+          id: "c1",
+          input: { activeForm: "Building the backend", subject: "Backend" },
+          kind: "activity",
+          name: "TaskCreate",
+          result: "Task #1 created successfully: Backend",
+          state: "done",
+        },
+        {
+          id: "u1",
+          input: { status: "in_progress", taskId: "1" },
+          kind: "activity",
+          name: "TaskUpdate",
+          result: "Updated task #1 status",
+          state: "done",
+        },
+      ],
+      true
+    );
+
+    expect(screen.getByText("Building the backend")).toBeVisible();
+    expect(screen.queryByText("Thinking…")).not.toBeInTheDocument();
   });
 });

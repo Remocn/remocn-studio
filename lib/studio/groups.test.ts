@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { paneGroups, paneSections, sessionMeta } from "@/lib/studio/groups";
 import { IDLE_TURN, type TurnState } from "@/lib/studio/turns";
-import type { HistorySession, Project } from "@/shared/ipc";
+import type { HistorySession, Project, TranscriptEntry } from "@/shared/ipc";
 
 const NOW = Date.UTC(2026, 6, 25, 12, 0, 0);
 const MINUTE = 60_000;
@@ -45,6 +45,39 @@ const waiting = (askedAt: number, tool = "Bash"): TurnState => ({
 });
 
 const failed = (error: string): TurnState => ({ ...IDLE_TURN, error });
+
+const create = (
+  id: string,
+  subject: string,
+  activeForm: string
+): TranscriptEntry => ({
+  id: `create-${id}`,
+  input: { activeForm, subject },
+  kind: "activity",
+  name: "TaskCreate",
+  result: `Task #${id} created successfully: ${subject}`,
+  state: "done",
+});
+
+const update = (id: string, status: string): TranscriptEntry => ({
+  id: `update-${id}-${status}`,
+  input: { status, taskId: id },
+  kind: "activity",
+  name: "TaskUpdate",
+  result: `Updated task #${id} status`,
+  state: "done",
+});
+
+const planning = (startedAt = NOW - MINUTE): TurnState => ({
+  ...running(startedAt),
+  entries: [
+    create("1", "Scene component", "Building the scene"),
+    create("2", "Register in Series", "Registering the scene"),
+    create("3", "Check the build", "Checking the build"),
+    update("1", "completed"),
+    update("2", "in_progress"),
+  ],
+});
 
 const unread = (): TurnState => ({ ...IDLE_TURN, unread: true });
 
@@ -313,6 +346,33 @@ describe("sessionMeta", () => {
     const meta = sessionMeta(rowOf("a", running(NOW - 2 * MINUTE)), NOW);
 
     expect(meta).toEqual({ isError: false, text: "Running · 2m" });
+  });
+
+  it("says which task is running, and how far the plan has got", () => {
+    const meta = sessionMeta(rowOf("a", planning(NOW - 2 * MINUTE)), NOW);
+
+    expect(meta).toEqual({
+      isError: false,
+      text: "Registering the scene · 1/3 · 2m",
+    });
+  });
+
+  it("keeps the plan's count when nothing is in progress yet", () => {
+    const turn: TurnState = {
+      ...running(NOW - MINUTE),
+      entries: [create("1", "Scene component", "Building the scene")],
+    };
+
+    expect(sessionMeta(rowOf("a", turn), NOW)).toEqual({
+      isError: false,
+      text: "Running · 0/1 · 1m",
+    });
+  });
+
+  it("says nothing about a plan once the turn has settled", () => {
+    const settled: TurnState = { ...planning(), isRunning: false };
+
+    expect(sessionMeta(rowOf("a", settled), NOW)).toBeNull();
   });
 
   it("shows the first line of an error and nothing after it", () => {
