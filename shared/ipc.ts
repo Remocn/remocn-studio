@@ -1,6 +1,6 @@
 import { Effect, type Exit, Schema, type SchemaError } from "effect";
 
-export const SIDECAR_PROTOCOL = 12;
+export const SIDECAR_PROTOCOL = 13;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -244,6 +244,17 @@ export const ProjectMove = Schema.Struct({
 
 export const ProjectRemoved = Schema.Struct({ removed: Schema.Boolean });
 
+export const VideoSize = Schema.Struct({
+  height: Schema.Int,
+  width: Schema.Int,
+});
+
+export const ScaffoldParams = Schema.Struct({
+  height: Schema.Int,
+  projectId: Schema.NonEmptyString,
+  width: Schema.Int,
+});
+
 export const SCAFFOLD_STEPS = ["template", "install"] as const;
 
 export const ScaffoldStep = Schema.Literals(SCAFFOLD_STEPS);
@@ -409,6 +420,8 @@ export type ProjectDraft = (typeof ProjectDraft)["Type"];
 export type ProjectName = (typeof ProjectName)["Type"];
 export type ProjectMove = (typeof ProjectMove)["Type"];
 export type ProjectRemoved = (typeof ProjectRemoved)["Type"];
+export type VideoSize = (typeof VideoSize)["Type"];
+export type ScaffoldParams = (typeof ScaffoldParams)["Type"];
 export type ScaffoldStep = (typeof ScaffoldStep)["Type"];
 export type ScaffoldEvent = (typeof ScaffoldEvent)["Type"];
 export type EnvironmentCheckId = (typeof EnvironmentCheckId)["Type"];
@@ -608,7 +621,7 @@ export const SIDECAR_METHODS = {
     stream: Schema.Never,
   },
   "project.scaffold": {
-    params: ProjectRef,
+    params: ScaffoldParams,
     result: Project,
     stream: ScaffoldEvent,
   },

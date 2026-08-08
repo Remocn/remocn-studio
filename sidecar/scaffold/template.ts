@@ -2,19 +2,25 @@ import { access, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { Data, Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
-import { TEMPLATE_DIR_ENV } from "@/shared/ipc";
+import { TEMPLATE_DIR_ENV, type VideoSize } from "@/shared/ipc";
 
 export class ScaffoldError extends Data.TaggedError("ScaffoldError")<{
   message: string;
 }> {}
 
 const MANIFEST = "package.json";
+const ROOT = "Root.tsx";
 const FALLBACK_NAME = "remotion-project";
 const UNSAFE = /[^a-z0-9._-]+/g;
 const EDGES = /^[-_.]+|[-_.]+$/g;
+const WIDTH = /width=\{\d+\}/;
+const HEIGHT = /height=\{\d+\}/;
+
+type Rewrite = (content: string) => string;
 
 export function expandTemplate(
-  target: string
+  target: string,
+  size: VideoSize
 ): Effect.Effect<void, ScaffoldError> {
   return Effect.suspend(() => {
     const source = process.env[TEMPLATE_DIR_ENV];
@@ -29,9 +35,21 @@ export function expandTemplate(
 
     return Effect.tryPromise({
       catch: (cause) => new ScaffoldError({ message: errorMessage(cause) }),
-      try: () => copyInto(source, target, packageName(target)),
+      try: () => copyInto(source, target, rewriteFor(target, size)),
     });
   });
+}
+
+export function sized(content: string, { height, width }: VideoSize): string {
+  if (!(WIDTH.test(content) && HEIGHT.test(content))) {
+    throw new Error(
+      `the template's ${ROOT} no longer declares width and height as literals, so ${width}×${height} could not be written into it`
+    );
+  }
+
+  return content
+    .replace(WIDTH, `width={${width}}`)
+    .replace(HEIGHT, `height={${height}}`);
 }
 
 export function packageName(target: string): string {
@@ -43,10 +61,24 @@ export function packageName(target: string): string {
   return slug.length === 0 ? FALLBACK_NAME : slug;
 }
 
+function rewriteFor(
+  target: string,
+  size: VideoSize
+): (entry: string) => Rewrite | null {
+  const name = packageName(target);
+
+  return (entry) => {
+    if (entry === MANIFEST) {
+      return (content) => named(content, name);
+    }
+    return entry === ROOT ? (content) => sized(content, size) : null;
+  };
+}
+
 async function copyInto(
   source: string,
   target: string,
-  name: string
+  rewrite: (entry: string) => Rewrite | null
 ): Promise<void> {
   await mkdir(target, { recursive: true });
 
@@ -58,8 +90,8 @@ async function copyInto(
       const to = join(target, entry.name);
 
       return entry.isDirectory()
-        ? copyInto(from, to, name)
-        : copyFile(from, to, entry.name === MANIFEST ? name : null);
+        ? copyInto(from, to, rewrite)
+        : copyFile(from, to, rewrite(entry.name));
     })
   );
 }
@@ -67,14 +99,14 @@ async function copyInto(
 async function copyFile(
   from: string,
   to: string,
-  name: string | null
+  rewrite: Rewrite | null
 ): Promise<void> {
   if (await exists(to)) {
     return;
   }
 
   const content = await readFile(from, "utf8");
-  await writeFile(to, name === null ? content : named(content, name), "utf8");
+  await writeFile(to, rewrite === null ? content : rewrite(content), "utf8");
 }
 
 function named(content: string, name: string): string {

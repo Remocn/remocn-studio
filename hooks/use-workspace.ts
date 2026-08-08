@@ -15,6 +15,7 @@ import { type StudioProjects, useProjects } from "@/hooks/use-projects";
 import { type Scaffolds, useScaffold } from "@/hooks/use-scaffold";
 import { type StudioSessions, useSessions } from "@/hooks/use-sessions";
 import { type Turns, useTurns } from "@/hooks/use-turns";
+import { sizeOf, type VideoFormat } from "@/lib/studio/formats";
 import { type PaneGroup, paneGroups, projectOf } from "@/lib/studio/groups";
 import { saveSessionMode } from "@/lib/studio/history";
 import type { StudioSettings } from "@/lib/studio/settings";
@@ -29,10 +30,14 @@ export interface Workspace
   extends StudioProjects,
     StudioSessions,
     ExpandedProjects,
-    ProjectActions,
+    Omit<ProjectActions, "createProject">,
     Scaffolds,
     Turns {
   changeSessionMode: (historyId: string, mode: SessionMode) => void;
+  createProject: (
+    draft: ProjectDraft,
+    format: VideoFormat
+  ) => Promise<Project | null>;
   groups: readonly PaneGroup[];
   onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -103,13 +108,13 @@ export function useWorkspace(settings: StudioSettings | null): Workspace {
   const { startScaffold } = scaffolds;
 
   const createProject = useCallback(
-    async (draft: ProjectDraft) => {
+    async (draft: ProjectDraft, format: VideoFormat) => {
       const project = await create(draft);
       if (project !== null) {
         rememberProject(project);
         expandProject(project.id);
         startSession();
-        startScaffold(project.id);
+        startScaffold(project.id, sizeOf(format));
       }
       return project;
     },

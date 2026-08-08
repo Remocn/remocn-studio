@@ -22,8 +22,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useEntrance } from "@/hooks/use-entrance";
 import type { Environment } from "@/hooks/use-environment";
 import { useLocateProject } from "@/hooks/use-locate-project";
+import type { NewProject } from "@/hooks/use-new-project";
 import { useNow } from "@/hooks/use-now";
 import type { OpenTurn } from "@/hooks/use-open-turn";
 import type { HistorySession, Project } from "@/shared/ipc";
@@ -31,6 +33,7 @@ import { Composer } from "./composer";
 import { EnvironmentChecklist } from "./environment-checklist";
 import { LogoMark } from "./logo-mark";
 import { MarkdownProvider } from "./markdown";
+import { NewProjectWizard } from "./new-project-wizard";
 import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { PermissionCard } from "./permission-card";
 import { Startup } from "./startup";
@@ -119,8 +122,8 @@ export function ChatPane() {
           environment={environment}
           hasProject={openedProject !== null}
           missing={openedProject?.missing ?? false}
+          newProject={newProject}
           onLocate={locate}
-          onNewProject={newProject.open}
           onOpenFolder={openFolder}
           turn={turn}
         />
@@ -156,8 +159,8 @@ function Conversation({
   environment,
   hasProject,
   missing,
+  newProject,
   onLocate,
-  onNewProject,
   onOpenFolder,
   turn,
 }: {
@@ -165,12 +168,13 @@ function Conversation({
   environment: Environment;
   hasProject: boolean;
   missing: boolean;
+  newProject: NewProject;
   onLocate: () => void;
-  onNewProject: () => void;
   onOpenFolder: () => void;
   turn: OpenTurn;
 }) {
   const hasTranscript = turn.entries.length > 0 || turn.turnError !== null;
+  const isCreating = newProject.isOpen;
   const isStartup = !(hasProject || hasTranscript);
   const now = useNow(turn.isRunning ? TICK : null);
 
@@ -178,36 +182,31 @@ function Conversation({
     // `isolate` keeps the backdrop's negative z-index inside the pane; without
     // a stacking context here it would sink behind the pane itself.
     <PaneBody className="isolate">
-      {/* The shader is decoration on the startup screen and nothing else, so
-          it reads the same flag the screen does rather than a condition of its
-          own that could drift into rendering behind a conversation. */}
-      {isStartup ? <StartupBackdrop /> : null}
+      {/* The shader is decoration on the two screens that replace the
+          conversation, and nothing else, so it reads the same flags those
+          screens do rather than a condition of its own that could drift into
+          rendering behind a transcript. */}
+      {isStartup || isCreating ? <StartupBackdrop /> : null}
 
       <MarkdownProvider>
         <MessageScrollerProvider>
           <MessageScroller>
-            <MessageScrollerViewport aria-label="Conversation">
+            <MessageScrollerViewport
+              aria-label={isCreating ? "New project" : "Conversation"}
+            >
               <MessageScrollerContent
                 className="mx-auto w-full max-w-2xl gap-3 px-4 py-6"
                 data-selectable
               >
-                {hasTranscript ? (
-                  <Transcript
-                    cwd={cwd}
-                    entries={turn.entries}
-                    error={turn.turnError}
-                    isRunning={turn.isRunning}
-                    isWaiting={turn.permission !== null}
-                    now={now}
-                    startedAt={turn.startedAt}
-                  />
-                ) : (
-                  <ChatEmptyState
-                    hasProject={hasProject}
-                    onNewProject={onNewProject}
-                    onOpenFolder={onOpenFolder}
-                  />
-                )}
+                <ConversationBody
+                  cwd={cwd}
+                  hasProject={hasProject}
+                  hasTranscript={hasTranscript}
+                  newProject={newProject}
+                  now={now}
+                  onOpenFolder={onOpenFolder}
+                  turn={turn}
+                />
               </MessageScrollerContent>
             </MessageScrollerViewport>
             <MessageScrollerButton />
@@ -215,59 +214,118 @@ function Conversation({
         </MessageScrollerProvider>
       </MarkdownProvider>
 
-      {missing ? (
-        <div className="mb-2 shrink-0 px-4 pt-1">
-          <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-2">
-            <p className="min-w-0 break-all text-muted-foreground text-xs">
-              {cwd} is not on disk anymore.
-            </p>
-            <Button onClick={onLocate} size="sm" variant="outline">
-              Locate…
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      {isCreating ? null : (
+        <>
+          {missing ? (
+            <div className="mb-2 shrink-0 px-4 pt-1">
+              <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-2">
+                <p className="min-w-0 break-all text-muted-foreground text-xs">
+                  {cwd} is not on disk anymore.
+                </p>
+                <Button onClick={onLocate} size="sm" variant="outline">
+                  Locate…
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
-      <EnvironmentChecklist environment={environment} />
+          <EnvironmentChecklist environment={environment} />
 
-      {turn.permission === null ? null : (
-        <div className="mb-2 shrink-0 px-4 pt-1">
-          <div className="mx-auto w-full max-w-2xl">
-            <PermissionCard
-              cwd={cwd}
-              key={turn.permission.id}
-              onAnswer={turn.answer}
-              permission={turn.permission}
-            />
-          </div>
-        </div>
+          {turn.permission === null ? null : (
+            <div className="mb-2 shrink-0 px-4 pt-1">
+              <div className="mx-auto w-full max-w-2xl">
+                <PermissionCard
+                  cwd={cwd}
+                  key={turn.permission.id}
+                  onAnswer={turn.answer}
+                  permission={turn.permission}
+                />
+              </div>
+            </div>
+          )}
+
+          <Composer
+            context={turn.context}
+            cwd={cwd}
+            disabled={!hasProject || missing || environment.isBlocking}
+            isRunning={turn.isRunning}
+            isWaiting={turn.permission !== null}
+            mode={turn.mode}
+            onModeChange={turn.onModeChange}
+            onStop={turn.stop}
+          />
+        </>
       )}
-
-      <Composer
-        context={turn.context}
-        cwd={cwd}
-        disabled={!hasProject || missing || environment.isBlocking}
-        isRunning={turn.isRunning}
-        isWaiting={turn.permission !== null}
-        mode={turn.mode}
-        onModeChange={turn.onModeChange}
-        onStop={turn.stop}
-      />
     </PaneBody>
   );
 }
 
+function ConversationBody({
+  cwd,
+  hasProject,
+  hasTranscript,
+  newProject,
+  now,
+  onOpenFolder,
+  turn,
+}: {
+  cwd: string | null;
+  hasProject: boolean;
+  hasTranscript: boolean;
+  newProject: NewProject;
+  now: number;
+  onOpenFolder: () => void;
+  turn: OpenTurn;
+}) {
+  const entrance = useEntrance(newProject.isOpen);
+
+  if (newProject.isOpen) {
+    return <NewProjectWizard control={newProject} entrance={entrance} />;
+  }
+
+  if (hasTranscript) {
+    return (
+      <Transcript
+        cwd={cwd}
+        entries={turn.entries}
+        error={turn.turnError}
+        isRunning={turn.isRunning}
+        isWaiting={turn.permission !== null}
+        now={now}
+        startedAt={turn.startedAt}
+      />
+    );
+  }
+
+  return (
+    <ChatEmptyState
+      entrance={entrance}
+      hasProject={hasProject}
+      onNewProject={newProject.open}
+      onOpenFolder={onOpenFolder}
+    />
+  );
+}
+
 function ChatEmptyState({
+  entrance,
   hasProject,
   onNewProject,
   onOpenFolder,
 }: {
+  entrance: string | null;
   hasProject: boolean;
   onNewProject: () => void;
   onOpenFolder: () => void;
 }) {
   if (!hasProject) {
-    return <Startup onNewProject={onNewProject} onOpenFolder={onOpenFolder} />;
+    return (
+      <Startup
+        entrance={entrance}
+        onNewProject={onNewProject}
+        onOpenFolder={onOpenFolder}
+      />
+    );
   }
 
   return (

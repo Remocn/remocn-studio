@@ -2,10 +2,10 @@
 
 import { ShaderField } from "./shader-field";
 
-const SPEED = 0.3;
-const SCALE = 1.6;
-const BRIGHTNESS = 0.11;
-const CONTRAST = 0.32;
+const SPEED = 0.26;
+const SCALE = 2.4;
+const BRIGHTNESS = 0.16;
+const CONTRAST = 0.26;
 
 export function StartupBackdrop() {
   return (
@@ -14,7 +14,7 @@ export function StartupBackdrop() {
     // away from the composer, where it would sit under text being typed.
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 -z-10 opacity-60 [mask-image:radial-gradient(115%_75%_at_50%_0%,#000_0%,#000c_35%,#0006_60%,transparent_85%)]"
+      className="pointer-events-none absolute inset-0 -z-10 opacity-75 [mask-image:radial-gradient(130%_100%_at_50%_-15%,#000_0%,#000e_40%,#0009_62%,transparent_92%)]"
     >
       <ShaderField
         brightness={BRIGHTNESS}

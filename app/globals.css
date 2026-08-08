@@ -61,6 +61,8 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
   --animate-titlebar: titlebar-in 900ms ease-out both;
+  --animate-screen-in: screen-in 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  --animate-screen-back: screen-back 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 :root {
@@ -192,8 +194,32 @@
   }
 }
 
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes screen-back {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse,
+  .animate-screen-back,
+  .animate-screen-in,
   .animate-titlebar {
     animation: none;
   }
