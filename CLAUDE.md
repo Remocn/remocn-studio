@@ -467,8 +467,15 @@ public contract and would break the left pane on any CLI update. Only
   session reopened from SQLite renders the checklist the live turn showed, no
   `TranscriptEntry` variant was added and no migration was needed. A **failed**
   task call is not folded: it stays its own row with its error, as every failure
-  does. One checklist per *turn* — a `user` entry settles the current one, because
-  a second plan is a later decision and not a revision of the first.
+  does. **The task list belongs to the session, not the turn** — the tool numbers
+  ids sequentially for the whole session and a plan written in one turn is
+  routinely moved by updates in the next, so only where a plan is *anchored* is
+  per turn: a later burst of creates opens its own checklist, in the order the
+  conversation happened, while an update reaches its task wherever that task was
+  written. Settling the list on every user message instead was the first version
+  of this, and it cost every `TaskUpdate` of a second turn: the id matched
+  nothing, so the call fell out of the checklist and drew a row saying "Updated
+  task #6 description, status" while the plan above it stayed all-pending.
 - **The plan also floats in the transcript's left gutter.** `TaskDock` renders the
   turn's current plan beside the conversation, in the space the centred
   `max-w-2xl` column leaves — and the panes are resizable, so that space is not a

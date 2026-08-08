@@ -38,28 +38,21 @@ const EMPTY: TaskPlans = { consumed: new Set(), plans: new Map() };
 
 export function planTasks(entries: readonly TranscriptEntry[]): TaskPlans {
   const consumed = new Set<string>();
-  const plans = new Map<string, readonly TaskRow[]>();
+  // The rows are the *session's* task list, not the turn's: the tool numbers
+  // ids sequentially for the whole session, and a plan written in one turn is
+  // routinely moved by updates in the next one. Only where a plan is *anchored*
+  // is per turn — a later burst of creates opens its own checklist, in the
+  // order the conversation happened, and an update reaches its task wherever
+  // that task was written.
+  const rows = new Map<string, TaskRow>();
+  const order = new Map<string, string[]>();
 
   let anchor: string | null = null;
-  let order: string[] = [];
-  let rows = new Map<string, TaskRow>();
-
-  const settle = () => {
-    if (anchor !== null) {
-      plans.set(
-        anchor,
-        order.flatMap((id) => rows.get(id) ?? [])
-      );
-    }
-
-    anchor = null;
-    order = [];
-    rows = new Map();
-  };
+  let created_ = 0;
 
   for (const entry of entries) {
     if (entry.kind === "user") {
-      settle();
+      anchor = null;
       continue;
     }
 
@@ -68,29 +61,38 @@ export function planTasks(entries: readonly TranscriptEntry[]): TaskPlans {
     }
 
     if (entry.name === CREATE) {
-      const row = created(entry, order.length);
+      const row = created(entry, created_);
       if (row === null) {
         continue;
       }
 
-      anchor ??= entry.id;
+      created_ += 1;
       consumed.add(entry.id);
+
+      if (anchor === null) {
+        anchor = entry.id;
+        order.set(anchor, []);
+      }
+
       if (!rows.has(row.id)) {
-        order.push(row.id);
+        order.get(anchor)?.push(row.id);
       }
       rows.set(row.id, row);
       continue;
     }
 
-    if (anchor === null) {
-      continue;
+    if (apply(rows, entry.input)) {
+      consumed.add(entry.id);
     }
-
-    consumed.add(entry.id);
-    apply(rows, order, entry.input);
   }
 
-  settle();
+  const plans = new Map<string, readonly TaskRow[]>();
+  for (const [at, ids] of order) {
+    plans.set(
+      at,
+      ids.flatMap((id) => rows.get(id) ?? [])
+    );
+  }
 
   return plans.size === 0 ? EMPTY : { consumed, plans };
 }
@@ -139,25 +141,20 @@ function created(entry: ActivityEntry, index: number): TaskRow | null {
   };
 }
 
-function apply(
-  rows: Map<string, TaskRow>,
-  order: string[],
-  input: unknown
-): void {
+function apply(rows: Map<string, TaskRow>, input: unknown): boolean {
   const record = fields(input);
   const id = string(record, "taskId");
   const row = id === null ? undefined : rows.get(id);
 
   if (id === null || row === undefined) {
-    return;
+    return false;
   }
 
   const status = status_(record);
 
   if (status === "deleted") {
     rows.delete(id);
-    order.splice(order.indexOf(id), 1);
-    return;
+    return true;
   }
 
   rows.set(id, {
@@ -167,6 +164,8 @@ function apply(
     status: status ?? row.status,
     subject: string(record, "subject") ?? row.subject,
   });
+
+  return true;
 }
 
 function identify(result: string | null): string | null {

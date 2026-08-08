@@ -160,6 +160,54 @@ describe("planTasks", () => {
     expect(items.map((item) => item.kind)).toEqual(["tasks", "entry"]);
   });
 
+  it("lands an update from a later turn on the plan that owns the task", () => {
+    const entries: TranscriptEntry[] = [
+      create("c1", "6", "Write SCRIPT.md"),
+      create("c2", "7", "Build the scenes"),
+      {
+        attachments: [],
+        elements: [],
+        id: "user-1",
+        kind: "user",
+        text: "but do not start yet",
+      },
+      update("u1", { status: "in_progress", taskId: "6" }),
+      update("u2", { status: "completed", taskId: "7" }),
+    ];
+
+    const items = groupActivity(entries);
+
+    // The updates draw no rows of their own — they moved the checklist above.
+    expect(items.map((item) => item.kind)).toEqual(["tasks", "entry"]);
+
+    const [tasks] = tasksOf(entries);
+    expect(tasks.map((task) => task.status)).toEqual([
+      "in_progress",
+      "completed",
+    ]);
+  });
+
+  it("keeps ids unique across turns, so a later burst is its own checklist", () => {
+    const entries: TranscriptEntry[] = [
+      create("c1", "1", "Backend"),
+      {
+        attachments: [],
+        elements: [],
+        id: "user-1",
+        kind: "user",
+        text: "now the titles",
+      },
+      create("c2", "2", "Titles"),
+      update("u1", { status: "completed", taskId: "1" }),
+    ];
+
+    const plans = tasksOf(entries);
+
+    expect(plans).toHaveLength(2);
+    expect(plans[0][0].status).toBe("completed");
+    expect(plans[1].map((task) => task.subject)).toEqual(["Titles"]);
+  });
+
   it("gives each turn its own checklist", () => {
     const items = groupActivity([
       create("c1", "1", "Backend"),
@@ -170,7 +218,7 @@ describe("planTasks", () => {
         kind: "user",
         text: "now the titles",
       },
-      create("c2", "1", "Titles"),
+      create("c2", "2", "Titles"),
     ]);
 
     expect(items.map((item) => item.kind)).toEqual(["tasks", "entry", "tasks"]);
