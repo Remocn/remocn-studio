@@ -115,13 +115,23 @@ export function taskProgress(tasks: readonly TaskRow[]): TaskProgress | null {
   };
 }
 
-export function activeForm(tasks: readonly TaskRow[]): string | null {
-  const running = tasks.find((task) => task.status === "in_progress");
-  if (running === undefined) {
-    return null;
+export type TaskGlyph = TaskStatus | "finished";
+
+export function taskGlyph(tasks: readonly TaskRow[]): TaskGlyph {
+  if (tasks.length > 0 && tasks.every((task) => task.status === "completed")) {
+    return "finished";
   }
 
-  return running.activeForm ?? running.subject;
+  return activeTask(tasks) === null ? "pending" : "in_progress";
+}
+
+export function activeTask(tasks: readonly TaskRow[]): TaskRow | null {
+  return tasks.find((task) => task.status === "in_progress") ?? null;
+}
+
+export function activeForm(tasks: readonly TaskRow[]): string | null {
+  const running = activeTask(tasks);
+  return running === null ? null : (running.activeForm ?? running.subject);
 }
 
 function created(entry: ActivityEntry, index: number): TaskRow | null {

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { groupActivity } from "@/lib/studio/runs";
-import { activeForm, planTasks, type TaskRow } from "@/lib/studio/tasks";
+import {
+  activeForm,
+  planTasks,
+  type TaskRow,
+  taskGlyph,
+} from "@/lib/studio/tasks";
 import type { ActivityEntry, TranscriptEntry } from "@/shared/ipc";
 
 const CWD = "/Users/me/projects/my-video";
@@ -262,5 +267,34 @@ describe("activeForm", () => {
 
     expect(activeForm(tasks)).toBe("Backend");
     expect(activeForm([])).toBeNull();
+  });
+});
+
+describe("taskGlyph", () => {
+  const row = (status: TaskRow["status"]): TaskRow => ({
+    activeForm: null,
+    description: null,
+    id: status,
+    status,
+    subject: status,
+  });
+
+  it("is the running task's own status while one is running", () => {
+    expect(taskGlyph([row("completed"), row("in_progress")])).toBe(
+      "in_progress"
+    );
+  });
+
+  it("is pending when the plan has not been started", () => {
+    expect(taskGlyph([row("pending"), row("completed")])).toBe("pending");
+  });
+
+  it("is finished only when every task is completed", () => {
+    expect(taskGlyph([row("completed"), row("completed")])).toBe("finished");
+    expect(taskGlyph([row("completed"), row("pending")])).toBe("pending");
+  });
+
+  it("is not finished when there is no plan at all", () => {
+    expect(taskGlyph([])).toBe("pending");
   });
 });

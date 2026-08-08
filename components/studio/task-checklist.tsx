@@ -1,32 +1,9 @@
 "use client";
 
-import {
-  CircleCheckIcon,
-  CircleDashedIcon,
-  CircleDotDashedIcon,
-  type LucideIcon,
-} from "lucide-react";
 import { useDisclosure } from "@/hooks/use-disclosure";
-import type { TaskRow, TaskStatus } from "@/lib/studio/tasks";
+import type { TaskRow } from "@/lib/studio/tasks";
 import { cn } from "@/lib/utils";
-
-const ICONS: Record<TaskStatus, LucideIcon> = {
-  completed: CircleCheckIcon,
-  in_progress: CircleDotDashedIcon,
-  pending: CircleDashedIcon,
-};
-
-const STATES: Record<TaskStatus, string> = {
-  completed: "text-muted-foreground",
-  in_progress: "animate-pulse text-amber-500",
-  pending: "text-muted-foreground/60",
-};
-
-const LABELS: Record<TaskStatus, string> = {
-  completed: "Completed",
-  in_progress: "In progress",
-  pending: "Pending",
-};
+import { TaskStatusIcon } from "./task-status-icon";
 
 export function TaskChecklist({ tasks }: { tasks: readonly TaskRow[] }) {
   if (tasks.length === 0) {
@@ -44,7 +21,6 @@ export function TaskChecklist({ tasks }: { tasks: readonly TaskRow[] }) {
 
 function TaskItem({ task }: { task: TaskRow }) {
   const disclosure = useDisclosure();
-  const Icon = ICONS[task.status];
 
   return (
     <li className="flex min-w-0 flex-col">
@@ -60,10 +36,7 @@ function TaskItem({ task }: { task: TaskRow }) {
         onClick={disclosure.toggle}
         type="button"
       >
-        <Icon
-          aria-label={LABELS[task.status]}
-          className={cn("mt-0.5 size-4 shrink-0", STATES[task.status])}
-        />
+        <TaskStatusIcon className="mt-0.5" glyph={task.status} />
         {/* The subject wraps rather than truncating: a plan whose rows end in
             an ellipsis is a plan you cannot read, and the block is free to
             grow downwards where it is not free to grow sideways. */}

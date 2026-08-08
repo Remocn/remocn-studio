@@ -1,18 +1,17 @@
 "use client";
 
-import { ListTodoIcon, PinIcon, XIcon } from "lucide-react";
-import { useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { ChevronUpIcon } from "lucide-react";
 import { useTaskDock } from "@/hooks/use-task-dock";
-import { DOCK_GAP } from "@/lib/studio/dock";
 import type { StudioSettings } from "@/lib/studio/settings";
-import { type TaskRow, taskProgress } from "@/lib/studio/tasks";
+import {
+  activeTask,
+  type TaskRow,
+  taskGlyph,
+  taskProgress,
+} from "@/lib/studio/tasks";
+import { cn } from "@/lib/utils";
 import { TaskChecklist } from "./task-checklist";
+import { TaskStatusIcon } from "./task-status-icon";
 
 export function TaskDock({
   settings,
@@ -21,136 +20,75 @@ export function TaskDock({
   settings: StudioSettings | null;
   tasks: readonly TaskRow[];
 }) {
-  const state = useTaskDock(tasks, settings);
-  const hasTasks = tasks.length > 0;
+  const dock = useTaskDock(settings);
+  const running = activeTask(tasks);
+  const progress = taskProgress(tasks);
+  const glyph = taskGlyph(tasks);
+
+  if (progress === null) {
+    return null;
+  }
 
   return (
-    // The overlay is what measures the pane: it is the pane's own box, so the
-    // gutter left of the centred column is read from the same element the dock
-    // is positioned in rather than from a second source that could disagree.
-    <div
-      className="pointer-events-none absolute inset-0 z-20 overflow-hidden"
-      ref={state.ref}
-    >
-      {hasTasks && state.dock.mode === "panel" ? (
-        <div
-          className="pointer-events-auto absolute top-4 bottom-4 flex flex-col"
-          style={{ left: DOCK_GAP, width: state.dock.width }}
-        >
-          {/* `rounded-xl` over `p-1.5` puts the rows' `rounded-lg` exactly a
-              padding's width inside the shell, so the corner gap stays even.
-              Depth is the shared elevation token rather than a border: it is a
-              translucent ring, so it composites over whatever of the transcript
-              happens to be behind it. */}
-          <section
-            aria-label="Plan"
-            className="flex min-h-0 flex-col rounded-xl bg-popover/95 p-1.5 shadow-[var(--elevation-floating)] backdrop-blur-md"
-          >
-            <PlanHeading onHide={state.show} tasks={tasks} />
-            <div className="min-h-0 overflow-y-auto">
+    // The strip has no bottom radius and no gap under it: it abuts the composer
+    // and reads as a drawer behind it. Overlapping the composer to get that
+    // effect is what the earlier version did, and every version of it put an
+    // edge or a shadow of ours across the input. Both live in the same
+    // `max-w-2xl` column, so a pane resize reflows them together and there is
+    // nothing left to measure.
+    <div className="relative z-0 -mb-px shrink-0 px-4">
+      {/* `px-3` inside the composer's own column is what makes the strip
+          narrower than it, so it reads as coming out from behind. */}
+      <div className="mx-auto w-full max-w-2xl px-3">
+        {/* `bg-card` rather than a muted tint: the composer's own surface is a
+            translucent lift over the background, so anything translucent here
+            lands on the same colour and the two merge. The colour is the whole
+            separation — the composer draws no border, and one here would be the
+            only line on this edge of the screen. */}
+        <div className="overflow-hidden rounded-t-xl bg-card">
+          {dock.isExpanded ? (
+            <div className="max-h-64 overflow-y-auto p-1.5 pb-0">
               <TaskChecklist tasks={tasks} />
             </div>
-          </section>
-        </div>
-      ) : null}
+          ) : null}
 
-      {hasTasks && state.dock.mode === "icon" ? (
-        <div
-          className="pointer-events-auto absolute top-4"
-          style={{ left: DOCK_GAP }}
-        >
-          <Popover onOpenChange={state.setOpen} open={state.isOpen}>
-            <PopoverTrigger
-              render={
-                <Button
-                  aria-label={`Show the plan, ${label(tasks)}`}
-                  className="shadow-[var(--elevation-floating)]"
-                  size="icon-sm"
-                  variant="outline"
-                />
-              }
+          <button
+            aria-expanded={dock.isExpanded}
+            aria-label={`Plan, ${progress.done} of ${progress.total} done`}
+            className="flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+            onClick={dock.toggle}
+            type="button"
+          >
+            <TaskStatusIcon glyph={glyph} />
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate",
+                running === null ? "text-muted-foreground" : "text-foreground"
+              )}
             >
-              <ListTodoIcon />
-            </PopoverTrigger>
-            <PopoverContent
-              align="start"
-              aria-label="Plan"
-              className="max-h-96 w-72 gap-0 overflow-y-auto p-1.5"
-              side="right"
-            >
-              <PlanHeading
-                onShow={state.isShown ? undefined : state.show}
-                tasks={tasks}
-              />
-              <TaskChecklist tasks={tasks} />
-            </PopoverContent>
-          </Popover>
+              {label(running, glyph)}
+            </span>
+            <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
+              {`${progress.done}/${progress.total}`}
+            </span>
+            <ChevronUpIcon
+              aria-hidden="true"
+              className={cn(
+                "size-4 shrink-0 text-muted-foreground transition-transform",
+                dock.isExpanded && "rotate-180"
+              )}
+            />
+          </button>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }
 
-function PlanHeading({
-  onHide,
-  onShow,
-  tasks,
-}: {
-  onHide?: (shown: boolean) => void;
-  onShow?: (shown: boolean) => void;
-  tasks: readonly TaskRow[];
-}) {
-  return (
-    <div className="flex shrink-0 items-center gap-2 px-2 pt-1 pb-1.5">
-      <h3 className="min-w-0 flex-1 truncate font-medium text-foreground text-sm">
-        Plan
-      </h3>
-      <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
-        {label(tasks)}
-      </span>
-      {onHide === undefined ? null : <HideButton onHide={onHide} />}
-      {onShow === undefined ? null : <ShowButton onShow={onShow} />}
-    </div>
-  );
-}
+function label(running: TaskRow | null, glyph: ReturnType<typeof taskGlyph>) {
+  if (running !== null) {
+    return running.activeForm ?? running.subject;
+  }
 
-function HideButton({ onHide }: { onHide: (shown: boolean) => void }) {
-  const hide = useCallback(() => {
-    onHide(false);
-  }, [onHide]);
-
-  return (
-    <Button
-      aria-label="Hide the plan"
-      className="-mr-1 size-6 shrink-0 text-muted-foreground"
-      onClick={hide}
-      size="icon-xs"
-      variant="ghost"
-    >
-      <XIcon />
-    </Button>
-  );
-}
-
-function ShowButton({ onShow }: { onShow: (shown: boolean) => void }) {
-  const show = useCallback(() => {
-    onShow(true);
-  }, [onShow]);
-
-  return (
-    <Button
-      aria-label="Keep the plan beside the chat"
-      className="-mr-1 size-6 shrink-0 text-muted-foreground"
-      onClick={show}
-      size="icon-xs"
-      variant="ghost"
-    >
-      <PinIcon />
-    </Button>
-  );
-}
-
-function label(tasks: readonly TaskRow[]): string {
-  const progress = taskProgress(tasks);
-  return progress === null ? "empty" : `${progress.done}/${progress.total}`;
+  return glyph === "finished" ? "All done" : "Plan";
 }

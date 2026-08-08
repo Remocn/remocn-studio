@@ -97,7 +97,7 @@ function ComposerBlock({
   const cannotSend = isLocked || sidecar.phase === "down";
 
   return (
-    <div className="shrink-0 px-4 pb-4">
+    <div className="relative z-10 shrink-0 px-4 pb-4">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-1">
         <InputGroup className="rounded-xl border-none">
           {composer.attachments.items.length > 0 ? (

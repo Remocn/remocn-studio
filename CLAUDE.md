@@ -476,19 +476,20 @@ public contract and would break the left pane on any CLI update. Only
   of this, and it cost every `TaskUpdate` of a second turn: the id matched
   nothing, so the call fell out of the checklist and drew a row saying "Updated
   task #6 description, status" while the plan above it stayed all-pending.
-- **The plan also floats in the transcript's left gutter.** `TaskDock` renders the
-  turn's current plan beside the conversation, in the space the centred
-  `max-w-2xl` column leaves — and the panes are resizable, so that space is not a
-  given. `lib/studio/dock.ts` is the whole rule, pure and tested without
-  rendering: the block is shown at its natural width while the gutter fits it and
-  narrows with the gutter down to **half** that width; below it collapses into an
-  icon button that opens the same list in a popover over the transcript; and when
-  even the button has no room, nothing is drawn at all — the plan comes back by
-  widening the pane. The gutter is measured off the dock's own overlay, which is
-  the pane's box, so the thing being positioned and the thing being measured
-  cannot disagree. The checklist **stays in the transcript too**: there it is a
-  record of what happened, and it is the only copy a session reopened from
-  history can anchor in the right place.
+- **The plan also sits on top of the composer.** `TaskDock` is a strip in the
+  composer's own `max-w-2xl` column, collapsed to the task in hand — its
+  `activeForm` — with the count on the right, and it opens *upwards* into the
+  whole list. It has no bottom radius and no gap under it, so it abuts the
+  composer and reads as a drawer behind it; overlapping the composer to get that
+  effect is what the first two versions did, and each of them ended up putting an
+  edge or a shadow of ours across the input. It lived in the transcript's
+  left gutter first, measured against the pane with a `ResizeObserver` and three
+  visibility rules; sharing the composer's column deletes all of that — a pane
+  resize reflows both together and there is nothing left to measure. Expanded or
+  collapsed is `taskDock` in `settings.json`, so a plan left open comes back open.
+  The checklist **stays in the transcript too**: there it is a record of what
+  happened, and it is the only copy a session reopened from history can anchor in
+  the right place.
 - **A subject wraps; it never truncates.** A plan whose every row ends in an
   ellipsis is a plan you cannot read, and the block is free to grow downwards
   where it is not free to grow sideways — so rows wrap, the running one carries a

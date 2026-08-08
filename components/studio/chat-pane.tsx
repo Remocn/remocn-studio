@@ -195,14 +195,6 @@ function Conversation({
           rendering behind a transcript. */}
       {isStartup || isCreating ? <StartupBackdrop /> : null}
 
-      {/* The plan sits in the gutter left of the transcript's centred column,
-          and vanishes as that gutter narrows — see `lib/studio/dock.ts`. It
-          reads the same `currentTasks` the transcript and the projects pane
-          read, so the three cannot disagree about what the plan is. */}
-      {isStartup || isCreating ? null : (
-        <TaskDock settings={settings} tasks={currentTasks(turn.entries)} />
-      )}
-
       <MarkdownProvider>
         <MessageScrollerProvider>
           <MessageScroller>
@@ -258,6 +250,12 @@ function Conversation({
               </div>
             </div>
           )}
+
+          {/* The plan sits on top of the composer, collapsed to the task in
+              hand, and opens upwards into the whole list. It reads the same
+              `currentTasks` the transcript and the projects pane read, so the
+              three cannot disagree about what the plan is. */}
+          <TaskDock settings={settings} tasks={currentTasks(turn.entries)} />
 
           <Composer
             context={turn.context}
