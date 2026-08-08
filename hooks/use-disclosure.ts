@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 export interface Disclosure {
   isOpen: boolean;
+  setOpen: (open: boolean) => void;
   toggle: () => void;
 }
 
@@ -14,5 +15,12 @@ export function useDisclosure(): Disclosure {
     setIsOpen((current) => !current);
   }, []);
 
-  return useMemo(() => ({ isOpen, toggle }), [isOpen, toggle]);
+  const setOpen = useCallback((open: boolean) => {
+    setIsOpen(open);
+  }, []);
+
+  return useMemo(
+    () => ({ isOpen, setOpen, toggle }),
+    [isOpen, setOpen, toggle]
+  );
 }

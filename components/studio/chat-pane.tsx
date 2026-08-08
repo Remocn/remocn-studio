@@ -28,6 +28,8 @@ import { useLocateProject } from "@/hooks/use-locate-project";
 import type { NewProject } from "@/hooks/use-new-project";
 import { useNow } from "@/hooks/use-now";
 import type { OpenTurn } from "@/hooks/use-open-turn";
+import type { StudioSettings } from "@/lib/studio/settings";
+import { currentTasks } from "@/lib/studio/tasks";
 import type { HistorySession, Project } from "@/shared/ipc";
 import { Composer } from "./composer";
 import { EnvironmentChecklist } from "./environment-checklist";
@@ -39,6 +41,7 @@ import { PermissionCard } from "./permission-card";
 import { Startup } from "./startup";
 import { StartupBackdrop } from "./startup-backdrop";
 import { useStudio } from "./studio-provider";
+import { TaskDock } from "./task-dock";
 import { Transcript } from "./transcript";
 
 const PLACEHOLDERS = ["one", "two", "three"];
@@ -54,6 +57,7 @@ export function ChatPane() {
     openedProject,
     openFolder,
     relocateProject,
+    settings,
     togglePreview,
     toggleProjects,
     turn,
@@ -125,6 +129,7 @@ export function ChatPane() {
           newProject={newProject}
           onLocate={locate}
           onOpenFolder={openFolder}
+          settings={settings}
           turn={turn}
         />
       )}
@@ -162,6 +167,7 @@ function Conversation({
   newProject,
   onLocate,
   onOpenFolder,
+  settings,
   turn,
 }: {
   cwd: string | null;
@@ -171,6 +177,7 @@ function Conversation({
   newProject: NewProject;
   onLocate: () => void;
   onOpenFolder: () => void;
+  settings: StudioSettings | null;
   turn: OpenTurn;
 }) {
   const hasTranscript = turn.entries.length > 0 || turn.turnError !== null;
@@ -181,12 +188,20 @@ function Conversation({
   return (
     // `isolate` keeps the backdrop's negative z-index inside the pane; without
     // a stacking context here it would sink behind the pane itself.
-    <PaneBody className="isolate">
+    <PaneBody className="relative isolate">
       {/* The shader is decoration on the two screens that replace the
           conversation, and nothing else, so it reads the same flags those
           screens do rather than a condition of its own that could drift into
           rendering behind a transcript. */}
       {isStartup || isCreating ? <StartupBackdrop /> : null}
+
+      {/* The plan sits in the gutter left of the transcript's centred column,
+          and vanishes as that gutter narrows — see `lib/studio/dock.ts`. It
+          reads the same `currentTasks` the transcript and the projects pane
+          read, so the three cannot disagree about what the plan is. */}
+      {isStartup || isCreating ? null : (
+        <TaskDock settings={settings} tasks={currentTasks(turn.entries)} />
+      )}
 
       <MarkdownProvider>
         <MessageScrollerProvider>

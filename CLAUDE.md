@@ -469,6 +469,38 @@ public contract and would break the left pane on any CLI update. Only
   task call is not folded: it stays its own row with its error, as every failure
   does. One checklist per *turn* — a `user` entry settles the current one, because
   a second plan is a later decision and not a revision of the first.
+- **The plan also floats in the transcript's left gutter.** `TaskDock` renders the
+  turn's current plan beside the conversation, in the space the centred
+  `max-w-2xl` column leaves — and the panes are resizable, so that space is not a
+  given. `lib/studio/dock.ts` is the whole rule, pure and tested without
+  rendering: the block is shown at its natural width while the gutter fits it and
+  narrows with the gutter down to **half** that width; below it collapses into an
+  icon button that opens the same list in a popover over the transcript; and when
+  even the button has no room, nothing is drawn at all — the plan comes back by
+  widening the pane. The gutter is measured off the dock's own overlay, which is
+  the pane's box, so the thing being positioned and the thing being measured
+  cannot disagree. The checklist **stays in the transcript too**: there it is a
+  record of what happened, and it is the only copy a session reopened from
+  history can anchor in the right place.
+- **A subject wraps; it never truncates.** A plan whose every row ends in an
+  ellipsis is a plan you cannot read, and the block is free to grow downwards
+  where it is not free to grow sideways — so rows wrap, the running one carries a
+  surface, and the whole list scrolls with no fade over it. That is also why
+  `PANEL_MIN` is a *readability* floor rather than exactly half of `PANEL_MAX`:
+  below it a wrapped 14px line stops being worth reading, and the button says
+  more than four clipped words would.
+- **Depth is a token, not a border.** `--elevation-floating` in `app/globals.css`
+  is a translucent ring plus ambient layers, so it composites over whatever of
+  the transcript is behind it instead of being tuned to one background; the dark
+  palette collapses it to a white ring with one wide ambient shadow, because a
+  stacked shadow cannot be seen on a dark surface but this one floats over
+  scrolling content. The shell's `rounded-xl` over `p-1.5` puts the rows'
+  `rounded-lg` exactly a padding's width inside it, so the corner gap stays even.
+- **Hiding is the user's, and it is remembered.** The panel's × folds it into the
+  button, whose popover carries a pin to bring it back, and the choice is
+  `taskDock` in `settings.json`. Hiding by hand can only ever *narrow* what the
+  room allows, never widen it: with no room for the button either, there is
+  nothing to hide and nothing to restore.
 - **The pane's running row reads the same plan.** `rowOf` in `lib/studio/groups.ts`
   derives the open plan from the turn's entries with the same `currentTasks`, so
   `Running · 2m` becomes `Registering the scene · 1/3 · 2m` — the running task's

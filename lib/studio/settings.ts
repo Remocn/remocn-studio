@@ -10,6 +10,7 @@ const CLAUDE_MODEL_KEY = "claudeModel";
 const CLAUDE_EFFORT_KEY = "claudeEffort";
 const PREVIEW_PANE_KEY = "previewPane";
 const PROJECTS_PANE_KEY = "projectsPane";
+const TASK_DOCK_KEY = "taskDock";
 const LAYOUT_KEY_PREFIX = "layout:";
 
 const cache = new Map<string, string>();
@@ -25,6 +26,7 @@ export interface StudioSettings {
   legacyProjectFolder: string | null;
   previewPane: boolean | null;
   projectsPane: boolean | null;
+  taskDock: boolean | null;
 }
 
 export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
@@ -44,6 +46,7 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
       legacyProjectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
       previewPane: shownOf(cache.get(PREVIEW_PANE_KEY)),
       projectsPane: shownOf(cache.get(PROJECTS_PANE_KEY)),
+      taskDock: shownOf(cache.get(TASK_DOCK_KEY)),
     };
   })
 );
@@ -115,6 +118,10 @@ export function savePreviewPane(shown: boolean): Effect.Effect<void> {
 
 export function saveProjectsPane(shown: boolean): Effect.Effect<void> {
   return remember(PROJECTS_PANE_KEY, shown ? "shown" : "hidden");
+}
+
+export function saveTaskDock(shown: boolean): Effect.Effect<void> {
+  return remember(TASK_DOCK_KEY, shown ? "shown" : "hidden");
 }
 
 export function saveClaudeEffort(

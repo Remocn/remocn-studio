@@ -11,6 +11,7 @@ import { type OpenTurn, useOpenTurn } from "@/hooks/use-open-turn";
 import { type Panes, usePanes } from "@/hooks/use-panes";
 import { type Tools, useTools } from "@/hooks/use-tools";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
+import type { StudioSettings } from "@/lib/studio/settings";
 
 export type Studio = ClaudeEffort &
   ClaudeModel &
@@ -19,6 +20,7 @@ export type Studio = ClaudeEffort &
     composer: Composer;
     environment: Environment;
     newProject: NewProject;
+    settings: StudioSettings | null;
     tools: Tools;
     turn: OpenTurn;
   };
@@ -89,6 +91,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       composer,
       environment,
       newProject,
+      settings,
       tools,
       turn,
     }),
@@ -99,6 +102,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       model,
       newProject,
       panes,
+      settings,
       tools,
       turn,
       workspace,

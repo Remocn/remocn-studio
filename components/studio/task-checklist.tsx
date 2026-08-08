@@ -34,7 +34,7 @@ export function TaskChecklist({ tasks }: { tasks: readonly TaskRow[] }) {
   }
 
   return (
-    <ul className="flex min-w-0 flex-col gap-1" data-slot="task-checklist">
+    <ul className="flex min-w-0 flex-col gap-0.5" data-slot="task-checklist">
       {tasks.map((task) => (
         <TaskItem key={task.id} task={task} />
       ))}
@@ -47,25 +47,31 @@ function TaskItem({ task }: { task: TaskRow }) {
   const Icon = ICONS[task.status];
 
   return (
-    <li className="flex min-w-0 flex-col gap-1">
+    <li className="flex min-w-0 flex-col">
       <button
         aria-expanded={
           task.description === null ? undefined : disclosure.isOpen
         }
-        className="group flex w-full min-w-0 items-center gap-2 rounded-md text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-default"
+        className={cn(
+          "group flex w-full min-w-0 items-start gap-2 rounded-lg px-2 py-1.5 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-default",
+          task.status === "in_progress" && "bg-muted/60"
+        )}
         disabled={task.description === null}
         onClick={disclosure.toggle}
         type="button"
       >
         <Icon
           aria-label={LABELS[task.status]}
-          className={cn("size-3.5 shrink-0", STATES[task.status])}
+          className={cn("mt-0.5 size-4 shrink-0", STATES[task.status])}
         />
+        {/* The subject wraps rather than truncating: a plan whose rows end in
+            an ellipsis is a plan you cannot read, and the block is free to
+            grow downwards where it is not free to grow sideways. */}
         <span
           className={cn(
-            "min-w-0 truncate",
+            "wrap-break-word min-w-0 text-pretty leading-snug",
             task.status === "completed"
-              ? "text-muted-foreground line-through"
+              ? "text-muted-foreground line-through decoration-muted-foreground/50"
               : "text-foreground"
           )}
         >
@@ -74,7 +80,7 @@ function TaskItem({ task }: { task: TaskRow }) {
       </button>
 
       {disclosure.isOpen && task.description !== null ? (
-        <p className="wrap-break-word whitespace-pre-wrap pl-5 text-[0.6875rem] text-muted-foreground">
+        <p className="wrap-break-word whitespace-pre-wrap px-2 pb-1.5 pl-8 text-muted-foreground text-xs leading-relaxed">
           {task.description}
         </p>
       ) : null}
