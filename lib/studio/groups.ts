@@ -1,3 +1,9 @@
+import {
+  activeForm,
+  currentTasks,
+  type TaskProgress,
+  taskProgress,
+} from "@/lib/studio/tasks";
 import { elapsedTime } from "@/lib/studio/time";
 import {
   IDLE_TURN,
@@ -14,9 +20,11 @@ export type RollupStatus = "failed" | "running" | "unread" | "waiting";
 export interface SessionRow {
   readonly askedAt: number | null;
   readonly error: string | null;
+  readonly progress: TaskProgress | null;
   readonly session: HistorySession;
   readonly startedAt: number | null;
   readonly status: SessionStatus;
+  readonly task: string | null;
   readonly tool: string | null;
   readonly unread: boolean;
 }
@@ -116,13 +124,14 @@ export function sessionMeta(row: SessionRow, now: number): SessionMeta | null {
   }
 
   if (row.status === "running") {
-    return {
-      isError: false,
-      text:
-        row.startedAt === null
-          ? "Running"
-          : `Running · ${elapsedTime(row.startedAt, now)}`,
-    };
+    const parts = [
+      row.task ?? "Running",
+      row.progress === null
+        ? null
+        : `${row.progress.done}/${row.progress.total}`,
+      row.startedAt === null ? null : elapsedTime(row.startedAt, now),
+    ];
+    return { isError: false, text: parts.filter(Boolean).join(" · ") };
   }
 
   if (row.status === "failed" && row.error !== null) {
@@ -142,13 +151,20 @@ function rowOf(
 ): SessionRow {
   const state = turn ?? IDLE_TURN;
   const [ask] = state.permissions;
+  const status = statusOf(state);
+  // The plan is only worth deriving while the turn runs: a settled row is one
+  // quiet line, and walking a finished session's entries on every minute tick
+  // would cost the whole pane something nobody is reading.
+  const tasks = status === "running" ? currentTasks(state.entries) : [];
 
   return {
     askedAt: ask?.askedAt ?? null,
     error: state.error,
+    progress: taskProgress(tasks),
     session,
     startedAt: state.startedAt,
-    status: statusOf(state),
+    status,
+    task: activeForm(tasks),
     tool: ask?.name ?? null,
     unread: state.unread,
   };

@@ -24,9 +24,11 @@ const SESSION: HistorySession = {
 const IDLE_ROW: SessionRow = {
   askedAt: null,
   error: null,
+  progress: null,
   session: SESSION,
   startedAt: null,
   status: "idle",
+  task: null,
   tool: null,
   unread: false,
 };

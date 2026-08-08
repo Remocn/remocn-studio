@@ -118,4 +118,18 @@ describe("review", () => {
       signature: signatureOf("ExitPlanMode", "1. Build the title card"),
     });
   });
+  it("never asks for bookkeeping — the plan tools and TodoWrite", async () => {
+    const tools = [
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskList",
+      "TaskGet",
+      "TodoWrite",
+    ];
+    const verdicts = await Promise.all(
+      tools.map((tool) => verdict(tool, { subject: "Backend" }))
+    );
+
+    expect(verdicts).toEqual(tools.map(() => ({ kind: "allow" })));
+  });
 });

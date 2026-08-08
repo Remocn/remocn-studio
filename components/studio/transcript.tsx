@@ -4,13 +4,15 @@ import { memo, useMemo } from "react";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Message, MessageContent } from "@/components/ui/message";
 import { MessageScrollerItem } from "@/components/ui/message-scroller";
-import { groupActivity } from "@/lib/studio/runs";
+import { groupActivity, type TranscriptItem } from "@/lib/studio/runs";
+import { activeForm, currentTasks } from "@/lib/studio/tasks";
 import type { TranscriptEntry } from "@/shared/ipc";
 import { ActivityLine } from "./activity-line";
 import { ActivityRun } from "./activity-run";
 import { AttachmentRow } from "./attachment-row";
 import { Markdown } from "./markdown";
 import { MessageText } from "./message-text";
+import { TaskChecklist } from "./task-checklist";
 import { Thinking } from "./thinking";
 
 export function Transcript({
@@ -34,6 +36,7 @@ export function Transcript({
   const last = entries.at(-1) ?? null;
   const isThinking = isRunning && !isWaiting && last?.kind !== "assistant";
   const lastId = items.at(-1)?.id ?? null;
+  const label = activeForm(currentTasks(entries));
 
   // The pane re-renders every second for the Thinking timer; the transcript
   // rows depend on none of that, so the element array is kept stable across
@@ -42,15 +45,11 @@ export function Transcript({
     () =>
       items.map((item) => (
         <MessageScrollerItem key={item.id} messageId={item.id}>
-          {item.kind === "run" ? (
-            <Run cwd={cwd} entries={item.entries} />
-          ) : (
-            <Entry
-              cwd={cwd}
-              entry={item.entry}
-              isStreaming={isRunning && item.id === lastId}
-            />
-          )}
+          <Row
+            cwd={cwd}
+            isStreaming={isRunning && item.id === lastId}
+            item={item}
+          />
         </MessageScrollerItem>
       )),
     [cwd, isRunning, items, lastId]
@@ -62,7 +61,7 @@ export function Transcript({
 
       {isThinking ? (
         <MessageScrollerItem>
-          <Thinking now={now} startedAt={startedAt} />
+          <Thinking label={label} now={now} startedAt={startedAt} />
         </MessageScrollerItem>
       ) : null}
 
@@ -78,6 +77,26 @@ export function Transcript({
       )}
     </>
   );
+}
+
+function Row({
+  cwd,
+  isStreaming,
+  item,
+}: {
+  cwd: string | null;
+  isStreaming: boolean;
+  item: TranscriptItem;
+}) {
+  if (item.kind === "tasks") {
+    return <TaskChecklist tasks={item.tasks} />;
+  }
+
+  if (item.kind === "run") {
+    return <Run cwd={cwd} entries={item.entries} />;
+  }
+
+  return <Entry cwd={cwd} entry={item.entry} isStreaming={isStreaming} />;
 }
 
 function EntryBlock({

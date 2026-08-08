@@ -191,6 +191,21 @@ describe("toolDetail", () => {
   });
 });
 
+describe("toolTarget, on a task", () => {
+  it("prefers the subject over the description", () => {
+    expect(
+      toolTarget(
+        { description: "Create the promotions table…", subject: "Backend" },
+        CWD
+      )
+    ).toBe("Backend");
+  });
+
+  it("still falls back to the description when there is no subject", () => {
+    expect(toolTarget({ description: "Install" }, CWD)).toBe("Install");
+  });
+});
+
 describe("toolFailure", () => {
   it("keeps the error short and says there is more", () => {
     expect(toolFailure("one\ntwo\nthree\nfour")).toBe("one\ntwo\nthree…");

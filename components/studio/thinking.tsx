@@ -3,9 +3,11 @@ import { Marker, MarkerContent } from "@/components/ui/marker";
 import { runningTime } from "@/lib/studio/time";
 
 export function Thinking({
+  label,
   now,
   startedAt,
 }: {
+  label: string | null;
   now: number;
   startedAt: number | null;
 }) {
@@ -24,7 +26,7 @@ export function Thinking({
         size={20}
         speed={1.05}
       />
-      <MarkerContent className="shimmer">Thinking…</MarkerContent>
+      <MarkerContent className="shimmer">{label ?? "Thinking…"}</MarkerContent>
       {startedAt === null ? null : (
         <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
           {runningTime(startedAt, now)}

@@ -454,6 +454,32 @@ public contract and would break the left pane on any CLI update. Only
   put presentation into SQLite and make the stored transcript lossy — and because
   the grouper is a pure function over the entries, a session loaded from history
   groups identically to one folded live.
+- **The plan Claude writes is one checklist, derived the same way.** Claude Code
+  plans with `TaskCreate`/`TaskUpdate`, not `TodoWrite`, and those calls used to
+  render as a wall of wrench rows labelled with a truncated *description*.
+  `lib/studio/tasks.ts` folds every task call of a turn into one checklist
+  anchored at the first `TaskCreate`, which `lib/studio/runs.ts` emits in place of
+  those entries before it groups the rest. Identity comes from the id in the
+  create's `result` (`Task #1 created successfully: …`), with position among the
+  creates as the fallback while the result is still in flight, since ids are
+  assigned in order; an update naming an unknown id changes nothing rather than
+  inventing a row. Because it is a pure function over the stored entries, a
+  session reopened from SQLite renders the checklist the live turn showed, no
+  `TranscriptEntry` variant was added and no migration was needed. A **failed**
+  task call is not folded: it stays its own row with its error, as every failure
+  does. One checklist per *turn* — a `user` entry settles the current one, because
+  a second plan is a later decision and not a revision of the first.
+- **The pane's running row reads the same plan.** `rowOf` in `lib/studio/groups.ts`
+  derives the open plan from the turn's entries with the same `currentTasks`, so
+  `Running · 2m` becomes `Registering the scene · 1/3 · 2m` — the running task's
+  `activeForm`, how many of the plan are done, and the elapsed time it already
+  showed. It is derived **only while the turn runs**: a settled row stays one
+  quiet line, and walking a finished session's entries on every minute tick would
+  cost the whole pane something nobody is reading. The row is still one line; the
+  checklist itself belongs to the transcript.
+- **The thinking marker reads the running task's `activeForm`** — the
+  present-continuous phrase the tool carries — falling back to its subject, and to
+  "Thinking…" when nothing is in progress.
 - **Every tool call folds, and only a failure breaks a run.** An earlier rule
   folded a named set of read-only tools and kept every command on screen. Two
   turns' worth of screenshots killed it: a real turn is walls of `Bash`, and the

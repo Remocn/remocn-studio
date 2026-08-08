@@ -28,9 +28,13 @@ function ids(items: readonly { id: string }[]): string[] {
 }
 
 function flatten(entries: readonly TranscriptEntry[]): string[] {
-  return groupActivity(entries).flatMap((item) =>
-    item.kind === "run" ? ids(item.entries) : [item.entry.id]
-  );
+  return groupActivity(entries).flatMap((item) => {
+    if (item.kind === "run") {
+      return ids(item.entries);
+    }
+
+    return item.kind === "tasks" ? [] : [item.entry.id];
+  });
 }
 
 describe("groupActivity", () => {
