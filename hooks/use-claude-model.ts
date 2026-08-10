@@ -2,26 +2,25 @@
 
 import { Effect } from "effect";
 import { useCallback, useMemo, useState } from "react";
+import { DEFAULT_CLAUDE_MODEL } from "@/lib/studio/models";
 import { type StudioSettings, saveClaudeModel } from "@/lib/studio/settings";
 
 export interface ClaudeModel {
-  claudeModel: string | null;
+  claudeModel: string;
   onModelChange: (value: string) => void;
 }
 
 export function useClaudeModel(settings: StudioSettings | null): ClaudeModel {
-  const [chosen, setChosen] = useState<string | null | undefined>(undefined);
+  const [chosen, setChosen] = useState<string | null>(null);
 
   const onModelChange = useCallback((value: string) => {
-    const model = value === "" ? null : value;
-    setChosen(model);
-    Effect.runFork(saveClaudeModel(model));
+    setChosen(value);
+    Effect.runFork(saveClaudeModel(value));
   }, []);
 
   return useMemo(
     () => ({
-      claudeModel:
-        chosen === undefined ? (settings?.claudeModel ?? null) : chosen,
+      claudeModel: chosen ?? settings?.claudeModel ?? DEFAULT_CLAUDE_MODEL,
       onModelChange,
     }),
     [chosen, onModelChange, settings]

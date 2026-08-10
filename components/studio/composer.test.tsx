@@ -235,9 +235,7 @@ describe("Composer", () => {
     await renderComposer();
 
     expect(screen.getByRole("button", { name: "Mode: Auto" })).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Model: Default" })
-    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Model: Opus 5" })).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Effort: Default" })
     ).toBeVisible();

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { type Sidecar, useSidecar } from "@/hooks/use-sidecar";
+import { CLAUDE_MODELS } from "@/lib/studio/models";
 import {
   type ContextUsage,
   SESSION_MODE_LABELS,
@@ -43,13 +44,6 @@ import { SelectionRow } from "./selection-row";
 import { useStudio } from "./studio-provider";
 
 const DEFAULT = "";
-
-const MODELS = [
-  { label: "Default", value: DEFAULT },
-  { label: "Opus 5", value: "claude-opus-5" },
-  { label: "Sonnet 5", value: "claude-sonnet-5" },
-  { label: "Haiku 4.5", value: "claude-haiku-4-5-20251001" },
-];
 
 const MODES = SESSION_MODES.map((mode) => ({
   label: SESSION_MODE_LABELS[mode],
@@ -186,8 +180,8 @@ function ComposerBlock({
 
               <MenuChip
                 icon={SparklesIcon}
-                items={MODELS}
-                label={labelOf(MODELS, claudeModel)}
+                items={CLAUDE_MODELS}
+                label={labelOf(CLAUDE_MODELS, claudeModel)}
                 onChange={onModelChange}
                 title="Model"
                 value={claudeModel}
@@ -251,7 +245,7 @@ function MenuChip({
   value,
 }: {
   icon: typeof SparklesIcon;
-  items: { label: string; value: string }[];
+  items: readonly { label: string; value: string }[];
   label: string;
   onChange: (value: string) => void;
   title: string;
@@ -288,7 +282,7 @@ function MenuChip({
 }
 
 function labelOf(
-  items: { label: string; value: string }[],
+  items: readonly { label: string; value: string }[],
   value: string | null
 ): string {
   const found = items.find((item) => item.value === (value ?? DEFAULT));
