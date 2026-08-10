@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { type Sidecar, useSidecar } from "@/hooks/use-sidecar";
+import { CLAUDE_MODELS } from "@/lib/studio/models";
 import {
   type ContextUsage,
   SESSION_MODE_LABELS,
@@ -44,12 +45,7 @@ import { useStudio } from "./studio-provider";
 
 const DEFAULT = "";
 
-const MODELS = [
-  { label: "Default", value: DEFAULT },
-  { label: "Opus 5", value: "claude-opus-5" },
-  { label: "Sonnet 5", value: "claude-sonnet-5" },
-  { label: "Haiku 4.5", value: "claude-haiku-4-5-20251001" },
-];
+const LINE_BOX_TERMINATOR = "\u200b";
 
 const MODES = SESSION_MODES.map((mode) => ({
   label: SESSION_MODE_LABELS[mode],
@@ -123,15 +119,16 @@ function ComposerBlock({
           <div className="relative flex w-full min-w-0 flex-1 flex-col">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-2.5 py-2 text-base md:text-sm"
+              className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-2.5 py-2 text-base [scrollbar-gutter:stable] md:text-sm"
               ref={composer.caret.mirror}
             >
               <MessageText counts={composer.counts} text={composer.value} />
+              {LINE_BOX_TERMINATOR}
             </div>
 
             <InputGroupTextarea
               aria-label="Message Claude"
-              className="relative max-h-64 text-transparent caret-foreground selection:bg-primary/30"
+              className="relative max-h-64 text-transparent caret-foreground [scrollbar-gutter:stable] selection:bg-primary/30"
               disabled={isLocked}
               onChange={composer.onChange}
               onKeyDown={composer.onKeyDown}
@@ -186,8 +183,8 @@ function ComposerBlock({
 
               <MenuChip
                 icon={SparklesIcon}
-                items={MODELS}
-                label={labelOf(MODELS, claudeModel)}
+                items={CLAUDE_MODELS}
+                label={labelOf(CLAUDE_MODELS, claudeModel)}
                 onChange={onModelChange}
                 title="Model"
                 value={claudeModel}
@@ -251,7 +248,7 @@ function MenuChip({
   value,
 }: {
   icon: typeof SparklesIcon;
-  items: { label: string; value: string }[];
+  items: readonly { label: string; value: string }[];
   label: string;
   onChange: (value: string) => void;
   title: string;
@@ -288,7 +285,7 @@ function MenuChip({
 }
 
 function labelOf(
-  items: { label: string; value: string }[],
+  items: readonly { label: string; value: string }[],
   value: string | null
 ): string {
   const found = items.find((item) => item.value === (value ?? DEFAULT));

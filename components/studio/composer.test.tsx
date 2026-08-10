@@ -142,6 +142,14 @@ function textOf(textarea: HTMLElement) {
   return (textarea as HTMLTextAreaElement).value;
 }
 
+function mirrorOf(textarea: HTMLElement) {
+  const mirror = textarea.previousElementSibling;
+  if (mirror === null) {
+    throw new Error("the composer has no overlay");
+  }
+  return mirror as HTMLElement;
+}
+
 function typeInto(textarea: HTMLElement, value: string) {
   fireEvent.change(textarea, { target: { value } });
   (textarea as HTMLTextAreaElement).setSelectionRange(
@@ -235,9 +243,7 @@ describe("Composer", () => {
     await renderComposer();
 
     expect(screen.getByRole("button", { name: "Mode: Auto" })).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Model: Default" })
-    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Model: Opus 5" })).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Effort: Default" })
     ).toBeVisible();
@@ -670,5 +676,26 @@ describe("Composer", () => {
     await waitFor(() => expect(sent).toHaveLength(1));
     expect(sent[0].elements).toEqual([ELEMENT]);
     expect(sent[0].prompt).toBe("make this bigger [Element #1]");
+  });
+
+  it("terminates the overlay so a trailing newline keeps its line", async () => {
+    const { textarea } = await renderComposer();
+
+    typeInto(textarea, "one\ntwo\n");
+
+    expect(mirrorOf(textarea).textContent).toBe("one\ntwo\n\u200b");
+  });
+
+  it("follows the field's scroll on every change, not only on a scroll", async () => {
+    const { textarea } = await renderComposer();
+    const mirror = mirrorOf(textarea);
+
+    typeInto(textarea, "a long draft");
+    textarea.scrollTop = 30;
+    mirror.scrollTop = 0;
+
+    typeInto(textarea, "a long drafts");
+
+    expect(mirror.scrollTop).toBe(30);
   });
 });

@@ -16,14 +16,21 @@ export function useCaret(): Caret {
   const pending = useRef<number | null>(null);
 
   useLayoutEffect(() => {
-    const at = pending.current;
-    if (at === null) {
+    const field = ref.current;
+    if (field === null) {
       return;
     }
 
-    pending.current = null;
-    ref.current?.focus();
-    ref.current?.setSelectionRange(at, at);
+    const at = pending.current;
+    if (at !== null) {
+      pending.current = null;
+      field.focus();
+      field.setSelectionRange(at, at);
+    }
+
+    if (mirror.current !== null) {
+      mirror.current.scrollTop = field.scrollTop;
+    }
   });
 
   const moveTo = useCallback((at: number) => {
