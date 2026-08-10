@@ -35,6 +35,9 @@ sidecar-dist
 
 .omc
 
+# Agent worktrees, created by Claude Code's worktree isolation
+.claude/worktrees/
+
 # Vendored reference checkouts (read-only material for agents, see CLAUDE.md).
 # Third-party source — cloned locally on purpose, never committed.
 repos/
