@@ -45,6 +45,8 @@ import { useStudio } from "./studio-provider";
 
 const DEFAULT = "";
 
+const LINE_BOX_TERMINATOR = "\u200b";
+
 const MODES = SESSION_MODES.map((mode) => ({
   label: SESSION_MODE_LABELS[mode],
   value: mode,
@@ -117,15 +119,16 @@ function ComposerBlock({
           <div className="relative flex w-full min-w-0 flex-1 flex-col">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-2.5 py-2 text-base md:text-sm"
+              className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-2.5 py-2 text-base [scrollbar-gutter:stable] md:text-sm"
               ref={composer.caret.mirror}
             >
               <MessageText counts={composer.counts} text={composer.value} />
+              {LINE_BOX_TERMINATOR}
             </div>
 
             <InputGroupTextarea
               aria-label="Message Claude"
-              className="relative max-h-64 text-transparent caret-foreground selection:bg-primary/30"
+              className="relative max-h-64 text-transparent caret-foreground [scrollbar-gutter:stable] selection:bg-primary/30"
               disabled={isLocked}
               onChange={composer.onChange}
               onKeyDown={composer.onKeyDown}
