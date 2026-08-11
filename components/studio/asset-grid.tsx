@@ -95,11 +95,9 @@ function AssetRowItem({
   const length = asset.duration === null ? null : clipTime(asset.duration);
 
   const card = (
-    <Attachment
-      className="border-none bg-transparent"
-      orientation="vertical"
-      title={asset.description.length > 0 ? asset.description : asset.name}
-    >
+    // No `title` here on purpose: the native tooltip pops over the hover
+    // preview card, and the name is already printed under the tile.
+    <Attachment className="border-none bg-transparent" orientation="vertical">
       <AttachmentTrigger
         aria-label={`${asset.name}, ${ASSET_TYPE_LABELS[asset.type]}`}
         onClick={onPick}

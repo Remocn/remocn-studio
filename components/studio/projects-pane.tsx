@@ -42,7 +42,6 @@ import { usePickAsset } from "@/hooks/use-pick-asset";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
 import { type PaneGroup, paneSections } from "@/lib/studio/groups";
-import { shellMood } from "@/lib/studio/mood";
 import { isPaneView, type PaneView } from "@/lib/studio/pane-view";
 import { cn } from "@/lib/utils";
 import { isMediaAsset } from "@/shared/library";
@@ -51,7 +50,6 @@ import { ComponentsPane } from "./components-pane";
 import { LogoWordmark } from "./logo-mark";
 import { ProjectGroup } from "./project-group";
 import { useStudio } from "./studio-provider";
-import { Titlebar } from "./titlebar";
 import { UpdateStatus } from "./update-status";
 
 const PLACEHOLDERS = ["one", "two", "three", "four"];
@@ -85,7 +83,6 @@ export function ProjectsPane() {
     openFolder,
     paneSlide,
     paneView,
-    projects,
     projectsError,
     relocateProject,
     reloadProjects,
@@ -95,7 +92,6 @@ export function ProjectsPane() {
     sessionsError,
     showPane,
     toggleProjects,
-    turns,
   } = useStudio();
 
   const now = useNow();
@@ -118,10 +114,6 @@ export function ProjectsPane() {
   const components = useMemo(
     () => library.assets.filter((asset) => !isMediaAsset(asset.type)),
     [library.assets]
-  );
-
-  const titlebar = (
-    <Titlebar mood={projects.length === 0 ? null : shellMood(turns)} />
   );
 
   let content = (
@@ -213,9 +205,16 @@ export function ProjectsPane() {
     // element and the mobile Sheet, and renders a plain flex column. The
     // provider is still required — every menu part reads its context.
     <SidebarProvider className="h-full min-h-0">
-      <Sidebar className="w-full" collapsible="none" ref={drop.ref}>
+      {/* The shell owns the titlebar band, so the pane must not paint over
+          it: the shell's background is already the sidebar colour, and the
+          band fades away behind the brand row instead of being cut at the
+          pane's top edge. */}
+      <Sidebar
+        className="w-full bg-transparent"
+        collapsible="none"
+        ref={drop.ref}
+      >
         <SidebarHeader className="gap-0 p-0">
-          {titlebar}
           <SidebarBrand onHide={toggleProjects} />
           <PaneViewMenu onShow={showPane} view={paneView} />
         </SidebarHeader>

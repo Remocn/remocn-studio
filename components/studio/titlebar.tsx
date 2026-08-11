@@ -35,14 +35,24 @@ const TONES = {
   waiting: "-hue-rotate-45",
 } satisfies Record<MoodTone, string>;
 
-export function Titlebar({ mood }: { mood: ShellMood | null }) {
+export function Titlebar({
+  className,
+  mood,
+}: {
+  className?: string;
+  mood: ShellMood | null;
+}) {
   return (
     // The window has no title bar of its own, so this band is where macOS
     // draws its buttons. It is the same height whether or not it carries the
     // shader, which is what lets an empty app grow into a busy one without
-    // anything below it moving.
+    // anything below it moving. The inset shell overrides the height: there
+    // the band is a backdrop the content card rides over, not a strip.
     <div
-      className="relative h-(--titlebar-block-inset) shrink-0 overflow-hidden bg-sidebar"
+      className={cn(
+        "relative h-(--titlebar-block-inset) shrink-0 overflow-hidden bg-sidebar",
+        className
+      )}
       data-slot="titlebar"
       data-tauri-drag-region
     >
@@ -52,8 +62,8 @@ export function Titlebar({ mood }: { mood: ShellMood | null }) {
           className={cn(
             // The band's own bottom edge is the sidebar, not a boundary worth
             // drawing, so the pattern is masked out before it gets there —
-            // stopped in stages rather than one ramp, which bands visibly.
-            "pointer-events-none absolute inset-0 animate-titlebar transition-[filter] duration-700 ease-out [mask-image:linear-gradient(to_bottom,#000_0%,#000e_50%,#0008_75%,transparent_100%)]",
+            // a long staged ramp, because a short one reads as a hard seam.
+            "pointer-events-none absolute inset-0 animate-titlebar transition-[filter] duration-700 ease-out [mask-image:linear-gradient(to_bottom,#000_0%,#000d_35%,#0009_60%,#0004_80%,#0001_92%,transparent_100%)]",
             TONES[mood.tone]
           )}
           data-slot="titlebar-mood"
