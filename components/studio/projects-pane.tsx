@@ -259,16 +259,27 @@ function PaneViewMenu({
     [onShow]
   );
 
+  // The active view carries a thin rail at the pane's edge and full-contrast
+  // text — no filled background, so the menu reads as chrome rather than a
+  // selected row. The weight never changes between states, or the labels
+  // would shift as the selection moves.
+  // Hover is a soft tint — the accent at 40% with full-contrast text — so
+  // pointing at an item answers quietly while the rail stays the only mark
+  // of the view that is actually open.
   return (
     <nav aria-label="Library views" className="px-2 py-4">
       <SidebarMenu>
         {VIEW_ITEMS.map((item) => (
           <SidebarMenuItem key={item.view}>
             <SidebarMenuButton
+              className="relative pl-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground active:bg-sidebar-accent/40 active:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground"
               isActive={view === item.view}
               onClick={onSelect}
               value={item.view}
             >
+              {view === item.view ? (
+                <span className="absolute top-1/2 left-0 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+              ) : null}
               <item.icon />
               {item.label}
             </SidebarMenuButton>

@@ -73,8 +73,10 @@ function RowShell({
     <div className="group/session relative">
       <div
         className={cn(
-          "rounded-lg py-1.5 pr-8 pl-7 text-sm",
-          isActive ? "bg-sidebar-accent" : "group-hover/session:bg-muted/60"
+          "rounded-md py-1.5 pr-8 pl-7 text-sm",
+          isActive
+            ? "bg-sidebar-accent/60"
+            : "group-hover/session:bg-sidebar-accent/40"
         )}
       >
         <div className="flex items-baseline gap-2">
@@ -105,7 +107,7 @@ function RowShell({
         aria-current={isActive ? "true" : undefined}
         aria-describedby={metaId ?? undefined}
         aria-labelledby={titleId}
-        className="absolute inset-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+        className="absolute inset-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
         onClick={onSelect}
         type="button"
         value={session.id}

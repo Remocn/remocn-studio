@@ -258,16 +258,18 @@ function rootOf(mounts: readonly Mount[]): string {
   // wrapper defines them from the same faces the site uses.
   return `import React from "react";
 import { AbsoluteFill, Composition } from "remotion";
-import { loadFont as loadGeist } from "@remotion/google-fonts/Geist";
+import { loadFont as loadManrope } from "@remotion/google-fonts/Manrope";
 import { loadFont as loadGeistMono } from "@remotion/google-fonts/GeistMono";
 ${imports}
 
-const geist = loadGeist();
+const manrope = loadManrope();
 const geistMono = loadGeistMono();
 
 const FONT_VARIABLES = {
   "--font-geist-mono": geistMono.fontFamily,
-  "--font-geist-sans": geist.fontFamily,
+  "--font-geist-sans": manrope.fontFamily,
+  "--font-sans": manrope.fontFamily,
+  fontFamily: manrope.fontFamily,
 } as React.CSSProperties;
 
 ${scenes.join("\n\n")}
