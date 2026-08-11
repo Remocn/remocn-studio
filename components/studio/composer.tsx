@@ -3,14 +3,16 @@
 import {
   ArrowUpIcon,
   ChevronDownIcon,
+  FilmIcon,
   ImagePlusIcon,
+  LibraryBigIcon,
   PlusIcon,
   SettingsIcon,
   ShieldIcon,
   SparklesIcon,
   SquareIcon,
 } from "lucide-react";
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,7 +31,9 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
+import { useKeepAttachment } from "@/hooks/use-keep-attachment";
 import { type Sidecar, useSidecar } from "@/hooks/use-sidecar";
+import { SAVE_SCENE_PROMPT } from "@/lib/studio/library";
 import { CLAUDE_MODELS } from "@/lib/studio/models";
 import {
   type ContextUsage,
@@ -37,8 +41,9 @@ import {
   SESSION_MODES,
   type SessionMode,
 } from "@/shared/ipc";
-import { AttachmentRow } from "./attachment-row";
+import { AssetRow } from "./asset-row";
 import { ContextMeter } from "./context-meter";
+import { MediaRow } from "./media-row";
 import { MessageText } from "./message-text";
 import { SelectionRow } from "./selection-row";
 import { useStudio } from "./studio-provider";
@@ -84,11 +89,19 @@ function ComposerBlock({
     claudeEffort,
     claudeModel,
     composer,
+    library,
     onEffortChange,
     onModelChange,
     tools,
   } = useStudio();
   const sidecar = useSidecar();
+  const onKeepAttachment = useKeepAttachment(
+    composer.attachments.items,
+    library.save
+  );
+  const onKeepMedia = useKeepAttachment(composer.media.items, library.save);
+  const { write } = composer;
+  const onSaveScene = useCallback(() => write(SAVE_SCENE_PROMPT), [write]);
   const isLocked = disabled || isWaiting;
   const cannotSend = isLocked || sidecar.phase === "down";
 
@@ -98,9 +111,29 @@ function ComposerBlock({
         <InputGroup className="rounded-xl border-none">
           {composer.attachments.items.length > 0 ? (
             <InputGroupAddon align="block-start">
-              <AttachmentRow
+              <MediaRow
                 items={composer.attachments.items}
+                onKeep={onKeepAttachment}
                 onRemove={composer.onRemove}
+              />
+            </InputGroupAddon>
+          ) : null}
+
+          {composer.media.items.length > 0 ? (
+            <InputGroupAddon align="block-start">
+              <MediaRow
+                items={composer.media.items}
+                onKeep={onKeepMedia}
+                onRemove={composer.onRemoveMedia}
+              />
+            </InputGroupAddon>
+          ) : null}
+
+          {composer.assets.items.length > 0 ? (
+            <InputGroupAddon align="block-start">
+              <AssetRow
+                items={composer.assets.items}
+                onRemove={composer.onRemoveAsset}
               />
             </InputGroupAddon>
           ) : null}
@@ -164,6 +197,14 @@ function ComposerBlock({
                   <DropdownMenuItem onClick={composer.add}>
                     <ImagePlusIcon />
                     Add image
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={composer.addMedia}>
+                    <FilmIcon />
+                    Add video or audio
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onSaveScene}>
+                    <LibraryBigIcon />
+                    Save the last animation to the library
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>

@@ -22,8 +22,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAssetOffer } from "@/hooks/use-asset-offer";
 import { useEntrance } from "@/hooks/use-entrance";
 import type { Environment } from "@/hooks/use-environment";
+import type { Library } from "@/hooks/use-library";
 import { useLocateProject } from "@/hooks/use-locate-project";
 import type { NewProject } from "@/hooks/use-new-project";
 import { useNow } from "@/hooks/use-now";
@@ -32,6 +34,7 @@ import { usePipeline } from "@/hooks/use-pipeline";
 import type { StudioSettings } from "@/lib/studio/settings";
 import { currentTasks } from "@/lib/studio/tasks";
 import type { HistorySession, Project } from "@/shared/ipc";
+import { AssetOfferCard } from "./asset-offer-card";
 import { Composer } from "./composer";
 import { EnvironmentChecklist } from "./environment-checklist";
 import { LogoMark } from "./logo-mark";
@@ -54,6 +57,7 @@ export function ChatPane() {
     environment,
     isPreviewShown,
     isProjectsShown,
+    library,
     newProject,
     openedProject,
     openFolder,
@@ -126,6 +130,7 @@ export function ChatPane() {
           cwd={openedProject?.path ?? null}
           environment={environment}
           hasProject={openedProject !== null}
+          library={library}
           missing={openedProject?.missing ?? false}
           newProject={newProject}
           onLocate={locate}
@@ -164,6 +169,7 @@ function Conversation({
   cwd,
   environment,
   hasProject,
+  library,
   missing,
   newProject,
   onLocate,
@@ -174,6 +180,7 @@ function Conversation({
   cwd: string | null;
   environment: Environment;
   hasProject: boolean;
+  library: Library;
   missing: boolean;
   newProject: NewProject;
   onLocate: () => void;
@@ -186,6 +193,11 @@ function Conversation({
   const isStartup = !(hasProject || hasTranscript);
   const now = useNow(turn.isRunning ? TICK : null);
   const pipeline = usePipeline(turn.openId, turn.isRunning);
+  const offer = useAssetOffer({
+    entries: turn.entries,
+    isRunning: turn.isRunning,
+    save: library.save,
+  });
 
   return (
     // `isolate` keeps the backdrop's negative z-index inside the pane; without
@@ -239,6 +251,8 @@ function Conversation({
           ) : null}
 
           <EnvironmentChecklist environment={environment} />
+
+          <AssetOfferCard offer={offer} />
 
           {turn.permission === null ? null : (
             <div className="mb-2 shrink-0 px-4 pt-1">

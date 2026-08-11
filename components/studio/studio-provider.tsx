@@ -6,12 +6,15 @@ import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
 import { type Composer, useComposer } from "@/hooks/use-composer";
 import { type Environment, useEnvironment } from "@/hooks/use-environment";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
+import { type Library, useLibrary } from "@/hooks/use-library";
 import { type NewProject, useNewProject } from "@/hooks/use-new-project";
 import { type OpenTurn, useOpenTurn } from "@/hooks/use-open-turn";
 import { type Panes, usePanes } from "@/hooks/use-panes";
+import { usePreview } from "@/hooks/use-preview";
 import { type Tools, useTools } from "@/hooks/use-tools";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
 import type { StudioSettings } from "@/lib/studio/settings";
+import type { PromptFrame } from "@/shared/ipc";
 
 export type Studio = ClaudeEffort &
   ClaudeModel &
@@ -19,6 +22,7 @@ export type Studio = ClaudeEffort &
   Workspace & {
     composer: Composer;
     environment: Environment;
+    library: Library;
     newProject: NewProject;
     settings: StudioSettings | null;
     tools: Tools;
@@ -41,12 +45,17 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const model = useClaudeModel(settings);
   const effort = useClaudeEffort(settings);
   const newProject = useNewProject(workspace.createProject);
+  const library = useLibrary();
+
+  const previewProjectId = previewTarget(workspace);
+  const preview = usePreview(previewProjectId);
 
   const turn = useOpenTurn({
     changeMode: workspace.changeSessionMode,
     draftId: workspace.draftId,
     effort: effort.claudeEffort,
     model: model.claudeModel,
+    playing: playingFrame(preview.composition, preview.frame),
     projectId: workspace.activeProject?.id ?? null,
     session: workspace.openedSession,
     turns: workspace,
@@ -60,8 +69,6 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     projectId: opened?.id ?? null,
   });
 
-  const previewProjectId = previewTarget(workspace);
-
   const panes = usePanes(
     settings,
     workspace.projects.length > 0,
@@ -74,6 +81,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     isShown: panes.isPreviewShown,
     isWaiting: turn.permission !== null,
     openedProjectId: opened?.id ?? null,
+    preview,
     previewProjectId,
   });
 
@@ -90,6 +98,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       ...panes,
       composer,
       environment,
+      library,
       newProject,
       settings,
       tools,
@@ -99,6 +108,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       composer,
       effort,
       environment,
+      library,
       model,
       newProject,
       panes,
@@ -114,6 +124,13 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   }
 
   return <StudioContext value={studio}>{children}</StudioContext>;
+}
+
+function playingFrame(
+  composition: string | null,
+  frame: number
+): PromptFrame | null {
+  return composition === null ? null : { composition, frame };
 }
 
 function previewTarget(workspace: Workspace): string | null {

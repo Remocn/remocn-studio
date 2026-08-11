@@ -170,10 +170,12 @@ describe("planTasks", () => {
       create("c1", "6", "Write SCRIPT.md"),
       create("c2", "7", "Build the scenes"),
       {
+        assets: [],
         attachments: [],
         elements: [],
         id: "user-1",
         kind: "user",
+        media: [],
         text: "but do not start yet",
       },
       update("u1", { status: "in_progress", taskId: "6" }),
@@ -196,10 +198,12 @@ describe("planTasks", () => {
     const entries: TranscriptEntry[] = [
       create("c1", "1", "Backend"),
       {
+        assets: [],
         attachments: [],
         elements: [],
         id: "user-1",
         kind: "user",
+        media: [],
         text: "now the titles",
       },
       create("c2", "2", "Titles"),
@@ -217,10 +221,12 @@ describe("planTasks", () => {
     const items = groupActivity([
       create("c1", "1", "Backend"),
       {
+        assets: [],
         attachments: [],
         elements: [],
         id: "user-1",
         kind: "user",
+        media: [],
         text: "now the titles",
       },
       create("c2", "2", "Titles"),

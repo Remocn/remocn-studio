@@ -34,6 +34,26 @@ describe("review", () => {
     ).toEqual({ kind: "allow" });
   });
 
+  it("lets the studio's own tools through, library and pipeline alike", async () => {
+    expect(
+      await verdict("mcp__remocn-library__save_asset", { name: "Neon" })
+    ).toEqual({ kind: "allow" });
+    expect(await verdict("mcp__remocn-library__list_assets", {})).toEqual({
+      kind: "allow",
+    });
+    expect(
+      await verdict("mcp__remocn-pipeline__start_video_pipeline", {})
+    ).toEqual({ kind: "allow" });
+  });
+
+  it("still asks about a tool from any other server", async () => {
+    expect(await verdict("mcp__something-else__do_it", {})).toEqual({
+      kind: "ask",
+      reason: "tool",
+      signature: expect.any(String),
+    });
+  });
+
   it("lets a write to a file that does not exist yet through", async () => {
     expect(
       await verdict("Write", {

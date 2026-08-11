@@ -11,6 +11,7 @@ const CLAUDE_EFFORT_KEY = "claudeEffort";
 const PREVIEW_PANE_KEY = "previewPane";
 const PROJECTS_PANE_KEY = "projectsPane";
 const TASK_DOCK_KEY = "taskDock";
+const ASSETS_DRAWER_KEY = "assetsDrawer";
 const LAYOUT_KEY_PREFIX = "layout:";
 
 const cache = new Map<string, string>();
@@ -20,6 +21,7 @@ const openStore = Effect.runSync(
 );
 
 export interface StudioSettings {
+  assetsDrawer: boolean | null;
   claudeEffort: EffortLevel | null;
   claudeModel: string | null;
   expandedProjects: readonly string[];
@@ -40,6 +42,7 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
       }
     }
     return {
+      assetsDrawer: shownOf(cache.get(ASSETS_DRAWER_KEY)),
       claudeEffort: effortOf(cache.get(CLAUDE_EFFORT_KEY)),
       claudeModel: cache.get(CLAUDE_MODEL_KEY) ?? null,
       expandedProjects: idsOf(cache.get(EXPANDED_PROJECTS_KEY)),
@@ -122,6 +125,10 @@ export function saveProjectsPane(shown: boolean): Effect.Effect<void> {
 
 export function saveTaskDock(shown: boolean): Effect.Effect<void> {
   return remember(TASK_DOCK_KEY, shown ? "shown" : "hidden");
+}
+
+export function saveAssetsDrawer(shown: boolean): Effect.Effect<void> {
+  return remember(ASSETS_DRAWER_KEY, shown ? "shown" : "hidden");
 }
 
 export function saveClaudeEffort(

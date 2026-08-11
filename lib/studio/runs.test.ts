@@ -113,10 +113,12 @@ describe("groupActivity", () => {
   it("preserves the order of the transcript exactly", () => {
     const entries: TranscriptEntry[] = [
       {
+        assets: [],
         attachments: [],
         elements: [],
         id: "user-0",
         kind: "user",
+        media: [],
         text: "go",
       },
       read("a", "src/A.tsx"),

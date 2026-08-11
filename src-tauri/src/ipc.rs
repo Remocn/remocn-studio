@@ -11,6 +11,7 @@ pub const PREVIEW_ENTRY_ENV: &str = "REMOCN_STUDIO_PREVIEW_ENTRY";
 pub const GRAB_SCRIPT_ENV: &str = "REMOCN_STUDIO_GRAB_SCRIPT";
 pub const TEMPLATE_DIR_ENV: &str = "REMOCN_STUDIO_TEMPLATE_DIR";
 pub const PLUGIN_DIR_ENV: &str = "REMOCN_STUDIO_PLUGIN_DIR";
+pub const LIBRARY_DIR_ENV: &str = "REMOCN_STUDIO_LIBRARY_DIR";
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]

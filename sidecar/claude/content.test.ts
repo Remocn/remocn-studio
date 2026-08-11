@@ -10,12 +10,15 @@ let frame = "";
 
 function params(shape: Partial<PromptParams>): PromptParams {
   return {
+    assets: [],
     attachments: [],
     effort: null,
     elements: [],
     historyId: "history-1",
+    media: [],
     mode: "auto",
     model: null,
+    playing: null,
     projectId: "project-1",
     prompt: "",
     sessionId: null,
@@ -290,5 +293,73 @@ describe("contentOf with elements", () => {
     expect(await contentOf(params({ prompt: "make a title card" }))).toBe(
       "make a title card"
     );
+  });
+
+  it("appends the asset block the sidecar wrote after copying them", async () => {
+    const content = await contentOf(
+      params({
+        assets: [
+          {
+            name: "Neon Title",
+            preview: null,
+            slug: "neon",
+            type: "component",
+          },
+        ],
+        prompt: "open with [Asset #1]",
+      }),
+      "copied into the project: src/library/neon/Neon.tsx"
+    );
+
+    expect(content).toEqual([
+      { text: "open with [Asset #1]", type: "text" },
+      {
+        text: "copied into the project: src/library/neon/Neon.tsx",
+        type: "text",
+      },
+    ]);
+  });
+
+  it("keeps an asset reference in the sentence rather than splicing it", async () => {
+    const content = await contentOf(
+      params({
+        assets: [
+          {
+            name: "Neon Title",
+            preview: null,
+            slug: "neon",
+            type: "component",
+          },
+        ],
+        attachments: [attachment()],
+        prompt: "like [Image #1], open with [Asset #1]",
+      }),
+      "the asset block"
+    );
+
+    expect(content).toEqual([
+      { text: "like ", type: "text" },
+      SHOT,
+      { text: ", open with [Asset #1]", type: "text" },
+      { text: "the asset block", type: "text" },
+    ]);
+  });
+
+  it("stays a plain string when an asset was picked but nothing was copied", async () => {
+    expect(
+      await contentOf(
+        params({
+          assets: [
+            {
+              name: "Neon Title",
+              preview: null,
+              slug: "neon",
+              type: "component",
+            },
+          ],
+          prompt: "open with [Asset #1]",
+        })
+      )
+    ).toBe("open with [Asset #1]");
   });
 });

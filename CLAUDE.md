@@ -1337,6 +1337,164 @@ of the way" means. It re-runs on opening a project, on Recheck and after an inst
 - **The account probe is cached per sidecar process** and `force` — Recheck — is what clears it, so
   switching projects does not pay for it again. Warm, a whole report costs 250–800 ms.
 
+### The asset library
+
+Save something once and reuse it in every other video: an image, a video, a sound, or a finished
+Remotion component (REM-8). It is a drawer at the foot of the left pane, and its assets reach a turn as
+`[Asset #N]` — the **third** reference kind, beside `[Image #N]` and `[Element #N]`.
+
+- **The library is a folder, not a database.** `assets/<slug>/` plus a `manifest.json` under
+  `app_data_dir/library`, which Rust resolves and hands over as `REMOCN_STUDIO_LIBRARY_DIR` exactly
+  as it does the history's `REMOCN_STUDIO_DATA_DIR`. Listing is a folder scan with no index to keep
+  in step, and previews load over the asset protocol for free. The Schema lives in
+  `shared/library.ts` next to the IPC contract, because the webview reads a manifest's fields on the
+  card and the sidecar writes them.
+- **The slug is the folder and never moves.** Renaming rewrites `name` in the manifest, so a
+  reference already in a composer, and a copy already in a project, cannot be orphaned by a rename.
+  A second asset of the same name gets `-2`.
+- **Insertion is a copy, made before the turn starts.** `claude.prompt` carries the picked assets
+  positionally (`assets[i]` ↔ `[Asset #{i+1}]`, the same invariant `[Image #N]` has) and
+  `placeAssets` copies them in: media to `public/library/`, a component to `src/library/<slug>/`,
+  resolved against `remotionRootOf(cwd)` rather than the opened folder. Three things fall out of
+  doing it here rather than letting the agent fetch them: **zero permission cards** — the library is
+  outside `cwd`, so an agent `Read` there would raise one every time; **zero tokens** spent retyping
+  code that already exists; and a byte-for-byte copy rather than a paraphrase.
+- **It never overwrites**, the same rule the scaffold has: an existing file is skipped and the block
+  says *already in the project, untouched*, so an edit the agent made in an earlier turn survives a
+  second insertion. A fresh copy is something the user asks for in words.
+- **The block is the only thing the agent is told.** `assetBrief` names what was copied, what was
+  skipped, `staticFile("library/…")` for media, and — checked with the same `isInstalled` the
+  environment checklist uses — which npm packages are missing, for the agent to `bun add` through
+  the ordinary Bash card. Nothing is written to `package.json` behind the turn's back.
+- **A deleted asset is a sentence, not a failure.** `placeAssets` answers with a placement whose
+  `reason` says the asset is gone; the turn runs. A copy that genuinely fails becomes a `notice` and
+  the turn still runs, because the words the person wrote are worth more than the attachment.
+- **The agent saves components, the UI saves media** — the split is about who knows the boundaries.
+  The agent wrote the code and knows the import graph, so it gathers the files, names them and calls
+  `save_asset` on a second in-process MCP server, `remocn-library`, modelled on `remocn-pipeline`
+  and auto-allowed by the same rule in `permission.ts`: the library is app data, and `save_asset`
+  only ever reads from `cwd` and writes into the library. There is no file-tree picker, because the
+  studio's user does not read code.
+- **Files keep their shape relative to what they share.** `layoutOf` takes the common ancestor of
+  the saved paths and stores names relative to it, so `Scene.tsx` + `lib/ease.ts` land under
+  `src/library/<slug>/` with the relative import between them still correct. Flattening would break
+  every component with a helper.
+- **Dedupe is by content hash, and it remembers a "no".** Each manifest carries the sha256 of its
+  files and `dismissed.json` carries the hashes of files the person declined, so `library.offer`
+  answers with only what is worth asking about — a long session must not re-ask about the same
+  picture every turn. Two identical files in one offer are one row.
+- **The end-of-turn card does not lock the composer.** It is permission-card *styled* and
+  attention-shaped, but a save is not a thing the turn is waiting on; striking a file out of it is a
+  decline, and a save that fails leaves its file on the card rather than reporting success.
+- **A preview is best-effort, exactly like the context reading.** `library.save` from the agent
+  renders one frame through the existing `preview.still` machinery, using the composition and frame
+  the pane says are on screen — which the turn carries as `playing`, because the sidecar has no
+  other way to know what the person is looking at. A failure never fails the save: the card falls
+  back to the type icon. A single-file image is its own preview and needs no render at all.
+- **Asset references are not project-scoped**, which is the point of them, so — unlike element
+  references — switching projects leaves them in the composer. Picking the same asset twice reuses
+  the number it already has, so the list and the text cannot disagree and a row keeps its own key.
+- **The library opens out of the sidebar's bottom edge, and is not a tab.** A segmented
+  Projects | Assets switcher was the first version and it read as a foreign control: it sat between
+  the wordmark and New Project, and three things then competed for the top of the pane. `AssetsDrawer`
+  is instead one 36px strip pinned above the footer — icon, label, count, chevron — that opens
+  upward into the grid, the same shape the plan drawer opens out of the composer. Closed, the pane
+  looks exactly as it did before assets existed; open, the drawer is capped at three fifths of the
+  height so the project list it slid over is still there.
+- **The state is `assetsDrawer`, a boolean, remembered in `settings.json`.** It was `paneTab` with
+  `"projects" | "assets"` while the switcher existed; keeping that name after the tabs went would
+  have left the setting describing a control that is not there.
+
+### Video and audio in the composer
+
+A picture and a clip are both media the person hands over, and they are carried by two different
+lists, because **the API has an image block and nothing else**. `attachments` stays images-only and
+keeps the `[Image #N]` invariant; `media` is video and audio, and has no reference kind at all.
+
+- **A clip is copied, not encoded.** `placeMedia` puts each one in `public/library/` before the turn
+  — the same `copyInto` the assets use, so it never overwrites — and `mediaBrief` gives the agent the
+  `staticFile()` path rather than the one on the person's disk, which is outside `cwd` and would
+  raise a permission card on every read. Sending it as a base64 block was never an option; dropping
+  it silently was the alternative, and this is the one that makes an attached clip usable.
+- **No `[Media #N]`.** Relabelling `[Image #N]` to something that covers both would stop every
+  stored transcript colouring its own references, and a fourth kind would duplicate what the asset
+  trailer already does for a case — two or three named files — that a sentence handles. The trailer
+  names each file, so "use the intro clip" resolves without a token.
+- **`MediaType` is a widening of `ImageMediaType`, not a sibling**, so an image attachment is a valid
+  `PromptMedia` and `library.offer`/`dismiss`/`save` took the wider type without a second path. One
+  `MediaRow` renders all three kinds — a `<video>` is its own thumbnail, audio gets the icon — which
+  is why `AttachmentRow` is gone rather than living beside it and drifting.
+- **Only playable files reach the media list.** `useMedia` filters on `isPlayable`, so a picture
+  dropped into it would still go to the model rather than being copied into `public/`.
+- **A video card shows its first frame, and that takes two nudges.** A `<video>` paints nothing until
+  it has decoded a frame, and *seeking to the time it already sits at fires no seek at all* — so
+  frame zero is the one time you cannot ask for. `VideoThumbnail` asks for a tenth of a second both
+  ways: `#t=` on the URL, and `currentTime` set from `onLoadedMetadata`. Neither is reliable alone on
+  a custom protocol; together they cost one seek. `firstFrameAt` halves the duration for a clip too
+  short for that tenth, and it is the single definition both the card and the extractor read.
+- **A video saved to the library gets a real still, taken once.** `firstFrame` in
+  `lib/studio/thumbnail.ts` decodes the frame into a `<canvas>` and hands the PNG to the same
+  raw-body invoke a pasted image uses; `AssetDraft.preview` carries its path and the sidecar files it
+  as `preview.png`. The pane then renders an `<img>`, so a library of thirty clips decodes no video
+  to draw its list. **The `<video>` is still the fallback** — for assets saved before this existed,
+  and for any frame that would not decode — which is why the tile is never a bare icon for a video.
+  - **`crossOrigin = "anonymous"` is not optional here.** The asset protocol is a different origin
+    from the window, so a plain load taints the canvas and `toBlob()` throws — the same trap, and the
+    same fix, as a snapshot's still.
+  - **A thumbnail is decoration and never fails a save.** `copiedPreview` swallows a picture that
+    would not copy and the asset lands with `preview: null`, exactly as the component preview and the
+    context-window reading do.
+  - **The fallback heals itself, because it would otherwise decode on every visit.** Base UI's
+    `Tabs.Panel` defaults to `keepMounted: false`, so leaving the Assets tab unmounts every row and
+    coming back remounts them — a `<video>` fallback would decode a frame again each time, and a clip
+    that cannot decode would retry for ever and still show nothing. `useBackfilledThumbnails` takes
+    the frame once, files it through `library.preview`, and the next mount is an `<img>`. It runs
+    **sequentially** — decoding a library's worth of video at once is the cost this avoids, not a
+    faster way to pay it — and marks each slug as *its own turn begins*, not up front, so a tail cut
+    short by a new listing is retried rather than lost, while a failure is remembered for the session.
+  - **`useCaret` returns a memoised handle.** It used to build a fresh object every render, which
+    reminted every composer callback closing over it — `pick`, `write`, `select` — and through them
+    defeated the `memo` on the asset rows, re-rendering the whole panel on every keystroke. The
+    composer reads the live text from a ref for the same reason.
+
+### The library is a grid of cards
+
+The panel is a two-column grid of the `Attachment` primitives — `AttachmentMedia variant="image"`
+over an `AttachmentTitle` — rather than a list of rows with an icon and a type label.
+
+- **One still per kind, one field to hold it.** A video shows a frame; a sound shows its waveform,
+  drawn from peaks by `peaksFrom` and baked to a PNG. Both land in the same `preview.png`, so the
+  manifest field, the backfill, the `<img>` in the tile and the drop handling were all written once
+  and neither kind is a special case downstream.
+- **The waveform's colour is baked, so it cannot follow the theme.** It is a mid tone chosen to read
+  against the card's muted background in both, rather than a token that would be right in one and
+  invisible in the other. Peak normalisation is what stops a quiet recording drawing as a flat line.
+- **`duration` is measured during the decode that was already happening** — `video.duration` while
+  seeking for the frame, `AudioBuffer.duration` while decoding for the waveform — so the badge costs
+  no extra pass. `clipTime` is `mm:ss` until a clip earns an hour. A length that was never measured
+  badges nothing rather than showing `00:00`.
+- **The card's click target is `AttachmentTrigger`**, which is `absolute inset-0 z-10`, and the
+  options menu is an `AttachmentAction` inside `AttachmentActions` at `z-20`. So the whole card
+  inserts the asset except the menu, with no hit-testing of our own.
+- **The kind moved from a visible second line into the trigger's `aria-label`.** The tile now says
+  what it is by showing it; a screen reader still hears "Neon Title, Component".
+
+### Dragging into the library
+
+`onDragDropEvent` from Tauri, not HTML5 drag events: with `dragDropEnabled` on — the default — the
+webview never fires them for files, and a `File` from a WKWebView drop carries no path anyway. The
+event gives absolute paths, which is what the library wants and what keeps a 200 MB video off the
+IPC.
+
+- **The hit test is arithmetic, and it is tested.** Tauri reports the pointer in physical pixels from
+  the window's top-left; `titleBarStyle: "Overlay"` means the webview fills the window, so dividing
+  by `devicePixelRatio` lands in the client coordinates `getBoundingClientRect()` is measured in.
+  `isInside` in `lib/studio/drop.ts` is pure and pinned by tests, because the drag itself is the one
+  part no seam can exercise.
+- **Anything that is not media is refused out loud.** A dropped `.tsx` is not an asset the panel can
+  make — a component's boundaries are the agent's to work out — so the pane says what it skipped
+  rather than saving half a drop in silence.
+
 ## Layout
 
 Flat root, no monorepo — per #218.
@@ -1350,10 +1508,14 @@ lib/                  cn helper, error formatting, lib/studio/* clients
 preview/              what the *project's* webpack compiles instead of Studio's UI:
                       entry.tsx, the two-way bridge, hot reload, grab, source paths,
                       the element picker and the snapshot marquee
-shared/               ipc.ts: the typed contract; transcript.ts: the one fold;
-                      references.ts: the one reader of `[Image #N]`/`[Element #N]`
+shared/               ipc.ts: the typed contract, and the media types it carries;
+                      transcript.ts: the one fold; references.ts: the one reader of
+                      `[Image #N]`/`[Element #N]`/`[Asset #N]`; library.ts: the
+                      asset manifest format
 sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
 sidecar/history/      driver seam, migrations, project and session stores, recorder
+sidecar/library/      the asset library: the folder store, the copy into a project,
+                      and the remocn-library tools the agent saves through
 sidecar/scaffold/     what "New project…" expands and installs
 templates/remotion/   that project, vendored here and shipped as a Tauri resource
 agent/                the Claude Code plugin we hand the SDK: vendored skills, plus

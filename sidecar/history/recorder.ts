@@ -74,8 +74,10 @@ export function recording(
 
     yield* apply((current) =>
       appendUser(current, {
+        assets: params.assets,
         attachments: params.attachments,
         elements: params.elements,
+        media: params.media,
         text: params.prompt,
       })
     );

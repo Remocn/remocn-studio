@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject, UIEvent } from "react";
-import { useCallback, useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 
 export interface Caret {
   mirror: RefObject<HTMLDivElement | null>;
@@ -43,5 +43,8 @@ export function useCaret(): Caret {
     }
   }, []);
 
-  return { mirror, moveTo, onScroll, ref };
+  // Every part of this is constant, so the handle is too — a fresh object here
+  // would remint each composer callback that closes over it, every render, and
+  // with them every memo those callbacks are handed to.
+  return useMemo(() => ({ mirror, moveTo, onScroll, ref }), [moveTo, onScroll]);
 }

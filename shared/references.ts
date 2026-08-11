@@ -1,19 +1,20 @@
-const PATTERN = /\[(Element|Image) #([1-9]\d*)\]/g;
+const PATTERN = /\[(Asset|Element|Image) #([1-9]\d*)\]/g;
 const TRAILING_SPACE = /[^\S\n]$/;
 const LEADING_SPACE = /^[^\S\n]/;
 
-export const REFERENCE_KINDS = ["element", "image"] as const;
+export const REFERENCE_KINDS = ["asset", "element", "image"] as const;
 
 export type ReferenceKind = (typeof REFERENCE_KINDS)[number];
 
 export type ReferenceCounts = Readonly<Record<ReferenceKind, number>>;
 
-export const NO_REFERENCES: ReferenceCounts = { element: 0, image: 0 };
-
 const LABELS: Record<ReferenceKind, string> = {
+  asset: "Asset",
   element: "Element",
   image: "Image",
 };
+
+export const NO_REFERENCES: ReferenceCounts = tally(() => 0);
 
 const KINDS = new Map<string, ReferenceKind>(
   REFERENCE_KINDS.map((kind) => [LABELS[kind], kind])
@@ -161,12 +162,11 @@ export function lostReferences(
   const kept = referencedIn(after, counts);
   const held = referencedIn(before, counts);
 
-  const gone = (kind: ReferenceKind) =>
+  return tally((kind) =>
     [...held[kind]]
       .filter((index) => !kept[kind].has(index))
-      .sort((one, other) => one - other);
-
-  return { element: gone("element"), image: gone("image") };
+      .sort((one, other) => one - other)
+  );
 }
 
 export function hasLostReferences(lost: LostReferences): boolean {
@@ -249,7 +249,7 @@ function referencedIn(
   text: string,
   counts: ReferenceCounts
 ): Readonly<Record<ReferenceKind, Set<number>>> {
-  const found = { element: new Set<number>(), image: new Set<number>() };
+  const found = tally(() => new Set<number>());
 
   for (const segment of segmentsOf(text, counts)) {
     if (segment.kind === "reference") {
@@ -258,6 +258,12 @@ function referencedIn(
   }
 
   return found;
+}
+
+function tally<A>(of: (kind: ReferenceKind) => A): Record<ReferenceKind, A> {
+  return Object.fromEntries(
+    REFERENCE_KINDS.map((kind) => [kind, of(kind)])
+  ) as Record<ReferenceKind, A>;
 }
 
 function references(kind: ReferenceKind, first: number, count: number): string {

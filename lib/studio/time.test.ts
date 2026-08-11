@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clipTime,
   elapsedTime,
   frameTime,
   relativeTime,
@@ -109,5 +110,28 @@ describe("frameTime", () => {
   it("falls back to the frame when there is no usable rate", () => {
     expect(frameTime(42, 0)).toBe("frame 42");
     expect(frameTime(42, Number.NaN)).toBe("frame 42");
+  });
+});
+
+describe("clipTime", () => {
+  it("badges a clip in minutes and seconds", () => {
+    expect(clipTime(272)).toBe("04:32");
+    expect(clipTime(17)).toBe("00:17");
+    expect(clipTime(0)).toBe("00:00");
+  });
+
+  it("adds the hour once a clip earns one, and rolls minutes over", () => {
+    expect(clipTime(3600)).toBe("1:00:00");
+    expect(clipTime(3661)).toBe("1:01:01");
+  });
+
+  it("rounds to the nearest second rather than showing a fraction", () => {
+    expect(clipTime(59.6)).toBe("01:00");
+  });
+
+  it("badges nothing for a length that was never measured", () => {
+    expect(clipTime(Number.NaN)).toBeNull();
+    expect(clipTime(-1)).toBeNull();
+    expect(clipTime(Number.POSITIVE_INFINITY)).toBeNull();
   });
 });

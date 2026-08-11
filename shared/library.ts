@@ -1,0 +1,168 @@
+import { Effect, Schema } from "effect";
+
+export const ASSET_TYPES = ["img", "video", "audio", "component"] as const;
+
+export const AssetType = Schema.Literals(ASSET_TYPES);
+
+export type AssetType = (typeof AssetType)["Type"];
+
+export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
+  audio: "Audio",
+  component: "Component",
+  img: "Image",
+  video: "Video",
+};
+
+const EXTENSIONS: Record<string, AssetType> = {
+  aac: "audio",
+  avif: "img",
+  flac: "audio",
+  gif: "img",
+  jpeg: "img",
+  jpg: "img",
+  js: "component",
+  jsx: "component",
+  m4a: "audio",
+  mov: "video",
+  mp3: "audio",
+  mp4: "video",
+  ogg: "audio",
+  png: "img",
+  svg: "img",
+  ts: "component",
+  tsx: "component",
+  wav: "audio",
+  webm: "video",
+  webp: "img",
+};
+
+const UNSAFE = /[^a-z0-9._-]+/g;
+const EDGES = /^[-_.]+|[-_.]+$/g;
+const FALLBACK_SLUG = "asset";
+
+const names = Schema.Array(Schema.NonEmptyString).pipe(
+  Schema.withDecodingDefault(Effect.succeed([]))
+);
+
+export const AssetManifest = Schema.Struct({
+  createdAt: Schema.Int.pipe(Schema.withDecodingDefault(Effect.succeed(0))),
+  dependencies: names,
+  description: Schema.String.pipe(
+    Schema.withDecodingDefault(Effect.succeed(""))
+  ),
+  duration: Schema.NullOr(Schema.Finite).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
+  files: Schema.Array(Schema.NonEmptyString),
+  hashes: names,
+  name: Schema.NonEmptyString,
+  preview: Schema.NullOr(Schema.NonEmptyString).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
+  type: AssetType,
+});
+
+export type AssetManifest = (typeof AssetManifest)["Type"];
+
+export const Asset = Schema.Struct({
+  createdAt: Schema.Int,
+  dependencies: Schema.Array(Schema.NonEmptyString),
+  description: Schema.String,
+  duration: Schema.NullOr(Schema.Finite),
+  files: Schema.Array(Schema.NonEmptyString),
+  name: Schema.NonEmptyString,
+  path: Schema.NonEmptyString,
+  preview: Schema.NullOr(Schema.NonEmptyString),
+  slug: Schema.NonEmptyString,
+  type: AssetType,
+});
+
+export type Asset = (typeof Asset)["Type"];
+
+export const PromptAsset = Schema.Struct({
+  name: Schema.NonEmptyString,
+  preview: Schema.NullOr(Schema.NonEmptyString),
+  slug: Schema.NonEmptyString,
+  type: AssetType,
+});
+
+export type PromptAsset = (typeof PromptAsset)["Type"];
+
+export const AssetDraft = Schema.Struct({
+  dependencies: Schema.Array(Schema.NonEmptyString),
+  description: Schema.String,
+  duration: Schema.NullOr(Schema.Finite).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
+  files: Schema.Array(Schema.NonEmptyString),
+  name: Schema.NonEmptyString,
+  preview: Schema.NullOr(Schema.NonEmptyString).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
+  type: AssetType,
+});
+
+export type AssetDraft = (typeof AssetDraft)["Type"];
+
+export function promptAssetOf(asset: Asset): PromptAsset {
+  return {
+    name: asset.name,
+    preview: asset.preview,
+    slug: asset.slug,
+    type: asset.type,
+  };
+}
+
+// What a card falls back to when no still was stored: the video itself, which
+// the pane can seek a frame out of. Assets saved before thumbnails existed, and
+// any whose frame would not decode, land here. Sound has no such fallback — a
+// waveform has to be drawn, so an undrawn one wears its icon.
+export function playableFileOf(asset: Asset): string | null {
+  const [first] = asset.files;
+
+  return asset.type === "video" && first !== undefined
+    ? `${asset.path}/${first}`
+    : null;
+}
+
+export function hasStill(type: AssetType): boolean {
+  return type === "video" || type === "audio";
+}
+
+export function stillFileOf(asset: Asset): string | null {
+  const [first] = asset.files;
+
+  return hasStill(asset.type) && first !== undefined
+    ? `${asset.path}/${first}`
+    : null;
+}
+
+export function slugOf(name: string): string {
+  const slug = name.toLowerCase().replace(UNSAFE, "-").replace(EDGES, "");
+  return slug.length === 0 ? FALLBACK_SLUG : slug;
+}
+
+export function extensionOf(name: string): string {
+  const dot = name.lastIndexOf(".");
+  return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();
+}
+
+export function assetTypeOf(name: string): AssetType | null {
+  return EXTENSIONS[extensionOf(name)] ?? null;
+}
+
+export function assetTypeFor(files: readonly string[]): AssetType {
+  const types = files
+    .map(assetTypeOf)
+    .filter((type): type is AssetType => type !== null);
+
+  if (types.includes("component")) {
+    return "component";
+  }
+
+  return types[0] ?? "component";
+}
+
+export function isMediaAsset(type: AssetType): boolean {
+  return type !== "component";
+}

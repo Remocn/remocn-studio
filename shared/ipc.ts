@@ -1,7 +1,8 @@
 import { Effect, type Exit, Schema, type SchemaError } from "effect";
+import { Asset, AssetDraft, PromptAsset } from "./library";
 import { PipelineStage, PipelineStageId, PipelineStatus } from "./pipeline";
 
-export const SIDECAR_PROTOCOL = 14;
+export const SIDECAR_PROTOCOL = 17;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -13,6 +14,7 @@ export const PREVIEW_ENTRY_ENV = "REMOCN_STUDIO_PREVIEW_ENTRY";
 export const GRAB_SCRIPT_ENV = "REMOCN_STUDIO_GRAB_SCRIPT";
 export const TEMPLATE_DIR_ENV = "REMOCN_STUDIO_TEMPLATE_DIR";
 export const PLUGIN_DIR_ENV = "REMOCN_STUDIO_PLUGIN_DIR";
+export const LIBRARY_DIR_ENV = "REMOCN_STUDIO_LIBRARY_DIR";
 
 export const CANCELLED = "cancelled";
 
@@ -25,6 +27,13 @@ export const METHOD_NAMES = [
   "history.mode",
   "history.remove",
   "history.sessions",
+  "library.dismiss",
+  "library.list",
+  "library.offer",
+  "library.preview",
+  "library.remove",
+  "library.rename",
+  "library.save",
   "pipeline.get",
   "pipeline.set",
   "pipeline.start",
@@ -104,15 +113,45 @@ export function isSessionMode(value: unknown): value is SessionMode {
   );
 }
 
-export const ImageMediaType = Schema.Literals([
+export const IMAGE_MEDIA_TYPES = [
   "image/gif",
   "image/jpeg",
   "image/png",
   "image/webp",
-]);
+] as const;
+
+export const VIDEO_MEDIA_TYPES = [
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+] as const;
+
+export const AUDIO_MEDIA_TYPES = [
+  "audio/aac",
+  "audio/mp4",
+  "audio/mpeg",
+  "audio/ogg",
+  "audio/wav",
+] as const;
+
+export const MEDIA_TYPES = [
+  ...IMAGE_MEDIA_TYPES,
+  ...VIDEO_MEDIA_TYPES,
+  ...AUDIO_MEDIA_TYPES,
+] as const;
+
+export const ImageMediaType = Schema.Literals(IMAGE_MEDIA_TYPES);
+
+export const MediaType = Schema.Literals(MEDIA_TYPES);
 
 export const PromptAttachment = Schema.Struct({
   mediaType: ImageMediaType,
+  name: Schema.NonEmptyString,
+  path: Schema.NonEmptyString,
+});
+
+export const PromptMedia = Schema.Struct({
+  mediaType: MediaType,
   name: Schema.NonEmptyString,
   path: Schema.NonEmptyString,
 });
@@ -141,13 +180,33 @@ const elements = Schema.Array(PromptElement).pipe(
   Schema.withDecodingDefault(Effect.succeed([]))
 );
 
+const assets = Schema.Array(PromptAsset).pipe(
+  Schema.withDecodingDefault(Effect.succeed([]))
+);
+
+const media = Schema.Array(PromptMedia).pipe(
+  Schema.withDecodingDefault(Effect.succeed([]))
+);
+
+export const PromptFrame = Schema.Struct({
+  composition: Schema.NonEmptyString,
+  frame: Schema.Int,
+});
+
+const frame = Schema.NullOr(PromptFrame).pipe(
+  Schema.withDecodingDefault(Effect.succeed(null))
+);
+
 export const PromptParams = Schema.Struct({
+  assets,
   attachments: Schema.Array(PromptAttachment),
   effort: Schema.NullOr(EffortLevel),
   elements,
   historyId: Schema.NonEmptyString,
+  media,
   mode: SessionMode,
   model: Schema.NullOr(Schema.NonEmptyString),
+  playing: frame,
   projectId: Schema.NonEmptyString,
   prompt: Schema.String,
   sessionId: Schema.NullOr(Schema.NonEmptyString),
@@ -157,10 +216,12 @@ export const ActivityState = Schema.Literals(["done", "failed", "running"]);
 
 export const TranscriptEntry = Schema.Union([
   Schema.Struct({
+    assets,
     attachments: Schema.Array(PromptAttachment),
     elements,
     id: Schema.String,
     kind: Schema.Literal("user"),
+    media,
     text: Schema.String,
   }),
   Schema.Struct({
@@ -204,6 +265,31 @@ export const HistorySessionMode = Schema.Struct({
 
 export const HistoryRemoved = Schema.Struct({ removed: Schema.Boolean });
 
+export const AssetRef = Schema.Struct({
+  slug: Schema.NonEmptyString,
+});
+
+export const AssetName = Schema.Struct({
+  name: Schema.NonEmptyString,
+  slug: Schema.NonEmptyString,
+});
+
+export const AssetRemoved = Schema.Struct({ removed: Schema.Boolean });
+
+export const AssetPreview = Schema.Struct({
+  duration: Schema.NullOr(Schema.Finite).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
+  path: Schema.NonEmptyString,
+  slug: Schema.NonEmptyString,
+});
+
+export const AssetCandidates = Schema.Struct({
+  attachments: Schema.Array(PromptMedia),
+});
+
+export const AssetDismissed = Schema.Struct({ dismissed: Schema.Int });
+
 export const PipelineState = Schema.Struct({
   sessionId: Schema.NonEmptyString,
   stages: Schema.Array(PipelineStage),
@@ -224,6 +310,13 @@ export type HistorySession = (typeof HistorySession)["Type"];
 export type HistorySessionRef = (typeof HistorySessionRef)["Type"];
 export type HistorySessionMode = (typeof HistorySessionMode)["Type"];
 export type HistoryRemoved = (typeof HistoryRemoved)["Type"];
+export type AssetRef = (typeof AssetRef)["Type"];
+export type AssetName = (typeof AssetName)["Type"];
+export type AssetRemoved = (typeof AssetRemoved)["Type"];
+export type AssetPreview = (typeof AssetPreview)["Type"];
+export type AssetCandidates = (typeof AssetCandidates)["Type"];
+export type AssetDismissed = (typeof AssetDismissed)["Type"];
+export type PromptFrame = (typeof PromptFrame)["Type"];
 export type PipelineState = (typeof PipelineState)["Type"];
 export type PipelineStageChange = (typeof PipelineStageChange)["Type"];
 
@@ -427,7 +520,9 @@ export type PermissionDecision = (typeof PermissionDecision)["Type"];
 export type PermissionParams = (typeof PermissionParams)["Type"];
 export type PermissionAnswer = (typeof PermissionAnswer)["Type"];
 export type ImageMediaType = (typeof ImageMediaType)["Type"];
+export type MediaType = (typeof MediaType)["Type"];
 export type PromptAttachment = (typeof PromptAttachment)["Type"];
+export type PromptMedia = (typeof PromptMedia)["Type"];
 export type ElementScene = (typeof ElementScene)["Type"];
 export type PromptElement = (typeof PromptElement)["Type"];
 export type Project = (typeof Project)["Type"];
@@ -575,6 +670,41 @@ export const SIDECAR_METHODS = {
   "history.sessions": {
     params: Schema.Null,
     result: Schema.Array(HistorySession),
+    stream: Schema.Never,
+  },
+  "library.dismiss": {
+    params: AssetCandidates,
+    result: AssetDismissed,
+    stream: Schema.Never,
+  },
+  "library.list": {
+    params: Schema.Null,
+    result: Schema.Array(Asset),
+    stream: Schema.Never,
+  },
+  "library.offer": {
+    params: AssetCandidates,
+    result: Schema.Array(PromptMedia),
+    stream: Schema.Never,
+  },
+  "library.preview": {
+    params: AssetPreview,
+    result: Asset,
+    stream: Schema.Never,
+  },
+  "library.remove": {
+    params: AssetRef,
+    result: AssetRemoved,
+    stream: Schema.Never,
+  },
+  "library.rename": {
+    params: AssetName,
+    result: Asset,
+    stream: Schema.Never,
+  },
+  "library.save": {
+    params: AssetDraft,
+    result: Asset,
     stream: Schema.Never,
   },
   "pipeline.get": {

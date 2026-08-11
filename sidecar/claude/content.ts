@@ -13,23 +13,27 @@ type Content = SDKUserMessage["message"]["content"];
 
 type Part = { index: number; kind: "image" } | { kind: "text"; text: string };
 
-export async function contentOf(params: PromptParams): Promise<Content> {
-  const trailer = elementsOf(params.elements);
+export async function contentOf(
+  params: PromptParams,
+  ...appended: readonly (string | null)[]
+): Promise<Content> {
+  const trailers = [elementsOf(params.elements), ...appended].filter(
+    (trailer): trailer is string => trailer !== null
+  );
 
-  if (params.attachments.length === 0 && trailer === null) {
+  if (params.attachments.length === 0 && trailers.length === 0) {
     return params.prompt;
   }
 
-  const parts = partsOf(
-    params.prompt,
-    params.attachments.length,
-    params.elements.length
-  );
+  const parts = partsOf(params.prompt, params.attachments.length, {
+    asset: params.assets.length,
+    element: params.elements.length,
+  });
   const blocks: Exclude<Content, string> = await Promise.all(
     parts.map((part) => blockOf(part, params.attachments))
   );
 
-  if (trailer !== null) {
+  for (const trailer of trailers) {
     blocks.push({ text: trailer, type: "text" });
   }
 
@@ -85,7 +89,11 @@ function truncate(html: string): string {
   return html.length <= MARKUP_LIMIT ? html : `${html.slice(0, MARKUP_LIMIT)}…`;
 }
 
-function partsOf(prompt: string, images: number, elements: number): Part[] {
+function partsOf(
+  prompt: string,
+  images: number,
+  others: { asset: number; element: number }
+): Part[] {
   const spliced: Part[] = [];
   const referenced = new Set<number>();
   let buffer = "";
@@ -98,7 +106,8 @@ function partsOf(prompt: string, images: number, elements: number): Part[] {
   };
 
   for (const segment of segmentsOf(prompt, {
-    element: elements,
+    asset: others.asset,
+    element: others.element,
     image: images,
   })) {
     const spliceable =

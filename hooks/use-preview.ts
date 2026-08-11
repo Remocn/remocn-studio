@@ -22,6 +22,7 @@ export type PreviewListener = (message: PreviewMessage) => void;
 
 export interface PreviewControl {
   composition: string | null;
+  frame: number;
   hint: string | null;
   isServing: boolean;
   pick: PreviewComposition | null;
@@ -39,6 +40,7 @@ type Running = Fiber.Fiber<unknown, unknown>;
 export function usePreview(projectId: string | null): PreviewControl {
   const [preview, setPreview] = useState<Preview>(IDLE);
   const [pick, setPick] = useState<PreviewComposition | null>(null);
+  const [frame, setFrame] = useState(0);
   const running = useRef<Running | null>(null);
   const stage = useRef<HTMLIFrameElement>(null);
   const listeners = useRef(new Set<PreviewListener>());
@@ -64,6 +66,7 @@ export function usePreview(projectId: string | null): PreviewControl {
     let served = false;
 
     setPick(null);
+    setFrame(0);
     setPreview({ percent: 0, phase: "building" });
 
     running.current = Effect.runFork(
@@ -122,6 +125,11 @@ export function usePreview(projectId: string | null): PreviewControl {
         setPick(decoded.value);
       }
 
+      const at = frameIn(decoded.value);
+      if (at !== null) {
+        setFrame(at);
+      }
+
       for (const listen of [...listeners.current]) {
         listen(decoded.value);
       }
@@ -155,6 +163,7 @@ export function usePreview(projectId: string | null): PreviewControl {
   return useMemo(
     () => ({
       composition: pick?.compositionId ?? null,
+      frame,
       hint,
       isServing: preview.phase === "ready",
       pick,
@@ -164,7 +173,7 @@ export function usePreview(projectId: string | null): PreviewControl {
       stage,
       subscribe,
     }),
-    [hint, pick, preview, restart, send, subscribe]
+    [frame, hint, pick, preview, restart, send, subscribe]
   );
 }
 
@@ -175,6 +184,16 @@ export function useOnPreview(
   const { subscribe } = preview;
 
   useEffect(() => subscribe(listen), [listen, subscribe]);
+}
+
+function frameIn(message: PreviewMessage): number | null {
+  if (message.type === "selection") {
+    return message.element.frame;
+  }
+  if (message.type === "capture") {
+    return message.frame;
+  }
+  return message.type === "rebuilt" ? 0 : null;
 }
 
 function hintOf(message: PreviewComposition | null): string | null {

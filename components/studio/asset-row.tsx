@@ -1,6 +1,6 @@
 "use client";
 
-import { ImageIcon, XIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
 import {
   Attachment,
   AttachmentAction,
@@ -9,13 +9,14 @@ import {
   AttachmentMedia,
 } from "@/components/ui/attachment";
 import { usePreviewImage } from "@/hooks/use-preview-image";
-import type { PromptAttachment } from "@/shared/ipc";
+import { ASSET_TYPE_LABELS, type PromptAsset } from "@/shared/library";
+import { AssetTypeIcon } from "./asset-type-icon";
 
-export function AttachmentRow({
+export function AssetRow({
   items,
   onRemove,
 }: {
-  items: readonly PromptAttachment[];
+  items: readonly PromptAsset[];
   onRemove?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   if (items.length === 0) {
@@ -25,10 +26,10 @@ export function AttachmentRow({
   return (
     <AttachmentGroup>
       {items.map((item, index) => (
-        <AttachmentCard
+        <AssetCard
           index={index}
           item={item}
-          key={item.path}
+          key={item.slug}
           onRemove={onRemove}
         />
       ))}
@@ -36,26 +37,24 @@ export function AttachmentRow({
   );
 }
 
-function AttachmentCard({
+function AssetCard({
   index,
   item,
   onRemove,
 }: {
   index: number;
-  item: PromptAttachment;
+  item: PromptAsset;
   onRemove?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
-  const preview = usePreviewImage(item.path);
+  const preview = usePreviewImage(item.preview ?? "");
+  const label = `${item.name} — ${ASSET_TYPE_LABELS[item.type]}`;
 
   return (
     <Attachment
       className="border-none bg-muted"
       orientation="vertical"
-      title={item.name}
+      title={label}
     >
-      {/* The hairline goes on the media box, not the <img>: the box owns the
-          radius and clips the picture, so an outline on the image itself would
-          square off the corners it is meant to trace. */}
       <AttachmentMedia
         className={
           preview.src === null
@@ -65,12 +64,12 @@ function AttachmentCard({
         variant={preview.src === null ? "icon" : "image"}
       >
         {preview.src === null ? (
-          <ImageIcon />
+          <AssetTypeIcon type={item.type} />
         ) : (
           // biome-ignore lint/performance/noImgElement: a file on disk, which next/image cannot serve from a static export
           // biome-ignore lint/correctness/useImageSize: the card fixes the box and the picture is cropped into it
           // biome-ignore lint/a11y/noNoninteractiveElementInteractions: onError is the browser reporting a dead path, not an interaction
-          <img alt={item.name} onError={preview.onError} src={preview.src} />
+          <img alt={label} onError={preview.onError} src={preview.src} />
         )}
       </AttachmentMedia>
       {onRemove ? (
