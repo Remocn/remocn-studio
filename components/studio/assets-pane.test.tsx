@@ -20,6 +20,7 @@ function asset(shape: Partial<Asset> = {}): Asset {
     name: "Neon Title",
     path: "/library/assets/neon-title",
     preview: null,
+    proxied: false,
     slug: "neon-title",
     type: "component",
     ...shape,
@@ -44,8 +45,12 @@ function pane(
   } = {}
 ) {
   const picked: string[] = [];
+  const removed: string[] = [];
   const onPick = vi.fn((event: React.MouseEvent<HTMLButtonElement>) => {
     picked.push(event.currentTarget.value);
+  });
+  const onRemove = vi.fn((event: React.MouseEvent<HTMLButtonElement>) => {
+    removed.push(event.currentTarget.value);
   });
 
   const view = render(
@@ -56,12 +61,13 @@ function pane(
         error={props.error ?? null}
         isLoading={props.isLoading ?? false}
         onPick={onPick}
+        onRemove={onRemove}
         onRetry={vi.fn()}
       />
     </SidebarProvider>
   );
 
-  return { container: view.container, onPick, picked };
+  return { container: view.container, onPick, picked, removed };
 }
 
 // The asset protocol is not a thing under jsdom, and `clearMocks()` drops
@@ -215,6 +221,20 @@ describe("AssetsPane", () => {
 
     expect(container.querySelector("video")).toBeNull();
     expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("gives every card a delete button of its own", async () => {
+    const { picked, removed } = pane({
+      assets: [asset(), asset({ name: "Logo", slug: "logo", type: "img" })],
+    });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Delete Neon Title" })
+    );
+
+    expect(removed).toEqual(["neon-title"]);
+    // The trigger covers the card, so deleting must not also insert the asset.
+    expect(picked).toEqual([]);
   });
 
   it("offers a way back when the library could not be read", () => {

@@ -128,6 +128,7 @@ export function ProjectsPane() {
         error={library.error}
         isLoading={library.isLoading}
         onPick={onPickAsset}
+        onRemove={library.onRemove}
         onRetry={library.reload}
       />
     </>

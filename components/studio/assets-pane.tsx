@@ -1,9 +1,12 @@
 "use client";
 
+import { Trash2Icon } from "lucide-react";
 import type { MouseEvent } from "react";
 import { memo } from "react";
 import {
   Attachment,
+  AttachmentAction,
+  AttachmentActions,
   AttachmentContent,
   AttachmentDescription,
   AttachmentMedia,
@@ -43,6 +46,7 @@ export function AssetsPane({
   error,
   isLoading,
   onPick,
+  onRemove,
   onRetry,
 }: {
   assets: readonly Asset[];
@@ -50,6 +54,7 @@ export function AssetsPane({
   error: string | null;
   isLoading: boolean;
   onPick: (event: MouseEvent<HTMLButtonElement>) => void;
+  onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
   onRetry: () => void;
 }) {
   return (
@@ -66,6 +71,7 @@ export function AssetsPane({
         error={error}
         isLoading={isLoading}
         onPick={onPick}
+        onRemove={onRemove}
         onRetry={onRetry}
       />
 
@@ -89,12 +95,14 @@ function AssetsBody({
   error,
   isLoading,
   onPick,
+  onRemove,
   onRetry,
 }: {
   assets: readonly Asset[];
   error: string | null;
   isLoading: boolean;
   onPick: (event: MouseEvent<HTMLButtonElement>) => void;
+  onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
   onRetry: () => void;
 }) {
   if (error !== null) {
@@ -141,7 +149,12 @@ function AssetsBody({
   return (
     <div className="grid grid-cols-2 gap-2 px-1 pb-1">
       {assets.map((asset) => (
-        <AssetItem asset={asset} key={asset.slug} onPick={onPick} />
+        <AssetItem
+          asset={asset}
+          key={asset.slug}
+          onPick={onPick}
+          onRemove={onRemove}
+        />
       ))}
     </div>
   );
@@ -179,9 +192,11 @@ function AssetTile({
 function AssetRowItem({
   asset,
   onPick,
+  onRemove,
 }: {
   asset: Asset;
   onPick: (event: MouseEvent<HTMLButtonElement>) => void;
+  onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const preview = usePreviewImage(asset.preview ?? "");
   const length = asset.duration === null ? null : clipTime(asset.duration);
@@ -197,6 +212,17 @@ function AssetRowItem({
         onClick={onPick}
         value={asset.slug}
       />
+
+      <AttachmentActions>
+        <AttachmentAction
+          aria-label={`Delete ${asset.name}`}
+          className="bg-black/60 text-white opacity-0 hover:bg-black/80 hover:text-white focus-visible:opacity-100 group-hover/attachment:opacity-100"
+          onClick={onRemove}
+          value={asset.slug}
+        >
+          <Trash2Icon />
+        </AttachmentAction>
+      </AttachmentActions>
 
       <AttachmentMedia variant="image">
         <AssetTile asset={asset} preview={preview} />

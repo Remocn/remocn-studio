@@ -65,6 +65,21 @@ export function previewAsset(
   });
 }
 
+export function proxyAsset(
+  slug: string,
+  path: string | null
+): Effect.Effect<Asset, SidecarError> {
+  return Effect.gen(function* () {
+    const id = yield* newRequestId;
+
+    return yield* requestSidecar({
+      id,
+      method: "library.proxy",
+      params: { path, slug },
+    });
+  });
+}
+
 export function removeAsset(
   slug: string
 ): Effect.Effect<boolean, SidecarError> {

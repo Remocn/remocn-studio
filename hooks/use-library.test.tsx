@@ -1,10 +1,27 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { useLibrary } from "@/hooks/use-library";
 import type { Asset } from "@/shared/library";
 
 const STILL = "/pasted/frame.png";
+const WINDOW = "40 millis";
+const PAST_WINDOW = 120;
+
+function click(slug: string) {
+  return {
+    currentTarget: { value: slug },
+  } as unknown as React.MouseEvent<HTMLButtonElement>;
+}
+
+function pause(ms: number) {
+  return act(
+    () =>
+      new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      })
+  );
+}
 
 function asset(shape: Partial<Asset> = {}): Asset {
   return {
@@ -16,6 +33,7 @@ function asset(shape: Partial<Asset> = {}): Asset {
     name: "Intro",
     path: "/library/assets/intro",
     preview: null,
+    proxied: true,
     slug: "intro",
     type: "video",
     ...shape,
@@ -24,13 +42,24 @@ function asset(shape: Partial<Asset> = {}): Asset {
 
 interface Calls {
   decoded: string[];
+  list: (next: readonly Asset[]) => void;
   previewed: { path: string; slug: string }[];
+  removed: string[];
 }
 
 // The whole point of the backfill is that a frame is decoded once, so the fake
-// counts decodes rather than pretending they are free.
+// counts decodes rather than pretending they are free. The listing is mutable,
+// because the agent can write to the library while the app is running.
 function install(assets: readonly Asset[]): Calls {
-  const calls: Calls = { decoded: [], previewed: [] };
+  let listing = assets;
+  const calls: Calls = {
+    decoded: [],
+    list: (next) => {
+      listing = next;
+    },
+    previewed: [],
+    removed: [],
+  };
 
   mockIPC((cmd, payload) => {
     if (cmd === "sidecar_request") {
@@ -40,11 +69,15 @@ function install(assets: readonly Asset[]): Calls {
       };
 
       if (method === "library.list") {
-        return assets;
+        return listing;
       }
       if (method === "library.preview") {
         calls.previewed.push({ path: params.path, slug: params.slug });
         return { ...asset(), preview: "/library/assets/intro/preview.png" };
+      }
+      if (method === "library.remove") {
+        calls.removed.push(params.slug);
+        return { removed: true };
       }
     }
 
@@ -137,5 +170,103 @@ describe("useLibrary", () => {
 
     // A clip whose frame will not decode must not be retried on every listing.
     expect(calls.decoded).toEqual(["/library/assets/intro/intro.mp4"]);
+  });
+
+  it("looks again when a turn settles, because the agent saves behind its back", async () => {
+    const calls = install([]);
+
+    const { rerender, result } = renderHook(
+      ({ isRunning }: { isRunning: boolean }) => useLibrary(isRunning),
+      { initialProps: { isRunning: true } }
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.assets).toEqual([]);
+
+    calls.list([
+      asset({
+        files: ["Neon.tsx"],
+        name: "Neon",
+        slug: "neon",
+        type: "component",
+      }),
+    ]);
+    rerender({ isRunning: false });
+
+    await waitFor(() =>
+      expect(result.current.assets.map((row) => row.slug)).toEqual(["neon"])
+    );
+    // Quiet: a skeleton after every turn would be a flicker reporting nothing.
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("takes the row away at once and the folder only once the window closes", async () => {
+    const calls = install([asset({ preview: "/p.png" })]);
+
+    const { result } = renderHook(() => useLibrary(false, WINDOW));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => result.current.onRemove(click("intro")));
+
+    expect(result.current.assets).toEqual([]);
+    expect(calls.removed).toEqual([]);
+
+    await pause(PAST_WINDOW);
+    expect(calls.removed).toEqual(["intro"]);
+  });
+
+  it("puts an undone asset back where it was, and never deletes it", async () => {
+    const calls = install([
+      asset({ preview: "/a.png", slug: "one" }),
+      asset({ preview: "/b.png", slug: "two" }),
+      asset({ preview: "/c.png", slug: "three" }),
+    ]);
+
+    const { result } = renderHook(() => useLibrary(false, WINDOW));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => result.current.onRemove(click("two")));
+    act(() => result.current.undoRemove("two"));
+    await pause(PAST_WINDOW);
+
+    expect(result.current.assets.map((row) => row.slug)).toEqual([
+      "one",
+      "two",
+      "three",
+    ]);
+    expect(calls.removed).toEqual([]);
+  });
+
+  it("does not let a turn settling inside the window resurrect the row", async () => {
+    const calls = install([asset({ preview: "/p.png" })]);
+
+    const { rerender, result } = renderHook(
+      ({ isRunning }: { isRunning: boolean }) => useLibrary(isRunning, WINDOW),
+      { initialProps: { isRunning: true } }
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => result.current.onRemove(click("intro")));
+    // The asset is still on disk, so the listing this refresh takes has it.
+    rerender({ isRunning: false });
+
+    await waitFor(() => expect(calls.removed).toEqual(["intro"]));
+    expect(result.current.assets).toEqual([]);
+  });
+
+  it("leaves the listing alone while a turn is still running", async () => {
+    const calls = install([]);
+
+    const { rerender, result } = renderHook(
+      ({ isRunning }: { isRunning: boolean }) => useLibrary(isRunning),
+      { initialProps: { isRunning: false } }
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    calls.list([asset({ slug: "neon", type: "component" })]);
+    rerender({ isRunning: true });
+
+    expect(result.current.assets).toEqual([]);
   });
 });

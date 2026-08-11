@@ -44,6 +44,8 @@ const names = Schema.Array(Schema.NonEmptyString).pipe(
   Schema.withDecodingDefault(Effect.succeed([]))
 );
 
+export const PROXY_HEIGHT = 1080;
+
 export const AssetManifest = Schema.Struct({
   createdAt: Schema.Int.pipe(Schema.withDecodingDefault(Effect.succeed(0))),
   dependencies: names,
@@ -57,6 +59,12 @@ export const AssetManifest = Schema.Struct({
   hashes: names,
   name: Schema.NonEmptyString,
   preview: Schema.NullOr(Schema.NonEmptyString).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
+  proxied: Schema.Boolean.pipe(
+    Schema.withDecodingDefault(Effect.succeed(false))
+  ),
+  proxy: Schema.NullOr(Schema.NonEmptyString).pipe(
     Schema.withDecodingDefault(Effect.succeed(null))
   ),
   type: AssetType,
@@ -73,6 +81,7 @@ export const Asset = Schema.Struct({
   name: Schema.NonEmptyString,
   path: Schema.NonEmptyString,
   preview: Schema.NullOr(Schema.NonEmptyString),
+  proxied: Schema.Boolean,
   slug: Schema.NonEmptyString,
   type: AssetType,
 });
@@ -165,4 +174,26 @@ export function assetTypeFor(files: readonly string[]): AssetType {
 
 export function isMediaAsset(type: AssetType): boolean {
   return type !== "component";
+}
+
+// Measured in WebKit on a 15s clip: seeking 3840x2160 costs 59ms at the median
+// against 6ms at 1920x1080, and Remotion's preview seeks per frame whenever the
+// Player is paused (`seekThreshold` is 0.01s there). 59ms is nearly two frame
+// budgets at 30fps, 6ms is a fifth of one — so the target is the height at which
+// a seek stops costing a frame, not a round number. Linear playback of 4K was
+// almost fine, which is why this is about seeking and nothing else.
+export function needsProxy(type: AssetType, height: number): boolean {
+  return type === "video" && height > PROXY_HEIGHT;
+}
+
+// One file, because a proxy replaces the thing the preview streams and an asset
+// of several video files has no single such thing.
+export function proxyableFileOf(asset: Asset): string | null {
+  const [first] = asset.files;
+
+  return asset.type === "video" &&
+    asset.files.length === 1 &&
+    first !== undefined
+    ? `${asset.path}/${first}`
+    : null;
 }

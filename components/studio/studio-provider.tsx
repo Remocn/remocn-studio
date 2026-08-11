@@ -45,7 +45,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const model = useClaudeModel(settings);
   const effort = useClaudeEffort(settings);
   const newProject = useNewProject(workspace.createProject);
-  const library = useLibrary();
+  const library = useLibrary(workspace.hasRunningTurns);
 
   const previewProjectId = previewTarget(workspace);
   const preview = usePreview(previewProjectId);

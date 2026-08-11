@@ -31,6 +31,7 @@ export const METHOD_NAMES = [
   "library.list",
   "library.offer",
   "library.preview",
+  "library.proxy",
   "library.remove",
   "library.rename",
   "library.save",
@@ -284,6 +285,13 @@ export const AssetPreview = Schema.Struct({
   slug: Schema.NonEmptyString,
 });
 
+// A null path is the decision that this asset needs no proxy, recorded so the
+// webview stops measuring it on every listing.
+export const AssetProxy = Schema.Struct({
+  path: Schema.NullOr(Schema.NonEmptyString),
+  slug: Schema.NonEmptyString,
+});
+
 export const AssetCandidates = Schema.Struct({
   attachments: Schema.Array(PromptMedia),
 });
@@ -314,6 +322,7 @@ export type AssetRef = (typeof AssetRef)["Type"];
 export type AssetName = (typeof AssetName)["Type"];
 export type AssetRemoved = (typeof AssetRemoved)["Type"];
 export type AssetPreview = (typeof AssetPreview)["Type"];
+export type AssetProxy = (typeof AssetProxy)["Type"];
 export type AssetCandidates = (typeof AssetCandidates)["Type"];
 export type AssetDismissed = (typeof AssetDismissed)["Type"];
 export type PromptFrame = (typeof PromptFrame)["Type"];
@@ -689,6 +698,11 @@ export const SIDECAR_METHODS = {
   },
   "library.preview": {
     params: AssetPreview,
+    result: Asset,
+    stream: Schema.Never,
+  },
+  "library.proxy": {
+    params: AssetProxy,
     result: Asset,
     stream: Schema.Never,
   },

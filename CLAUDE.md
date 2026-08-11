@@ -916,6 +916,81 @@ slot and mounts `<Player>` instead, so the pane is ours and the pixels are Remot
 - **`building` after `ready` is normal** — `ProgressPlugin` reports 100% after the first
   compile finishes. `usePreview` ignores progress once served, or the pane would replace
   a live player with a spinner.
+- **The static server answers byte ranges, and a video does not play without them.**
+  Serving `public/` as one `200` with a chunked body and no `content-length` is enough for
+  every image and font, and it is not enough for a `<video>`: the macOS webview probes with
+  `Range: bytes=0-1` and abandons the element when the answer is not a `206`. Nothing
+  reports that. `OffthreadVideo` renders `VideoForPreview` in the Player and defaults to
+  `pauseWhenBuffering`, so a clip that never becomes playable shows up as a preview that
+  loads for ever — a symptom that names neither the file nor the server. Remotion's own
+  studio server does the same thing (`@remotion/studio-server`'s `serve-static.js`), which
+  is why the same project plays under `npx remotion studio` and hung here. `sendFile` now
+  sends `accept-ranges` and a real `content-length` always, `206` with a `content-range`
+  for a range, `416` past the end and no body for a `HEAD`; `sidecar/preview/range.ts` is
+  the pure parser, tested on its own, and an unreadable header is *ignored* rather than
+  refused, as RFC 7233 requires.
+- **`public/` revalidates, the bundle does not store.** `no-store` everywhere was the first
+  version of the above and it is wrong for media specifically: the Player syncs a video's
+  `currentTime` to the composition frame, so a scene is a stream of seeks, and a response
+  the webview may not keep is one it has to refetch on each of them — plus the whole file
+  again on every loop. Public files therefore carry `no-cache` and an ETag of size and
+  mtime, which is a revalidation the agent's own edits invalidate for free; `If-None-Match`
+  answers `304`, and a stale `If-Range` drops the range rather than splicing bytes from a
+  file that has since changed. `bundle.js` and the render page keep `no-store`, where a
+  cache hit surviving a rebuild is the failure that matters and there is no seeking to pay
+  for. `sidecar/preview/caching.ts` holds the tag and the header parse, tested on their own.
+
+### Footage the preview cannot afford
+
+A video asset taller than the composition previews from a **proxy** — a 1080p h264
+re-encode — while the export and the snapshot keep the original. The reason is one
+measurement, and it is not the one the symptom suggested.
+
+- **The cost is the seek, not the decode.** Measured in WebKit on a 15s clip: playing
+  3840×2160 presented 24.4 fps with a 33ms median gap between frames — the hardware
+  decoder keeping up — against 28.1 fps and the same median at 1920×1080. But a
+  **seek** cost **59ms** at 4K against **6ms** at 1080p, and the tail was 97ms against
+  84ms. Remotion's preview seeks constantly: `use-media-playback.js` sets
+  `seekThreshold` to `playing ? 0.15 : 0.01`, so while the Player is paused *every*
+  frame step is a seek, and 59ms is nearly two frame budgets at 30fps. A clip mounting
+  mid-transition pays it at the worst possible moment. So `PROXY_HEIGHT` is 1080
+  because that is where a seek stops costing a frame, not because it is a round number
+  — and a 1080p source is left alone rather than re-encoded for nothing.
+- **The substitution is two static bases, and the render page never sees a proxy.**
+  `pageOptions` takes the base as an argument now: `previewPage` gets `previewBase`,
+  `renderPage` keeps `staticBase`. The server resolves the first proxy-first and the
+  second never, so `staticFile("library/clip.mp4")` is untouched in the project's code,
+  the preview streams 1080p, and an export — which loads the render page — carries the
+  original. The proxy answers under the original's URL with **its own** size and ETag,
+  so a clip whose proxy lands mid-session invalidates what the webview cached rather
+  than being pinned to whichever it saw first; the media type stays the URL's.
+- **Matching is by content, because the file the preview asks for is a copy.**
+  Insertion copies a library asset into the project's `public/library/`, so a proxy
+  keyed by path would only ever serve the one folder. `sidecar/preview/proxies.ts`
+  hashes the served file — about 40ms on 15MB, paid once per file per host, on the
+  range probe a webview opens a video with — and looks it up against an index built
+  from the library manifests. One proxy therefore covers every project the asset
+  reached, and footage nobody put in the library is simply never matched.
+- **The index is re-read on a timer, not on a signal.** A conversion takes minutes and
+  lands mid-session; a scan of a few dozen small manifests every few seconds is cheaper
+  than a channel between the sidecar and the host that would have to be kept in step.
+  The lookup is synchronous because it happens inside the request handler, where a
+  fiber would reorder the response — the same rule the `Channel` decoders follow.
+- **The converter is ours, not the project's.** `@remotion/webcodecs` is a dependency of
+  the *app* — 1.4MB, one transitive dep, no peer on `remotion` — dynamically imported so
+  it is its own chunk. That does not break "the pixels come from the project's Remotion":
+  a proxy is never in the render path. `canEncode()` asks
+  `VideoEncoder.isConfigSupported` at run time rather than trusting the Safari reading,
+  and a webview without an encoder records the decision and keeps playing originals.
+- **0.58× realtime is what makes this a backfill.** Even with hardware encoding, a
+  two-minute clip is three and a half minutes of work, so `useBackfilledProxies` is
+  modelled exactly on `useBackfilledThumbnails`: sequential, each slug marked as its own
+  turn begins, failures remembered for the session. The asset is usable the moment it
+  lands; until its proxy exists the preview streams the original, which is slower to
+  seek and never broken. `proxied` on the manifest is what stops a file already at the
+  target, or a webview with no encoder, being measured again on every listing.
+- **The proxy lives inside the asset folder**, as `proxy.mp4` beside `preview.png`, so
+  deleting an asset takes its proxy with it and the undo window needs no new code.
 
 ### Pointing at an element, and commenting on it
 
@@ -1375,6 +1450,13 @@ Remotion component (REM-8). It is a drawer at the foot of the left pane, and its
   and auto-allowed by the same rule in `permission.ts`: the library is app data, and `save_asset`
   only ever reads from `cwd` and writes into the library. There is no file-tree picker, because the
   studio's user does not read code.
+  - **Which is why the pane lists again when a turn settles.** A component reaches the library
+    through the sidecar's own MCP tool, so nothing in the webview is on that path and a save landed
+    on disk that the list — read once, at boot — could not know about; a component saved by the
+    agent appeared only after a relaunch. `useLibrary` takes `hasRunningTurns` and refreshes on its
+    falling edge, which is the only moment the library can have changed behind the pane's back. The
+    refresh is **quiet**: it does not raise `isLoading`, or every turn would end in a flash of
+    skeletons reporting nothing.
 - **Files keep their shape relative to what they share.** `layoutOf` takes the common ancestor of
   the saved paths and stores names relative to it, so `Scene.tsx` + `lib/ease.ts` land under
   `src/library/<slug>/` with the relative import between them still correct. Flattening would break
@@ -1473,9 +1555,19 @@ over an `AttachmentTitle` — rather than a list of rows with an icon and a type
   seeking for the frame, `AudioBuffer.duration` while decoding for the waveform — so the badge costs
   no extra pass. `clipTime` is `mm:ss` until a clip earns an hour. A length that was never measured
   badges nothing rather than showing `00:00`.
-- **The card's click target is `AttachmentTrigger`**, which is `absolute inset-0 z-10`, and the
-  options menu is an `AttachmentAction` inside `AttachmentActions` at `z-20`. So the whole card
-  inserts the asset except the menu, with no hit-testing of our own.
+- **The card's click target is `AttachmentTrigger`**, which is `absolute inset-0 z-10`, and Delete
+  is an `AttachmentAction` inside `AttachmentActions` at `z-20`. So the whole card inserts the asset
+  except that button, with no hit-testing of our own — the two are siblings, not nested, so the
+  trigger's handler never sees the delete click and nothing has to stop propagation.
+- **Deleting forgives, exactly as deleting a session does.** The tile leaves the grid at once and
+  `library.remove` is held behind an undo window — `Effect.sleep` in a forked fiber — with the
+  toast's Undo a fiber interrupt that puts the card back at its old index. Quitting inside the
+  window drops the delete rather than rushing it: the asset comes back next launch, which is the
+  failure direction that keeps data. It is one button rather than a menu, so there is no
+  confirmation dialog to dismiss; the window *is* the confirmation.
+  - **The refresh above and this window have to agree.** A pending delete is still on disk, so a
+    listing taken inside it would put the row back and read as the delete having failed. `load`
+    therefore filters the rows against the held deletes.
 - **The kind moved from a visible second line into the trigger's `aria-label`.** The tile now says
   what it is by showing it; a screen reader still hears "Neon Title, Component".
 

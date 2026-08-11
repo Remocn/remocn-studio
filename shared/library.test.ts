@@ -3,8 +3,10 @@ import {
   type Asset,
   assetTypeFor,
   assetTypeOf,
+  needsProxy,
   playableFileOf,
   promptAssetOf,
+  proxyableFileOf,
   slugOf,
 } from "@/shared/library";
 
@@ -17,6 +19,7 @@ const ASSET: Asset = {
   name: "Neon Title",
   path: "/library/assets/neon-title",
   preview: "/library/assets/neon-title/preview.png",
+  proxied: false,
   slug: "neon-title",
   type: "component",
 };
@@ -86,6 +89,44 @@ describe("playableFileOf", () => {
 
   it("is null for a video whose manifest lists no file", () => {
     expect(playableFileOf({ ...ASSET, files: [], type: "video" })).toBeNull();
+  });
+});
+
+describe("needsProxy", () => {
+  it("re-encodes anything taller than the target", () => {
+    expect(needsProxy("video", 2160)).toBe(true);
+    expect(needsProxy("video", 1081)).toBe(true);
+  });
+
+  // A 1080p clip already seeks in 6ms, which is a fifth of a frame at 30fps.
+  // Re-encoding it would cost minutes and buy nothing.
+  it("leaves a clip already at the target alone", () => {
+    expect(needsProxy("video", 1080)).toBe(false);
+    expect(needsProxy("video", 720)).toBe(false);
+  });
+
+  it("is only ever about video", () => {
+    expect(needsProxy("audio", 2160)).toBe(false);
+    expect(needsProxy("img", 2160)).toBe(false);
+    expect(needsProxy("component", 2160)).toBe(false);
+  });
+});
+
+describe("proxyableFileOf", () => {
+  const clip: Asset = { ...ASSET, files: ["intro.mp4"], type: "video" };
+
+  it("is the one file a proxy would stand in for", () => {
+    expect(proxyableFileOf(clip)).toBe("/library/assets/neon-title/intro.mp4");
+  });
+
+  it("is null for anything that is not a video", () => {
+    expect(proxyableFileOf(ASSET)).toBeNull();
+    expect(proxyableFileOf({ ...clip, type: "audio" })).toBeNull();
+  });
+
+  it("is null when there is no single file to stand in for", () => {
+    expect(proxyableFileOf({ ...clip, files: [] })).toBeNull();
+    expect(proxyableFileOf({ ...clip, files: ["a.mp4", "b.mp4"] })).toBeNull();
   });
 });
 

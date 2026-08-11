@@ -32,6 +32,7 @@ import {
 } from "./library/insert";
 import {
   attachPreview,
+  attachProxy,
   dismissPaths,
   type LibraryError,
   listAssets,
@@ -286,6 +287,9 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
 
   "library.preview": ({ params }) =>
     attachPreview(params.slug, params.path).pipe(Effect.mapError(unlibraried)),
+
+  "library.proxy": ({ params }) =>
+    attachProxy(params.slug, params.path).pipe(Effect.mapError(unlibraried)),
 
   "library.remove": ({ params }) =>
     removeAsset(params.slug).pipe(

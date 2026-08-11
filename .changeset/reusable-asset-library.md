@@ -41,7 +41,9 @@ by the end-of-turn card.
 
 **The library is a grid of thumbnails.** Two columns of cards — the picture
 over its name, with the clip's length badged in the corner — instead of a list
-of rows wearing type icons.
+of rows wearing type icons. Hovering a card reveals a Delete button, which
+takes the tile away at once and the folder only after an undo window, the way
+deleting a session already works.
 
 A video shows its first frame and a sound shows its waveform. Both are decoded
 once, when the asset is saved, and filed beside it as a picture, so the panel

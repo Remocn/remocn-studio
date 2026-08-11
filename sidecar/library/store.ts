@@ -27,6 +27,7 @@ export class LibraryError extends Data.TaggedError("LibraryError")<{
 export const ASSETS = "assets";
 export const MANIFEST = "manifest.json";
 export const PREVIEW = "preview.png";
+export const PROXY = "proxy.mp4";
 
 const DISMISSED = "dismissed.json";
 const FALLBACK = "library";
@@ -164,6 +165,44 @@ export function attachPreview(
   });
 }
 
+// A proxy is decoration in the same sense a still is: `from` being null records
+// the decision that this asset does not need one, so the webview stops measuring
+// it on every listing. Either way the asset is untouched — the preview streams
+// the proxy, the export never does.
+export function attachProxy(
+  slug: string,
+  from: string | null
+): Effect.Effect<Asset, LibraryError> {
+  return attempt(async () => {
+    const dir = join(libraryRoot(), ASSETS);
+    const manifest = await manifestIn(dir, slug);
+
+    if (manifest === null) {
+      throw new Error(`there is no asset called ${slug} in the library`);
+    }
+
+    if (from !== null) {
+      await copyFile(from, join(dir, slug, PROXY));
+    }
+
+    await writeFile(
+      join(dir, slug, MANIFEST),
+      stringify({
+        ...manifest,
+        proxied: true,
+        proxy: from === null ? manifest.proxy : PROXY,
+      }),
+      "utf8"
+    );
+
+    const saved = await assetIn(dir, slug);
+    if (saved === null) {
+      throw new Error(`${slug} could not be read back after its proxy`);
+    }
+    return saved;
+  });
+}
+
 export function unofferedFrom(
   paths: readonly string[]
 ): Effect.Effect<readonly string[], LibraryError> {
@@ -256,6 +295,8 @@ async function write(draft: AssetDraft, now: number): Promise<Asset> {
     hashes,
     name: draft.name,
     preview,
+    proxied: false,
+    proxy: null,
     type: draft.type,
   };
 
@@ -326,6 +367,7 @@ function assetOf(dir: string, slug: string, manifest: AssetManifest): Asset {
     name: manifest.name,
     path,
     preview: preview !== null && existsSync(preview) ? preview : null,
+    proxied: manifest.proxied,
     slug,
     type: manifest.type,
   };
