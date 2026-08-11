@@ -34,12 +34,15 @@ function store(): HistoryStore {
 
 function params(shape: Partial<PromptParams>): PromptParams {
   return {
+    assets: [],
     attachments: [],
     effort: null,
     elements: [],
     historyId: crypto.randomUUID(),
+    media: [],
     mode: "auto",
     model: null,
+    playing: null,
     projectId: PROJECT_ID,
     prompt: "make a title card",
     sessionId: null,
@@ -72,8 +75,10 @@ function live(input: PromptParams, events: readonly ClaudeEvent[]) {
     .reduce(
       fold,
       appendUser([], {
+        assets: input.assets,
         attachments: input.attachments,
         elements: input.elements,
+        media: input.media,
         text: input.prompt,
       })
     )

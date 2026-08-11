@@ -15,15 +15,19 @@ import {
   isSessionMode,
   type PromptAttachment,
   type PromptElement,
+  type PromptFrame,
+  type PromptMedia,
   type SessionMode,
   type TranscriptEntry,
 } from "@/shared/ipc";
+import type { PromptAsset } from "@/shared/library";
 
 export interface OpenTurnSettings {
   changeMode: (historyId: string, mode: SessionMode) => void;
   draftId: string;
   effort: EffortLevel | null;
   model: string | null;
+  playing: PromptFrame | null;
   projectId: string | null;
   session: HistorySession | null;
   turns: Turns;
@@ -46,7 +50,9 @@ export interface OpenTurn {
   send: (
     prompt: string,
     attachments?: readonly PromptAttachment[],
-    elements?: readonly PromptElement[]
+    elements?: readonly PromptElement[],
+    assets?: readonly PromptAsset[],
+    media?: readonly PromptMedia[]
   ) => void;
   startedAt: number | null;
   stop: () => void;
@@ -58,6 +64,7 @@ export function useOpenTurn({
   draftId,
   effort,
   model,
+  playing,
   projectId,
   session,
   turns,
@@ -80,23 +87,28 @@ export function useOpenTurn({
     (
       prompt: string,
       attachments: readonly PromptAttachment[] = [],
-      elements: readonly PromptElement[] = []
+      elements: readonly PromptElement[] = [],
+      assets: readonly PromptAsset[] = [],
+      media: readonly PromptMedia[] = []
     ) => {
       if (projectId === null) {
         return;
       }
       sendTurn({
+        assets,
         attachments,
         effort,
         elements,
         historyId: openId,
+        media,
         mode: turn.mode,
         model,
+        playing,
         projectId,
         prompt,
       });
     },
-    [effort, model, openId, projectId, sendTurn, turn.mode]
+    [effort, model, openId, playing, projectId, sendTurn, turn.mode]
   );
 
   const stop = useCallback(() => stopTurn(openId), [openId, stopTurn]);

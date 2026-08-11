@@ -17,6 +17,22 @@ export function frameTime(frame: number, fps: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}.${tenths}`;
 }
 
+// The badge on a clip's thumbnail: mm:ss, and h:mm:ss once it earns an hour.
+export function clipTime(seconds: number): string | null {
+  if (!(Number.isFinite(seconds) && seconds >= 0)) {
+    return null;
+  }
+
+  const whole = Math.round(seconds);
+  const minutes = Math.floor(whole / 60) % 60;
+  const rest = String(whole % 60).padStart(2, "0");
+  const hours = Math.floor(whole / 3600);
+
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${rest}`
+    : `${String(minutes).padStart(2, "0")}:${rest}`;
+}
+
 export function relativeTime(at: number, now: number): string {
   const elapsed = Math.max(0, now - at);
 

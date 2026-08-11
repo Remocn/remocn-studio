@@ -36,6 +36,7 @@ pub fn run() {
             commands::sidecar_status,
             commands::studio_build,
             paste::save_pasted_image,
+            paste::save_proxy,
         ])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {

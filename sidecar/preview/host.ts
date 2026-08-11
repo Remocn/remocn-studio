@@ -12,6 +12,7 @@ import {
   type Still,
   type StillEvent,
 } from "@/shared/ipc";
+import { libraryRoot } from "../library/store";
 import { untilGone, untilOrphaned, untilSignalled } from "../lifecycle";
 import { exporterOf, exportMedia } from "./export";
 import { withoutWebFonts } from "./grab";
@@ -36,6 +37,7 @@ import {
   RENDER_BASE,
   type StillCommand,
 } from "./protocol";
+import { libraryIndex, proxies } from "./proxies";
 import { serve } from "./server";
 import { openSession, type Session, type WarmInternals } from "./session";
 import {
@@ -182,6 +184,7 @@ function boot(root: string, preferred: string | null) {
     const renderEntry = yield* renderEntryOf(root);
     const version = yield* remotionVersionOf(root);
     const staticBase = `/static-${randomBytes(6).toString("hex")}`;
+    const previewBase = `/preview-${randomBytes(6).toString("hex")}`;
     const grab = yield* grabScript;
     const cache = makeCompositionCache();
     const session = yield* Ref.make<Session | null>(null);
@@ -193,6 +196,8 @@ function boot(root: string, preferred: string | null) {
       grab,
       outDir,
       preferred,
+      previewBase,
+      proxies: proxies(libraryIndex(libraryRoot())),
       publicDir: path.join(root, "public"),
       root,
       staticBase,

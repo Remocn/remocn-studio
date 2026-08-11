@@ -2,8 +2,10 @@
 
 import type { ChangeEvent, KeyboardEvent, RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SAVE_ELEMENT_PROMPT } from "@/lib/studio/library";
 
 export interface Comment {
+  keep: () => void;
   onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   ref: RefObject<HTMLTextAreaElement | null>;
@@ -38,6 +40,15 @@ export function useComment(
     onSubmit(value);
   }, [onSubmit, value]);
 
+  const keep = useCallback(() => {
+    const written = value.trim();
+    onSubmit(
+      written.length === 0
+        ? SAVE_ELEMENT_PROMPT
+        : `${written} ${SAVE_ELEMENT_PROMPT}`
+    );
+  }, [onSubmit, value]);
+
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === "Enter" && !event.shiftKey) {
@@ -55,7 +66,7 @@ export function useComment(
   );
 
   return useMemo(
-    () => ({ onChange, onKeyDown, ref, submit, value }),
-    [onChange, onKeyDown, submit, value]
+    () => ({ keep, onChange, onKeyDown, ref, submit, value }),
+    [keep, onChange, onKeyDown, submit, value]
   );
 }

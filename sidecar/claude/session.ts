@@ -9,6 +9,7 @@ import {
 import { Data, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { ContextUsage, PromptParams } from "@/shared/ipc";
+import { LIBRARY_SERVER, type libraryServer } from "../library/tools";
 import { contentOf } from "./content";
 import { conventionsFor } from "./conventions";
 import { pluginsFor } from "./knowledge";
@@ -25,10 +26,13 @@ interface Turn {
 }
 
 export interface TurnCallbacks {
+  readonly assets: string | null;
   readonly brief: string | null;
   readonly canUseTool: CanUseTool;
   readonly cwd: string;
+  readonly library: ReturnType<typeof libraryServer>;
   readonly log: (line: string) => void;
+  readonly media: string | null;
   readonly onContext: (usage: ContextUsage) => void;
   readonly onMode: (apply: ApplyMode) => void;
   readonly onStop: () => void;
@@ -85,7 +89,10 @@ function open(params: PromptParams, callbacks: TurnCallbacks): Turn {
 
   const prompt = (async function* () {
     yield {
-      message: { content: await contentOf(params), role: "user" as const },
+      message: {
+        content: await contentOf(params, callbacks.assets, callbacks.media),
+        role: "user" as const,
+      },
       parent_tool_use_id: null,
       session_id: "",
       type: "user" as const,
@@ -107,7 +114,10 @@ function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
     canUseTool: callbacks.canUseTool,
     cwd: callbacks.cwd,
     includePartialMessages: true,
-    mcpServers: { [PIPELINE_SERVER]: callbacks.pipeline },
+    mcpServers: {
+      [LIBRARY_SERVER]: callbacks.library,
+      [PIPELINE_SERVER]: callbacks.pipeline,
+    },
     permissionMode: params.mode,
     plugins,
     settingSources: ["project"],

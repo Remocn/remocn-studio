@@ -9,8 +9,9 @@ import { activeForm, currentTasks } from "@/lib/studio/tasks";
 import type { TranscriptEntry } from "@/shared/ipc";
 import { ActivityLine } from "./activity-line";
 import { ActivityRun } from "./activity-run";
-import { AttachmentRow } from "./attachment-row";
+import { AssetRow } from "./asset-row";
 import { Markdown } from "./markdown";
+import { MediaRow } from "./media-row";
 import { MessageText } from "./message-text";
 import { TaskChecklist } from "./task-checklist";
 import { Thinking } from "./thinking";
@@ -112,12 +113,14 @@ function EntryBlock({
     return (
       <Message align="end">
         <MessageContent>
-          <AttachmentRow items={entry.attachments} />
+          <MediaRow items={[...entry.attachments, ...entry.media]} />
+          <AssetRow items={entry.assets} />
           {entry.text.length === 0 ? null : (
             <Bubble align="end">
               <BubbleContent className="whitespace-pre-wrap">
                 <MessageText
                   counts={{
+                    asset: entry.assets.length,
                     element: entry.elements.length,
                     image: entry.attachments.length,
                   }}

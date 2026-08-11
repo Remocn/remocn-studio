@@ -4,11 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Composer } from "@/hooks/use-composer";
 import { type Exporting, useExport } from "@/hooks/use-export";
 import { type Inspection, useInspect } from "@/hooks/use-inspect";
-import {
-  type PreviewControl,
-  useOnPreview,
-  usePreview,
-} from "@/hooks/use-preview";
+import { type PreviewControl, useOnPreview } from "@/hooks/use-preview";
 import { type Snapshot, useSnapshot } from "@/hooks/use-snapshot";
 import type { PreviewMessage } from "@/lib/studio/preview";
 
@@ -27,6 +23,7 @@ export interface ToolSettings {
   isShown: boolean;
   isWaiting: boolean;
   openedProjectId: string | null;
+  preview: PreviewControl;
   previewProjectId: string | null;
 }
 
@@ -36,10 +33,10 @@ export function useTools({
   isShown,
   isWaiting,
   openedProjectId,
+  preview,
   previewProjectId,
 }: ToolSettings): Tools {
   const [tool, setTool] = useState<Tool>(null);
-  const preview = usePreview(previewProjectId);
 
   const unavailable = unavailableOf({
     isMissing,

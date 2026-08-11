@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  ChevronUpIcon,
   FolderOpenIcon,
   FolderPlusIcon,
+  LibraryBigIcon,
   PanelLeftCloseIcon,
   SettingsIcon,
 } from "lucide-react";
@@ -33,11 +35,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAssetDrop } from "@/hooks/use-asset-drop";
 import { useNow } from "@/hooks/use-now";
+import { usePickAsset } from "@/hooks/use-pick-asset";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
 import { type PaneGroup, paneSections } from "@/lib/studio/groups";
 import { shellMood } from "@/lib/studio/mood";
+import { cn } from "@/lib/utils";
+import { AssetsPane } from "./assets-pane";
 import { LogoWordmark } from "./logo-mark";
 import { ProjectGroup } from "./project-group";
 import { useStudio } from "./studio-provider";
@@ -50,17 +56,21 @@ export function ProjectsPane() {
   const {
     actionError,
     activeSession,
+    composer,
     expandedProjects,
     folderError,
     groups,
     isLoadingProjects,
+    library,
     newProject,
     onNewSession,
+    isAssetsOpen,
     onRemoveSession,
     onRetryScaffold,
     onSelectSession,
     onToggleProject,
     openFolder,
+    toggleAssets,
     projects,
     projectsError,
     relocateProject,
@@ -79,6 +89,77 @@ export function ProjectsPane() {
     () => ({ relocateProject, removeProject, renameProject }),
     [relocateProject, removeProject, renameProject]
   );
+  const onPickAsset = usePickAsset(library.assets, composer.pick);
+  const drop = useAssetDrop({ save: library.save });
+  const count = library.assets.length;
+
+  const titlebar = (
+    <Titlebar mood={projects.length === 0 ? null : shellMood(turns)} />
+  );
+
+  const projectsList = (
+    <>
+      <h2 className="sr-only">Projects</h2>
+      <ProjectsBody
+        activeSessionId={activeSession?.id ?? null}
+        commands={commands}
+        error={projectsError ?? sessionsError}
+        expanded={expandedProjects}
+        groups={groups}
+        isLoading={isLoadingProjects}
+        now={now}
+        onNewSession={onNewSession}
+        onRemoveSession={onRemoveSession}
+        onRetry={reloadProjects}
+        onRetryScaffold={onRetryScaffold}
+        onSelectSession={onSelectSession}
+        onToggle={onToggleProject}
+        scaffolds={scaffolds}
+      />
+    </>
+  );
+
+  const assetsGrid = (
+    <>
+      <h2 className="sr-only">Assets</h2>
+      <AssetsPane
+        assets={library.assets}
+        drop={drop}
+        error={library.error}
+        isLoading={library.isLoading}
+        onPick={onPickAsset}
+        onRemove={library.onRemove}
+        onRetry={library.reload}
+      />
+    </>
+  );
+
+  const actions = (
+    <SidebarActions onNewProject={newProject.open} onOpenFolder={openFolder} />
+  );
+
+  const footer = (
+    <>
+      {paneError === null ? null : (
+        <p className="shrink-0 break-words px-3 py-2 text-destructive text-xs">
+          {paneError}
+        </p>
+      )}
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <UpdateStatus />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton className="text-muted-foreground" disabled>
+              <SettingsIcon />
+              Settings
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </>
+  );
 
   return (
     // `collapsible="none"` is what makes this a sidebar inside a resizable
@@ -88,60 +169,75 @@ export function ProjectsPane() {
     <SidebarProvider className="h-full min-h-0">
       <Sidebar className="w-full" collapsible="none">
         <SidebarHeader className="gap-0 p-0">
-          <Titlebar mood={projects.length === 0 ? null : shellMood(turns)} />
+          {titlebar}
           <SidebarBrand onHide={toggleProjects} />
-          <SidebarActions
-            onNewProject={newProject.open}
-            onOpenFolder={openFolder}
-          />
+          {actions}
         </SidebarHeader>
 
         <SidebarContent>
           <SidebarGroup>
-            <h2 className="sr-only">Projects</h2>
-
-            <SidebarGroupContent>
-              <ProjectsBody
-                activeSessionId={activeSession?.id ?? null}
-                commands={commands}
-                error={projectsError ?? sessionsError}
-                expanded={expandedProjects}
-                groups={groups}
-                isLoading={isLoadingProjects}
-                now={now}
-                onNewSession={onNewSession}
-                onRemoveSession={onRemoveSession}
-                onRetry={reloadProjects}
-                onRetryScaffold={onRetryScaffold}
-                onSelectSession={onSelectSession}
-                onToggle={onToggleProject}
-                scaffolds={scaffolds}
-              />
-            </SidebarGroupContent>
+            <SidebarGroupContent>{projectsList}</SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
 
-        {paneError === null ? null : (
-          <p className="shrink-0 break-words px-3 py-2 text-destructive text-xs">
-            {paneError}
-          </p>
-        )}
+        <AssetsDrawer
+          count={count}
+          isOpen={isAssetsOpen}
+          onToggle={toggleAssets}
+        >
+          {assetsGrid}
+        </AssetsDrawer>
 
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <UpdateStatus />
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton className="text-muted-foreground" disabled>
-                <SettingsIcon />
-                Settings
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
+        {footer}
       </Sidebar>
     </SidebarProvider>
+  );
+}
+
+// The library opens upward out of the sidebar's bottom edge, the way the plan
+// drawer opens out of the composer: closed it is one quiet strip, so nothing
+// competes with the wordmark or New Project for the top of the pane.
+function AssetsDrawer({
+  children,
+  count,
+  isOpen,
+  onToggle,
+}: {
+  children: React.ReactNode;
+  count: number;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    // The cap is what keeps the drawer a drawer: opened, it takes at most
+    // three fifths of the pane, so the project list it slid over is still there.
+    <div className="flex max-h-[60%] min-h-0 shrink-0 flex-col border-sidebar-border border-t">
+      <button
+        aria-expanded={isOpen}
+        className="flex h-9 shrink-0 items-center gap-2 px-3 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        onClick={onToggle}
+        type="button"
+      >
+        <LibraryBigIcon className="size-4 shrink-0 text-muted-foreground" />
+        <span className="font-medium">Assets</span>
+        <span className="ml-auto text-muted-foreground text-xs tabular-nums">
+          {count}
+        </span>
+        <ChevronUpIcon
+          aria-hidden="true"
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-transform",
+            isOpen && "rotate-180"
+          )}
+        />
+      </button>
+
+      {isOpen ? (
+        <div className="min-h-0 flex-1 overflow-y-auto border-sidebar-border border-t px-2 py-2">
+          {children}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

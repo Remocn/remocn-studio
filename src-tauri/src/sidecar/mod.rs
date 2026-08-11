@@ -355,6 +355,16 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
         }
     };
 
+    let library_dir = match spawn::resolve_library_dir(&inner.app) {
+        Ok(path) => Some(path),
+        Err(reason) => {
+            inner
+                .log
+                .host(format!("the asset library is unavailable: {reason}"));
+            None
+        }
+    };
+
     inner
         .log
         .host(format!("starting {} {}", bun.display(), script.display()));
@@ -363,6 +373,7 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
         bun: &bun,
         data_dir: &data_dir,
         grab_script: grab_script.as_deref(),
+        library_dir: library_dir.as_deref(),
         plugin_dir: plugin_dir.as_deref(),
         preview_entry: preview_entry.as_deref(),
         script: &script,

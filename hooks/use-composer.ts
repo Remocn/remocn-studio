@@ -9,10 +9,17 @@ import type {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Attachments, useAttachments } from "@/hooks/use-attachments";
 import { type Caret, useCaret } from "@/hooks/use-caret";
+import { type Media, useMedia } from "@/hooks/use-media";
+import { type PickedAssets, usePickedAssets } from "@/hooks/use-picked-assets";
 import { type Selections, useSelections } from "@/hooks/use-selections";
 import { imageFilesOf } from "@/lib/studio/clipboard";
 import type { PreviewRect } from "@/lib/studio/preview";
-import type { PromptAttachment, PromptElement } from "@/shared/ipc";
+import type {
+  PromptAttachment,
+  PromptElement,
+  PromptMedia,
+} from "@/shared/ipc";
+import type { Asset, PromptAsset } from "@/shared/library";
 import {
   dropLostReferences,
   dropReference,
@@ -31,23 +38,31 @@ export interface ComposerSettings {
   onSubmit: (
     text: string,
     attachments: readonly PromptAttachment[],
-    elements: readonly PromptElement[]
+    elements: readonly PromptElement[],
+    assets: readonly PromptAsset[],
+    media: readonly PromptMedia[]
   ) => void;
   projectId: string | null;
 }
 
 export interface Composer {
   add: () => Promise<void>;
+  addMedia: () => Promise<void>;
+  assets: PickedAssets;
   attachments: Attachments;
   canSubmit: boolean;
   capture: (file: File) => Promise<void>;
   caret: Caret;
   counts: ReferenceCounts;
+  media: Media;
   onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   onPaste: (event: ClipboardEvent<HTMLTextAreaElement>) => Promise<void>;
   onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
+  onRemoveAsset: (event: MouseEvent<HTMLButtonElement>) => void;
+  onRemoveMedia: (event: MouseEvent<HTMLButtonElement>) => void;
   onRemoveSelection: (event: MouseEvent<HTMLButtonElement>) => void;
+  pick: (asset: Asset) => void;
   select: (
     element: PromptElement,
     rect: PreviewRect,
@@ -56,6 +71,7 @@ export interface Composer {
   selections: Selections;
   submit: () => void;
   value: string;
+  write: (phrase: string) => void;
 }
 
 function deleting(
@@ -83,20 +99,34 @@ export function useComposer({
   projectId,
 }: ComposerSettings): Composer {
   const [value, setValue] = useState("");
+
+  // The live text, read by everything that inserts at the caret. Closing over
+  // `value` instead would remint those callbacks on every keystroke, and they
+  // are handed to memoised rows that would then re-render as you type.
+  const latest = useRef(value);
+  latest.current = value;
+
   const attachments = useAttachments();
   const selections = useSelections();
+  const assets = usePickedAssets();
+  const media = useMedia();
   const caret = useCaret();
 
   const counts = useMemo(
     () => ({
+      asset: assets.items.length,
       element: selections.items.length,
       image: attachments.items.length,
     }),
-    [attachments.items.length, selections.items.length]
+    [assets.items.length, attachments.items.length, selections.items.length]
   );
 
   const canSubmit =
-    value.trim().length > 0 || counts.image > 0 || counts.element > 0;
+    value.trim().length > 0 ||
+    counts.image > 0 ||
+    counts.element > 0 ||
+    counts.asset > 0 ||
+    media.items.length > 0;
 
   const refer = useCallback(
     (at: number, first: number, count: number) => {
@@ -146,7 +176,7 @@ export function useComposer({
   const select = useCallback(
     (element: PromptElement, rect: PreviewRect, comment: string) => {
       const field = caret.ref.current;
-      const text = field?.value ?? value;
+      const text = field?.value ?? latest.current;
       const at = field?.selectionStart ?? text.length;
       const added = selections.add(element, rect);
 
@@ -164,7 +194,34 @@ export function useComposer({
 
       return added.id;
     },
-    [caret, selections, value]
+    [caret, selections]
+  );
+
+  const pick = useCallback(
+    (asset: Asset) => {
+      const field = caret.ref.current;
+      const text = field?.value ?? latest.current;
+      const at = field?.selectionStart ?? text.length;
+      const index = assets.add(asset);
+
+      const next = insertReferences(text, at, "asset", index, 1);
+      caret.moveTo(next.caret);
+      setValue(next.text);
+    },
+    [assets, caret]
+  );
+
+  const write = useCallback(
+    (phrase: string) => {
+      const field = caret.ref.current;
+      const text = field?.value ?? latest.current;
+      const at = field?.selectionStart ?? text.length;
+
+      const next = insertAt(text, at, phrase.trim());
+      caret.moveTo(next.caret);
+      setValue(next.text);
+    },
+    [caret]
   );
 
   const onRemove = useCallback(
@@ -189,6 +246,28 @@ export function useComposer({
     [counts, selections]
   );
 
+  const onRemoveAsset = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const index = Number(event.currentTarget.value);
+      setValue(
+        (current) => dropReference(current, "asset", index, counts).text
+      );
+      assets.removeAt(index);
+    },
+    [assets, counts]
+  );
+
+  const addMedia = useCallback(async () => {
+    await media.add();
+  }, [media]);
+
+  const onRemoveMedia = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      media.removeAt(Number(event.currentTarget.value));
+    },
+    [media]
+  );
+
   const submit = useCallback(() => {
     if (!canSubmit) {
       return;
@@ -196,12 +275,16 @@ export function useComposer({
     onSubmit(
       value,
       attachments.items,
-      selections.items.map((item) => item.element)
+      selections.items.map((item) => item.element),
+      assets.items,
+      media.items
     );
     setValue("");
     attachments.clear();
     selections.clear();
-  }, [attachments, canSubmit, onSubmit, selections, value]);
+    assets.clear();
+    media.clear();
+  }, [assets, attachments, canSubmit, media, onSubmit, selections, value]);
 
   const onChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -222,11 +305,14 @@ export function useComposer({
       for (const index of [...lost.element].reverse()) {
         selections.removeAt(index);
       }
+      for (const index of [...lost.asset].reverse()) {
+        assets.removeAt(index);
+      }
 
       caret.moveTo(Math.min(at, settled.length));
       setValue(settled);
     },
-    [attachments, caret, counts, selections, value]
+    [assets, attachments, caret, counts, selections, value]
   );
 
   const onKeyDown = useCallback(
@@ -264,9 +350,13 @@ export function useComposer({
         attachments.removeAt(span.index);
         return;
       }
+      if (span.reference === "asset") {
+        assets.removeAt(span.index);
+        return;
+      }
       selections.removeAt(span.index);
     },
-    [attachments, caret, counts, onEscape, selections, submit]
+    [assets, attachments, caret, counts, onEscape, selections, submit]
   );
 
   useForgetSelections(projectId, counts, selections.clear, setValue);
@@ -274,37 +364,51 @@ export function useComposer({
   return useMemo(
     () => ({
       add,
+      addMedia,
+      assets,
       attachments,
       canSubmit,
       capture,
       caret,
       counts,
+      media,
       onChange,
       onKeyDown,
       onPaste,
       onRemove,
+      onRemoveAsset,
+      onRemoveMedia,
       onRemoveSelection,
+      pick,
       select,
       selections,
       submit,
       value,
+      write,
     }),
     [
       add,
+      addMedia,
+      assets,
       attachments,
       canSubmit,
       capture,
       caret,
       counts,
+      media,
       onChange,
       onKeyDown,
       onPaste,
       onRemove,
+      onRemoveAsset,
+      onRemoveMedia,
       onRemoveSelection,
+      pick,
       select,
       selections,
       submit,
       value,
+      write,
     ]
   );
 }

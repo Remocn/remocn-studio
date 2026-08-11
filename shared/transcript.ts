@@ -2,24 +2,30 @@ import type {
   ClaudeEvent,
   PromptAttachment,
   PromptElement,
+  PromptMedia,
   TranscriptEntry,
 } from "./ipc";
+import type { PromptAsset } from "./library";
 
 export function appendUser(
   entries: readonly TranscriptEntry[],
   input: {
+    assets: readonly PromptAsset[];
     attachments: readonly PromptAttachment[];
     elements: readonly PromptElement[];
+    media: readonly PromptMedia[];
     text: string;
   }
 ): readonly TranscriptEntry[] {
   return [
     ...entries,
     {
+      assets: input.assets,
       attachments: input.attachments,
       elements: input.elements,
       id: `user-${entries.length}`,
       kind: "user",
+      media: input.media,
       text: input.text,
     },
   ];

@@ -13,18 +13,24 @@ import type {
   HistorySession,
   PromptAttachment,
   PromptElement,
+  PromptFrame,
+  PromptMedia,
   PromptResult,
   SessionMode,
 } from "@/shared/ipc";
+import type { PromptAsset } from "@/shared/library";
 import { appendUser, fold } from "@/shared/transcript";
 
 export interface StartTurn {
+  assets: readonly PromptAsset[];
   attachments: readonly PromptAttachment[];
   effort: EffortLevel | null;
   elements: readonly PromptElement[];
   historyId: string;
+  media: readonly PromptMedia[];
   mode: SessionMode;
   model: string | null;
+  playing: PromptFrame | null;
   projectId: string;
   prompt: string;
 }
@@ -136,7 +142,9 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       const isEmpty =
         trimmed.length === 0 &&
         input.attachments.length === 0 &&
-        input.elements.length === 0;
+        input.elements.length === 0 &&
+        input.media.length === 0 &&
+        input.assets.length === 0;
       if (isEmpty || fibers.current.has(input.historyId)) {
         return;
       }
@@ -147,8 +155,10 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       update(historyId, (current) => ({
         ...current,
         entries: appendUser(current.entries, {
+          assets: input.assets,
           attachments: input.attachments,
           elements: input.elements,
+          media: input.media,
           text: trimmed,
         }),
         error: null,
@@ -159,12 +169,15 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
 
       const request = promptClaude(
         {
+          assets: input.assets,
           attachments: input.attachments,
           effort: input.effort,
           elements: input.elements,
           historyId,
+          media: input.media,
           mode: input.mode,
           model: input.model,
+          playing: input.playing,
           projectId: input.projectId,
           prompt: trimmed,
           sessionId: started.sdkSessionId,

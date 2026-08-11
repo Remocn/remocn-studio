@@ -6,9 +6,12 @@ import {
   type ClaudeFailure,
   type ContextUsage,
   type Project,
+  type PromptFrame,
+  type PromptParams,
   type SessionMode,
   SIDECAR_PROTOCOL,
 } from "@/shared/ipc";
+import type { Asset, AssetDraft } from "@/shared/library";
 import { pipelineBrief } from "./claude/conventions";
 import { eventsOf } from "./claude/events";
 import { failureFromText, failureOf } from "./claude/failure";
@@ -21,6 +24,24 @@ import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
 import { HandlerError, type Handlers } from "./host";
+import {
+  assetBrief,
+  mediaBrief,
+  placeAssets,
+  placeMedia,
+} from "./library/insert";
+import {
+  attachPreview,
+  attachProxy,
+  dismissPaths,
+  type LibraryError,
+  listAssets,
+  removeAsset,
+  renameAsset,
+  saveAsset,
+  unofferedFrom,
+} from "./library/store";
+import { libraryServer } from "./library/tools";
 import {
   exportFrom,
   previewEvents,
@@ -59,6 +80,31 @@ const unstored = (error: HistoryError) =>
 const unscaffolded = (error: ScaffoldError) =>
   new HandlerError({ message: error.message });
 
+const unlibraried = (error: LibraryError) =>
+  new HandlerError({ message: error.message });
+
+const previewed = (projectId: string, playing: PromptFrame, asset: Asset) =>
+  stillFrom(projectId, playing, () => undefined).pipe(
+    Effect.flatMap((still) => attachPreview(asset.slug, still.path)),
+    Effect.catch(() => Effect.succeed(asset))
+  );
+
+const librarian = (params: PromptParams, cwd: string) =>
+  libraryServer({
+    cwd,
+    list: () => Effect.runPromise(listAssets()),
+    save: (draft: AssetDraft) =>
+      Effect.runPromise(
+        saveAsset(draft).pipe(
+          Effect.flatMap((asset) =>
+            params.playing === null
+              ? Effect.succeed(asset)
+              : previewed(params.projectId, params.playing, asset)
+          )
+        )
+      ),
+  });
+
 const onDisk = (project: Project) =>
   project.missing
     ? Effect.fail(
@@ -95,6 +141,33 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
         yield* emit({ session: recorder.session, type: "history" });
       }
 
+      const copied = <A>(
+        what: string,
+        placing: Effect.Effect<readonly A[], LibraryError>
+      ) =>
+        placing.pipe(
+          Effect.catch((error) =>
+            log(`library: ${error.message}`).pipe(
+              Effect.andThen(
+                emit({
+                  message: `The ${what} could not be copied into the project: ${error.message}`,
+                  type: "notice",
+                })
+              ),
+              Effect.as([] as readonly A[])
+            )
+          )
+        );
+
+      const placed = yield* copied(
+        "referenced assets",
+        placeAssets(project.path, params.assets)
+      );
+      const placedMedia = yield* copied(
+        "attached media",
+        placeMedia(project.path, params.media)
+      );
+
       const switcher = yield* makeModeSwitch();
 
       const stages = yield* store
@@ -113,6 +186,7 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
 
       yield* Stream.runForEach(
         messages(params, {
+          assets: assetBrief(placed),
           brief: pipelineBrief(stages),
           canUseTool: permissionGuard({
             cwd: project.path,
@@ -122,7 +196,9 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
             turnId,
           }),
           cwd: project.path,
+          library: librarian(params, project.path),
           log: (line) => Effect.runSync(log(line)),
+          media: mediaBrief(placedMedia),
           onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
           onMode: (apply) => Effect.runSync(switcher.bind(apply)),
           onStop: () => Effect.runSync(gate.abandon(turnId)),
@@ -191,6 +267,41 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
     Effect.flatMap(HistoryStore, (store) => store.sessions).pipe(
       Effect.mapError(unstored)
     ),
+
+  "library.dismiss": ({ params }) =>
+    dismissPaths(params.attachments.map((item) => item.path)).pipe(
+      Effect.map((dismissed) => ({ dismissed })),
+      Effect.mapError(unlibraried)
+    ),
+
+  "library.list": () => listAssets().pipe(Effect.mapError(unlibraried)),
+
+  "library.offer": ({ params }) =>
+    unofferedFrom(params.attachments.map((item) => item.path)).pipe(
+      Effect.map((paths) => {
+        const kept = new Set(paths);
+        return params.attachments.filter((item) => kept.has(item.path));
+      }),
+      Effect.mapError(unlibraried)
+    ),
+
+  "library.preview": ({ params }) =>
+    attachPreview(params.slug, params.path).pipe(Effect.mapError(unlibraried)),
+
+  "library.proxy": ({ params }) =>
+    attachProxy(params.slug, params.path).pipe(Effect.mapError(unlibraried)),
+
+  "library.remove": ({ params }) =>
+    removeAsset(params.slug).pipe(
+      Effect.map((removed) => ({ removed })),
+      Effect.mapError(unlibraried)
+    ),
+
+  "library.rename": ({ params }) =>
+    renameAsset(params.slug, params.name).pipe(Effect.mapError(unlibraried)),
+
+  "library.save": ({ params }) =>
+    saveAsset(params).pipe(Effect.mapError(unlibraried)),
 
   "pipeline.get": ({ params }) =>
     Effect.flatMap(HistoryStore, (store) =>

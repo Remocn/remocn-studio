@@ -34,7 +34,10 @@ export const EXIT_PLAN_TOOL = "ExitPlanMode";
 
 const ALLOW: PermissionVerdict = { kind: "allow" };
 
-const PIPELINE_TOOL_PREFIX = "mcp__remocn-pipeline__";
+const STUDIO_TOOL_PREFIXES = [
+  "mcp__remocn-pipeline__",
+  "mcp__remocn-library__",
+];
 
 export function review(
   cwd: string,
@@ -49,7 +52,10 @@ export function review(
     return Effect.succeed(ask("bash", toolName, text(input, "command") ?? ""));
   }
 
-  if (FREE_TOOLS.has(toolName) || toolName.startsWith(PIPELINE_TOOL_PREFIX)) {
+  if (
+    FREE_TOOLS.has(toolName) ||
+    STUDIO_TOOL_PREFIXES.some((prefix) => toolName.startsWith(prefix))
+  ) {
     return Effect.succeed(ALLOW);
   }
 

@@ -10,7 +10,8 @@ use tauri::{AppHandle, Manager};
 use tokio::process::{Child, Command};
 
 use crate::ipc::{
-    DATA_DIR_ENV, GRAB_SCRIPT_ENV, HOST_PID_ENV, PLUGIN_DIR_ENV, PREVIEW_ENTRY_ENV, TEMPLATE_DIR_ENV,
+    DATA_DIR_ENV, GRAB_SCRIPT_ENV, HOST_PID_ENV, LIBRARY_DIR_ENV, PLUGIN_DIR_ENV,
+    PREVIEW_ENTRY_ENV, TEMPLATE_DIR_ENV,
 };
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
@@ -142,10 +143,20 @@ pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
+pub fn resolve_library_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = resolve_data_dir(app)?.join("library");
+
+    std::fs::create_dir_all(&dir)
+        .map_err(|err| format!("could not create {}: {err}", dir.display()))?;
+
+    Ok(dir)
+}
+
 pub struct Launch<'a> {
     pub bun: &'a Path,
     pub data_dir: &'a Path,
     pub grab_script: Option<&'a Path>,
+    pub library_dir: Option<&'a Path>,
     pub plugin_dir: Option<&'a Path>,
     pub preview_entry: Option<&'a Path>,
     pub script: &'a Path,
@@ -157,6 +168,7 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
         bun,
         data_dir,
         grab_script,
+        library_dir,
         plugin_dir,
         preview_entry,
         script,
@@ -164,6 +176,10 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
     } = paths;
 
     let mut command = Command::new(bun);
+
+    if let Some(library) = library_dir {
+        command.env(LIBRARY_DIR_ENV, library);
+    }
 
     if let Some(entry) = preview_entry {
         command.env(PREVIEW_ENTRY_ENV, entry);

@@ -1,6 +1,6 @@
 "use client";
 
-import { CornerDownLeftIcon } from "lucide-react";
+import { CornerDownLeftIcon, LibraryBigIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useComment } from "@/hooks/use-comment";
@@ -111,14 +111,26 @@ function CommentCard({
         value={comment.value}
       />
 
-      <div className="flex items-center justify-end gap-1">
-        <Button onClick={onCancel} size="xs" variant="ghost">
-          Cancel
+      <div className="flex items-center gap-1">
+        <Button
+          className="text-muted-foreground"
+          onClick={comment.keep}
+          size="xs"
+          title="Ask Claude to put this in the asset library"
+          variant="ghost"
+        >
+          <LibraryBigIcon />
+          Save to library
         </Button>
-        <Button onClick={comment.submit} size="xs">
-          <CornerDownLeftIcon />
-          Add
-        </Button>
+        <div className="ml-auto flex items-center gap-1">
+          <Button onClick={onCancel} size="xs" variant="ghost">
+            Cancel
+          </Button>
+          <Button onClick={comment.submit} size="xs">
+            <CornerDownLeftIcon />
+            Add
+          </Button>
+        </div>
       </div>
     </div>
   );

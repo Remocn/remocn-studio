@@ -62,6 +62,9 @@ function mockStudio(
         if (method === "history.remove") {
           return { removed: true };
         }
+        if (method === "library.list") {
+          return [];
+        }
         if (method === "project.list") {
           return options.projects ?? [];
         }

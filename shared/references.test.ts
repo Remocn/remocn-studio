@@ -12,8 +12,8 @@ import {
   segmentsOf,
 } from "@/shared/references";
 
-function counts(image: number, element = 0): ReferenceCounts {
-  return { element, image };
+function counts(image: number, element = 0, asset = 0): ReferenceCounts {
+  return { asset, element, image };
 }
 
 function dropped(
@@ -42,6 +42,11 @@ describe("referenceOf", () => {
   it("numbers selections from one, under their own label", () => {
     expect(referenceOf("element", 0)).toBe("[Element #1]");
     expect(referenceOf("element", 2)).toBe("[Element #3]");
+  });
+
+  it("numbers assets from one, under their own label", () => {
+    expect(referenceOf("asset", 0)).toBe("[Asset #1]");
+    expect(referenceOf("asset", 2)).toBe("[Asset #3]");
   });
 });
 
@@ -103,6 +108,27 @@ describe("segmentsOf", () => {
     ]);
     expect(shape("[Image #3]", counts(0, 3))).toEqual([
       { kind: "text", text: "[Image #3]" },
+    ]);
+    expect(shape("[Asset #3]", counts(3, 3))).toEqual([
+      { kind: "text", text: "[Asset #3]" },
+    ]);
+  });
+
+  it("reads all three kinds against their own counters", () => {
+    expect(
+      shape("[Image #1] [Element #1] [Asset #1]", counts(1, 1, 1))
+    ).toEqual([
+      { index: 0, kind: "image" },
+      { kind: "text", text: " " },
+      { index: 0, kind: "element" },
+      { kind: "text", text: " " },
+      { index: 0, kind: "asset" },
+    ]);
+  });
+
+  it("keeps an asset past the last one held as plain text", () => {
+    expect(shape("use [Asset #7] instead", counts(0, 0, 3))).toEqual([
+      { kind: "text", text: "use [Asset #7] instead" },
     ]);
   });
 
@@ -249,6 +275,17 @@ describe("dropReference", () => {
     ).toBe("[Element #1] [Image #1] [Element #2]");
   });
 
+  it("renumbers the assets that survive and nothing else", () => {
+    expect(
+      dropped(
+        "[Asset #1] [Image #1] [Asset #2] [Asset #3]",
+        "asset",
+        0,
+        counts(1, 0, 3)
+      )
+    ).toBe("[Image #1] [Asset #1] [Asset #2]");
+  });
+
   it("eats the space after the reference when there is none before it", () => {
     expect(dropped("[Image #1] and [Image #2]", "image", 0, counts(2))).toBe(
       "and [Image #1]"
@@ -350,29 +387,30 @@ describe("lostReferences", () => {
         "compare and [Image #2]",
         counts(2)
       )
-    ).toEqual({ element: [], image: [0] });
+    ).toEqual({ asset: [], element: [], image: [0] });
   });
 
   it("reports the selection that left the text", () => {
     expect(
       lostReferences("[Element #1] [Element #2]", "[Element #2]", counts(0, 2))
-    ).toEqual({ element: [0], image: [] });
+    ).toEqual({ asset: [], element: [0], image: [] });
   });
 
   it("reports every reference a wholesale delete took", () => {
     expect(
       lostReferences("[Image #1] [Element #1] [Image #2]", "", counts(2, 1))
-    ).toEqual({ element: [0], image: [0, 1] });
+    ).toEqual({ asset: [], element: [0], image: [0, 1] });
   });
 
   it("reports nothing when a reference is only mentioned once more", () => {
     expect(
       lostReferences("[Image #1]", "[Image #1] and [Image #1]", counts(1))
-    ).toEqual({ element: [], image: [] });
+    ).toEqual({ asset: [], element: [], image: [] });
   });
 
   it("reports nothing for an attachment that was never referenced", () => {
     expect(lostReferences("hello", "hell", counts(2))).toEqual({
+      asset: [],
       element: [],
       image: [],
     });
@@ -397,7 +435,7 @@ describe("dropLostReferences", () => {
     expect(
       dropLostReferences(
         "[Image #1] [Element #1] [Image #2] [Element #2]",
-        { element: [0], image: [0] },
+        { asset: [], element: [0], image: [0] },
         counts(2, 2)
       )
     ).toBe("[Image #1] [Element #1]");
@@ -407,7 +445,7 @@ describe("dropLostReferences", () => {
     expect(
       dropLostReferences(
         "[Image #1] and [Element #1]",
-        { element: [], image: [] },
+        { asset: [], element: [], image: [] },
         counts(1, 1)
       )
     ).toBe("[Image #1] and [Element #1]");
