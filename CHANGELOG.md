@@ -1,5 +1,122 @@
 # remocn-studio
 
+## 0.4.0
+
+### Minor Changes
+
+- 727e9bf: Footage bigger than the composition previews from a proxy.
+
+  A 4K clip made the preview crawl, and the reason was not the one it looked
+  like. Measured in WebKit on a 15s clip: linear playback of 3840×2160 was almost
+  fine — 33ms between frames at the median, the hardware decoder keeping up — but
+  a **seek** cost 59ms against 6ms at 1920×1080, ten times worse. Remotion's
+  preview seeks constantly: `seekThreshold` is 0.01s while the Player is paused,
+  so every step, every scrub and every stop on a frame is one, and 59ms is nearly
+  two frame budgets at 30fps. That is what a clip mounting mid-transition ran into.
+
+  So a video asset taller than 1080p now gets a 1080p h264 proxy, made in the
+  webview with `@remotion/webcodecs` — the encoder is there and configures for
+  hardware, asked at run time rather than assumed. The preview page and the render
+  page are served under different static bases: the preview resolves a file to its
+  proxy, the render page never does, so an export and a snapshot still carry the
+  original and "content matches the preview" holds everywhere it can be seen. A
+  1080p file is left exactly as it is, since it already seeks inside a frame.
+
+  Matching is by content hash, so one proxy covers every project the asset was
+  inserted into. Conversion runs 0.58× realtime even with hardware encoding, which
+  is why it is a background backfill and not a step of saving: the asset is usable
+  the moment it lands, and until its proxy exists the preview streams the original
+  — slower to seek, never broken. A webview with no encoder, and a clip already at
+  the target, both record the decision so it is taken once.
+
+- 727e9bf: Save an asset once and reuse it in every other video.
+
+  The library lives in a drawer at the bottom of the left pane — one quiet strip
+  with a count that opens upward into a grid of thumbnails, the way the plan
+  drawer opens out of the composer. Closed, the sidebar looks exactly as it did
+  before assets existed. It holds images, video, audio and finished Remotion
+  components. Drag or click one into the composer and it lands
+  as `[Asset #N]` — a third reference kind beside `[Image #N]` and `[Element #N]`,
+  with the same chip, card and renumbering. On send the sidecar copies the files
+  into the project _before_ the turn — media into `public/library/`, a component
+  into `src/library/<slug>/` — and the prompt says where everything landed, which
+  npm packages are missing, and that an existing file was left untouched. So the
+  agent spends no tokens retyping code, raises no permission card reading app
+  data, and an edit it made in an earlier turn survives.
+
+  Saving media is a click: an icon on the attachment card, or a card above the
+  composer when a turn that carried pictures ends. Content-hashed, so a file
+  already saved or already declined is never offered again. Saving a component is
+  the agent's job — it wrote the code and knows the import graph — through a new
+  in-process MCP server, `remocn-library`, whose tools are auto-allowed the same
+  way the pipeline's are. Two shortcuts write the phrase for you: a _Save to
+  library_ button on the Inspect comment card, and one in the composer's + menu.
+
+  The library lives in `app_data_dir`, as `assets/<slug>/` plus a `manifest.json`
+  whose Schema is in `shared/`, so listing is a folder scan and previews load over
+  the asset protocol for free.
+
+  **Video and audio come in two ways.** The composer's + menu now takes them
+  beside pictures, and the Assets tab accepts a drag straight from Finder. A
+  picture still travels to the model as an image block spliced at `[Image #N]`; a
+  video or a sound cannot — the API has no such block — so the sidecar copies it
+  into `public/library/` before the turn and hands the agent the `staticFile()`
+  path instead of the one on your disk. That keeps `[Image #N]` meaning what it
+  has always meant, and makes an attached clip usable rather than silently
+  dropped. Both kinds carry the same save-to-library icon, and both are offered
+  by the end-of-turn card.
+
+  **The library is a grid of thumbnails.** Two columns of cards — the picture
+  over its name, with the clip's length badged in the corner — instead of a list
+  of rows wearing type icons. Hovering a card reveals a Delete button, which
+  takes the tile away at once and the folder only after an undo window, the way
+  deleting a session already works.
+
+  A video shows its first frame and a sound shows its waveform. Both are decoded
+  once, when the asset is saved, and filed beside it as a picture, so the panel
+  draws ordinary images and a library of thirty clips decodes none of them to
+  list itself; anything saved before this existed is filled in the first time you
+  open the tab. The length comes from the same decode, so the badge costs nothing
+  extra. Cards in the composer, and any video whose frame is still missing, fall
+  back to seeking the video itself — frame zero is the one time a `<video>` will
+  not seek to, so it asks for a tenth of a second in.
+
+### Patch Changes
+
+- 76a6888: Refresh the vendored agent skills — `remocn`, `remotion-best-practices` and
+  `remotion-interactivity` — against upstream. They had drifted far enough that
+  `skills:check` failed on every run: upstream had added an `agents/openai.yaml`
+  and an icon to each skill, rewritten several reference pages, and dropped one
+  the vendored copy still carried.
+
+  What the agent knows about Remotion is now what upstream ships. `video-lessons`
+  is ours and is untouched.
+
+- 727e9bf: Video and audio play in the preview.
+
+  A composition that reached for a clip through `staticFile()` played in
+  `npx remotion studio` and hung on the Player's buffering spinner here. The
+  preview's own static server answered every request with `200` and the whole
+  file, chunked, with no `content-length` — and the macOS webview will not start
+  a `<video>` on that. It probes with `Range: bytes=0-1` first, and a response
+  that is not `206` ends the attempt; `OffthreadVideo` defaults to
+  `pauseWhenBuffering`, so a clip that never became playable read as a preview
+  loading for ever rather than as anything failing.
+
+  The server now answers byte ranges: `accept-ranges`, a real `content-length`,
+  `206` with a `content-range` for a range it can serve, `416` for one past the
+  end, and no body for a `HEAD`. Range parsing is a pure function with its own
+  tests, since it is the half that has edge cases. `.mov`, `.aac` and `.ogg` also
+  gained the media types they were missing — the library accepts all three, and
+  they were being served as `application/octet-stream`.
+
+  Files under `public/` are also cacheable now. Playing a scene means seeking the
+  video element once per frame, and every seek against a `no-store` response is a
+  refetch — as was the whole file on each loop. They carry `no-cache` and an ETag
+  of size and mtime instead, so the webview keeps the bytes and revalidates, and a
+  clip the agent replaces still invalidates. `bundle.js` keeps `no-store`, where a
+  cache hit outliving a rebuild is the failure that matters.
+
 ## 0.3.0
 
 ### Minor Changes
