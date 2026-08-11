@@ -1,0 +1,31 @@
+{
+  "category": "Typography",
+  "componentName": "SlotMachineRoll",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Vertical reel scrolls characters from one value to another.",
+  "files": [
+    {
+      "file": "slot-machine-roll.tsx",
+      "target": "src/components/remocn/slot-machine-roll.tsx"
+    }
+  ],
+  "name": "slot-machine-roll",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "from": "$99",
+      "to": "$199",
+      "fontSize": 120,
+      "color": "#171717",
+      "fontWeight": "700",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Slot Machine Roll"
+}

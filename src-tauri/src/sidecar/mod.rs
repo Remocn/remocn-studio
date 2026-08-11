@@ -355,6 +355,16 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
         }
     };
 
+    let remocn_dir = match spawn::resolve_remocn_dir(&inner.app) {
+        Ok(path) => Some(path),
+        Err(reason) => {
+            inner
+                .log
+                .host(format!("the bundled remocn components are unavailable: {reason}"));
+            None
+        }
+    };
+
     let library_dir = match spawn::resolve_library_dir(&inner.app) {
         Ok(path) => Some(path),
         Err(reason) => {
@@ -376,6 +386,7 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
         library_dir: library_dir.as_deref(),
         plugin_dir: plugin_dir.as_deref(),
         preview_entry: preview_entry.as_deref(),
+        remocn_dir: remocn_dir.as_deref(),
         script: &script,
         template_dir: template_dir.as_deref(),
     }) {

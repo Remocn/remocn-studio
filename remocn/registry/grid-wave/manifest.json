@@ -1,0 +1,39 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A wave travels across the frame raising the picture into a grid of solid blocks with lit tops and shaded sides, which set back down carrying the next scene.",
+  "files": [
+    {
+      "file": "grid-wave.tsx",
+      "target": "src/components/remocn/grid-wave.tsx"
+    }
+  ],
+  "name": "grid-wave",
+  "preview": {
+    "durationInFrames": 84,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "tileSize": 90,
+      "waveWidth": 0.16,
+      "lift": 2,
+      "gap": 0.12,
+      "tint": "#8fb4ff",
+      "direction": "ripple",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Grid Wave"
+}

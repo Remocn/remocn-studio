@@ -36,47 +36,42 @@ function ShellLayout() {
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: SHELL_LAYOUT_ID,
     onlySaveAfterUserInteractions: true,
-    panelIds: panelIdsOf(isProjectsShown, isPreviewShown),
+    panelIds: panelIdsOf(isPreviewShown),
     storage: layoutStorage,
   });
 
   return (
     <div className="isolate flex h-full min-h-0 flex-col overflow-hidden bg-background">
-      <ResizablePanelGroup
-        className="min-h-0 flex-1"
-        defaultLayout={defaultLayout}
-        onLayoutChanged={onLayoutChanged}
-      >
+      <div className="flex min-h-0 flex-1">
+        {/* The sidebar is not a panel: it holds fixed-width rows and a card
+            grid that gain nothing from resizing, so it only ever collapses —
+            one width, no handle, nothing for the layout store to remember. */}
         {isProjectsShown ? (
-          <>
-            <ResizablePanel
-              defaultSize="240px"
-              groupResizeBehavior="preserve-pixel-size"
-              id="projects"
-              maxSize="380px"
-              minSize="200px"
-            >
-              <ProjectsPane />
-            </ResizablePanel>
-
-            <ResizableHandle className="bg-pane-border" />
-          </>
+          <div className="w-72 shrink-0 border-pane-border border-r">
+            <ProjectsPane />
+          </div>
         ) : null}
 
-        <ResizablePanel defaultSize="46%" id="chat" minSize="380px">
-          <ChatPane />
-        </ResizablePanel>
+        <ResizablePanelGroup
+          className="min-h-0 flex-1"
+          defaultLayout={defaultLayout}
+          onLayoutChanged={onLayoutChanged}
+        >
+          <ResizablePanel defaultSize="56%" id="chat" minSize="380px">
+            <ChatPane />
+          </ResizablePanel>
 
-        {isPreviewShown ? (
-          <>
-            <ResizableHandle className="bg-pane-border" />
+          {isPreviewShown ? (
+            <>
+              <ResizableHandle className="bg-pane-border" />
 
-            <ResizablePanel defaultSize="36%" id="preview" minSize="360px">
-              <PreviewPane />
-            </ResizablePanel>
-          </>
-        ) : null}
-      </ResizablePanelGroup>
+              <ResizablePanel defaultSize="44%" id="preview" minSize="360px">
+                <PreviewPane />
+              </ResizablePanel>
+            </>
+          ) : null}
+        </ResizablePanelGroup>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,32 @@
+{
+  "category": "Typography",
+  "componentName": "StrikethroughReplace",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Draws a strike line across old text then reveals new text in its place.",
+  "files": [
+    {
+      "file": "strikethrough-replace.tsx",
+      "target": "src/components/remocn/strikethrough-replace.tsx"
+    }
+  ],
+  "name": "strikethrough-replace",
+  "preview": {
+    "durationInFrames": 120,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "from": "$49/mo",
+      "to": "Free",
+      "lineColor": "#ff5e3a",
+      "fontSize": 96,
+      "color": "#171717",
+      "fontWeight": "700",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Strikethrough Replace"
+}

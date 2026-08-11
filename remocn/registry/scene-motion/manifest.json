@@ -1,0 +1,18 @@
+{
+  "category": null,
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "The motion vocabulary scene content is built from: an exponential travel curve, a separate opacity ramp, three spring easings, and a compressing stagger.",
+  "files": [
+    {
+      "file": "scene-motion.ts",
+      "target": "src/lib/remocn/scene-motion.ts"
+    }
+  ],
+  "name": "scene-motion",
+  "preview": null,
+  "registryDependencies": [],
+  "title": "Scene Motion"
+}

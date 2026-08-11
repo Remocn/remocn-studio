@@ -1,0 +1,36 @@
+{
+  "category": "Typography",
+  "componentName": "TopDownLetters",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Letters descend from above in a pronounced staircase, one symbol at a time, with zero blur.",
+  "files": [
+    {
+      "file": "top-down-letters.tsx",
+      "target": "src/components/remocn/top-down-letters.tsx"
+    }
+  ],
+  "name": "top-down-letters",
+  "preview": {
+    "durationInFrames": 60,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "text": "Signal",
+      "staggerDelay": 3,
+      "distance": 46,
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Top-Down Letters"
+}

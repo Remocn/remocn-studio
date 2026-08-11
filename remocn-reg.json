@@ -1,0 +1,1860 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "remocn",
+  "homepage": "https://remocn.dev",
+  "items": [
+    {
+      "name": "soft-blur-in",
+      "type": "registry:component",
+      "title": "Soft Blur In",
+      "description": "Per-character fade-in with a gentle blur and upward motion. Apple's signature hero-title reveal.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "soft-blur-in/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/soft-blur-in.tsx"
+        }
+      ]
+    },
+    {
+      "name": "per-character-rise",
+      "type": "registry:component",
+      "title": "Per Character Rise",
+      "description": "Letters slide up from below with no blur — crisp, deliberate, kinetic.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "per-character-rise/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/per-character-rise.tsx"
+        }
+      ]
+    },
+    {
+      "name": "bottom-up-letters",
+      "type": "registry:component",
+      "title": "Bottom-Up Letters",
+      "description": "Letters rise from below in a pronounced staircase, one symbol at a time, with zero blur.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "bottom-up-letters/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/bottom-up-letters.tsx"
+        }
+      ]
+    },
+    {
+      "name": "top-down-letters",
+      "type": "registry:component",
+      "title": "Top-Down Letters",
+      "description": "Letters descend from above in a pronounced staircase, one symbol at a time, with zero blur.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "top-down-letters/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/top-down-letters.tsx"
+        }
+      ]
+    },
+    {
+      "name": "spring-scale-in",
+      "type": "registry:component",
+      "title": "Spring Scale In",
+      "description": "Words pop in with a soft overshoot scale, like a physical spring settling into place.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "spring-scale-in/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/spring-scale-in.tsx"
+        }
+      ]
+    },
+    {
+      "name": "micro-scale-fade",
+      "type": "registry:component",
+      "title": "Micro Scale Fade",
+      "description": "A calm, tiny scale pop used as subtle premium polish for labels and headings.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "micro-scale-fade/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/micro-scale-fade.tsx"
+        }
+      ]
+    },
+    {
+      "name": "scale-down-fade",
+      "type": "registry:component",
+      "title": "Scale Down Fade",
+      "description": "Subtle premium settle-in with a restrained scale-down fade on exit.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "scale-down-fade/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/scale-down-fade.tsx"
+        }
+      ]
+    },
+    {
+      "name": "blur-out-up",
+      "type": "registry:component",
+      "title": "Blur Out Up",
+      "description": "Words arrive clean and depart upward with increasing blur for airy exits.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "blur-out-up/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/blur-out-up.tsx"
+        }
+      ]
+    },
+    {
+      "name": "focus-blur-resolve",
+      "type": "registry:component",
+      "title": "Focus Blur Resolve",
+      "description": "A premium focus pull from heavy blur to crisp text, then a soft blur-out exit.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "focus-blur-resolve/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/focus-blur-resolve.tsx"
+        }
+      ]
+    },
+    {
+      "name": "line-by-line-slide",
+      "type": "registry:component",
+      "title": "Line-by-Line Slide",
+      "description": "Each line enters from the left with a staggered slide and exits to the right for a flowing paragraph reveal.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "line-by-line-slide/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/line-by-line-slide.tsx"
+        }
+      ]
+    },
+    {
+      "name": "per-word-crossfade",
+      "type": "registry:component",
+      "title": "Per-Word Crossfade",
+      "description": "Words gently fade into place one after another, with a short vertical drift for a calm keynote rhythm.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "per-word-crossfade/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/per-word-crossfade.tsx"
+        }
+      ]
+    },
+    {
+      "name": "fade-through",
+      "type": "registry:component",
+      "title": "Fade Through",
+      "description": "A Material-style content transition: old fades out, new fades in with a soft delay.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "fade-through/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/fade-through.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shared-axis-y",
+      "type": "registry:component",
+      "title": "Shared Axis Y",
+      "description": "Per-word hard-cut transition with staircase timing for sharp editorial swaps.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "shared-axis-y/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shared-axis-y.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shared-axis-z",
+      "type": "registry:component",
+      "title": "Shared Axis Z",
+      "description": "Scale-based shared-axis transition for focus shifts and context depth.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "shared-axis-z/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shared-axis-z.tsx"
+        }
+      ]
+    },
+    {
+      "name": "short-slide-right",
+      "type": "registry:component",
+      "title": "Short Slide Right",
+      "description": "The whole phrase glides in from the left as one compact move while words reveal in sequence through opacity.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "short-slide-right/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/short-slide-right.tsx"
+        }
+      ]
+    },
+    {
+      "name": "kinetic-center-build",
+      "type": "registry:component",
+      "title": "Kinetic Center Build",
+      "description": "A word appears in the center; each new word enters from the right and pushes the line until the full phrase locks centered.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "kinetic-center-build/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/kinetic-center-build.tsx"
+        }
+      ]
+    },
+    {
+      "name": "short-slide-down",
+      "type": "registry:component",
+      "title": "Short Slide Down",
+      "description": "Each new word drops in from above into its own line and pushes the stack downward until a centered three-line composition locks in place.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "short-slide-down/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/short-slide-down.tsx"
+        }
+      ]
+    },
+    {
+      "name": "typewriter",
+      "type": "registry:component",
+      "title": "Typewriter",
+      "description": "Character-by-character text reveal with a deterministic blinking cursor.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/remocn-ui", "@remocn/caret"],
+      "files": [
+        {
+          "path": "typewriter/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/typewriter.tsx"
+        }
+      ]
+    },
+    {
+      "name": "inline-highlight",
+      "type": "registry:component",
+      "title": "Inline Highlight",
+      "description": "Animates one word inside a sentence from a base color to a brand color.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "inline-highlight/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/inline-highlight.tsx"
+        }
+      ]
+    },
+    {
+      "name": "strikethrough-replace",
+      "type": "registry:component",
+      "title": "Strikethrough Replace",
+      "description": "Draws a strike line across old text then reveals new text in its place.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "strikethrough-replace/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/strikethrough-replace.tsx"
+        }
+      ]
+    },
+    {
+      "name": "staggered-fade-up",
+      "type": "registry:component",
+      "title": "Staggered Fade Up",
+      "description": "Words fade in and slide up one after another with a configurable delay.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "staggered-fade-up/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/staggered-fade-up.tsx"
+        }
+      ]
+    },
+    {
+      "name": "mask-reveal-up",
+      "type": "registry:component",
+      "title": "Mask Reveal Up",
+      "description": "Lines reveal upward with a soft masked feel and compact stagger.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "mask-reveal-up/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/mask-reveal-up.tsx"
+        }
+      ]
+    },
+    {
+      "name": "tracking-in",
+      "type": "registry:component",
+      "title": "Tracking In",
+      "description": "Letter-spacing collapses and blur clears with a springy motion.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "tracking-in/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/tracking-in.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shimmer-sweep",
+      "type": "registry:component",
+      "title": "Shimmer Sweep",
+      "description": "Light shine sweeps across muted text via background-clip:text.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "shimmer-sweep/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shimmer-sweep.tsx"
+        }
+      ]
+    },
+    {
+      "name": "marker-highlight",
+      "type": "registry:component",
+      "title": "Marker Highlight",
+      "description": "Colored marker block draws behind a phrase as the text color shifts.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "marker-highlight/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/marker-highlight.tsx"
+        }
+      ]
+    },
+    {
+      "name": "slot-machine-roll",
+      "type": "registry:component",
+      "title": "Slot Machine Roll",
+      "description": "Vertical reel scrolls characters from one value to another.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "slot-machine-roll/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/slot-machine-roll.tsx"
+        }
+      ]
+    },
+    {
+      "name": "matrix-decode",
+      "type": "registry:component",
+      "title": "Matrix Decode",
+      "description": "Random scramble resolves left-to-right into the target text.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "matrix-decode/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/matrix-decode.tsx"
+        }
+      ]
+    },
+    {
+      "name": "rgb-glitch-text",
+      "type": "registry:component",
+      "title": "RGB Glitch Text",
+      "description": "Three RGB-offset text copies jitter for a brief glitch window.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "rgb-glitch-text/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/rgb-glitch-text.tsx"
+        }
+      ]
+    },
+    {
+      "name": "infinite-marquee",
+      "type": "registry:component",
+      "title": "Infinite Marquee",
+      "description": "Seamlessly looping horizontal text strip with optional stroke style.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "infinite-marquee/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/infinite-marquee.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-mesh-gradient",
+      "type": "registry:component",
+      "title": "Shader Mesh Gradient",
+      "description": "WebGL mesh gradient backdrop driven per-frame for deterministic Remotion renders.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-mesh-gradient/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-mesh-gradient.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-grain-gradient",
+      "type": "registry:component",
+      "title": "Shader Grain Gradient",
+      "description": "Grainy multi-stop gradient that drifts slowly with film-grain texture over the blend.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-grain-gradient/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-grain-gradient.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-warp",
+      "type": "registry:component",
+      "title": "Shader Warp",
+      "description": "Domain-warped color field that folds and stretches like liquid.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-warp/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-warp.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-swirl",
+      "type": "registry:component",
+      "title": "Shader Swirl",
+      "description": "Concentric bands swirling around a center point.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-swirl/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-swirl.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-water",
+      "type": "registry:component",
+      "title": "Shader Water",
+      "description": "Caustic water-surface ripples with subtle refraction.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-water/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-water.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-spiral",
+      "type": "registry:component",
+      "title": "Shader Spiral",
+      "description": "Rotating spiral arms radiating from the center.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-spiral/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-spiral.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-liquid-metal",
+      "type": "registry:component",
+      "title": "Shader Liquid Metal",
+      "description": "Molten metallic surface with flowing specular highlights.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-liquid-metal/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-liquid-metal.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-color-panels",
+      "type": "registry:component",
+      "title": "Shader Color Panels",
+      "description": "Overlapping translucent color panels sliding past each other.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-color-panels/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-color-panels.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-neuro-noise",
+      "type": "registry:component",
+      "title": "Shader Neuro Noise",
+      "description": "Organic neural-web noise field that slowly morphs.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-neuro-noise/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-neuro-noise.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-perlin-noise",
+      "type": "registry:component",
+      "title": "Shader Perlin Noise",
+      "description": "Classic Perlin noise clouds drifting across the frame.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-perlin-noise/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-perlin-noise.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-simplex-noise",
+      "type": "registry:component",
+      "title": "Shader Simplex Noise",
+      "description": "Simplex noise flow field, smoother than Perlin.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-simplex-noise/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-simplex-noise.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-voronoi",
+      "type": "registry:component",
+      "title": "Shader Voronoi",
+      "description": "Animated Voronoi cells shifting and re-tessellating.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-voronoi/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-voronoi.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-dot-orbit",
+      "type": "registry:component",
+      "title": "Shader Dot Orbit",
+      "description": "Dots orbiting on concentric paths across the frame.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-dot-orbit/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-dot-orbit.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-dithering",
+      "type": "registry:component",
+      "title": "Shader Dithering",
+      "description": "Ordered-dither shading over an animated gradient field.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-dithering/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-dithering.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-god-rays",
+      "type": "registry:component",
+      "title": "Shader God Rays",
+      "description": "Volumetric light rays radiating from an off-screen source.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-god-rays/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-god-rays.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-smoke-ring",
+      "type": "registry:component",
+      "title": "Shader Smoke Ring",
+      "description": "Soft smoke ring curling and dissipating in place.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-smoke-ring/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-smoke-ring.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-metaballs",
+      "type": "registry:component",
+      "title": "Shader Metaballs",
+      "description": "Organic blobs merging and splitting like lava.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-metaballs/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-metaballs.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-pulsing-border",
+      "type": "registry:component",
+      "title": "Shader Pulsing Border",
+      "description": "Glowing border frame that pulses around the edges.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-pulsing-border/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-pulsing-border.tsx"
+        }
+      ]
+    },
+    {
+      "name": "simulated-cursor",
+      "type": "registry:component",
+      "title": "Simulated Cursor",
+      "description": "Animated mouse cursor moving between waypoints with click ripple feedback.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "simulated-cursor/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/simulated-cursor.tsx"
+        }
+      ]
+    },
+    {
+      "name": "swirl-dissolve",
+      "type": "registry:component",
+      "title": "Swirl Dissolve",
+      "description": "A swirl shader transition that unwinds open and winds shut to reveal the next scene.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/shader-swirl"],
+      "files": [
+        {
+          "path": "swirl-dissolve/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/swirl-dissolve.tsx"
+        }
+      ]
+    },
+    {
+      "name": "dither-dissolve",
+      "type": "registry:component",
+      "title": "Dither Dissolve",
+      "description": "A dithering shader transition that dissolves one scene into the next.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/shader-dithering"],
+      "files": [
+        {
+          "path": "dither-dissolve/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/dither-dissolve.tsx"
+        }
+      ]
+    },
+    {
+      "name": "perlin-dissolve",
+      "type": "registry:component",
+      "title": "Perlin Dissolve",
+      "description": "A perlin-noise shader transition that sweeps its noise threshold to dissolve one scene into the next.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/shader-perlin-noise"],
+      "files": [
+        {
+          "path": "perlin-dissolve/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/perlin-dissolve.tsx"
+        }
+      ]
+    },
+    {
+      "name": "smoke-dissolve",
+      "type": "registry:component",
+      "title": "Smoke Dissolve",
+      "description": "A smoke-ring shader transition that expands the ring outward to reveal the next scene.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/shader-smoke-ring"],
+      "files": [
+        {
+          "path": "smoke-dissolve/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/smoke-dissolve.tsx"
+        }
+      ]
+    },
+    {
+      "name": "wave-wipe",
+      "type": "registry:component",
+      "title": "Wave Wipe",
+      "description": "A grain-gradient wave that sweeps up across the frame, covering the outgoing scene and revealing the next one from below.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/shader-grain-gradient"],
+      "files": [
+        {
+          "path": "wave-wipe/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/wave-wipe.tsx"
+        }
+      ]
+    },
+    {
+      "name": "ripple-zoom",
+      "type": "registry:component",
+      "title": "Ripple Zoom",
+      "description": "A grain-gradient ripple transition that flies the camera through the center of the rings while the next scene approaches from the depth.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/shader-grain-gradient"],
+      "files": [
+        {
+          "path": "ripple-zoom/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/ripple-zoom.tsx"
+        }
+      ]
+    },
+    {
+      "name": "grain-dissolve",
+      "type": "registry:component",
+      "title": "Grain Dissolve",
+      "description": "A grain-gradient shader transition that disintegrates the outgoing scene into soft grainy shapes and condenses the next scene out of the noise.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/shader-grain-gradient"],
+      "files": [
+        {
+          "path": "grain-dissolve/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/grain-dissolve.tsx"
+        }
+      ]
+    },
+    {
+      "name": "warp-dissolve",
+      "type": "registry:component",
+      "title": "Warp Dissolve",
+      "description": "A domain-warp shader transition that melts the outgoing scene into a folding color field and straightens back out into the next.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/shader-warp"],
+      "files": [
+        {
+          "path": "warp-dissolve/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/warp-dissolve.tsx"
+        }
+      ]
+    },
+    {
+      "name": "whip-pan",
+      "type": "registry:component",
+      "title": "Whip Pan",
+      "description": "A whip-pan transition that flies both scenes through the frame in one move with velocity-based motion blur.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "files": [
+        {
+          "path": "whip-pan/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/whip-pan.tsx"
+        }
+      ]
+    },
+    {
+      "name": "push-through",
+      "type": "registry:component",
+      "title": "Push Through",
+      "description": "A dolly transition that blows the outgoing scene past the camera while the next one approaches from the depth.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "files": [
+        {
+          "path": "push-through/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/push-through.tsx"
+        }
+      ]
+    },
+    {
+      "name": "focus-pull",
+      "type": "registry:component",
+      "title": "Focus Pull",
+      "description": "A rack-focus transition that defocuses the outgoing scene into a bright blur and resolves the next one into focus.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "files": [
+        {
+          "path": "focus-pull/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/focus-pull.tsx"
+        }
+      ]
+    },
+    {
+      "name": "zoom-blur",
+      "type": "registry:component",
+      "title": "Zoom Blur",
+      "description": "A depth punch-in transition that pushes the outgoing scene through the viewer while the incoming one resolves out of blur.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "files": [
+        {
+          "path": "zoom-blur/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/zoom-blur.tsx"
+        }
+      ]
+    },
+    {
+      "name": "rolodex-flip",
+      "type": "registry:component",
+      "title": "Rolodex Flip",
+      "description": "Cycles a word through a list of values with a 3D rolodex card flip while an invisible sizer keeps the line width and baseline stable.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "rolodex-flip/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/rolodex-flip.tsx"
+        }
+      ]
+    },
+    {
+      "name": "value-swap",
+      "type": "registry:component",
+      "title": "Value Swap",
+      "description": "Swaps a value in place with a vertical slide — the old value exits up as the new one enters from below while an invisible sizer keeps the width stable.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "value-swap/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/value-swap.tsx"
+        }
+      ]
+    },
+    {
+      "name": "chat-to-preview-layout",
+      "type": "registry:component",
+      "title": "Chat to Preview Layout",
+      "description": "Two-column layout where chat shrinks and preview expands.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "chat-to-preview-layout/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/chat-to-preview-layout.tsx"
+        }
+      ]
+    },
+    {
+      "name": "animated-line-chart",
+      "type": "registry:component",
+      "title": "Animated Line Chart",
+      "description": "Line chart whose SVG path draws on from left to right with a leading dot.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "animated-line-chart/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/animated-line-chart.tsx"
+        }
+      ]
+    },
+    {
+      "name": "animated-bar-chart",
+      "type": "registry:component",
+      "title": "Animated Bar Chart",
+      "description": "Bars spring up from the baseline in a staggered cascade.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "animated-bar-chart/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/animated-bar-chart.tsx"
+        }
+      ]
+    },
+    {
+      "name": "terminal-simulator",
+      "type": "registry:component",
+      "title": "Terminal Simulator",
+      "description": "Terminal window that types out commands and rolls old lines off the top.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "terminal-simulator/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/terminal-simulator.tsx"
+        }
+      ]
+    },
+    {
+      "name": "terminal-cursor-zoom",
+      "type": "registry:component",
+      "title": "Terminal Cursor Zoom",
+      "description": "Camera locked to the typing cursor, dollying across a terminal as a command types at high zoom.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/terminal-simulator"],
+      "files": [
+        {
+          "path": "terminal-cursor-zoom/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/terminal-cursor-zoom.tsx"
+        }
+      ]
+    },
+    {
+      "name": "glass-code-block",
+      "type": "registry:component",
+      "title": "Glass Code Block",
+      "description": "A premium frosted-glass code editor window with a regex tokenizer and line-by-line stagger reveal.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "glass-code-block/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/glass-code-block.tsx"
+        }
+      ]
+    },
+    {
+      "name": "glass-code-walk",
+      "type": "registry:component",
+      "title": "Glass Code Walk",
+      "description": "A camera that scans a glass code block top to bottom as it types, then pulls back to a centered hold.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/glass-code-block"],
+      "files": [
+        {
+          "path": "glass-code-walk/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/glass-code-walk.tsx"
+        }
+      ]
+    },
+    {
+      "name": "perspective-marquee",
+      "type": "registry:component",
+      "title": "Perspective Marquee",
+      "description": "A 3D-tilted infinite marquee with depth-of-field blur on items rolling toward the horizon.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "perspective-marquee/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/perspective-marquee.tsx"
+        }
+      ]
+    },
+    {
+      "name": "ecosystem-constellation",
+      "type": "registry:component",
+      "title": "Ecosystem Constellation",
+      "description": "A central logo orbited by integration satellites with pulsing data lines.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "ecosystem-constellation/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/ecosystem-constellation.tsx"
+        }
+      ]
+    },
+    {
+      "name": "live-code-compilation",
+      "type": "registry:component",
+      "title": "Live Code Compilation",
+      "description": "Split-screen where typed code on the left snaps a live UI preview on the right, HMR-style.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "live-code-compilation/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/live-code-compilation.tsx"
+        }
+      ]
+    },
+    {
+      "name": "infinite-bento-pan",
+      "type": "registry:component",
+      "title": "Infinite Bento Pan",
+      "description": "A camera diagonally drifts across an oversized bento grid behind a soft vignette.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "infinite-bento-pan/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/infinite-bento-pan.tsx"
+        }
+      ]
+    },
+    {
+      "name": "github-sponsors",
+      "type": "registry:component",
+      "title": "GitHub Sponsors",
+      "description": "Self-drawing Sponsors heart that docks to a header, every sponsor avatar blur-staggering into a grid, then a thank-you headline and a CTA. Single seek-safe timeline, 270 frames at 30fps.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/soft-blur-in", "@remocn/blur-out-up"],
+      "files": [
+        {
+          "path": "github-sponsors/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/github-sponsors.tsx"
+        }
+      ]
+    },
+    {
+      "name": "github-stars",
+      "type": "registry:component",
+      "title": "GitHub Stars",
+      "description": "Inertial fly-through of a repo's stargazers with a synced count-up odometer that locks on the total. Horizontal 16:9 or vertical 9:16.",
+      "dependencies": ["remotion", "date-fns", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/number-wheel"],
+      "files": [
+        {
+          "path": "github-stars/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/github-stars.tsx"
+        }
+      ]
+    },
+    {
+      "name": "number-wheel",
+      "type": "registry:component",
+      "title": "Number Wheel",
+      "description": "Mechanical odometer that rolls an integer up or down to its target, direction inferred from the values.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "files": [
+        {
+          "path": "number-wheel/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/number-wheel.tsx"
+        }
+      ]
+    },
+    {
+      "name": "rolling-number",
+      "type": "registry:component",
+      "title": "Rolling Number",
+      "description": "Odometer where every place rolls at its own speed, new places rising into view, settling exactly on the target value.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "files": [
+        {
+          "path": "rolling-number/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/rolling-number.tsx"
+        }
+      ]
+    },
+    {
+      "name": "x-follow-card",
+      "type": "registry:component",
+      "title": "X Follow Card",
+      "description": "Animated X profile follow card — spring bounce-in, staggered blur-in, a synthetic cursor that clicks Follow and flips it to Following. Light/dark, horizontal or vertical.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/cursor"],
+      "files": [
+        {
+          "path": "x-follow-card/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/x-follow-card.tsx"
+        }
+      ]
+    },
+    {
+      "name": "x-followers-overview",
+      "type": "registry:component",
+      "title": "X Followers Overview",
+      "description": "X follow notifications cycle through as 3D flipping text — '<name> followed you · 7h' — then the total follower count pops in with a confetti burst. Hardcoded sample list (X API ready). Light/dark, horizontal or vertical.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/confetti"],
+      "files": [
+        {
+          "path": "x-followers-overview/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/x-followers-overview.tsx"
+        }
+      ]
+    },
+    {
+      "name": "claude-chat",
+      "type": "registry:component",
+      "title": "Claude Chat",
+      "description": "Animated Claude chat input — types a prompt character-by-character and the waveform button morphs into a terracotta send button the moment text appears. Warm light/dark themes.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/caret", "@remocn/remocn-ui"],
+      "files": [
+        {
+          "path": "claude-chat/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/claude-chat.tsx"
+        }
+      ]
+    },
+    {
+      "name": "chat-gpt",
+      "type": "registry:component",
+      "title": "ChatGPT",
+      "description": "Animated ChatGPT composer — types a prompt into the pill input, the blue voice button morphs into a send button, and the suggestion chips fade out. Light/dark themes.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/caret", "@remocn/remocn-ui"],
+      "files": [
+        {
+          "path": "chat-gpt/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/chat-gpt.tsx"
+        }
+      ]
+    },
+    {
+      "name": "v0",
+      "type": "registry:component",
+      "title": "v0",
+      "description": "Animated Vercel v0 composer — types a prompt into the dark textarea and the mic button morphs into a send button. Dark/light themes.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/caret", "@remocn/remocn-ui"],
+      "files": [
+        {
+          "path": "v0/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/v0.tsx"
+        }
+      ]
+    },
+    {
+      "name": "claude-code",
+      "type": "registry:component",
+      "title": "Claude Code",
+      "description": "Animated Claude Code CLI welcome screen — terminal window with a dashed welcome box, recent activity and what's new panels, and a prompt line that types a command with a block cursor. Dark/light themes.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/caret", "@remocn/remocn-ui"],
+      "files": [
+        {
+          "path": "claude-code/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/claude-code.tsx"
+        }
+      ]
+    },
+    {
+      "name": "opencode",
+      "type": "registry:component",
+      "title": "OpenCode",
+      "description": "Animated OpenCode TUI welcome screen — two-tone wordmark, an input box with a blue accent bar that types a query, a model status line, and command hints. Dark/light themes.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/caret", "@remocn/remocn-ui"],
+      "files": [
+        {
+          "path": "opencode/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/opencode.tsx"
+        }
+      ]
+    },
+    {
+      "name": "confetti",
+      "type": "registry:component",
+      "title": "Confetti",
+      "description": "Deterministic confetti burst for Remotion — seeded particles with gravity, spin, and flutter so every render is identical. Fire it on any frame as a celebratory overlay.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "confetti/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/confetti.tsx"
+        }
+      ]
+    },
+    {
+      "name": "backdrop",
+      "type": "registry:component",
+      "title": "Backdrop",
+      "description": "Configurable full-frame background (color / gradient / image / live component) with Screen Studio-style padding and a rounded, shadowed content frame.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "backdrop/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/backdrop.tsx"
+        }
+      ]
+    },
+    {
+      "name": "drift",
+      "type": "registry:component",
+      "title": "Drift",
+      "description": "A slow linear camera push-in wrapper that scales its scene from 1 to 1+grow across the sequence so no frame is ever static.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "drift/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/drift.tsx"
+        }
+      ]
+    },
+    {
+      "name": "logo-enter",
+      "type": "registry:component",
+      "title": "Logo Enter",
+      "description": "A stacked group of round brand chips that spring in one-by-one, then hold. Swap the logos to feature any set of marks. Horizontal or vertical stacking.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "logo-enter/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/logo-enter.tsx"
+        }
+      ]
+    },
+    {
+      "name": "handwrite",
+      "type": "registry:component",
+      "title": "Handwrite",
+      "description": "Handwritten text laid down letter by letter on a quantized stop-motion clock, each glyph keeping its own slant and baseline wobble.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/stop-motion"],
+      "files": [
+        {
+          "path": "handwrite/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/handwrite.tsx"
+        }
+      ]
+    },
+    {
+      "name": "ink-underline",
+      "type": "registry:component",
+      "title": "Ink Underline",
+      "description": "A hand-dragged brush underline that sweeps itself across in a few stop-motion poses, thinning to a dry tail.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/stop-motion", "@remocn/brush"],
+      "files": [
+        {
+          "path": "ink-underline/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/ink-underline.tsx"
+        }
+      ]
+    },
+    {
+      "name": "paper-wobble",
+      "type": "registry:component",
+      "title": "Paper Wobble",
+      "description": "Per-pose reshoot jitter that makes any content feel hand-placed on a desk.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/stop-motion"],
+      "files": [
+        {
+          "path": "paper-wobble/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/paper-wobble.tsx"
+        }
+      ]
+    },
+    {
+      "name": "ink-arrow",
+      "type": "registry:component",
+      "title": "Ink Arrow",
+      "description": "A hand-drawn brush arrow that sweeps itself from one point to another, thickening into the head that pops on the final poses.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/stop-motion", "@remocn/brush"],
+      "files": [
+        {
+          "path": "ink-arrow/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/ink-arrow.tsx"
+        }
+      ]
+    },
+    {
+      "name": "paper-sticker",
+      "type": "registry:component",
+      "title": "Paper Sticker",
+      "description": "A taped paper chip that slaps onto the scene over two stop-motion poses, keeping a hand-placed tilt and per-pose wobble.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/stop-motion"],
+      "files": [
+        {
+          "path": "paper-sticker/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/paper-sticker.tsx"
+        }
+      ]
+    },
+    {
+      "name": "polaroid",
+      "type": "registry:component",
+      "title": "Polaroid",
+      "description": "An instant-photo frame with a handwritten caption for video, images, or live compositions.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/stop-motion", "@remocn/handwrite"],
+      "files": [
+        {
+          "path": "polaroid/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/polaroid.tsx"
+        }
+      ]
+    },
+    {
+      "name": "hand-count",
+      "type": "registry:component",
+      "title": "Hand Count",
+      "description": "A number that counts up in stop-motion poses, rewritten by hand at every pose and freezing still once it lands.",
+      "dependencies": ["remotion", "@remotion/google-fonts"],
+      "registryDependencies": ["@remocn/stop-motion"],
+      "files": [
+        {
+          "path": "hand-count/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/hand-count.tsx"
+        }
+      ]
+    },
+    {
+      "name": "brush",
+      "type": "registry:component",
+      "title": "Brush",
+      "description": "Variable-width brush ribbons for Remotion. Pressure taper, grain displacement, and spine samplers shared by the ink marks.",
+      "registryDependencies": ["@remocn/stop-motion"],
+      "files": [
+        {
+          "path": "brush/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/brush.tsx"
+        }
+      ]
+    },
+    {
+      "name": "crumple-toss",
+      "type": "registry:component",
+      "title": "Crumple Toss",
+      "description": "Crushes an element into a ball of paper and throws it out of frame on an arc, leaving the scene around it running.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/stop-motion"],
+      "files": [
+        {
+          "path": "crumple-toss/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/crumple-toss.tsx"
+        }
+      ]
+    },
+    {
+      "name": "scribble-circle",
+      "type": "registry:component",
+      "title": "Scribble Circle",
+      "description": "A brush circle swept around a region of the frame, opening thin and closing thick, with grain breaking up the dry opening.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/stop-motion", "@remocn/brush"],
+      "files": [
+        {
+          "path": "scribble-circle/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/scribble-circle.tsx"
+        }
+      ]
+    },
+    {
+      "name": "check-list",
+      "type": "registry:component",
+      "title": "Check List",
+      "description": "A handwritten checklist that writes itself out in full, then ticks and strikes through every done item, one at a time.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/stop-motion", "@remocn/handwrite"],
+      "files": [
+        {
+          "path": "check-list/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/check-list.tsx"
+        }
+      ]
+    },
+    {
+      "name": "page-turn",
+      "type": "registry:component",
+      "title": "Page Turn",
+      "description": "The exiting scene swings up and away like a notebook page in stop-motion poses, staying above the scene it reveals.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "files": [
+        {
+          "path": "page-turn/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/page-turn.tsx"
+        }
+      ]
+    },
+    {
+      "name": "stop-motion",
+      "type": "registry:lib",
+      "title": "Stop Motion Clock",
+      "description": "Quantized stop-motion clock for Remotion. Stepped frames, stepped springs, deterministic hashing, and per-pose paper jitter.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "stop-motion/index.ts",
+          "type": "registry:lib",
+          "target": "lib/remocn/stop-motion.ts"
+        }
+      ]
+    },
+    {
+      "name": "ascii-dissolve",
+      "type": "registry:component",
+      "title": "ASCII Dissolve",
+      "description": "Dissolve one scene into the next through a drifting field of ASCII glyphs.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "files": [
+        {
+          "path": "ascii-dissolve/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/ascii-dissolve.tsx"
+        }
+      ]
+    },
+    {
+      "name": "caret-wipe",
+      "type": "registry:component",
+      "title": "Caret Wipe",
+      "description": "Sweep a typing caret across the frame, wiping the outgoing scene into the next.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "files": [
+        {
+          "path": "caret-wipe/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/caret-wipe.tsx"
+        }
+      ]
+    },
+    {
+      "name": "icon-scatter",
+      "type": "registry:component",
+      "title": "Icon Scatter",
+      "description": "Scatter a field of icons over the cut, hiding the scene swap at the field's peak.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "files": [
+        {
+          "path": "icon-scatter/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/icon-scatter.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-caustics",
+      "type": "registry:component",
+      "title": "Shader Caustics",
+      "description": "A field of refracted light — the bright filaments light makes through a rippling surface.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "shader-caustics/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-caustics.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-gem-smoke",
+      "type": "registry:component",
+      "title": "Shader Gem Smoke",
+      "description": "Paper's Gem Smoke shader driven by the frame — smoke flowing behind and inside a glassy logo.",
+      "dependencies": ["@paper-design/shaders-react"],
+      "files": [
+        {
+          "path": "shader-gem-smoke/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-gem-smoke.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-strata",
+      "type": "registry:component",
+      "title": "Shader Strata",
+      "description": "Fine horizontal sediment layers displaced by fbm noise, each drifting at its own depth.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "shader-strata/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-strata.tsx"
+        }
+      ]
+    },
+    {
+      "name": "shader-weave",
+      "type": "registry:component",
+      "title": "Shader Weave",
+      "description": "A woven substrate of warp and weft threads crossing on a domain-warped grid, with a travelling sheen.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "shader-weave/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/shader-weave.tsx"
+        }
+      ]
+    },
+    {
+      "name": "reel",
+      "type": "registry:component",
+      "title": "Reel",
+      "description": "A fixed centered card where images stack on the z-axis and each blooms open over the last via a centre-out mask.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "reel/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/reel.tsx"
+        }
+      ]
+    },
+    {
+      "name": "scene-motion",
+      "type": "registry:lib",
+      "title": "Scene Motion",
+      "description": "The motion vocabulary scene content is built from: an exponential travel curve, a separate opacity ramp, three spring easings, and a compressing stagger.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "scene-motion/index.ts",
+          "type": "registry:lib",
+          "target": "lib/remocn/scene-motion.ts"
+        }
+      ]
+    },
+    {
+      "name": "slide-swap",
+      "type": "registry:component",
+      "title": "Slide Swap",
+      "description": "A scene sequencer where the outgoing content is shoved off on an accelerating curve and the next springs in from the opposite edge, on one canvas, with no overlap.",
+      "dependencies": ["remotion"],
+      "files": [
+        {
+          "path": "slide-swap/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/slide-swap.tsx"
+        }
+      ]
+    },
+    {
+      "name": "spring-settle",
+      "type": "registry:component",
+      "title": "Spring Settle",
+      "description": "A scene sequencer where the outgoing scene shrinks away as one group, the stage holds empty for a beat, and the next scene's items land staggered from above-1 scale.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/scene-motion"],
+      "files": [
+        {
+          "path": "spring-settle/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/spring-settle.tsx"
+        }
+      ]
+    },
+    {
+      "name": "canvas-presentation",
+      "type": "registry:lib",
+      "title": "Canvas Presentation",
+      "description": "The html-in-canvas scaffolding the canvas transitions and scene filters share: support detection, a full-screen WebGL2 shader fed either both sides of a cut or the single scene a filter wraps, and routing to a CSS fallback where the browser lacks the API.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "files": [
+        {
+          "path": "canvas-presentation/index.tsx",
+          "type": "registry:lib",
+          "target": "lib/remocn/canvas-presentation.tsx"
+        }
+      ]
+    },
+    {
+      "name": "ember-burn",
+      "type": "registry:component",
+      "title": "Ember Burn",
+      "description": "The outgoing frame catches fire where it is brightest, boils in the heat, chars at the rim, and blows away as sparks carrying its own colour.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "ember-burn/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/ember-burn.tsx"
+        }
+      ]
+    },
+    {
+      "name": "displacement",
+      "type": "registry:component",
+      "title": "Displacement",
+      "description": "The frame breaks into a grid of cells that shear apart into offset, colour-fringed tiles under film grain, then settle back carrying the next scene.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "displacement/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/displacement.tsx"
+        }
+      ]
+    },
+    {
+      "name": "hologram",
+      "type": "registry:component",
+      "title": "Hologram",
+      "description": "Play a scene as a projection: a ghost double shimmers off the image, emission lines structure it, and only what is bright enough carries through the dark volume it hangs in.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "hologram/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/hologram.tsx"
+        }
+      ]
+    },
+    {
+      "name": "security-cam",
+      "type": "registry:component",
+      "title": "Security Cam",
+      "description": "Run a scene through a cheap recorder: macroblocks flatten under a starved bitrate, colour resolution collapses to half the luma, blacks crush and shadows crawl with sensor noise.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "security-cam/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/security-cam.tsx"
+        }
+      ]
+    },
+    {
+      "name": "tv-power-off",
+      "type": "registry:component",
+      "title": "TV Power Off",
+      "description": "End a scene the way a tube does: the picture collapses into a glowing horizontal line, the line pinches to a phosphor dot, the dot decays, and the frame is left dead black.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "tv-power-off/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/tv-power-off.tsx"
+        }
+      ]
+    },
+    {
+      "name": "camera-lens",
+      "type": "registry:component",
+      "title": "Camera Lens",
+      "description": "Put a scene behind real glass: resolution falls off toward the corners, highlights bloom through the optics, colour fringes at the edges — a screencast that reads as filmed rather than rendered.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "camera-lens/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/camera-lens.tsx"
+        }
+      ]
+    },
+    {
+      "name": "underwater-ripple",
+      "type": "registry:component",
+      "title": "Underwater Ripple",
+      "description": "Hold a scene under moving water: every pixel is read through a layered refraction field that closes on a whole number of cycles, with colour fringing where the water bends hardest.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "underwater-ripple/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/underwater-ripple.tsx"
+        }
+      ]
+    },
+    {
+      "name": "halftone-print",
+      "type": "registry:component",
+      "title": "Halftone Print",
+      "description": "Print a scene onto paper: each colour separates onto its own rotated screen of dots sized by the ink under them, slightly out of register the way a real press runs.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "halftone-print/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/halftone-print.tsx"
+        }
+      ]
+    },
+    {
+      "name": "ascii-render",
+      "type": "registry:component",
+      "title": "ASCII Render",
+      "description": "Redraw a live scene as ASCII: the frame divides into glyph cells and each one becomes the character matching the brightness of the picture inside it.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "ascii-render/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/ascii-render.tsx"
+        }
+      ]
+    },
+    {
+      "name": "pixelate-region",
+      "type": "registry:component",
+      "title": "Pixelate Region",
+      "description": "Cover rectangles of a scene with an opaque mosaic while the rest passes through untouched — redact keys, addresses and personal data before a demo goes out.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "pixelate-region/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/pixelate-region.tsx"
+        }
+      ]
+    },
+    {
+      "name": "sustained-glitch",
+      "type": "registry:component",
+      "title": "Sustained Glitch",
+      "description": "Broadcast corruption held over a scene in scheduled bursts: slices tear sideways, channels split, and blocks fill with picture pulled from somewhere else — then the frame rests clean until the next hit.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "sustained-glitch/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/sustained-glitch.tsx"
+        }
+      ]
+    },
+    {
+      "name": "crt-screen",
+      "type": "registry:component",
+      "title": "CRT Screen",
+      "description": "Put a scene behind curved glass: the picture bulges out to the corners, an RGB phosphor mask and scanlines ride the curve, bright areas flood the mask, and the tube falls away into darkness at the rim.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "crt-screen/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/crt-screen.tsx"
+        }
+      ]
+    },
+    {
+      "name": "vhs-filter",
+      "type": "registry:component",
+      "title": "VHS Filter",
+      "description": "Hold a scene under analog tape: chroma bleeds sideways off every edge, rows wobble out of line, the bottom of the frame tears on the head switch, and luma noise settles over all of it.",
+      "dependencies": ["remotion"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "vhs-filter/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/vhs-filter.tsx"
+        }
+      ]
+    },
+    {
+      "name": "grid-wave",
+      "type": "registry:component",
+      "title": "Grid Wave",
+      "description": "A wave travels across the frame raising the picture into a grid of solid blocks with lit tops and shaded sides, which set back down carrying the next scene.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "grid-wave/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/grid-wave.tsx"
+        }
+      ]
+    },
+    {
+      "name": "particle-dissolve",
+      "type": "registry:component",
+      "title": "Particle Dissolve",
+      "description": "The frame is ground into drifting grey dust whose specks carry real fragments of the picture, and the next scene coalesces back out of the same dust.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "particle-dissolve/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/particle-dissolve.tsx"
+        }
+      ]
+    },
+    {
+      "name": "glitch-cut",
+      "type": "registry:component",
+      "title": "Glitch Cut",
+      "description": "A broadcast-glitch hard cut: the frame tears into displaced slices with channel split and corrupted blocks, and the incoming scene takes over slice by slice at the peak.",
+      "dependencies": ["remotion", "@remotion/transitions"],
+      "registryDependencies": ["@remocn/canvas-presentation"],
+      "files": [
+        {
+          "path": "glitch-cut/index.tsx",
+          "type": "registry:component",
+          "target": "components/remocn/glitch-cut.tsx"
+        }
+      ]
+    }
+  ]
+}

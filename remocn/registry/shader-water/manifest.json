@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWater",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Caustic water-surface ripples with subtle refraction.",
+  "files": [
+    {
+      "file": "shader-water.tsx",
+      "target": "src/components/remocn/shader-water.tsx"
+    }
+  ],
+  "name": "shader-water",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "waves": 0.3,
+      "caustic": 0.08,
+      "highlights": 0.06,
+      "colorBack": "#16202b"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Water"
+}

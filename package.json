@@ -74,7 +74,10 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "version:packages": "changeset version"
+    "version:packages": "changeset version",
+    "remocn:sync": "bun scripts/remocn-sync.ts",
+    "remocn:check": "bun scripts/remocn-sync.ts --check",
+    "remocn:previews": "bun scripts/remocn-previews.ts"
   },
   "version": "0.3.0",
   "private": true

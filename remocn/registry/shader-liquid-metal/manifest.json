@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderLiquidMetal",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Molten metallic surface with flowing specular highlights.",
+  "files": [
+    {
+      "file": "shader-liquid-metal.tsx",
+      "target": "src/components/remocn/shader-liquid-metal.tsx"
+    }
+  ],
+  "name": "shader-liquid-metal",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.1,
+      "repetition": 1.5,
+      "contour": 0.4,
+      "colorBack": "#2a2a30",
+      "colorTint": "#8a8a95"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Liquid Metal"
+}

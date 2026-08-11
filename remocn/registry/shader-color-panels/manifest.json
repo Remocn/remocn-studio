@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderColorPanels",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Overlapping translucent color panels sliding past each other.",
+  "files": [
+    {
+      "file": "shader-color-panels.tsx",
+      "target": "src/components/remocn/shader-color-panels.tsx"
+    }
+  ],
+  "name": "shader-color-panels",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "density": 3,
+      "length": 1.1,
+      "colorBack": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Color Panels"
+}

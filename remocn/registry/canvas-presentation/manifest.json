@@ -1,0 +1,19 @@
+{
+  "category": null,
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "The html-in-canvas scaffolding the canvas transitions and scene filters share: support detection, a full-screen WebGL2 shader fed either both sides of a cut or the single scene a filter wraps, and routing to a CSS fallback where the browser lacks the API.",
+  "files": [
+    {
+      "file": "canvas-presentation.tsx",
+      "target": "src/lib/remocn/canvas-presentation.tsx"
+    }
+  ],
+  "name": "canvas-presentation",
+  "preview": null,
+  "registryDependencies": [],
+  "title": "Canvas Presentation"
+}

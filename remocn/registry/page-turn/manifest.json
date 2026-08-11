@@ -1,0 +1,33 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "The exiting scene swings up and away like a notebook page in stop-motion poses, staying above the scene it reveals.",
+  "files": [
+    {
+      "file": "page-turn.tsx",
+      "target": "src/components/remocn/page-turn.tsx"
+    }
+  ],
+  "name": "page-turn",
+  "preview": {
+    "durationInFrames": 128,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#f1eee7"
+    },
+    "defaults": {
+      "angle": -7,
+      "poses": 8,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Page Turn"
+}

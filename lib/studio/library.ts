@@ -20,6 +20,17 @@ export const listAssets: Effect.Effect<readonly Asset[], SidecarError> =
     return yield* requestSidecar({ id, method: "library.list", params: null });
   });
 
+export const listBundled: Effect.Effect<readonly Asset[], SidecarError> =
+  Effect.gen(function* () {
+    const id = yield* newRequestId;
+
+    return yield* requestSidecar({
+      id,
+      method: "library.bundled",
+      params: null,
+    });
+  });
+
 export function saveAsset(
   draft: AssetDraft
 ): Effect.Effect<Asset, SidecarError> {

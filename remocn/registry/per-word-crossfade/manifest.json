@@ -1,0 +1,35 @@
+{
+  "category": "Typography",
+  "componentName": "PerWordCrossfade",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Words gently fade into place one after another, with a short vertical drift for a calm keynote rhythm.",
+  "files": [
+    {
+      "file": "per-word-crossfade.tsx",
+      "target": "src/components/remocn/per-word-crossfade.tsx"
+    }
+  ],
+  "name": "per-word-crossfade",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "fromText": "Beautifully simple.",
+      "toText": "Designed for focus.",
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Per-Word Crossfade"
+}

@@ -1,0 +1,36 @@
+{
+  "category": "Typography",
+  "componentName": "ShortSlideRight",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "The whole phrase glides in from the left as one compact move while words reveal in sequence through opacity.",
+  "files": [
+    {
+      "file": "short-slide-right.tsx",
+      "target": "src/components/remocn/short-slide-right.tsx"
+    }
+  ],
+  "name": "short-slide-right",
+  "preview": {
+    "durationInFrames": 60,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "text": "Move with intent.",
+      "distance": 24,
+      "staggerDelay": 3,
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Short Slide Right"
+}

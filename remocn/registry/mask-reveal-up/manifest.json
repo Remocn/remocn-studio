@@ -1,0 +1,35 @@
+{
+  "category": "Typography",
+  "componentName": "MaskRevealUp",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Lines reveal upward with a soft masked feel and compact stagger.",
+  "files": [
+    {
+      "file": "mask-reveal-up.tsx",
+      "target": "src/components/remocn/mask-reveal-up.tsx"
+    }
+  ],
+  "name": "mask-reveal-up",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "text": "Designed to move.\nBuilt to focus.",
+      "distance": 30,
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Mask Reveal Up"
+}

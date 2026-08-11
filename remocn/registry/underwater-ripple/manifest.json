@@ -1,0 +1,35 @@
+{
+  "category": "Filters",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Hold a scene under moving water: every pixel is read through a layered refraction field that closes on a whole number of cycles, with colour fringing where the water bends hardest.",
+  "files": [
+    {
+      "file": "underwater-ripple.tsx",
+      "target": "src/components/remocn/underwater-ripple.tsx"
+    }
+  ],
+  "name": "underwater-ripple",
+  "preview": {
+    "durationInFrames": 120,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#06171c"
+    },
+    "defaults": {
+      "amplitude": 7,
+      "scale": 1,
+      "speed": 1,
+      "dispersion": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Underwater Ripple"
+}

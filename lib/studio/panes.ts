@@ -1,6 +1,6 @@
-const EVERY_PANE = ["projects", "chat", "preview"];
-const NO_PREVIEW = ["projects", "chat"];
-const NO_PROJECTS = ["chat", "preview"];
+// The sidebar is a fixed-width column outside the resizable group, so the
+// layout only ever holds the chat and the preview.
+const WITH_PREVIEW = ["chat", "preview"];
 const CHAT_ALONE = ["chat"];
 
 export function showsPreview(
@@ -11,12 +11,6 @@ export function showsPreview(
   return chosen ?? (isLoadingProjects || hasProjects);
 }
 
-export function panelIdsOf(
-  isProjectsShown: boolean,
-  isPreviewShown: boolean
-): string[] {
-  if (isProjectsShown) {
-    return isPreviewShown ? EVERY_PANE : NO_PREVIEW;
-  }
-  return isPreviewShown ? NO_PROJECTS : CHAT_ALONE;
+export function panelIdsOf(isPreviewShown: boolean): string[] {
+  return isPreviewShown ? WITH_PREVIEW : CHAT_ALONE;
 }

@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGodRays",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Volumetric light rays radiating from an off-screen source.",
+  "files": [
+    {
+      "file": "shader-god-rays.tsx",
+      "target": "src/components/remocn/shader-god-rays.tsx"
+    }
+  ],
+  "name": "shader-god-rays",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "intensity": 0.8,
+      "density": 0.3,
+      "bloom": 0.4,
+      "colorBack": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader God Rays"
+}

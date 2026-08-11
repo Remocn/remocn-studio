@@ -1,0 +1,34 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "Sweep a typing caret across the frame, wiping the outgoing scene into the next.",
+  "files": [
+    {
+      "file": "caret-wipe.tsx",
+      "target": "src/components/remocn/caret-wipe.tsx"
+    }
+  ],
+  "name": "caret-wipe",
+  "preview": {
+    "durationInFrames": 100,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0d0d10"
+    },
+    "defaults": {
+      "direction": "right",
+      "caretColor": "#C3E88D",
+      "caretWidth": 3,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Caret Wipe"
+}

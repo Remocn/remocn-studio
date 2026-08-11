@@ -1,0 +1,33 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A whip-pan transition that flies both scenes through the frame in one move with velocity-based motion blur.",
+  "files": [
+    {
+      "file": "whip-pan.tsx",
+      "target": "src/components/remocn/whip-pan.tsx"
+    }
+  ],
+  "name": "whip-pan",
+  "preview": {
+    "durationInFrames": 114,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "direction": "left",
+      "blur": 24,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Whip Pan"
+}

@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGrainGradient",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Grainy multi-stop gradient that drifts slowly with film-grain texture over the blend.",
+  "files": [
+    {
+      "file": "shader-grain-gradient.tsx",
+      "target": "src/components/remocn/shader-grain-gradient.tsx"
+    }
+  ],
+  "name": "shader-grain-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "softness": 0.6,
+      "intensity": 0.2,
+      "noise": 0.15,
+      "colorBack": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Grain Gradient"
+}

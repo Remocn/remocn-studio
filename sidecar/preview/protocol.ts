@@ -21,6 +21,12 @@ export const HostCommand = Schema.Union([
     type: Schema.Literal("export"),
   }),
   Schema.Struct({
+    composition: Schema.NonEmptyString,
+    frame: Schema.Int,
+    id: Schema.NonEmptyString,
+    type: Schema.Literal("clip"),
+  }),
+  Schema.Struct({
     id: Schema.NonEmptyString,
     type: Schema.Literal("cancel"),
   }),
@@ -61,12 +67,23 @@ export const HostReply = Schema.Union([
     message: Schema.String,
     type: Schema.Literal("export-failed"),
   }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    path: Schema.NonEmptyString,
+    type: Schema.Literal("clip-done"),
+  }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    message: Schema.String,
+    type: Schema.Literal("clip-failed"),
+  }),
 ]);
 
 export type HostCommand = (typeof HostCommand)["Type"];
 export type HostReply = (typeof HostReply)["Type"];
 export type StillCommand = Extract<HostCommand, { type: "still" | "warm" }>;
 export type ExportCommand = Extract<HostCommand, { type: "export" }>;
+export type ClipCommand = Extract<HostCommand, { type: "clip" }>;
 
 export const decodeHostCommand = Schema.decodeExit(
   Schema.fromJsonString(HostCommand)

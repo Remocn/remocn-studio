@@ -1,0 +1,33 @@
+{
+  "category": "Typography",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Swaps a value in place with a vertical slide — the old value exits up as the new one enters from below while an invisible sizer keeps the width stable.",
+  "files": [
+    {
+      "file": "value-swap.tsx",
+      "target": "src/components/remocn/value-swap.tsx"
+    }
+  ],
+  "name": "value-swap",
+  "preview": {
+    "durationInFrames": 100,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "duration": 10,
+      "distance": 12,
+      "direction": "up",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Value Swap"
+}

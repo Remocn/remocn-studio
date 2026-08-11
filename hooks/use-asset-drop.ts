@@ -3,8 +3,10 @@
 import { Effect, Fiber } from "effect";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "@/components/ui/toast";
 import { mediaOf } from "@/lib/studio/attachments";
 import { type DropPoint, isInside, refusalOf } from "@/lib/studio/drop";
+import type { PaneView } from "@/lib/studio/pane-view";
 import { watchFileDrops } from "@/lib/studio/shell";
 import type { PromptMedia } from "@/shared/ipc";
 import type { Asset } from "@/shared/library";
@@ -12,19 +14,31 @@ import type { Asset } from "@/shared/library";
 export interface AssetDrop {
   isOver: boolean;
   ref: RefObject<HTMLDivElement | null>;
-  rejected: string | null;
 }
 
 export interface AssetDropSettings {
+  paneView: PaneView;
   save: (item: PromptMedia) => Promise<Asset | null>;
+  showPane: (view: PaneView) => void;
 }
 
-export function useAssetDrop({ save }: AssetDropSettings): AssetDrop {
+// A drag holding any media over the left pane switches it to Assets while the
+// hold lasts, so the drop target is on screen before the drop; letting go
+// anywhere else puts the previous view back. A drag of nothing but code never
+// moves the view — the refusal is a toast, because the Assets pane it used to
+// be an inline line on may not be on screen at all.
+export function useAssetDrop({
+  paneView,
+  save,
+  showPane,
+}: AssetDropSettings): AssetDrop {
   const [isOver, setIsOver] = useState(false);
-  const [rejected, setRejected] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  const held = useRef(save);
-  held.current = save;
+  const held = useRef({ paneView, save, showPane });
+  held.current = { paneView, save, showPane };
+  const cameFrom = useRef<PaneView | null>(null);
+  const dragged = useRef(false);
+  const holdsMedia = useRef(false);
 
   const covers = useCallback(
     (point: DropPoint | null) =>
@@ -37,25 +51,69 @@ export function useAssetDrop({ save }: AssetDropSettings): AssetDrop {
   );
 
   useEffect(() => {
+    const revert = () => {
+      const previous = cameFrom.current;
+      cameFrom.current = null;
+      if (previous !== null) {
+        held.current.showPane(previous);
+      }
+    };
+
     const fiber = Effect.runFork(
       Effect.scoped(
         Effect.gen(function* () {
           yield* watchFileDrops({
             onDrop: ({ paths, position }) => {
+              dragged.current = false;
+              holdsMedia.current = false;
+
               if (!covers(position)) {
+                revert();
                 return;
               }
 
               const { kept, skipped } = sortedByKind(paths);
-              setRejected(refusalOf(skipped));
+              const refusal = refusalOf(skipped);
+              if (refusal !== null) {
+                toast.add({ title: refusal });
+              }
 
+              if (kept.length === 0) {
+                revert();
+                return;
+              }
+
+              cameFrom.current = null;
               Effect.runFork(
                 Effect.forEach(kept, (item) =>
-                  Effect.ignore(Effect.promise(() => held.current(item)))
+                  Effect.ignore(Effect.promise(() => held.current.save(item)))
                 )
               );
             },
-            onOver: (position) => setIsOver(covers(position)),
+            onEnter: ({ paths }) => {
+              dragged.current = true;
+              holdsMedia.current = paths.some((path) => mediaOf(path) !== null);
+            },
+            onOver: (position) => {
+              const over = covers(position);
+              setIsOver(over);
+
+              if (
+                over &&
+                holdsMedia.current &&
+                cameFrom.current === null &&
+                held.current.paneView !== "assets"
+              ) {
+                cameFrom.current = held.current.paneView;
+                held.current.showPane("assets");
+              }
+
+              if (position === null && dragged.current) {
+                dragged.current = false;
+                holdsMedia.current = false;
+                revert();
+              }
+            },
           });
           yield* Effect.never;
         })
@@ -67,7 +125,7 @@ export function useAssetDrop({ save }: AssetDropSettings): AssetDrop {
     };
   }, [covers]);
 
-  return useMemo(() => ({ isOver, ref, rejected }), [isOver, rejected]);
+  return useMemo(() => ({ isOver, ref }), [isOver]);
 }
 
 function sortedByKind(paths: readonly string[]): {

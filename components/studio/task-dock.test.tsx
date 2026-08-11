@@ -6,11 +6,11 @@ import type { TaskRow } from "@/lib/studio/tasks";
 import type { PipelineStage } from "@/shared/pipeline";
 
 const SETTINGS: StudioSettings = {
-  assetsDrawer: null,
   claudeEffort: null,
   claudeModel: null,
   expandedProjects: [],
   legacyProjectFolder: null,
+  paneView: null,
   previewPane: null,
   projectsPane: null,
   taskDock: null,

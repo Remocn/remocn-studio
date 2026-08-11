@@ -1,0 +1,35 @@
+{
+  "category": "Typography",
+  "componentName": "NumberWheel",
+  "dependencies": [
+    "remotion",
+    "@remotion/google-fonts"
+  ],
+  "description": "Mechanical odometer that rolls an integer up or down to its target, direction inferred from the values.",
+  "files": [
+    {
+      "file": "number-wheel.tsx",
+      "target": "src/components/remocn/number-wheel.tsx"
+    }
+  ],
+  "name": "number-wheel",
+  "preview": {
+    "durationInFrames": 112,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "from": 0,
+      "to": 24813,
+      "fontSize": 120,
+      "color": "#171717",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Number Wheel"
+}

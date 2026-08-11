@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSpiral",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Rotating spiral arms radiating from the center.",
+  "files": [
+    {
+      "file": "shader-spiral.tsx",
+      "target": "src/components/remocn/shader-spiral.tsx"
+    }
+  ],
+  "name": "shader-spiral",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "density": 1,
+      "strokeWidth": 0.5,
+      "softness": 0.2,
+      "colorBack": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Spiral"
+}

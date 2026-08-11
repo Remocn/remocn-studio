@@ -1,0 +1,34 @@
+{
+  "category": "Typography",
+  "componentName": "MarkerHighlight",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Colored marker block draws behind a phrase as the text color shifts.",
+  "files": [
+    {
+      "file": "marker-highlight.tsx",
+      "target": "src/components/remocn/marker-highlight.tsx"
+    }
+  ],
+  "name": "marker-highlight",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "before": "Made for ",
+      "highlight": "builders",
+      "after": ".",
+      "markerColor": "#facc15",
+      "baseColor": "#171717",
+      "highlightedTextColor": "#171717",
+      "fontSize": 72,
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Marker Highlight"
+}

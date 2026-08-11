@@ -1,0 +1,32 @@
+{
+  "category": "Typography",
+  "componentName": "StaggeredFadeUp",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Words fade in and slide up one after another with a configurable delay.",
+  "files": [
+    {
+      "file": "staggered-fade-up.tsx",
+      "target": "src/components/remocn/staggered-fade-up.tsx"
+    }
+  ],
+  "name": "staggered-fade-up",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "text": "Ship faster with remocn",
+      "staggerDelay": 4,
+      "distance": 20,
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Staggered Fade Up"
+}

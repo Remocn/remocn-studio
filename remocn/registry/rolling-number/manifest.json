@@ -1,0 +1,35 @@
+{
+  "category": "Typography",
+  "componentName": "RollingNumber",
+  "dependencies": [
+    "remotion",
+    "@remotion/google-fonts"
+  ],
+  "description": "Odometer where every place rolls at its own speed, new places rising into view, settling exactly on the target value.",
+  "files": [
+    {
+      "file": "rolling-number.tsx",
+      "target": "src/components/remocn/rolling-number.tsx"
+    }
+  ],
+  "name": "rolling-number",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "from": 0,
+      "to": 24813,
+      "fontSize": 120,
+      "color": "#171717",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Rolling Number"
+}

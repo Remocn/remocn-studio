@@ -1,0 +1,32 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A rack-focus transition that defocuses the outgoing scene into a bright blur and resolves the next one into focus.",
+  "files": [
+    {
+      "file": "focus-pull.tsx",
+      "target": "src/components/remocn/focus-pull.tsx"
+    }
+  ],
+  "name": "focus-pull",
+  "preview": {
+    "durationInFrames": 114,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "blur": 16,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Focus Pull"
+}

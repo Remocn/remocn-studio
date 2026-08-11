@@ -1,0 +1,34 @@
+{
+  "category": "Typography",
+  "componentName": "ScaleDownFade",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Subtle premium settle-in with a restrained scale-down fade on exit.",
+  "files": [
+    {
+      "file": "scale-down-fade.tsx",
+      "target": "src/components/remocn/scale-down-fade.tsx"
+    }
+  ],
+  "name": "scale-down-fade",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "text": "Quietly refined.",
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Scale Down Fade"
+}

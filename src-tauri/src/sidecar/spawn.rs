@@ -11,7 +11,7 @@ use tokio::process::{Child, Command};
 
 use crate::ipc::{
     DATA_DIR_ENV, GRAB_SCRIPT_ENV, HOST_PID_ENV, LIBRARY_DIR_ENV, PLUGIN_DIR_ENV,
-    PREVIEW_ENTRY_ENV, TEMPLATE_DIR_ENV,
+    PREVIEW_ENTRY_ENV, REMOCN_DIR_ENV, TEMPLATE_DIR_ENV,
 };
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
@@ -131,6 +131,23 @@ pub fn resolve_plugin_dir(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|err| format!("the app bundle has no agent plugin: {err}"))
 }
 
+#[cfg(debug_assertions)]
+pub fn resolve_remocn_dir(_app: &AppHandle) -> Result<PathBuf, String> {
+    let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../remocn");
+    source
+        .canonicalize()
+        .map_err(|err| format!("no vendored remocn registry at {}: {err}", source.display()))
+}
+
+#[cfg(not(debug_assertions))]
+pub fn resolve_remocn_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    use tauri::path::BaseDirectory;
+
+    app.path()
+        .resolve("remocn", BaseDirectory::Resource)
+        .map_err(|err| format!("the app bundle has no vendored remocn registry: {err}"))
+}
+
 pub fn resolve_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app
         .path()
@@ -159,6 +176,7 @@ pub struct Launch<'a> {
     pub library_dir: Option<&'a Path>,
     pub plugin_dir: Option<&'a Path>,
     pub preview_entry: Option<&'a Path>,
+    pub remocn_dir: Option<&'a Path>,
     pub script: &'a Path,
     pub template_dir: Option<&'a Path>,
 }
@@ -171,6 +189,7 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
         library_dir,
         plugin_dir,
         preview_entry,
+        remocn_dir,
         script,
         template_dir,
     } = paths;
@@ -195,6 +214,10 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
 
     if let Some(plugin) = plugin_dir {
         command.env(PLUGIN_DIR_ENV, plugin);
+    }
+
+    if let Some(remocn) = remocn_dir {
+        command.env(REMOCN_DIR_ENV, remocn);
     }
 
     command

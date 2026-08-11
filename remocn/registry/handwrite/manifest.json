@@ -1,0 +1,40 @@
+{
+  "category": "Typography",
+  "componentName": "Handwrite",
+  "dependencies": [
+    "remotion",
+    "@remotion/google-fonts"
+  ],
+  "description": "Handwritten text laid down letter by letter on a quantized stop-motion clock, each glyph keeping its own slant and baseline wobble.",
+  "files": [
+    {
+      "file": "handwrite.tsx",
+      "target": "src/components/remocn/handwrite.tsx"
+    }
+  ],
+  "name": "handwrite",
+  "preview": {
+    "durationInFrames": 120,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#f1eee7"
+    },
+    "defaults": {
+      "text": "Made by hand",
+      "fontSize": 72,
+      "perStep": 1.6,
+      "weight": "600",
+      "color": "#26242c",
+      "align": "center",
+      "step": 3,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "stop-motion"
+  ],
+  "title": "Handwrite"
+}

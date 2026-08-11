@@ -1,0 +1,44 @@
+{
+  "category": "Effects",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Crushes an element into a ball of paper and throws it out of frame on an arc, leaving the scene around it running.",
+  "files": [
+    {
+      "file": "crumple-toss.tsx",
+      "target": "src/components/remocn/crumple-toss.tsx"
+    }
+  ],
+  "name": "crumple-toss",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#f1eee7"
+    },
+    "defaults": {
+      "at": 6,
+      "crumpleSteps": 4,
+      "tossSteps": 5,
+      "direction": -35,
+      "distance": 440,
+      "spin": 220,
+      "segments": 9,
+      "layers": 2,
+      "randomness": 0.6,
+      "crushTo": 0.34,
+      "seed": "toss",
+      "step": 3,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "stop-motion"
+  ],
+  "title": "Crumple Toss"
+}

@@ -10,6 +10,7 @@ import { type ClipboardError, saveImages } from "@/lib/studio/clipboard";
 import {
   draftFromAttachment,
   listAssets,
+  listBundled,
   previewAsset,
   proxyAsset,
   removeAsset,
@@ -40,6 +41,7 @@ const UNDO_WINDOW = "10 seconds";
 
 export interface Library {
   assets: readonly Asset[];
+  bundled: readonly Asset[];
   error: string | null;
   isLoading: boolean;
   onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -335,6 +337,7 @@ export function useLibrary(
   undoWindow: Duration.Input = UNDO_WINDOW
 ): Library {
   const [assets, setAssets] = useState<readonly Asset[]>([]);
+  const [bundled, setBundled] = useState<readonly Asset[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const held = useRef(new Map<string, Held>());
@@ -367,6 +370,21 @@ export function useLibrary(
   useEffect(() => {
     reload();
   }, [reload]);
+
+  // The bundled set ships with the app, so one read is the truth for the
+  // session; a sidecar without the resource simply lists nothing here.
+  useEffect(() => {
+    const fiber = Effect.runFork(
+      listBundled.pipe(
+        Effect.tap((rows) => Effect.sync(() => setBundled(rows))),
+        Effect.ignore
+      )
+    );
+
+    return () => {
+      Effect.runFork(Fiber.interrupt(fiber));
+    };
+  }, []);
 
   useReloadWhenTurnsSettle(isTurnRunning, refresh);
 
@@ -492,6 +510,7 @@ export function useLibrary(
   return useMemo(
     () => ({
       assets,
+      bundled,
       error,
       isLoading,
       onRemove,
@@ -500,6 +519,16 @@ export function useLibrary(
       save,
       undoRemove,
     }),
-    [assets, error, isLoading, onRemove, reload, rename, save, undoRemove]
+    [
+      assets,
+      bundled,
+      error,
+      isLoading,
+      onRemove,
+      reload,
+      rename,
+      save,
+      undoRemove,
+    ]
   );
 }

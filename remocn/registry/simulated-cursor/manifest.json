@@ -1,0 +1,32 @@
+{
+  "category": "Effects",
+  "componentName": "SimulatedCursor",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Animated mouse cursor moving between waypoints with click ripple feedback.",
+  "files": [
+    {
+      "file": "simulated-cursor.tsx",
+      "target": "src/components/remocn/simulated-cursor.tsx"
+    }
+  ],
+  "name": "simulated-cursor",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "color": "#ffffff",
+      "size": 32,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Simulated Cursor"
+}

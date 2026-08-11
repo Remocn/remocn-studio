@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderMetaballs",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Organic blobs merging and splitting like lava.",
+  "files": [
+    {
+      "file": "shader-metaballs.tsx",
+      "target": "src/components/remocn/shader-metaballs.tsx"
+    }
+  ],
+  "name": "shader-metaballs",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "count": 10,
+      "size": 0.83,
+      "colorBack": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Metaballs"
+}

@@ -1,0 +1,36 @@
+{
+  "category": "Effects",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "End a scene the way a tube does: the picture collapses into a glowing horizontal line, the line pinches to a phosphor dot, the dot decays, and the frame is left dead black.",
+  "files": [
+    {
+      "file": "tv-power-off.tsx",
+      "target": "src/components/remocn/tv-power-off.tsx"
+    }
+  ],
+  "name": "tv-power-off",
+  "preview": {
+    "durationInFrames": 62,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#050505"
+    },
+    "defaults": {
+      "durationInFrames": 18,
+      "gain": 1,
+      "afterglow": 1,
+      "phosphor": "#d8ecff",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "TV Power Off"
+}

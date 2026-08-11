@@ -1,0 +1,37 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A broadcast-glitch hard cut: the frame tears into displaced slices with channel split and corrupted blocks, and the incoming scene takes over slice by slice at the peak.",
+  "files": [
+    {
+      "file": "glitch-cut.tsx",
+      "target": "src/components/remocn/glitch-cut.tsx"
+    }
+  ],
+  "name": "glitch-cut",
+  "preview": {
+    "durationInFrames": 78,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "intensity": 1,
+      "slices": 24,
+      "rgbSplit": 1,
+      "blockNoise": 0.6,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Glitch Cut"
+}

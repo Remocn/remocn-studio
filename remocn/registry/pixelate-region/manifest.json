@@ -1,0 +1,33 @@
+{
+  "category": "Filters",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Cover rectangles of a scene with an opaque mosaic while the rest passes through untouched — redact keys, addresses and personal data before a demo goes out.",
+  "files": [
+    {
+      "file": "pixelate-region.tsx",
+      "target": "src/components/remocn/pixelate-region.tsx"
+    }
+  ],
+  "name": "pixelate-region",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "cellSize": 24,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Pixelate Region"
+}

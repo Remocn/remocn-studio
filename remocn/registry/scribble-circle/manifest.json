@@ -1,0 +1,41 @@
+{
+  "category": "Effects",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A brush circle swept around a region of the frame, opening thin and closing thick, with grain breaking up the dry opening.",
+  "files": [
+    {
+      "file": "scribble-circle.tsx",
+      "target": "src/components/remocn/scribble-circle.tsx"
+    }
+  ],
+  "name": "scribble-circle",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#f1eee7"
+    },
+    "defaults": {
+      "laps": 1.15,
+      "strokeWidth": 14,
+      "pressure": 0.2,
+      "grain": 1,
+      "durationSteps": 10,
+      "color": "#6f7f35",
+      "seed": "scribble",
+      "step": 3,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "stop-motion",
+    "brush"
+  ],
+  "title": "Scribble Circle"
+}

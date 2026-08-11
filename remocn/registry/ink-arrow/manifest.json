@@ -1,0 +1,44 @@
+{
+  "category": "Effects",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A hand-drawn brush arrow that sweeps itself from one point to another, thickening into the head that pops on the final poses.",
+  "files": [
+    {
+      "file": "ink-arrow.tsx",
+      "target": "src/components/remocn/ink-arrow.tsx"
+    }
+  ],
+  "name": "ink-arrow",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#f1eee7"
+    },
+    "defaults": {
+      "curvature": 0.35,
+      "strokeWidth": 8,
+      "pressure": 0.2,
+      "release": 1,
+      "grain": 1,
+      "headSize": 24,
+      "drawDur": 36,
+      "headDur": 12,
+      "color": "#26242c",
+      "seed": "arrow",
+      "step": 3,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "stop-motion",
+    "brush"
+  ],
+  "title": "Ink Arrow"
+}

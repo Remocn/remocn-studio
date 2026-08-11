@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect } from "effect";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LIBRARY_DIR_ENV } from "@/shared/ipc";
+import { LIBRARY_DIR_ENV, REMOCN_DIR_ENV } from "@/shared/ipc";
 import { type AssetDraft, promptAssetOf } from "@/shared/library";
 import {
   assetBrief,
@@ -281,5 +281,119 @@ describe("assetBrief", () => {
 
     expect(brief).toContain("not installed yet: three");
     expect(brief).toContain("bun add");
+  });
+});
+
+describe("placeAssets with a bundled component", () => {
+  let vendor = "";
+
+  const vendored = (
+    name: string,
+    manifest: Record<string, unknown>,
+    files: Record<string, string>
+  ) => {
+    const dir = join(vendor, "registry", name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "manifest.json"), JSON.stringify(manifest), "utf8");
+    for (const [file, content] of Object.entries(files)) {
+      writeFileSync(join(dir, file), content, "utf8");
+    }
+  };
+
+  beforeEach(() => {
+    vendor = mkdtempSync(join(tmpdir(), "remocn-vendor-"));
+    process.env[REMOCN_DIR_ENV] = vendor;
+
+    vendored(
+      "typewriter",
+      {
+        category: "Typography",
+        dependencies: ["remotion", "culori"],
+        description: "",
+        files: [
+          {
+            file: "typewriter.tsx",
+            target: "src/components/remocn/typewriter.tsx",
+          },
+        ],
+        name: "typewriter",
+        registryDependencies: ["remocn-ui"],
+        title: "Typewriter",
+      },
+      { "typewriter.tsx": "export const T = 1;" }
+    );
+    vendored(
+      "remocn-ui",
+      {
+        category: null,
+        dependencies: ["remotion"],
+        description: "",
+        files: [{ file: "index.ts", target: "src/lib/remocn-ui/index.ts" }],
+        name: "remocn-ui",
+        registryDependencies: [],
+        title: "remocn-ui",
+      },
+      { "index.ts": "export const ui = 1;" }
+    );
+  });
+
+  afterEach(() => {
+    process.env[REMOCN_DIR_ENV] = undefined;
+    rmSync(vendor, { force: true, recursive: true });
+  });
+
+  const picked = {
+    name: "Typewriter",
+    preview: null,
+    slug: "remocn/typewriter",
+    type: "component" as const,
+  };
+
+  it("lands the registry layout, closure included", async () => {
+    const [placed] = await run(placeAssets(project, [picked]));
+
+    expect(placed?.copied).toEqual([
+      "src/components/remocn/typewriter.tsx",
+      "src/lib/remocn-ui/index.ts",
+    ]);
+    expect(
+      readFileSync(
+        join(project, "src/components/remocn/typewriter.tsx"),
+        "utf8"
+      )
+    ).toBe("export const T = 1;");
+  });
+
+  it("never overwrites, so a second insertion skips the shared runtime", async () => {
+    await run(placeAssets(project, [picked]));
+    const [placed] = await run(placeAssets(project, [picked]));
+
+    expect(placed?.copied).toEqual([]);
+    expect(placed?.skipped).toEqual([
+      "src/components/remocn/typewriter.tsx",
+      "src/lib/remocn-ui/index.ts",
+    ]);
+  });
+
+  it("names the npm packages the project does not have", async () => {
+    mkdirSync(join(project, "node_modules/remotion"), { recursive: true });
+    writeFileSync(
+      join(project, "node_modules/remotion/package.json"),
+      JSON.stringify({ name: "remotion" }),
+      "utf8"
+    );
+
+    const [placed] = await run(placeAssets(project, [picked]));
+
+    expect(placed?.missing).toEqual(["culori"]);
+  });
+
+  it("answers with a sentence for a name that is not bundled", async () => {
+    const [placed] = await run(
+      placeAssets(project, [{ ...picked, slug: "remocn/nothing" }])
+    );
+
+    expect(placed?.copied).toEqual([]);
+    expect(placed?.reason).toContain("not among the bundled");
   });
 });

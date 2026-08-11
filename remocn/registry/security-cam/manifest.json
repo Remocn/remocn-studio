@@ -1,0 +1,36 @@
+{
+  "category": "Filters",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Run a scene through a cheap recorder: macroblocks flatten under a starved bitrate, colour resolution collapses to half the luma, blacks crush and shadows crawl with sensor noise.",
+  "files": [
+    {
+      "file": "security-cam.tsx",
+      "target": "src/components/remocn/security-cam.tsx"
+    }
+  ],
+  "name": "security-cam",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "compression": 0.7,
+      "blockSize": 10,
+      "noise": 0.6,
+      "intensity": 1,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Security Cam"
+}

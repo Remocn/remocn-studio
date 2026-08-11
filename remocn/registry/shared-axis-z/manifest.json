@@ -1,0 +1,35 @@
+{
+  "category": "Typography",
+  "componentName": "SharedAxisZ",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Scale-based shared-axis transition for focus shifts and context depth.",
+  "files": [
+    {
+      "file": "shared-axis-z.tsx",
+      "target": "src/components/remocn/shared-axis-z.tsx"
+    }
+  ],
+  "name": "shared-axis-z",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "fromText": "Zooming between states.",
+      "toText": "Elevate and settle.",
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shared Axis Z"
+}

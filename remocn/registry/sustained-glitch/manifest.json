@@ -1,0 +1,36 @@
+{
+  "category": "Filters",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Broadcast corruption held over a scene in scheduled bursts: slices tear sideways, channels split, and blocks fill with picture pulled from somewhere else — then the frame rests clean until the next hit.",
+  "files": [
+    {
+      "file": "sustained-glitch.tsx",
+      "target": "src/components/remocn/sustained-glitch.tsx"
+    }
+  ],
+  "name": "sustained-glitch",
+  "preview": {
+    "durationInFrames": 120,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "intensity": 1,
+      "frequency": 1,
+      "slices": 24,
+      "seed": 1,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Sustained Glitch"
+}

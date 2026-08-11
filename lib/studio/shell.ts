@@ -54,6 +54,7 @@ export interface DroppedFiles {
 
 export interface DragWatcher {
   readonly onDrop: (dropped: DroppedFiles) => void;
+  readonly onEnter?: (entered: DroppedFiles) => void;
   readonly onOver: (position: { x: number; y: number } | null) => void;
 }
 
@@ -77,6 +78,13 @@ export function watchFileDrops(
               position: payload.position,
             });
             return;
+          }
+
+          if (payload.type === "enter") {
+            watcher.onEnter?.({
+              paths: payload.paths,
+              position: payload.position,
+            });
           }
 
           watcher.onOver(payload.position);

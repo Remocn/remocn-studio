@@ -2,7 +2,7 @@ import { Effect, type Exit, Schema, type SchemaError } from "effect";
 import { Asset, AssetDraft, PromptAsset } from "./library";
 import { PipelineStage, PipelineStageId, PipelineStatus } from "./pipeline";
 
-export const SIDECAR_PROTOCOL = 17;
+export const SIDECAR_PROTOCOL = 18;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -15,6 +15,7 @@ export const GRAB_SCRIPT_ENV = "REMOCN_STUDIO_GRAB_SCRIPT";
 export const TEMPLATE_DIR_ENV = "REMOCN_STUDIO_TEMPLATE_DIR";
 export const PLUGIN_DIR_ENV = "REMOCN_STUDIO_PLUGIN_DIR";
 export const LIBRARY_DIR_ENV = "REMOCN_STUDIO_LIBRARY_DIR";
+export const REMOCN_DIR_ENV = "REMOCN_STUDIO_REMOCN_DIR";
 
 export const CANCELLED = "cancelled";
 
@@ -27,6 +28,7 @@ export const METHOD_NAMES = [
   "history.mode",
   "history.remove",
   "history.sessions",
+  "library.bundled",
   "library.dismiss",
   "library.list",
   "library.offer",
@@ -679,6 +681,11 @@ export const SIDECAR_METHODS = {
   "history.sessions": {
     params: Schema.Null,
     result: Schema.Array(HistorySession),
+    stream: Schema.Never,
+  },
+  "library.bundled": {
+    params: Schema.Null,
+    result: Schema.Array(Asset),
     stream: Schema.Never,
   },
   "library.dismiss": {

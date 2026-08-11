@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderStrata",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Fine horizontal sediment layers displaced by fbm noise, each drifting at its own depth.",
+  "files": [
+    {
+      "file": "shader-strata.tsx",
+      "target": "src/components/remocn/shader-strata.tsx"
+    }
+  ],
+  "name": "shader-strata",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "layers": 14,
+      "amplitude": 0.16,
+      "accent": "#6733FF",
+      "accentAmount": 0
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Strata"
+}

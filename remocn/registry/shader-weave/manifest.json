@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWeave",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A woven substrate of warp and weft threads crossing on a domain-warped grid, with a travelling sheen.",
+  "files": [
+    {
+      "file": "shader-weave.tsx",
+      "target": "src/components/remocn/shader-weave.tsx"
+    }
+  ],
+  "name": "shader-weave",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "scale": 22,
+      "warp": 0.03,
+      "accent": "#6733FF",
+      "accentAmount": 0
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Weave"
+}

@@ -30,6 +30,8 @@ function pngFile(name: string) {
 
 function asset(slug: string, name: string): Asset {
   return {
+    category: null,
+    clip: null,
     createdAt: 0,
     dependencies: [],
     description: "",

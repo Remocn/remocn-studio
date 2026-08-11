@@ -1,0 +1,18 @@
+{
+  "category": null,
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Quantized stop-motion clock for Remotion. Stepped frames, stepped springs, deterministic hashing, and per-pose paper jitter.",
+  "files": [
+    {
+      "file": "stop-motion.ts",
+      "target": "src/lib/remocn/stop-motion.ts"
+    }
+  ],
+  "name": "stop-motion",
+  "preview": null,
+  "registryDependencies": [],
+  "title": "Stop Motion Clock"
+}

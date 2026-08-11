@@ -37,6 +37,7 @@
     "repos",
     "preview",
     "templates",
-    "agent"
+    "agent",
+    "remocn"
   ]
 }

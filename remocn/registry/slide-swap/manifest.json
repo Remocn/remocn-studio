@@ -1,0 +1,34 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A scene sequencer where the outgoing content is shoved off on an accelerating curve and the next springs in from the opposite edge, on one canvas, with no overlap.",
+  "files": [
+    {
+      "file": "slide-swap.tsx",
+      "target": "src/components/remocn/slide-swap.tsx"
+    }
+  ],
+  "name": "slide-swap",
+  "preview": {
+    "durationInFrames": 210,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "axis": "x",
+      "inDistance": 0.28,
+      "outDistance": 0.1,
+      "slideFrames": 30,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Slide Swap"
+}

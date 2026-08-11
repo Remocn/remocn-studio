@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderPerlinNoise",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Classic Perlin noise clouds drifting across the frame.",
+  "files": [
+    {
+      "file": "shader-perlin-noise.tsx",
+      "target": "src/components/remocn/shader-perlin-noise.tsx"
+    }
+  ],
+  "name": "shader-perlin-noise",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "proportion": 0.35,
+      "softness": 0.1,
+      "colorBack": "#12121a",
+      "colorFront": "#6a6a85"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Perlin Noise"
+}

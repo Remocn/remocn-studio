@@ -1,0 +1,35 @@
+{
+  "category": "Typography",
+  "componentName": "KineticCenterBuild",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A word appears in the center; each new word enters from the right and pushes the line until the full phrase locks centered.",
+  "files": [
+    {
+      "file": "kinetic-center-build.tsx",
+      "target": "src/components/remocn/kinetic-center-build.tsx"
+    }
+  ],
+  "name": "kinetic-center-build",
+  "preview": {
+    "durationInFrames": 60,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "text": "Words push left.",
+      "entryOffset": 88,
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Kinetic Center Build"
+}
