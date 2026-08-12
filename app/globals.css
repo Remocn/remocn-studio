@@ -239,6 +239,21 @@
     opacity: 1;
     animation: none;
   }
+  /* Switching the sidebar's view still has to read as a change, so the slide
+     degrades to a crossfade rather than to nothing. */
+  [data-pane-slide].animate-screen-back,
+  [data-pane-slide].animate-screen-in {
+    animation: titlebar-in 150ms ease-out both;
+  }
+}
+
+/* The screen animations fill `both`, which keeps a transform — even the
+   identity one — on the element for ever, and a transformed ancestor is a
+   containing block that breaks every position:sticky inside it. The pane's
+   views hold sticky search fields and category headings, so here the fill
+   ends with the animation. */
+[data-pane-slide] {
+  animation-fill-mode: backwards;
 }
 
 @layer base {

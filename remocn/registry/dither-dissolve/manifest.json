@@ -1,0 +1,36 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A dithering shader transition that dissolves one scene into the next.",
+  "files": [
+    {
+      "file": "dither-dissolve.tsx",
+      "target": "src/components/remocn/dither-dissolve.tsx"
+    }
+  ],
+  "name": "dither-dissolve",
+  "preview": {
+    "durationInFrames": 100,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "shape": "simplex",
+      "colorBack": "#141318",
+      "colorFront": "#8f88ae",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "shader-dithering"
+  ],
+  "title": "Dither Dissolve"
+}

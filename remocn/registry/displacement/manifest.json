@@ -1,0 +1,39 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "The frame breaks into a grid of cells that shear apart into offset, colour-fringed tiles under film grain, then settle back carrying the next scene.",
+  "files": [
+    {
+      "file": "displacement.tsx",
+      "target": "src/components/remocn/displacement.tsx"
+    }
+  ],
+  "name": "displacement",
+  "preview": {
+    "durationInFrames": 72,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "grid": 60,
+      "cellAspect": 1,
+      "shift": 1,
+      "aberration": 1,
+      "grain": 0.5,
+      "stagger": 0.45,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Displacement"
+}

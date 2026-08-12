@@ -1,0 +1,33 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A dolly transition that blows the outgoing scene past the camera while the next one approaches from the depth.",
+  "files": [
+    {
+      "file": "push-through.tsx",
+      "target": "src/components/remocn/push-through.tsx"
+    }
+  ],
+  "name": "push-through",
+  "preview": {
+    "durationInFrames": 112,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "zoom": 2.4,
+      "blur": 14,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Push Through"
+}

@@ -1,0 +1,36 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A domain-warp shader transition that melts the outgoing scene into a folding color field and straightens back out into the next.",
+  "files": [
+    {
+      "file": "warp-dissolve.tsx",
+      "target": "src/components/remocn/warp-dissolve.tsx"
+    }
+  ],
+  "name": "warp-dissolve",
+  "preview": {
+    "durationInFrames": 116,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "distortion": 0.8,
+      "swirl": 0.6,
+      "softness": 1,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Warp Dissolve"
+}

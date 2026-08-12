@@ -1,0 +1,37 @@
+{
+  "category": "Filters",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Put a scene behind real glass: resolution falls off toward the corners, highlights bloom through the optics, colour fringes at the edges — a screencast that reads as filmed rather than rendered.",
+  "files": [
+    {
+      "file": "camera-lens.tsx",
+      "target": "src/components/remocn/camera-lens.tsx"
+    }
+  ],
+  "name": "camera-lens",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "softness": 0.5,
+      "bloom": 0.5,
+      "aberration": 0.5,
+      "vignette": 0.5,
+      "distortion": 0.05,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Camera Lens"
+}

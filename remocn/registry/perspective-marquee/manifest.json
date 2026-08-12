@@ -1,0 +1,38 @@
+{
+  "category": "Typography",
+  "componentName": "PerspectiveMarquee",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A 3D-tilted infinite marquee with depth-of-field blur on items rolling toward the horizon.",
+  "files": [
+    {
+      "file": "perspective-marquee.tsx",
+      "target": "src/components/remocn/perspective-marquee.tsx"
+    }
+  ],
+  "name": "perspective-marquee",
+  "preview": {
+    "durationInFrames": 240,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#050505"
+    },
+    "defaults": {
+      "fontSize": 84,
+      "color": "#fafafa",
+      "fontWeight": "700",
+      "pixelsPerFrame": 2,
+      "rotateY": -28,
+      "rotateX": 8,
+      "perspective": 1200,
+      "fadeColor": "#050505",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Perspective Marquee"
+}

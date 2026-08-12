@@ -1,0 +1,34 @@
+{
+  "category": "Typography",
+  "componentName": "RGBGlitchText",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Three RGB-offset text copies jitter for a brief glitch window.",
+  "files": [
+    {
+      "file": "rgb-glitch-text.tsx",
+      "target": "src/components/remocn/rgb-glitch-text.tsx"
+    }
+  ],
+  "name": "rgb-glitch-text",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "text": "GLITCH",
+      "fontSize": 96,
+      "color": "#171717",
+      "fontWeight": "700",
+      "glitchAt": 20,
+      "glitchDuration": 8,
+      "intensity": 6,
+      "seed": "glitch",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "RGB Glitch Text"
+}

@@ -1,0 +1,32 @@
+{
+  "category": "Typography",
+  "componentName": "MatrixDecode",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Random scramble resolves left-to-right into the target text.",
+  "files": [
+    {
+      "file": "matrix-decode.tsx",
+      "target": "src/components/remocn/matrix-decode.tsx"
+    }
+  ],
+  "name": "matrix-decode",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "text": "DECRYPTED",
+      "charset": "!@#$%^&*()_+-=<>?/\\|",
+      "fontSize": 72,
+      "color": "#22c55e",
+      "fontWeight": "600",
+      "revealDuration": 60,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Matrix Decode"
+}

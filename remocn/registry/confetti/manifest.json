@@ -1,0 +1,31 @@
+{
+  "category": "Effects",
+  "componentName": "Confetti",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Deterministic confetti burst for Remotion — seeded particles with gravity, spin, and flutter so every render is identical. Fire it on any frame as a celebratory overlay.",
+  "files": [
+    {
+      "file": "confetti.tsx",
+      "target": "src/components/remocn/confetti.tsx"
+    }
+  ],
+  "name": "confetti",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "particleCount": 140,
+      "power": 17,
+      "gravity": 0.45,
+      "size": 13,
+      "seed": 1,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Confetti"
+}

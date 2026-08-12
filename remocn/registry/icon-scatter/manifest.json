@@ -1,0 +1,35 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "Scatter a field of icons over the cut, hiding the scene swap at the field's peak.",
+  "files": [
+    {
+      "file": "icon-scatter.tsx",
+      "target": "src/components/remocn/icon-scatter.tsx"
+    }
+  ],
+  "name": "icon-scatter",
+  "preview": {
+    "durationInFrames": 100,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "count": 15,
+      "color": "#fafafa",
+      "coverColor": "#0a0a0a",
+      "flyDistance": 260,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Icon Scatter"
+}

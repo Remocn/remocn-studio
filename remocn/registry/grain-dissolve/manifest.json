@@ -1,0 +1,37 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A grain-gradient shader transition that disintegrates the outgoing scene into soft grainy shapes and condenses the next scene out of the noise.",
+  "files": [
+    {
+      "file": "grain-dissolve.tsx",
+      "target": "src/components/remocn/grain-dissolve.tsx"
+    }
+  ],
+  "name": "grain-dissolve",
+  "preview": {
+    "durationInFrames": 116,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "shape": "blob",
+      "noise": 0.3,
+      "zoom": 2,
+      "colorBack": "#141318",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Grain Dissolve"
+}

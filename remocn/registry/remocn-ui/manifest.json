@@ -1,0 +1,39 @@
+{
+  "category": null,
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "culori"
+  ],
+  "description": "Shared timeline-fold hook, theme context, and color math for remocn UI primitives.",
+  "files": [
+    {
+      "file": "timeline.ts",
+      "target": "src/lib/remocn-ui/timeline.ts"
+    },
+    {
+      "file": "theme.ts",
+      "target": "src/lib/remocn-ui/theme.ts"
+    },
+    {
+      "file": "color.ts",
+      "target": "src/lib/remocn-ui/color.ts"
+    },
+    {
+      "file": "motion.ts",
+      "target": "src/lib/remocn-ui/motion.ts"
+    },
+    {
+      "file": "types.ts",
+      "target": "src/lib/remocn-ui/types.ts"
+    },
+    {
+      "file": "index.ts",
+      "target": "src/lib/remocn-ui/index.ts"
+    }
+  ],
+  "name": "remocn-ui",
+  "preview": null,
+  "registryDependencies": [],
+  "title": "remocn UI Core"
+}

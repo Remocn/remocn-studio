@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSmokeRing",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Soft smoke ring curling and dissipating in place.",
+  "files": [
+    {
+      "file": "shader-smoke-ring.tsx",
+      "target": "src/components/remocn/shader-smoke-ring.tsx"
+    }
+  ],
+  "name": "shader-smoke-ring",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "radius": 0.25,
+      "thickness": 0.65,
+      "scale": 0.8,
+      "colorBack": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Smoke Ring"
+}

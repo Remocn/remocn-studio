@@ -1,20 +1,26 @@
 "use client";
 
 import { Effect } from "effect";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  type PaneView,
+  type SlideDirection,
+  slideDirection,
+} from "@/lib/studio/pane-view";
 import { showsPreview } from "@/lib/studio/panes";
 import {
   type StudioSettings,
-  saveAssetsDrawer,
+  savePaneView,
   savePreviewPane,
   saveProjectsPane,
 } from "@/lib/studio/settings";
 
 export interface Panes {
-  isAssetsOpen: boolean;
   isPreviewShown: boolean;
   isProjectsShown: boolean;
-  toggleAssets: () => void;
+  paneSlide: SlideDirection;
+  paneView: PaneView;
+  showPane: (view: PaneView) => void;
   togglePreview: () => void;
   toggleProjects: () => void;
 }
@@ -26,7 +32,8 @@ export function usePanes(
 ): Panes {
   const [preview, setPreview] = useState<boolean | null>(null);
   const [projects, setProjects] = useState<boolean | null>(null);
-  const [assets, setAssets] = useState<boolean | null>(null);
+  const [view, setView] = useState<PaneView | null>(null);
+  const cameFrom = useRef<PaneView | null>(null);
 
   const isPreviewShown = showsPreview(
     preview ?? settings?.previewPane ?? null,
@@ -47,28 +54,37 @@ export function usePanes(
     Effect.runFork(saveProjectsPane(next));
   }, [isProjectsShown]);
 
-  const isAssetsOpen = assets ?? settings?.assetsDrawer ?? false;
+  const paneView = view ?? settings?.paneView ?? "projects";
+  const held = useRef(paneView);
+  held.current = paneView;
 
-  const toggleAssets = useCallback(() => {
-    const next = !isAssetsOpen;
-    setAssets(next);
-    Effect.runFork(saveAssetsDrawer(next));
-  }, [isAssetsOpen]);
+  const showPane = useCallback((next: PaneView) => {
+    if (next === held.current) {
+      return;
+    }
+    cameFrom.current = held.current;
+    setView(next);
+    Effect.runFork(savePaneView(next));
+  }, []);
+
+  const paneSlide = slideDirection(cameFrom.current, paneView);
 
   return useMemo(
     () => ({
-      isAssetsOpen,
       isPreviewShown,
       isProjectsShown,
-      toggleAssets,
+      paneSlide,
+      paneView,
+      showPane,
       togglePreview,
       toggleProjects,
     }),
     [
-      isAssetsOpen,
       isPreviewShown,
       isProjectsShown,
-      toggleAssets,
+      paneSlide,
+      paneView,
+      showPane,
       togglePreview,
       toggleProjects,
     ]

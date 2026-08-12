@@ -1,0 +1,35 @@
+{
+  "category": "Typography",
+  "componentName": "SharedAxisY",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Per-word hard-cut transition with staircase timing for sharp editorial swaps.",
+  "files": [
+    {
+      "file": "shared-axis-y.tsx",
+      "target": "src/components/remocn/shared-axis-y.tsx"
+    }
+  ],
+  "name": "shared-axis-y",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "fromText": "Layered navigation.",
+      "toText": "Hierarchy made clear.",
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shared Axis Y"
+}

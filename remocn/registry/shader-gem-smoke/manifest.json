@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGemSmoke",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Paper's Gem Smoke shader driven by the frame — smoke flowing behind and inside a glassy logo.",
+  "files": [
+    {
+      "file": "shader-gem-smoke.tsx",
+      "target": "src/components/remocn/shader-gem-smoke.tsx"
+    }
+  ],
+  "name": "shader-gem-smoke",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "colorBack": "#0a0a10",
+      "innerDistortion": 0.8,
+      "outerDistortion": 0.6,
+      "size": 0.8
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Gem Smoke"
+}

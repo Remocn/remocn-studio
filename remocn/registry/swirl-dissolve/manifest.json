@@ -1,0 +1,36 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A swirl shader transition that unwinds open and winds shut to reveal the next scene.",
+  "files": [
+    {
+      "file": "swirl-dissolve.tsx",
+      "target": "src/components/remocn/swirl-dissolve.tsx"
+    }
+  ],
+  "name": "swirl-dissolve",
+  "preview": {
+    "durationInFrames": 116,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "bandCount": 10,
+      "softness": 0.35,
+      "colorBack": "#141318",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "shader-swirl"
+  ],
+  "title": "Swirl Dissolve"
+}

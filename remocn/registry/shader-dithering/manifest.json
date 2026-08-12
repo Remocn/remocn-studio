@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderDithering",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Ordered-dither shading over an animated gradient field.",
+  "files": [
+    {
+      "file": "shader-dithering.tsx",
+      "target": "src/components/remocn/shader-dithering.tsx"
+    }
+  ],
+  "name": "shader-dithering",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "size": 2,
+      "colorBack": "#12121a",
+      "colorFront": "#6a6a85"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Dithering"
+}

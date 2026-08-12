@@ -28,6 +28,7 @@ export const ASSETS = "assets";
 export const MANIFEST = "manifest.json";
 export const PREVIEW = "preview.png";
 export const PROXY = "proxy.mp4";
+export const CLIP = "preview.mp4";
 
 const DISMISSED = "dismissed.json";
 const FALLBACK = "library";
@@ -160,6 +161,30 @@ export function attachPreview(
     const saved = await assetIn(dir, slug);
     if (saved === null) {
       throw new Error(`${slug} could not be read back after its preview`);
+    }
+    return saved;
+  });
+}
+
+// The clip is pure decoration for the hover preview: it lives beside the
+// manifest without being named in it — assetOf finds it on disk — so filing
+// one never rewrites anything and a failure costs only the hover.
+export function attachClip(
+  slug: string,
+  from: string
+): Effect.Effect<Asset, LibraryError> {
+  return attempt(async () => {
+    const dir = join(libraryRoot(), ASSETS);
+
+    if (!existsSync(join(dir, slug, MANIFEST))) {
+      throw new Error(`there is no asset called ${slug} in the library`);
+    }
+
+    await copyFile(from, join(dir, slug, CLIP));
+
+    const saved = await assetIn(dir, slug);
+    if (saved === null) {
+      throw new Error(`${slug} could not be read back after its clip`);
     }
     return saved;
   });
@@ -357,8 +382,11 @@ function assetOf(dir: string, slug: string, manifest: AssetManifest): Asset {
   const path = join(dir, slug);
   const named = manifest.preview ?? ownPreview(manifest);
   const preview = named === null ? null : join(path, named);
+  const clip = join(path, CLIP);
 
   return {
+    category: null,
+    clip: existsSync(clip) ? clip : null,
     createdAt: manifest.createdAt,
     dependencies: manifest.dependencies,
     description: manifest.description,

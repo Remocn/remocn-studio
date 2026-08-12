@@ -66,7 +66,7 @@ function ProjectGroupBlock({
       <SidebarMenuButton
         aria-controls={panelId}
         aria-expanded={isExpanded}
-        className="pr-14 font-medium"
+        className="pr-14 font-medium hover:bg-sidebar-accent/40 active:bg-sidebar-accent/40"
         onClick={onToggle}
         value={project.id}
       >

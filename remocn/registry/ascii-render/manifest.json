@@ -1,0 +1,37 @@
+{
+  "category": "Filters",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Redraw a live scene as ASCII: the frame divides into glyph cells and each one becomes the character matching the brightness of the picture inside it.",
+  "files": [
+    {
+      "file": "ascii-render.tsx",
+      "target": "src/components/remocn/ascii-render.tsx"
+    }
+  ],
+  "name": "ascii-render",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "glyphSize": 26,
+      "charset": " .:-=+*#%@",
+      "colored": false,
+      "ink": "#9dff9d",
+      "intensity": 1,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "ASCII Render"
+}

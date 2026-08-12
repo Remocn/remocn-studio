@@ -1,0 +1,36 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A perlin-noise shader transition that sweeps its noise threshold to dissolve one scene into the next.",
+  "files": [
+    {
+      "file": "perlin-dissolve.tsx",
+      "target": "src/components/remocn/perlin-dissolve.tsx"
+    }
+  ],
+  "name": "perlin-dissolve",
+  "preview": {
+    "durationInFrames": 116,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "colorFront": "#8f88ae",
+      "colorBack": "#141318",
+      "softness": 0.1,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "shader-perlin-noise"
+  ],
+  "title": "Perlin Dissolve"
+}

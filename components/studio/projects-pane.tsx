@@ -1,7 +1,8 @@
 "use client";
 
 import {
-  ChevronUpIcon,
+  ComponentIcon,
+  FolderIcon,
   FolderOpenIcon,
   FolderPlusIcon,
   LibraryBigIcon,
@@ -9,7 +10,7 @@ import {
   SettingsIcon,
 } from "lucide-react";
 import type { MouseEvent } from "react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -41,16 +42,27 @@ import { usePickAsset } from "@/hooks/use-pick-asset";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
 import type { ScaffoldState } from "@/hooks/use-scaffold";
 import { type PaneGroup, paneSections } from "@/lib/studio/groups";
-import { shellMood } from "@/lib/studio/mood";
+import { isPaneView, type PaneView } from "@/lib/studio/pane-view";
 import { cn } from "@/lib/utils";
+import { isMediaAsset } from "@/shared/library";
 import { AssetsPane } from "./assets-pane";
+import { ComponentsPane } from "./components-pane";
 import { LogoWordmark } from "./logo-mark";
 import { ProjectGroup } from "./project-group";
 import { useStudio } from "./studio-provider";
-import { Titlebar } from "./titlebar";
 import { UpdateStatus } from "./update-status";
 
 const PLACEHOLDERS = ["one", "two", "three", "four"];
+
+const VIEW_ITEMS: readonly {
+  icon: typeof FolderIcon;
+  label: string;
+  view: PaneView;
+}[] = [
+  { icon: FolderIcon, label: "Projects", view: "projects" },
+  { icon: LibraryBigIcon, label: "Assets", view: "assets" },
+  { icon: ComponentIcon, label: "Components", view: "components" },
+];
 
 export function ProjectsPane() {
   const {
@@ -64,14 +76,13 @@ export function ProjectsPane() {
     library,
     newProject,
     onNewSession,
-    isAssetsOpen,
     onRemoveSession,
     onRetryScaffold,
     onSelectSession,
     onToggleProject,
     openFolder,
-    toggleAssets,
-    projects,
+    paneSlide,
+    paneView,
     projectsError,
     relocateProject,
     reloadProjects,
@@ -79,8 +90,8 @@ export function ProjectsPane() {
     renameProject,
     scaffolds,
     sessionsError,
+    showPane,
     toggleProjects,
-    turns,
   } = useStudio();
 
   const now = useNow();
@@ -89,17 +100,29 @@ export function ProjectsPane() {
     () => ({ relocateProject, removeProject, renameProject }),
     [relocateProject, removeProject, renameProject]
   );
-  const onPickAsset = usePickAsset(library.assets, composer.pick);
-  const drop = useAssetDrop({ save: library.save });
-  const count = library.assets.length;
+  const pickable = useMemo(
+    () => [...library.assets, ...library.bundled],
+    [library.assets, library.bundled]
+  );
+  const onPickAsset = usePickAsset(pickable, composer.pick);
+  const drop = useAssetDrop({ paneView, save: library.save, showPane });
 
-  const titlebar = (
-    <Titlebar mood={projects.length === 0 ? null : shellMood(turns)} />
+  const media = useMemo(
+    () => library.assets.filter((asset) => isMediaAsset(asset.type)),
+    [library.assets]
+  );
+  const components = useMemo(
+    () => library.assets.filter((asset) => !isMediaAsset(asset.type)),
+    [library.assets]
   );
 
-  const projectsList = (
+  let content = (
     <>
       <h2 className="sr-only">Projects</h2>
+      <SidebarActions
+        onNewProject={newProject.open}
+        onOpenFolder={openFolder}
+      />
       <ProjectsBody
         activeSessionId={activeSession?.id ?? null}
         commands={commands}
@@ -119,24 +142,39 @@ export function ProjectsPane() {
     </>
   );
 
-  const assetsGrid = (
-    <>
-      <h2 className="sr-only">Assets</h2>
-      <AssetsPane
-        assets={library.assets}
-        drop={drop}
-        error={library.error}
-        isLoading={library.isLoading}
-        onPick={onPickAsset}
-        onRemove={library.onRemove}
-        onRetry={library.reload}
-      />
-    </>
-  );
+  if (paneView === "assets") {
+    content = (
+      <>
+        <h2 className="sr-only">Assets</h2>
+        <AssetsPane
+          assets={media}
+          error={library.error}
+          isLoading={library.isLoading}
+          isOver={drop.isOver}
+          onPick={onPickAsset}
+          onRemove={library.onRemove}
+          onRetry={library.reload}
+        />
+      </>
+    );
+  }
 
-  const actions = (
-    <SidebarActions onNewProject={newProject.open} onOpenFolder={openFolder} />
-  );
+  if (paneView === "components") {
+    content = (
+      <>
+        <h2 className="sr-only">Components</h2>
+        <ComponentsPane
+          assets={components}
+          bundled={library.bundled}
+          error={library.error}
+          isLoading={library.isLoading}
+          onPick={onPickAsset}
+          onRemove={library.onRemove}
+          onRetry={library.reload}
+        />
+      </>
+    );
+  }
 
   const footer = (
     <>
@@ -167,26 +205,32 @@ export function ProjectsPane() {
     // element and the mobile Sheet, and renders a plain flex column. The
     // provider is still required — every menu part reads its context.
     <SidebarProvider className="h-full min-h-0">
-      <Sidebar className="w-full" collapsible="none">
+      {/* The shell owns the titlebar band, so the pane must not paint over
+          it: the shell's background is already the sidebar colour, and the
+          band fades away behind the brand row instead of being cut at the
+          pane's top edge. */}
+      <Sidebar
+        className="w-full bg-transparent"
+        collapsible="none"
+        ref={drop.ref}
+      >
         <SidebarHeader className="gap-0 p-0">
-          {titlebar}
           <SidebarBrand onHide={toggleProjects} />
-          {actions}
+          <PaneViewMenu onShow={showPane} view={paneView} />
         </SidebarHeader>
 
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>{projectsList}</SidebarGroupContent>
+          <SidebarGroup
+            className={cn(
+              paneSlide === "push" && "animate-screen-in",
+              paneSlide === "pop" && "animate-screen-back"
+            )}
+            data-pane-slide
+            key={paneView}
+          >
+            <SidebarGroupContent>{content}</SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-
-        <AssetsDrawer
-          count={count}
-          isOpen={isAssetsOpen}
-          onToggle={toggleAssets}
-        >
-          {assetsGrid}
-        </AssetsDrawer>
 
         {footer}
       </Sidebar>
@@ -194,50 +238,54 @@ export function ProjectsPane() {
   );
 }
 
-// The library opens upward out of the sidebar's bottom edge, the way the plan
-// drawer opens out of the composer: closed it is one quiet strip, so nothing
-// competes with the wordmark or New Project for the top of the pane.
-function AssetsDrawer({
-  children,
-  count,
-  isOpen,
-  onToggle,
+// The pane's views, as a vertical menu of their own: which of them is on
+// screen is app state, not a row among the projects. No indicators ride on
+// these items — the titlebar's mood is what says something is waiting.
+function PaneViewMenu({
+  onShow,
+  view,
 }: {
-  children: React.ReactNode;
-  count: number;
-  isOpen: boolean;
-  onToggle: () => void;
+  onShow: (view: PaneView) => void;
+  view: PaneView;
 }) {
-  return (
-    // The cap is what keeps the drawer a drawer: opened, it takes at most
-    // three fifths of the pane, so the project list it slid over is still there.
-    <div className="flex max-h-[60%] min-h-0 shrink-0 flex-col border-sidebar-border border-t">
-      <button
-        aria-expanded={isOpen}
-        className="flex h-9 shrink-0 items-center gap-2 px-3 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        onClick={onToggle}
-        type="button"
-      >
-        <LibraryBigIcon className="size-4 shrink-0 text-muted-foreground" />
-        <span className="font-medium">Assets</span>
-        <span className="ml-auto text-muted-foreground text-xs tabular-nums">
-          {count}
-        </span>
-        <ChevronUpIcon
-          aria-hidden="true"
-          className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform",
-            isOpen && "rotate-180"
-          )}
-        />
-      </button>
+  const onSelect = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const picked = event.currentTarget.value;
+      if (isPaneView(picked)) {
+        onShow(picked);
+      }
+    },
+    [onShow]
+  );
 
-      {isOpen ? (
-        <div className="min-h-0 flex-1 overflow-y-auto border-sidebar-border border-t px-2 py-2">
-          {children}
-        </div>
-      ) : null}
-    </div>
+  // The active view carries a thin rail at the pane's edge and full-contrast
+  // text — no filled background, so the menu reads as chrome rather than a
+  // selected row. The weight never changes between states, or the labels
+  // would shift as the selection moves.
+  // Hover is a soft tint — the accent at 40% with full-contrast text — so
+  // pointing at an item answers quietly while the rail stays the only mark
+  // of the view that is actually open.
+  return (
+    <nav aria-label="Library views" className="px-2 py-4">
+      <SidebarMenu>
+        {VIEW_ITEMS.map((item) => (
+          <SidebarMenuItem key={item.view}>
+            <SidebarMenuButton
+              className="relative pl-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground active:bg-sidebar-accent/40 active:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground"
+              isActive={view === item.view}
+              onClick={onSelect}
+              value={item.view}
+            >
+              {view === item.view ? (
+                <span className="absolute top-1/2 left-0 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+              ) : null}
+              <item.icon />
+              {item.label}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </SidebarMenu>
+    </nav>
   );
 }
 

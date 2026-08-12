@@ -24,6 +24,7 @@ import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
 import { HandlerError, type Handlers } from "./host";
+import { listBundled } from "./library/bundled";
 import {
   assetBrief,
   mediaBrief,
@@ -31,6 +32,7 @@ import {
   placeMedia,
 } from "./library/insert";
 import {
+  attachClip,
   attachPreview,
   attachProxy,
   dismissPaths,
@@ -43,6 +45,7 @@ import {
 } from "./library/store";
 import { libraryServer } from "./library/tools";
 import {
+  clipFrom,
   exportFrom,
   previewEvents,
   stillFrom,
@@ -89,21 +92,38 @@ const previewed = (projectId: string, playing: PromptFrame, asset: Asset) =>
     Effect.catch(() => Effect.succeed(asset))
   );
 
-const librarian = (params: PromptParams, cwd: string) =>
-  libraryServer({
+// Best-effort in the same sense the still is: a host busy with an export
+// answers "no clip now" and the save is untouched. No backfill exists on
+// purpose — a clip taken later would film today's composition, not the
+// component that was saved.
+const clipped = (projectId: string, playing: PromptFrame, asset: Asset) =>
+  asset.type === "component"
+    ? clipFrom(projectId, playing).pipe(
+        Effect.flatMap((path) => attachClip(asset.slug, path)),
+        Effect.catch(() => Effect.succeed(asset))
+      )
+    : Effect.succeed(asset);
+
+const librarian = (params: PromptParams, cwd: string) => {
+  const { playing, projectId } = params;
+
+  return libraryServer({
     cwd,
     list: () => Effect.runPromise(listAssets()),
     save: (draft: AssetDraft) =>
       Effect.runPromise(
         saveAsset(draft).pipe(
           Effect.flatMap((asset) =>
-            params.playing === null
+            playing === null
               ? Effect.succeed(asset)
-              : previewed(params.projectId, params.playing, asset)
+              : previewed(projectId, playing, asset).pipe(
+                  Effect.flatMap((saved) => clipped(projectId, playing, saved))
+                )
           )
         )
       ),
   });
+};
 
 const onDisk = (project: Project) =>
   project.missing
@@ -267,6 +287,8 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
     Effect.flatMap(HistoryStore, (store) => store.sessions).pipe(
       Effect.mapError(unstored)
     ),
+
+  "library.bundled": () => listBundled().pipe(Effect.mapError(unlibraried)),
 
   "library.dismiss": ({ params }) =>
     dismissPaths(params.attachments.map((item) => item.path)).pipe(

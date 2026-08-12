@@ -1,0 +1,36 @@
+{
+  "category": "Filters",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Print a scene onto paper: each colour separates onto its own rotated screen of dots sized by the ink under them, slightly out of register the way a real press runs.",
+  "files": [
+    {
+      "file": "halftone-print.tsx",
+      "target": "src/components/remocn/halftone-print.tsx"
+    }
+  ],
+  "name": "halftone-print",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#26231d"
+    },
+    "defaults": {
+      "dotSize": 10,
+      "angle": 0,
+      "misregistration": 1.2,
+      "paperTint": "#f4efe4",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Halftone Print"
+}

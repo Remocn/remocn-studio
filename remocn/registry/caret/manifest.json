@@ -1,0 +1,32 @@
+{
+  "category": null,
+  "componentName": "CaretPreview",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A blinking text caret — a controlled vertical bar, or a pure motion atom that blinks deterministically from useCurrentFrame.",
+  "files": [
+    {
+      "file": "caret.tsx",
+      "target": "src/components/remocn/caret.tsx"
+    }
+  ],
+  "name": "caret",
+  "preview": {
+    "durationInFrames": 120,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "height": 28,
+      "width": 3,
+      "radius": 1,
+      "blink": true,
+      "blinkPerSecond": 1,
+      "color": "#1F1E1D",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "UI Caret"
+}

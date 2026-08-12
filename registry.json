@@ -1,0 +1,11 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "remocn",
+  "homepage": "https://remocn.dev",
+  "include": [
+    "registry/remocn/registry.json",
+    "registry/remocn-ui/registry.json",
+    "registry/remocn-icons/registry.json"
+  ],
+  "items": []
+}

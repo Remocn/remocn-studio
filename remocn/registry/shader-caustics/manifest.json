@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderCaustics",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A field of refracted light — the bright filaments light makes through a rippling surface.",
+  "files": [
+    {
+      "file": "shader-caustics.tsx",
+      "target": "src/components/remocn/shader-caustics.tsx"
+    }
+  ],
+  "name": "shader-caustics",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "scale": 5.2,
+      "intensity": 1,
+      "accent": "#7F57FF",
+      "accentAmount": 0
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Caustics"
+}

@@ -20,6 +20,8 @@
       // Vendored upstream skills. Formatting them would make `skills:check`
       // report drift against upstream on every sync.
       "!!agent/skills",
+      // Vendored remocn registry components; same story via `remocn:check`.
+      "!!remocn",
       // Generated output — nothing here is authored.
       "!!.next",
       "!!out",

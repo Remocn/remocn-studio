@@ -1,0 +1,37 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A grain-gradient wave that sweeps up across the frame, covering the outgoing scene and revealing the next one from below.",
+  "files": [
+    {
+      "file": "wave-wipe.tsx",
+      "target": "src/components/remocn/wave-wipe.tsx"
+    }
+  ],
+  "name": "wave-wipe",
+  "preview": {
+    "durationInFrames": 116,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "intensity": 0.2,
+      "softness": 0.7,
+      "noise": 0.4,
+      "colorBack": "#141318",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Wave Wipe"
+}

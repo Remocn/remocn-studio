@@ -11,6 +11,8 @@ import {
 } from "@/shared/library";
 
 const ASSET: Asset = {
+  category: null,
+  clip: null,
   createdAt: 7,
   dependencies: ["three"],
   description: "A neon title",

@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderNeuroNoise",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Organic neural-web noise field that slowly morphs.",
+  "files": [
+    {
+      "file": "shader-neuro-noise.tsx",
+      "target": "src/components/remocn/shader-neuro-noise.tsx"
+    }
+  ],
+  "name": "shader-neuro-noise",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "brightness": 0.05,
+      "contrast": 0.3,
+      "colorBack": "#12121a",
+      "colorMid": "#4a4a68"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Neuro Noise"
+}

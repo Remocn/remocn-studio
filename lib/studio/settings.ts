@@ -1,6 +1,7 @@
 import { load } from "@tauri-apps/plugin-store";
 import { Effect } from "effect";
 import type { LayoutStorage } from "react-resizable-panels";
+import { isPaneView, type PaneView } from "@/lib/studio/pane-view";
 import { type EffortLevel, isEffortLevel } from "@/shared/ipc";
 
 const SETTINGS_FILE = "settings.json";
@@ -11,7 +12,7 @@ const CLAUDE_EFFORT_KEY = "claudeEffort";
 const PREVIEW_PANE_KEY = "previewPane";
 const PROJECTS_PANE_KEY = "projectsPane";
 const TASK_DOCK_KEY = "taskDock";
-const ASSETS_DRAWER_KEY = "assetsDrawer";
+const PANE_VIEW_KEY = "paneView";
 const LAYOUT_KEY_PREFIX = "layout:";
 
 const cache = new Map<string, string>();
@@ -21,11 +22,11 @@ const openStore = Effect.runSync(
 );
 
 export interface StudioSettings {
-  assetsDrawer: boolean | null;
   claudeEffort: EffortLevel | null;
   claudeModel: string | null;
   expandedProjects: readonly string[];
   legacyProjectFolder: string | null;
+  paneView: PaneView | null;
   previewPane: boolean | null;
   projectsPane: boolean | null;
   taskDock: boolean | null;
@@ -42,11 +43,11 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
       }
     }
     return {
-      assetsDrawer: shownOf(cache.get(ASSETS_DRAWER_KEY)),
       claudeEffort: effortOf(cache.get(CLAUDE_EFFORT_KEY)),
       claudeModel: cache.get(CLAUDE_MODEL_KEY) ?? null,
       expandedProjects: idsOf(cache.get(EXPANDED_PROJECTS_KEY)),
       legacyProjectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
+      paneView: paneViewOf(cache.get(PANE_VIEW_KEY)),
       previewPane: shownOf(cache.get(PREVIEW_PANE_KEY)),
       projectsPane: shownOf(cache.get(PROJECTS_PANE_KEY)),
       taskDock: shownOf(cache.get(TASK_DOCK_KEY)),
@@ -56,6 +57,10 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
 
 function effortOf(value: string | undefined): EffortLevel | null {
   return isEffortLevel(value) ? value : null;
+}
+
+function paneViewOf(value: string | undefined): PaneView | null {
+  return value !== undefined && isPaneView(value) ? value : null;
 }
 
 function shownOf(value: string | undefined): boolean | null {
@@ -127,8 +132,8 @@ export function saveTaskDock(shown: boolean): Effect.Effect<void> {
   return remember(TASK_DOCK_KEY, shown ? "shown" : "hidden");
 }
 
-export function saveAssetsDrawer(shown: boolean): Effect.Effect<void> {
-  return remember(ASSETS_DRAWER_KEY, shown ? "shown" : "hidden");
+export function savePaneView(view: PaneView): Effect.Effect<void> {
+  return remember(PANE_VIEW_KEY, view);
 }
 
 export function saveClaudeEffort(

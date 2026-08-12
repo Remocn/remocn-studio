@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderVoronoi",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Animated Voronoi cells shifting and re-tessellating.",
+  "files": [
+    {
+      "file": "shader-voronoi.tsx",
+      "target": "src/components/remocn/shader-voronoi.tsx"
+    }
+  ],
+  "name": "shader-voronoi",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.4,
+      "gap": 0.04,
+      "glow": 0,
+      "colorGap": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Voronoi"
+}

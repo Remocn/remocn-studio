@@ -73,6 +73,12 @@ export const AssetManifest = Schema.Struct({
 export type AssetManifest = (typeof AssetManifest)["Type"];
 
 export const Asset = Schema.Struct({
+  category: Schema.NullOr(Schema.NonEmptyString).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
+  clip: Schema.NullOr(Schema.NonEmptyString).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
   createdAt: Schema.Int,
   dependencies: Schema.Array(Schema.NonEmptyString),
   description: Schema.String,
@@ -174,6 +180,19 @@ export function assetTypeFor(files: readonly string[]): AssetType {
 
 export function isMediaAsset(type: AssetType): boolean {
   return type !== "component";
+}
+
+// Bundled remocn components live in the app bundle, not the user's library.
+// Their slugs carry the prefix so one PromptAsset shape names both worlds:
+// a user slug is a folder name and can never contain a slash.
+export const BUNDLED_PREFIX = "remocn/";
+
+export function isBundledSlug(slug: string): boolean {
+  return slug.startsWith(BUNDLED_PREFIX);
+}
+
+export function bundledNameOf(slug: string): string {
+  return slug.slice(BUNDLED_PREFIX.length);
 }
 
 // Measured in WebKit on a 15s clip: seeking 3840x2160 costs 59ms at the median

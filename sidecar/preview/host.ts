@@ -14,7 +14,7 @@ import {
 } from "@/shared/ipc";
 import { libraryRoot } from "../library/store";
 import { untilGone, untilOrphaned, untilSignalled } from "../lifecycle";
-import { exporterOf, exportMedia } from "./export";
+import { clipMedia, exporterOf, exportMedia } from "./export";
 import { withoutWebFonts } from "./grab";
 import {
   agreedVersionIn,
@@ -31,6 +31,7 @@ import {
   webpackOverrideOf,
 } from "./project";
 import {
+  type ClipCommand,
   decodeHostCommand,
   type ExportCommand,
   type HostReply,
@@ -402,23 +403,78 @@ function obey(booted: Booted, line: string): Effect.Effect<void> {
     return FiberMap.remove(booted.running, command.id);
   }
 
-  return command.type === "export"
-    ? begin(booted, command)
-    : answer(booted, command);
+  if (command.type === "export" || command.type === "clip") {
+    return begin(booted, command);
+  }
+
+  return answer(booted, command);
 }
 
-function begin(booted: Booted, command: ExportCommand): Effect.Effect<void> {
-  return Effect.flatMap(FiberMap.size(booted.running), (busy) =>
-    busy > 0
-      ? write({
-          id: command.id,
-          message:
-            "an export is already running in this project — cancel it before starting another",
-          type: "export-failed",
-        })
-      : Effect.asVoid(
-          FiberMap.run(booted.running, command.id, ship(booted, command))
-        )
+// One encoder at a time, whatever it is encoding: a clip asked for while an
+// export runs is refused rather than queued — the save it decorates must not
+// wait minutes for a render it does not need.
+function begin(
+  booted: Booted,
+  command: ExportCommand | ClipCommand
+): Effect.Effect<void> {
+  return Effect.flatMap(FiberMap.size(booted.running), (busy) => {
+    if (busy > 0) {
+      return command.type === "clip"
+        ? write({
+            id: command.id,
+            message: "an export is running in this project, so no clip now",
+            type: "clip-failed",
+          })
+        : write({
+            id: command.id,
+            message:
+              "an export is already running in this project — cancel it before starting another",
+            type: "export-failed",
+          });
+    }
+
+    return Effect.asVoid(
+      FiberMap.run(
+        booted.running,
+        command.id,
+        command.type === "clip"
+          ? shipClip(booted, command)
+          : ship(booted, command)
+      )
+    );
+  });
+}
+
+function shipClip(booted: Booted, command: ClipCommand): Effect.Effect<void> {
+  const { composition, frame, id } = command;
+
+  return Effect.gen(function* () {
+    const tools = yield* toolsFor(booted.root);
+    const renderer = yield* exporterOf(tools.renderer);
+
+    yield* log(`clip of ${composition} at ${frame} starting`);
+
+    const path_ = yield* clipMedia({
+      cache: booted.cache,
+      composition,
+      dir: booted.dir,
+      frame,
+      options: tools.options,
+      renderer,
+      serveUrl: booted.serveUrl,
+    });
+
+    yield* log(`clip wrote ${path_}`);
+
+    return yield* write({ id, path: path_, type: "clip-done" });
+  }).pipe(
+    Effect.catch((error) =>
+      Effect.andThen(
+        log(`clip failed: ${error.message}`),
+        write({ id, message: error.message, type: "clip-failed" })
+      )
+    ),
+    Effect.onInterrupt(() => log(`clip of ${composition} was cancelled`))
   );
 }
 

@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderPulsingBorder",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Glowing border frame that pulses around the edges.",
+  "files": [
+    {
+      "file": "shader-pulsing-border.tsx",
+      "target": "src/components/remocn/shader-pulsing-border.tsx"
+    }
+  ],
+  "name": "shader-pulsing-border",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "thickness": 0.1,
+      "roundness": 0.25,
+      "intensity": 0.2,
+      "colorBack": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Pulsing Border"
+}

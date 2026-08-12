@@ -1,0 +1,36 @@
+{
+  "category": "Typography",
+  "componentName": "SpringScaleIn",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Words pop in with a soft overshoot scale, like a physical spring settling into place.",
+  "files": [
+    {
+      "file": "spring-scale-in.tsx",
+      "target": "src/components/remocn/spring-scale-in.tsx"
+    }
+  ],
+  "name": "spring-scale-in",
+  "preview": {
+    "durationInFrames": 60,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "defaults": {
+      "text": "Fast. Crisp. Fluid.",
+      "staggerDelay": 3,
+      "scaleFrom": 0.7,
+      "fontSize": 72,
+      "color": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Spring Scale In"
+}

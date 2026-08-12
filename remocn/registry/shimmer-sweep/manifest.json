@@ -1,0 +1,31 @@
+{
+  "category": "Typography",
+  "componentName": "ShimmerSweep",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Light shine sweeps across muted text via background-clip:text.",
+  "files": [
+    {
+      "file": "shimmer-sweep.tsx",
+      "target": "src/components/remocn/shimmer-sweep.tsx"
+    }
+  ],
+  "name": "shimmer-sweep",
+  "preview": {
+    "durationInFrames": 120,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "text": "Generating",
+      "baseColor": "#3f3f46",
+      "shineColor": "#fafafa",
+      "fontSize": 96,
+      "fontWeight": "700",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shimmer Sweep"
+}

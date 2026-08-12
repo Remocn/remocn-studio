@@ -39,11 +39,13 @@ export interface RenderMediaOptions {
   chromiumOptions: Record<string, unknown>;
   codec: string;
   composition: Measured;
+  frameRange?: [number, number];
   logLevel: string;
   onProgress: (progress: RenderMediaProgress) => void;
   onStart: (data: { frameCount: number }) => void;
   outputLocation: string;
   overwrite: boolean;
+  scale?: number;
   serveUrl: string;
   timeoutInMilliseconds: number;
 }
@@ -136,7 +138,8 @@ export function exportMedia(
 function render(
   input: ExportInput,
   measured: Measured,
-  output: string
+  output: string,
+  extra: Partial<RenderMediaOptions> = {}
 ): Effect.Effect<void, PreviewError> {
   const { chromeMode, chromiumOptions } = input.options;
   const timeoutInMilliseconds =
@@ -162,6 +165,7 @@ function render(
         overwrite: true,
         serveUrl: input.serveUrl,
         timeoutInMilliseconds,
+        ...extra,
       })
       .then(
         () => resume(Effect.void),
@@ -173,6 +177,90 @@ function render(
       return settled;
     }).pipe(Effect.timeout(CANCEL_GRACE_MS), Effect.ignore);
   });
+}
+
+const CLIP_SECONDS = 6;
+const CLIP_WIDTH = 640;
+const CLIPS_DIR = "clips";
+
+export interface ClipInput {
+  cache: CompositionCache;
+  composition: string;
+  dir: string;
+  frame: number;
+  options: RenderOptions;
+  renderer: Exporter & Renderer;
+  serveUrl: string;
+}
+
+// A hover preview, not an export: a few seconds of the composition from the
+// frame the person is looking at, downscaled so a grid of cards costs little
+// to decode. Best-effort by contract — the caller swallows every failure.
+export function clipMedia(
+  input: ClipInput
+): Effect.Effect<string, PreviewError> {
+  return Effect.gen(function* () {
+    yield* readyBrowser({
+      onEvent: () => undefined,
+      options: input.options,
+      renderer: input.renderer,
+    });
+
+    const measured = yield* warmComposition({
+      cache: input.cache,
+      composition: input.composition,
+      options: input.options,
+      renderer: input.renderer,
+      serveUrl: input.serveUrl,
+    });
+
+    const folder = path.join(input.dir, CLIPS_DIR);
+
+    yield* Effect.tryPromise({
+      catch: renderError,
+      try: async () => {
+        await rm(folder, { force: true, recursive: true });
+        await mkdir(folder, { recursive: true });
+      },
+    });
+
+    const output = path.join(
+      folder,
+      `clip-${randomBytes(4).toString("hex")}${EXTENSION}`
+    );
+
+    const fps = numberOf(measured.fps, 30);
+    const duration = frameCountOf(measured);
+    const start = Math.max(0, Math.min(Math.trunc(input.frame), duration - 1));
+    const end = Math.min(
+      duration - 1,
+      start + Math.round(CLIP_SECONDS * fps) - 1
+    );
+    const scale = Math.min(1, CLIP_WIDTH / Math.max(1, measured.width));
+
+    yield* render(
+      {
+        cache: input.cache,
+        composition: input.composition,
+        onEvent: () => undefined,
+        options: input.options,
+        renderer: input.renderer,
+        root: input.dir,
+        serveUrl: input.serveUrl,
+      },
+      measured,
+      output,
+      { frameRange: [start, Math.max(start, end)], scale }
+    );
+
+    return output;
+  });
+}
+
+function numberOf(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback;
 }
 
 function progressOf(

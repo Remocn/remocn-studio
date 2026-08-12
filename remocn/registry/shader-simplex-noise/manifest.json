@@ -1,0 +1,28 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSimplexNoise",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Simplex noise flow field, smoother than Perlin.",
+  "files": [
+    {
+      "file": "shader-simplex-noise.tsx",
+      "target": "src/components/remocn/shader-simplex-noise.tsx"
+    }
+  ],
+  "name": "shader-simplex-noise",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "stepsPerColor": 2,
+      "softness": 0.1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Simplex Noise"
+}

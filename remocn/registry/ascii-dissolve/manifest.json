@@ -1,0 +1,34 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "Dissolve one scene into the next through a drifting field of ASCII glyphs.",
+  "files": [
+    {
+      "file": "ascii-dissolve.tsx",
+      "target": "src/components/remocn/ascii-dissolve.tsx"
+    }
+  ],
+  "name": "ascii-dissolve",
+  "preview": {
+    "durationInFrames": 100,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0d0d10"
+    },
+    "defaults": {
+      "colorBack": "#0d0d10",
+      "colorFront": "#f2f2f2",
+      "cellSize": 22,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "ASCII Dissolve"
+}

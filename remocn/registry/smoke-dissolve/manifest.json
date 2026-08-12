@@ -1,0 +1,35 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A smoke-ring shader transition that expands the ring outward to reveal the next scene.",
+  "files": [
+    {
+      "file": "smoke-dissolve.tsx",
+      "target": "src/components/remocn/smoke-dissolve.tsx"
+    }
+  ],
+  "name": "smoke-dissolve",
+  "preview": {
+    "durationInFrames": 116,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "ringColor": "#8f88ae",
+      "colorBack": "#141318",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "shader-smoke-ring"
+  ],
+  "title": "Smoke Dissolve"
+}

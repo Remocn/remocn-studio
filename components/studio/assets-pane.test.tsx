@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AssetsPane } from "@/components/studio/assets-pane";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import type { AssetDrop } from "@/hooks/use-asset-drop";
 import type { Asset } from "@/shared/library";
 
 const NEON_ROW = /^Neon Title/;
@@ -12,6 +11,8 @@ const A_BADGE = /^\d+:\d\d$/;
 
 function asset(shape: Partial<Asset> = {}): Asset {
   return {
+    category: null,
+    clip: null,
     createdAt: 1,
     dependencies: [],
     description: "",
@@ -27,19 +28,9 @@ function asset(shape: Partial<Asset> = {}): Asset {
   };
 }
 
-function drop(shape: Partial<AssetDrop> = {}): AssetDrop {
-  return {
-    isOver: false,
-    ref: { current: null },
-    rejected: null,
-    ...shape,
-  };
-}
-
 function pane(
   props: {
     assets?: readonly Asset[];
-    drop?: AssetDrop;
     error?: string | null;
     isLoading?: boolean;
   } = {}
@@ -57,9 +48,9 @@ function pane(
     <SidebarProvider>
       <AssetsPane
         assets={props.assets ?? [asset()]}
-        drop={props.drop ?? drop()}
         error={props.error ?? null}
         isLoading={props.isLoading ?? false}
+        isOver={false}
         onPick={onPick}
         onRemove={onRemove}
         onRetry={vi.fn()}

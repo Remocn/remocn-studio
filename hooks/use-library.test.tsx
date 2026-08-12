@@ -25,6 +25,8 @@ function pause(ms: number) {
 
 function asset(shape: Partial<Asset> = {}): Asset {
   return {
+    category: null,
+    clip: null,
     createdAt: 1,
     dependencies: [],
     description: "",

@@ -1,0 +1,39 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "The outgoing frame catches fire where it is brightest, boils in the heat, chars at the rim, and blows away as sparks carrying its own colour.",
+  "files": [
+    {
+      "file": "ember-burn.tsx",
+      "target": "src/components/remocn/ember-burn.tsx"
+    }
+  ],
+  "name": "ember-burn",
+  "preview": {
+    "durationInFrames": 80,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "patches": 5,
+      "edgeSoftness": 0.07,
+      "contentBias": 0.6,
+      "heat": 0.5,
+      "glowColor": "#ff7a2f",
+      "emberAmount": 0.5,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Ember Burn"
+}

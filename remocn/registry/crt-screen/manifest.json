@@ -1,0 +1,36 @@
+{
+  "category": "Filters",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Put a scene behind curved glass: the picture bulges out to the corners, an RGB phosphor mask and scanlines ride the curve, bright areas flood the mask, and the tube falls away into darkness at the rim.",
+  "files": [
+    {
+      "file": "crt-screen.tsx",
+      "target": "src/components/remocn/crt-screen.tsx"
+    }
+  ],
+  "name": "crt-screen",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "curvature": 1,
+      "scanlines": 1,
+      "maskScale": 2,
+      "vignette": 1,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "CRT Screen"
+}

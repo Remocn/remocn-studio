@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSwirl",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Concentric bands swirling around a center point.",
+  "files": [
+    {
+      "file": "shader-swirl.tsx",
+      "target": "src/components/remocn/shader-swirl.tsx"
+    }
+  ],
+  "name": "shader-swirl",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "bandCount": 4,
+      "twist": 0.1,
+      "softness": 0.2,
+      "colorBack": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Swirl"
+}

@@ -4,10 +4,16 @@ import { basename, dirname, join, relative } from "node:path";
 import { Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { PromptMedia } from "@/shared/ipc";
-import type { AssetType, PromptAsset } from "@/shared/library";
+import {
+  type AssetType,
+  bundledNameOf,
+  isBundledSlug,
+  type PromptAsset,
+} from "@/shared/library";
 import { referenceOf } from "@/shared/references";
 import { isInstalled } from "../environment";
 import { remotionRootOf } from "../preview/project";
+import { bundledPlan } from "./bundled";
 import { findAsset, LibraryError } from "./store";
 
 export const MEDIA_FOLDER = "public/library";
@@ -128,10 +134,53 @@ function describe(placement: Placement, index: number): string {
   return lines.join("\n");
 }
 
+// A bundled component lands in the registry's own layout —
+// src/components/remocn/<name>.tsx plus the shared src/lib/remocn-* runtime —
+// so a second component reusing the runtime skips it by the same
+// never-overwrite rule that keeps an agent's edits safe.
+function placeBundled(
+  cwd: string,
+  asset: PromptAsset
+): Effect.Effect<Placement, LibraryError> {
+  return Effect.flatMap(bundledPlan(bundledNameOf(asset.slug)), (plan) => {
+    if (plan === null) {
+      return Effect.succeed<Placement>({
+        copied: [],
+        missing: [],
+        name: asset.name,
+        reason:
+          "is not among the bundled remocn components, so nothing was copied.",
+        skipped: [],
+        type: asset.type,
+      });
+    }
+
+    const root = remotionRootOf(cwd);
+
+    return Effect.tryPromise({
+      catch: (cause) => new LibraryError({ message: errorMessage(cause) }),
+      try: () => copyPlanned(root, plan.files),
+    }).pipe(
+      Effect.map((landed) => ({
+        copied: landed.copied,
+        missing: plan.dependencies.filter((name) => !isInstalled(root, name)),
+        name: plan.title,
+        reason: null,
+        skipped: landed.skipped,
+        type: "component" as const,
+      }))
+    );
+  });
+}
+
 function place(
   cwd: string,
   asset: PromptAsset
 ): Effect.Effect<Placement, LibraryError> {
+  if (isBundledSlug(asset.slug)) {
+    return placeBundled(cwd, asset);
+  }
+
   return Effect.flatMap(findAsset(asset.slug), (found) => {
     if (found === null) {
       return Effect.succeed<Placement>({
@@ -165,6 +214,30 @@ function place(
       }))
     );
   });
+}
+
+async function copyPlanned(
+  root: string,
+  files: readonly { from: string; target: string }[]
+): Promise<{ copied: string[]; skipped: string[] }> {
+  const landed = await Promise.all(
+    files.map(async (file) => {
+      const target = join(root, file.target);
+
+      if (existsSync(target)) {
+        return { shown: file.target, written: false };
+      }
+
+      await mkdir(dirname(target), { recursive: true });
+      await copyFile(file.from, target);
+      return { shown: file.target, written: true };
+    })
+  );
+
+  return {
+    copied: landed.filter((one) => one.written).map((one) => one.shown),
+    skipped: landed.filter((one) => !one.written).map((one) => one.shown),
+  };
 }
 
 async function copyInto(

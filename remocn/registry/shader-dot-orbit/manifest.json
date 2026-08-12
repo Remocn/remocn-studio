@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderDotOrbit",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Dots orbiting on concentric paths across the frame.",
+  "files": [
+    {
+      "file": "shader-dot-orbit.tsx",
+      "target": "src/components/remocn/shader-dot-orbit.tsx"
+    }
+  ],
+  "name": "shader-dot-orbit",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "size": 1,
+      "spreading": 1,
+      "colorBack": "#12121a"
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Dot Orbit"
+}

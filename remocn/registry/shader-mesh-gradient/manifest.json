@@ -1,0 +1,28 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderMeshGradient",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "WebGL mesh gradient backdrop driven per-frame for deterministic Remotion renders.",
+  "files": [
+    {
+      "file": "shader-mesh-gradient.tsx",
+      "target": "src/components/remocn/shader-mesh-gradient.tsx"
+    }
+  ],
+  "name": "shader-mesh-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.6,
+      "swirl": 0.1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Mesh Gradient"
+}

@@ -1,0 +1,30 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarp",
+  "dependencies": [
+    "@paper-design/shaders-react"
+  ],
+  "description": "Domain-warped color field that folds and stretches like liquid.",
+  "files": [
+    {
+      "file": "shader-warp.tsx",
+      "target": "src/components/remocn/shader-warp.tsx"
+    }
+  ],
+  "name": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.2,
+      "swirl": 0.4,
+      "softness": 1,
+      "proportion": 0.5
+    }
+  },
+  "registryDependencies": [],
+  "title": "Shader Warp"
+}

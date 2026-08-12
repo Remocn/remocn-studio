@@ -1,0 +1,32 @@
+{
+  "category": "Typography",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Cycles a word through a list of values with a 3D rolodex card flip while an invisible sizer keeps the line width and baseline stable.",
+  "files": [
+    {
+      "file": "rolodex-flip.tsx",
+      "target": "src/components/remocn/rolodex-flip.tsx"
+    }
+  ],
+  "name": "rolodex-flip",
+  "preview": {
+    "durationInFrames": 110,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "interval": 20,
+      "flipDuration": 10,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Rolodex Flip"
+}

@@ -1,0 +1,42 @@
+{
+  "category": "Typography",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A hand-dragged brush underline that sweeps itself across in a few stop-motion poses, thinning to a dry tail.",
+  "files": [
+    {
+      "file": "ink-underline.tsx",
+      "target": "src/components/remocn/ink-underline.tsx"
+    }
+  ],
+  "name": "ink-underline",
+  "preview": {
+    "durationInFrames": 120,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#f1eee7"
+    },
+    "defaults": {
+      "width": 420,
+      "color": "#6f7f35",
+      "thickness": 9,
+      "pressure": 1,
+      "release": 0.15,
+      "grain": 1,
+      "durationSteps": 5,
+      "seed": "ink",
+      "step": 3,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "stop-motion",
+    "brush"
+  ],
+  "title": "Ink Underline"
+}

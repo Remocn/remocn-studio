@@ -1,0 +1,33 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A depth punch-in transition that pushes the outgoing scene through the viewer while the incoming one resolves out of blur.",
+  "files": [
+    {
+      "file": "zoom-blur.tsx",
+      "target": "src/components/remocn/zoom-blur.tsx"
+    }
+  ],
+  "name": "zoom-blur",
+  "preview": {
+    "durationInFrames": 114,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "blur": 16,
+      "rise": 0,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Zoom Blur"
+}

@@ -1,0 +1,33 @@
+{
+  "category": "Typography",
+  "componentName": "InlineHighlight",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Animates one word inside a sentence from a base color to a brand color.",
+  "files": [
+    {
+      "file": "inline-highlight.tsx",
+      "target": "src/components/remocn/inline-highlight.tsx"
+    }
+  ],
+  "name": "inline-highlight",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "before": "Ship faster with ",
+      "highlight": "remocn",
+      "after": ".",
+      "baseColor": "#171717",
+      "highlightColor": "#ff5e3a",
+      "fontSize": 72,
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Inline Highlight"
+}

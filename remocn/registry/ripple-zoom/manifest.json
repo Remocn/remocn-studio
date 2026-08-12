@@ -1,0 +1,37 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "A grain-gradient ripple transition that flies the camera through the center of the rings while the next scene approaches from the depth.",
+  "files": [
+    {
+      "file": "ripple-zoom.tsx",
+      "target": "src/components/remocn/ripple-zoom.tsx"
+    }
+  ],
+  "name": "ripple-zoom",
+  "preview": {
+    "durationInFrames": 116,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "zoom": 4,
+      "intensity": 0.5,
+      "softness": 0.5,
+      "colorBack": "#141318",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Ripple Zoom"
+}

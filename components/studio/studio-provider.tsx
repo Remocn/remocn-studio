@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, use, useMemo } from "react";
+import { createContext, use, useCallback, useMemo } from "react";
 import { type ClaudeEffort, useClaudeEffort } from "@/hooks/use-claude-effort";
 import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
 import { type Composer, useComposer } from "@/hooks/use-composer";
@@ -13,8 +13,9 @@ import { type Panes, usePanes } from "@/hooks/use-panes";
 import { usePreview } from "@/hooks/use-preview";
 import { type Tools, useTools } from "@/hooks/use-tools";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
+import type { VideoFormat } from "@/lib/studio/formats";
 import type { StudioSettings } from "@/lib/studio/settings";
-import type { PromptFrame } from "@/shared/ipc";
+import type { ProjectDraft, PromptFrame } from "@/shared/ipc";
 
 export type Studio = ClaudeEffort &
   ClaudeModel &
@@ -44,7 +45,26 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const workspace = useWorkspace(settings);
   const model = useClaudeModel(settings);
   const effort = useClaudeEffort(settings);
-  const newProject = useNewProject(workspace.createProject);
+  const panes = usePanes(
+    settings,
+    workspace.projects.length > 0,
+    workspace.isLoadingProjects
+  );
+
+  const { createProject } = workspace;
+  const { showPane } = panes;
+  const createAndShow = useCallback(
+    async (draft: ProjectDraft, format: VideoFormat) => {
+      const project = await createProject(draft, format);
+      if (project !== null) {
+        showPane("projects");
+      }
+      return project;
+    },
+    [createProject, showPane]
+  );
+
+  const newProject = useNewProject(createAndShow);
   const library = useLibrary(workspace.hasRunningTurns);
 
   const previewProjectId = previewTarget(workspace);
@@ -68,12 +88,6 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     onSubmit: turn.send,
     projectId: opened?.id ?? null,
   });
-
-  const panes = usePanes(
-    settings,
-    workspace.projects.length > 0,
-    workspace.isLoadingProjects
-  );
 
   const tools = useTools({
     composer,

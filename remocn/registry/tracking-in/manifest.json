@@ -1,0 +1,32 @@
+{
+  "category": "Typography",
+  "componentName": "TrackingIn",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Letter-spacing collapses and blur clears with a springy motion.",
+  "files": [
+    {
+      "file": "tracking-in.tsx",
+      "target": "src/components/remocn/tracking-in.tsx"
+    }
+  ],
+  "name": "tracking-in",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "text": "tracking in",
+      "startTracking": 0.5,
+      "startBlur": 12,
+      "fontSize": 96,
+      "color": "#171717",
+      "fontWeight": "700",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [],
+  "title": "Tracking In"
+}

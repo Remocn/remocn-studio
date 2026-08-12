@@ -36,6 +36,11 @@ type Pending =
       kind: "still";
       progress: (event: StillEvent) => void;
       succeed: (still: Still | null) => void;
+    }
+  | {
+      fail: (message: string) => void;
+      kind: "clip";
+      succeed: (path: string) => void;
     };
 
 type ExportPending = Extract<Pending, { kind: "export" }>;
@@ -113,6 +118,21 @@ export function warmFrom(
         succeed: (still) => settle(Effect.succeed(still)),
       })
     )
+  );
+}
+
+export function clipFrom(
+  projectId: string,
+  request: StillRequest
+): Effect.Effect<string, PreviewError> {
+  return ask<string>(
+    projectId,
+    (id) => ({ ...request, id, type: "clip" }),
+    (settle) => ({
+      fail: (message) => settle(Effect.fail(failed(message))),
+      kind: "clip",
+      succeed: (written) => settle(Effect.succeed(written)),
+    })
   );
 }
 
@@ -237,8 +257,19 @@ function deliver(reply: HostReply, pending: Map<string, Pending>): void {
     return;
   }
 
-  if (reply.type === "still-failed" || reply.type === "export-failed") {
+  if (
+    reply.type === "still-failed" ||
+    reply.type === "export-failed" ||
+    reply.type === "clip-failed"
+  ) {
     waiting.fail(reply.message);
+    return;
+  }
+
+  if (waiting.kind === "clip") {
+    if (reply.type === "clip-done") {
+      waiting.succeed(reply.path);
+    }
     return;
   }
 

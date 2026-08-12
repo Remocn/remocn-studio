@@ -1,0 +1,18 @@
+{
+  "category": null,
+  "componentName": null,
+  "dependencies": [],
+  "description": "Variable-width brush ribbons for Remotion. Pressure taper, grain displacement, and spine samplers shared by the ink marks.",
+  "files": [
+    {
+      "file": "brush.tsx",
+      "target": "src/components/remocn/brush.tsx"
+    }
+  ],
+  "name": "brush",
+  "preview": null,
+  "registryDependencies": [
+    "stop-motion"
+  ],
+  "title": "Brush"
+}

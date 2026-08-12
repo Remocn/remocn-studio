@@ -1,0 +1,39 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/transitions"
+  ],
+  "description": "The frame is ground into drifting grey dust whose specks carry real fragments of the picture, and the next scene coalesces back out of the same dust.",
+  "files": [
+    {
+      "file": "particle-dissolve.tsx",
+      "target": "src/components/remocn/particle-dissolve.tsx"
+    }
+  ],
+  "name": "particle-dissolve",
+  "preview": {
+    "durationInFrames": 84,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "particleSize": 4,
+      "scatter": 0.08,
+      "shimmer": 0.6,
+      "aberration": 0.5,
+      "direction": "reveal",
+      "stagger": 0.55,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "Particle Dissolve"
+}

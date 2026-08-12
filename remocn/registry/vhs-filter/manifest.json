@@ -1,0 +1,36 @@
+{
+  "category": "Filters",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Hold a scene under analog tape: chroma bleeds sideways off every edge, rows wobble out of line, the bottom of the frame tears on the head switch, and luma noise settles over all of it.",
+  "files": [
+    {
+      "file": "vhs-filter.tsx",
+      "target": "src/components/remocn/vhs-filter.tsx"
+    }
+  ],
+  "name": "vhs-filter",
+  "preview": {
+    "durationInFrames": 90,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#0a0a0a"
+    },
+    "defaults": {
+      "bleed": 1,
+      "wobble": 1,
+      "noise": 1,
+      "intensity": 1,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "canvas-presentation"
+  ],
+  "title": "VHS Filter"
+}

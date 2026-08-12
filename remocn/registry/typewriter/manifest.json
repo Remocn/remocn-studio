@@ -1,0 +1,36 @@
+{
+  "category": "Typography",
+  "componentName": "Typewriter",
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "Character-by-character text reveal with a deterministic blinking cursor.",
+  "files": [
+    {
+      "file": "typewriter.tsx",
+      "target": "src/components/remocn/typewriter.tsx"
+    }
+  ],
+  "name": "typewriter",
+  "preview": {
+    "durationInFrames": 120,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "text": "console.log('hello, world')",
+      "cursor": true,
+      "charsPerSecond": 22,
+      "fontSize": 72,
+      "color": "#171717",
+      "cursorColor": "#171717",
+      "fontWeight": "600",
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "remocn-ui",
+    "caret"
+  ],
+  "title": "Typewriter"
+}

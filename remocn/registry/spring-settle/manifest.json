@@ -1,0 +1,36 @@
+{
+  "category": "Transitions",
+  "componentName": null,
+  "dependencies": [
+    "remotion"
+  ],
+  "description": "A scene sequencer where the outgoing scene shrinks away as one group, the stage holds empty for a beat, and the next scene's items land staggered from above-1 scale.",
+  "files": [
+    {
+      "file": "spring-settle.tsx",
+      "target": "src/components/remocn/spring-settle.tsx"
+    }
+  ],
+  "name": "spring-settle",
+  "preview": {
+    "durationInFrames": 213,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#141318"
+    },
+    "defaults": {
+      "enterScale": 1.24,
+      "enterStagger": 3,
+      "exitScale": 0.84,
+      "exitFrames": 6,
+      "speed": 1
+    }
+  },
+  "registryDependencies": [
+    "scene-motion"
+  ],
+  "title": "Spring Settle"
+}
