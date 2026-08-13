@@ -1,129 +1,98 @@
-<p align="left">
-  <img alt="header" src="https://shieldcn.dev/header/transparent.svg?mode=dark&amp;align=left&amp;border=false&amp;image=https%3A%2F%2Fremocn.dev%2Fstudio.png&amp;overlay=0" />
-</p>
 
-![badge group](https://shieldcn.dev/group/github/kapishdima/remocn-studio/stars+github/kapishdima/remocn-studio/license+x/follow/kapish_dima.svg?variant=secondary)
+<img width="1200" height="630" alt="Frame 1 (11)" src="https://github.com/user-attachments/assets/f01c6e05-a0cb-4c07-a712-a3071a6961fa" />
 
-# remocn studio
+  <h1 align="left">Remocn Studio</h1>
 
-**A local desktop app that turns "I want a video" into a real Remotion project.**
+  <p align="left">
+    Ship a launch video without opening After Effects.<br />
+    A macOS app where an AI agent makes videos for you — as
+  real code you own.
+  </p>
 
-Open a folder, describe the video in chat, and watch Claude write actual Remotion TSX into it —
-previewed live in the app and exported to mp4 without touching a terminal.
+  ![badge group](https://shieldcn.dev/group/github/kapishdima/remocn-studio/stars+github/kapishdima/remocn-studio/license+x/follow/kapish_dima.svg?variant=secondary)
 
-[remocn.dev](https://remocn.dev) · [design record](https://github.com/Remocn/remocn/issues/218)
+  ---
 
-> **Status: early prototype, personal use.** Not a product release, not packaged, macOS only.
-> See [Status](#status) for what actually runs today.
+  ## What is this?
 
-## What it is
+  Describe the video you want. The agent builds it as a real
+  [Remotion](https://www.remotion.dev) project — you watch
+  the live preview
+  update while it works, and export an mp4 when it looks
+  right.
 
-remocn studio is a Tauri desktop app wrapped around `@anthropic-ai/claude-agent-sdk` and the
-[remocn](https://remocn.dev) component set. It is closer to a purpose-built Claude Code GUI than
-to a video editor:
+  This isn't another AI video editor. There are no
+  timelines, no keyframes,
+  no track management — none of the stuff every editor has.
+  All you can do
+  is prompt.
 
-- **Claude produces code, not a spec.** The agent writes real Remotion TSX into the folder you
-  opened, the same way Claude Code plus the remocn skill work today. You keep a normal Remotion
-  project you can open in any editor afterwards.
-- **Open any folder.** Point it at an existing Remotion project. The app owns neither the entry
-  point, nor the Remotion version, nor the build config.
-- **Preview and export are the project's own.** Preview compiles your source; export runs through
-  the project's own `@remotion/renderer`, resolved from its `node_modules` — never a version the
-  app bundles, so the mp4 cannot silently diverge from what you previewed.
-- **Uses your Claude subscription.** Auth is picked up from the already-logged-in Claude Code
-  CLI. No API key, no separate OAuth.
+  Remocn Studio is the director's chair. You direct, you
+  watch the process:
 
-**This is not [studio.remocn.dev](https://remocn.dev).** That is a separate, hosted, spec-driven
-web editor built on one generic composition plus a JSON project format. This repo is the local
-desktop app where the agent writes real code. The two share a name and nothing else.
+  > "Fix the text here"
+  >
+  > "The animation is too fast here"
+  >
+  > "Why did everything break here"
 
-## How it works
+  ## Not a generator. Not a template.
 
-```
-┌──────────┬─────────────────────┬──────────────┐
-│ sessions │ chat                │ preview      │
-│          │                     │              │
-│ history  │ streamed assistant  │ <Player>     │
-│ (SQLite) │ text + action lines │ + export     │
-└──────────┴─────────────────────┴──────────────┘
-        Tauri v2 (Rust core)  ⇄  bun sidecar
-                                 ├─ Claude Agent SDK
-                                 ├─ preview dev server
-                                 └─ export (project's renderer)
-```
+  AI video tools make you choose: generate pixels you can't
+  edit, or drag
+  templates everyone recognizes. Remocn Studio is the third
+  option — motion
+  design written as code, by an agent that takes direction.
 
-- **Three panes**, exactly one active session at a time — the left pane is an archive, not
-  multitasking.
-- **Action lines.** Each tool call collapses to one compact line (`Edit src/Scene.tsx`,
-  `Bash bun add …`) that expands into a real diff or command output.
-- **Split permissions.** Read/Glob/Grep/Write/Edit inside the opened folder run automatically.
-  Bash, and any path resolving outside the folder, raise an Allow/Deny card in the transcript.
-- **One composition.** A project has a single composition with id `Main`; every scene lives inside
-  it via `Series` / `TransitionSeries`. No composition selector.
-- **Own history.** Every stream event is written to our own SQLite schema; only the SDK
-  `session_id` is kept, for resume. The Claude Code transcript format is not a public contract.
+  ## What's inside
 
-## Requirements
+  - **A production pipeline, not a prompt box** — analysis,
+  brand, script,
+    scenes, assembly, review. You approve the result instead
+  of babysitting
+    the process.
+  - **Motion design knowledge, built in** — a curated set of
+  skills, from
+    easing and pacing to typography animation. The agent
+  doesn't guess what
+    looks good. It already knows.
+  - **Direct, don't describe** — click any element right on
+  the video and
+    say what should change. You point — the agent edits.
+  - **Show, don't screenshot** — drag a box over the frame
+  and it lands in
+    the chat, ready to talk about.
+  - **Your footage, one sentence away** — save clips, images
+  and audio to
+    the library once, then just say "use the intro clip".
+  - **Animations you keep** — save working animation code as
+  a component and
+    reuse it in any project.
+  - **Every platform's shape** — TikTok, YouTube, Instagram:
+  vertical,
+    square, wide.
+  - **It's real code, and it's yours** — every video is a
+  standard Remotion
+    project in a folder on your disk. Open it in your
+  editor, commit it to
+    git, take it anywhere. No proprietary format, no
+  lock-in.
 
-- macOS (nothing in the code is macOS-specific, but that is all that is tested)
-- [Claude Code](https://claude.com/claude-code) installed **and logged in**, with a Pro/Max
-  subscription — the app is inert without it
-- [bun](https://bun.sh) and a Rust toolchain
-- A Remotion project to open, with its dependencies installed
+  ## Works with the coding agent you already have
 
-The app checks all of this when you open a folder and reports each failure as a readable line with
-a next step, rather than as a blank pane.
+  No API key, no separate token bill. Sign in once with the
+  subscription you
+  already pay for:
 
-## Getting started
+  Claude Code · Codex · Gemini CLI · Grok · GitHub Copilot ·
+  and more
 
-```bash
-bun install
-bun tauri dev      # dev build
-bun tauri build    # unsigned .app
-```
+  ## Requirements
 
-`bun run build` produces the Next.js static export in `out/` and is also the project's typecheck.
+  - macOS (Apple silicon or Intel)
+  - A subscription for a supported coding agent
 
-## Stack
+  ## Built on
 
-Tauri v2 (Rust core) · Next.js App Router in `output: "export"` · React 19 · Tailwind v4 ·
-shadcn/ui (`base-luma`, so the primitives are `@base-ui/react`, not Radix) · bun sidecar hosting
-the Agent SDK, the preview server and the export.
-
-There is no Node server at runtime: Tauri serves a static bundle, and anything needing a real
-runtime lives in Rust or in the sidecar. See [`CLAUDE.md`](./CLAUDE.md) for the architecture notes
-that matter when changing this.
-
-## Status
-
-Built and verified:
-
-- [x] Next.js static export wired into Tauri, `bun run build` and `bun tauri dev` both clean
-- [x] Tailwind v4 with remocn's design tokens, dark-first
-- [x] shadcn/ui on `base-luma` / Base UI
-
-Everything below is designed but not yet built — tracked as issues on the main repo:
-
-| | |
-| --- | --- |
-| [#219](https://github.com/Remocn/remocn/issues/219) | app shell — three panes |
-| [#220](https://github.com/Remocn/remocn/issues/220) | sidecar runtime and IPC |
-| [#221](https://github.com/Remocn/remocn/issues/221) | Agent SDK session stream |
-| [#222](https://github.com/Remocn/remocn/issues/222) | chat transcript, action lines, diffs |
-| [#223](https://github.com/Remocn/remocn/issues/223) | permission cards |
-| [#224](https://github.com/Remocn/remocn/issues/224) | sessions and SQLite history |
-| [#225](https://github.com/Remocn/remocn/issues/225) | vendored remocn skill + sync step |
-| [#226](https://github.com/Remocn/remocn/issues/226) | preview host + `<Player>` |
-| [#227](https://github.com/Remocn/remocn/issues/227) | export to mp4 with progress |
-| [#228](https://github.com/Remocn/remocn/issues/228) | environment checklist |
-
-**Definition of done for the prototype:** open a real Remotion project, ask Claude in the app to
-build a scene, watch the edits land as action lines, approve the one Bash call it needs, see the
-result in the player, and export an mp4 — without touching a terminal.
-
-Commercial use of the Remotion Player and renderer requires a Remotion Company License; this
-prototype is personal use.
-
-## License
-
-[MIT](./LICENSE)
+  Rendering is powered by the open-source [Remotion](https://www.remotion.dev)
+  framework (note: Remotion has its own license terms for company use).
