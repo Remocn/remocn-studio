@@ -272,6 +272,7 @@ function Conversation({
               `currentTasks` the transcript and the projects pane read, so the
               three cannot disagree about what the plan is. */}
           <TaskDock
+            isRunning={turn.isRunning}
             settings={settings}
             stages={pipeline.stages}
             tasks={currentTasks(turn.entries)}

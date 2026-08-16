@@ -100,6 +100,21 @@ export function planTasks(entries: readonly TranscriptEntry[]): TaskPlans {
 export function currentTasks(
   entries: readonly TranscriptEntry[]
 ): readonly TaskRow[] {
+  let turnStart = 0;
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    if (entries[index]?.kind === "user") {
+      turnStart = index + 1;
+      break;
+    }
+  }
+
+  // The composer dock represents the current assistant turn, not the most
+  // recent checklist in the transcript. A later user message makes an older
+  // plan historical until this turn creates or updates a task of its own.
+  if (!entries.slice(turnStart).some(isTaskCall)) {
+    return [];
+  }
+
   const plans = [...planTasks(entries).plans.values()];
   return plans.at(-1) ?? [];
 }

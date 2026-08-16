@@ -21,10 +21,12 @@ import { TaskChecklist } from "./task-checklist";
 import { TaskStatusIcon } from "./task-status-icon";
 
 export function TaskDock({
+  isRunning,
   settings,
   stages,
   tasks,
 }: {
+  isRunning: boolean;
   settings: StudioSettings | null;
   stages: readonly PipelineStage[];
   tasks: readonly TaskRow[];
@@ -46,6 +48,13 @@ export function TaskDock({
         total={pipeline.total}
       />
     );
+  }
+
+  // A task plan is live status for one assistant turn. Its checklist remains
+  // in the transcript, but a settled turn must not pin that history above a
+  // later conversation.
+  if (!isRunning) {
+    return null;
   }
 
   const progress = taskProgress(tasks);
