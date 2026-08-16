@@ -10,6 +10,7 @@ import {
 import type { StudioSettings } from "@/lib/studio/settings";
 import {
   activeTask,
+  type TaskGlyph,
   type TaskRow,
   taskGlyph,
   taskProgress,
@@ -37,16 +38,12 @@ export function TaskDock({
   if (pipeline !== null) {
     return (
       <DockShell
-        count={`${pipeline.done}/${pipeline.total}`}
         dock={dock}
+        done={pipeline.done}
         expanded={<PipelineList stages={stages} tasks={tasks} />}
-        glyph={
-          pipeline.done > 0 || activeTask(tasks) !== null
-            ? "in_progress"
-            : "pending"
-        }
-        label={pipelineLabel(stages, tasks)}
-        name="Video"
+        name="Video plan"
+        summary={pipelineSummary(stages, tasks, pipeline.done)}
+        total={pipeline.total}
       />
     );
   }
@@ -56,35 +53,39 @@ export function TaskDock({
     return null;
   }
 
-  const running = activeTask(tasks);
-  const glyph = taskGlyph(tasks);
-
   return (
     <DockShell
-      count={`${progress.done}/${progress.total}`}
       dock={dock}
+      done={progress.done}
       expanded={<TaskChecklist tasks={tasks} />}
-      glyph={glyph}
-      label={planLabel(running, glyph)}
       name="Plan"
+      summary={planSummary(tasks, progress.done)}
+      total={progress.total}
     />
   );
 }
 
+interface DockSummary {
+  readonly detail: string | null;
+  readonly glyph: TaskGlyph;
+  readonly label: string;
+  readonly state: "Complete" | "In progress" | "Ready" | "Up next";
+}
+
 function DockShell({
-  count,
   dock,
+  done,
   expanded,
-  glyph,
-  label,
   name,
+  summary,
+  total,
 }: {
-  count: string;
   dock: ReturnType<typeof useTaskDock>;
+  done: number;
   expanded: React.ReactNode;
-  glyph: Parameters<typeof TaskStatusIcon>[0]["glyph"];
-  label: string;
   name: string;
+  summary: DockSummary;
+  total: number;
 }) {
   return (
     // The strip has no bottom radius and no gap under it: it abuts the composer
@@ -104,24 +105,49 @@ function DockShell({
             only line on this edge of the screen. */}
         <div className="overflow-hidden rounded-t-xl bg-card">
           {dock.isExpanded ? (
-            <div className="max-h-64 overflow-y-auto p-1.5 pb-0">
+            <div className="max-h-72 overflow-y-auto p-1.5 pb-0">
               {expanded}
             </div>
           ) : null}
 
           <button
             aria-expanded={dock.isExpanded}
-            aria-label={`${name}, ${count} done`}
-            className="flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+            aria-label={`${name}, ${summary.state.toLowerCase()}: ${summary.label}, ${done} of ${total} complete`}
+            className="flex w-full min-w-0 items-center gap-2.5 px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
             onClick={dock.toggle}
             type="button"
           >
-            <TaskStatusIcon glyph={glyph} />
-            <span className="min-w-0 flex-1 truncate text-foreground">
-              {label}
+            <TaskStatusIcon glyph={summary.glyph} />
+            <span className="min-w-0 flex-1">
+              <span className="flex min-w-0 items-center gap-1.5 text-xs leading-none">
+                <span className="shrink-0 font-medium text-foreground">
+                  {name}
+                </span>
+                <span className="truncate text-muted-foreground">
+                  {summary.state}
+                </span>
+              </span>
+              <span className="mt-1 flex min-w-0 items-center gap-1 text-sm leading-tight">
+                <span className="truncate text-foreground">
+                  {summary.label}
+                </span>
+                {summary.detail === null ? null : (
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className="shrink-0 text-muted-foreground/50"
+                    >
+                      ·
+                    </span>
+                    <span className="truncate text-muted-foreground">
+                      {summary.detail}
+                    </span>
+                  </>
+                )}
+              </span>
             </span>
             <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
-              {count}
+              {done} of {total}
             </span>
             <ChevronUpIcon
               aria-hidden="true"
@@ -137,15 +163,81 @@ function DockShell({
   );
 }
 
-function planLabel(
-  running: TaskRow | null,
-  glyph: ReturnType<typeof taskGlyph>
-) {
+function planSummary(tasks: readonly TaskRow[], done: number): DockSummary {
+  const running = activeTask(tasks);
   if (running !== null) {
-    return running.activeForm ?? running.subject;
+    return {
+      detail:
+        running.activeForm === null ? running.description : running.subject,
+      glyph: "in_progress",
+      label: running.activeForm ?? running.subject,
+      state: "In progress",
+    };
   }
 
-  return glyph === "finished" ? "All done" : "Plan";
+  const glyph = taskGlyph(tasks);
+  if (glyph === "finished") {
+    return {
+      detail: `${tasks.length} steps completed`,
+      glyph,
+      label: "All done",
+      state: "Complete",
+    };
+  }
+
+  const next = tasks.find((task) => task.status === "pending");
+  return {
+    detail: next?.description ?? null,
+    glyph,
+    label: next?.subject ?? "Plan ready",
+    state: done > 0 ? "Up next" : "Ready",
+  };
+}
+
+function pipelineSummary(
+  stages: readonly PipelineStage[],
+  tasks: readonly TaskRow[],
+  done: number
+): DockSummary {
+  const running = activeTask(tasks);
+  if (running !== null) {
+    return {
+      detail:
+        running.activeForm === null ? running.description : running.subject,
+      glyph: "in_progress",
+      label: pipelineLabel(stages, tasks),
+      state: "In progress",
+    };
+  }
+
+  const rows = stageRows(stages);
+  const current =
+    rows.find(({ stage }) => stage.status === "active") ??
+    rows.find(({ stage }) => stage.status === "pending");
+
+  if (current === undefined) {
+    return {
+      detail: null,
+      glyph: "pending",
+      label: "Plan ready",
+      state: "Ready",
+    };
+  }
+
+  const isActive = current.stage.status === "active";
+  let state: DockSummary["state"] = "Ready";
+  if (isActive) {
+    state = "In progress";
+  } else if (done > 0) {
+    state = "Up next";
+  }
+
+  return {
+    detail: `${current.template.title}: ${current.template.goal}`,
+    glyph: isActive ? "in_progress" : "pending",
+    label: current.template.activeForm,
+    state,
+  };
 }
 
 const STAGE_TEXT: Record<PipelineStatus, string> = {
@@ -163,6 +255,12 @@ const STAGE_GLYPHS: Record<
   pending: "pending",
 };
 
+const STAGE_DETAIL_TEXT: Record<PipelineStatus, string> = {
+  active: "text-muted-foreground",
+  done: "text-muted-foreground/50",
+  pending: "text-muted-foreground/70",
+};
+
 function PipelineList({
   stages,
   tasks,
@@ -175,8 +273,9 @@ function PipelineList({
       {stageRows(stages).map(({ stage, template }) => (
         <li className="flex min-w-0 flex-col" key={template.id}>
           <div
+            aria-current={stage.status === "active" ? "step" : undefined}
             className={cn(
-              "flex w-full min-w-0 items-start gap-2 rounded-lg px-2 py-1.5 text-left text-sm",
+              "flex w-full min-w-0 items-start gap-2 rounded-lg px-2 py-2 text-left text-sm",
               stage.status === "active" && "bg-muted/60"
             )}
           >
@@ -184,13 +283,23 @@ function PipelineList({
               className="mt-0.5"
               glyph={STAGE_GLYPHS[stage.status]}
             />
-            <span
-              className={cn(
-                "wrap-break-word min-w-0 text-pretty leading-snug",
-                STAGE_TEXT[stage.status]
-              )}
-            >
-              {template.title}
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span
+                className={cn(
+                  "wrap-break-word min-w-0 text-pretty leading-snug",
+                  STAGE_TEXT[stage.status]
+                )}
+              >
+                {template.title}
+              </span>
+              <span
+                className={cn(
+                  "wrap-break-word min-w-0 text-pretty text-xs leading-relaxed",
+                  STAGE_DETAIL_TEXT[stage.status]
+                )}
+              >
+                {template.goal}
+              </span>
             </span>
           </div>
 

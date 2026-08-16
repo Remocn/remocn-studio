@@ -46,8 +46,11 @@ describe("TaskDock", () => {
   it("collapses to the task in hand and how far the plan has got", () => {
     render(<TaskDock settings={SETTINGS} stages={[]} tasks={PLAN} />);
 
+    expect(screen.getByText("Plan")).toBeVisible();
+    expect(screen.getByText("In progress")).toBeVisible();
     expect(screen.getByText("Registering the scene")).toBeVisible();
-    expect(screen.getByText("1/3")).toBeVisible();
+    expect(screen.getByText("Register in Series")).toBeVisible();
+    expect(screen.getByText("1 of 3")).toBeVisible();
     expect(screen.queryByText("Check the build")).not.toBeInTheDocument();
   });
 
@@ -65,11 +68,13 @@ describe("TaskDock", () => {
     render(<TaskDock settings={SETTINGS} stages={[]} tasks={done} />);
 
     expect(screen.getByText("All done")).toBeVisible();
+    expect(screen.getByText("Complete")).toBeVisible();
+    expect(screen.getByText("3 steps completed")).toBeVisible();
     expect(screen.getByLabelText("All done")).toBeVisible();
-    expect(screen.getByText("3/3")).toBeVisible();
+    expect(screen.getByText("3 of 3")).toBeVisible();
   });
 
-  it("says Plan when no task is running", () => {
+  it("shows the first step when the plan is ready to start", () => {
     const pending = PLAN.map((task) => ({
       ...task,
       status: "pending" as const,
@@ -77,8 +82,23 @@ describe("TaskDock", () => {
     render(<TaskDock settings={SETTINGS} stages={[]} tasks={pending} />);
 
     expect(screen.getByText("Plan")).toBeVisible();
+    expect(screen.getByText("Ready")).toBeVisible();
+    expect(screen.getByText("Scene component")).toBeVisible();
+    expect(screen.getByText("Write the component")).toBeVisible();
     expect(screen.getByLabelText("Pending")).toBeVisible();
-    expect(screen.getByText("0/3")).toBeVisible();
+    expect(screen.getByText("0 of 3")).toBeVisible();
+  });
+
+  it("shows the next step instead of falling back to a generic Plan label", () => {
+    const betweenSteps = PLAN.map((task, index) => ({
+      ...task,
+      status: index === 0 ? ("completed" as const) : ("pending" as const),
+    }));
+    render(<TaskDock settings={SETTINGS} stages={[]} tasks={betweenSteps} />);
+
+    expect(screen.getByText("Up next")).toBeVisible();
+    expect(screen.getByText("Register in Series")).toBeVisible();
+    expect(screen.getByText("1 of 3")).toBeVisible();
   });
 
   it("opens into the whole list, and closes again", () => {
@@ -127,15 +147,23 @@ describe("TaskDock with a pipeline", () => {
   it("stays on screen with no plan at all while the pipeline is unfinished", () => {
     render(<TaskDock settings={SETTINGS} stages={STAGES} tasks={[]} />);
 
+    expect(screen.getByText("Video plan")).toBeVisible();
+    expect(screen.getByText("In progress")).toBeVisible();
     expect(screen.getByText("Writing the script")).toBeVisible();
-    expect(screen.getByText("2/6")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Script: Write the script scene by scene: what is said, what is on screen, and for how long."
+      )
+    ).toBeVisible();
+    expect(screen.getByText("2 of 6")).toBeVisible();
   });
 
   it("collapses to the running sub-task when the turn has one", () => {
     render(<TaskDock settings={SETTINGS} stages={STAGES} tasks={PLAN} />);
 
     expect(screen.getByText("Registering the scene")).toBeVisible();
-    expect(screen.getByText("2/6")).toBeVisible();
+    expect(screen.getByText("Register in Series")).toBeVisible();
+    expect(screen.getByText("2 of 6")).toBeVisible();
   });
 
   it("opens into every stage, with the sub-tasks under the active one", () => {
@@ -149,7 +177,29 @@ describe("TaskDock with a pipeline", () => {
 
     expect(screen.getByText("Analysis")).toBeVisible();
     expect(screen.getByText("Review")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Define the motion language: entrance and exit devices, easing, pace, and the transitions between scenes."
+      )
+    ).toBeVisible();
     expect(screen.getByText("Check the build")).toBeVisible();
+  });
+
+  it("shows the next production stage between stage transitions", () => {
+    const betweenStages = STAGES.map((stage) => ({
+      ...stage,
+      status:
+        stage.stage === "analysis" ? ("done" as const) : ("pending" as const),
+    }));
+    render(<TaskDock settings={SETTINGS} stages={betweenStages} tasks={[]} />);
+
+    expect(screen.getByText("Up next")).toBeVisible();
+    expect(screen.getByText("Collecting the brand")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Brand: Collect the visual language: palette, fonts, logos and tone."
+      )
+    ).toBeVisible();
   });
 
   it("hands the dock back to the plan once every stage is done", () => {
