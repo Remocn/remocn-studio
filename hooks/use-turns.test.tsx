@@ -7,6 +7,7 @@ import type {
   PromptResult,
   TranscriptEntry,
 } from "@/shared/ipc";
+import type { PipelineStage } from "@/shared/pipeline";
 
 const DONE: PromptResult = {
   context: null,
@@ -23,6 +24,11 @@ const STORED: HistorySession = {
   title: "A promo",
   updatedAt: 0,
 };
+
+const STAGES: PipelineStage[] = [
+  { stage: "analysis", status: "done" },
+  { stage: "brand", status: "active" },
+];
 
 const BLOCKS: TranscriptEntry[] = [
   {
@@ -65,7 +71,7 @@ function harness(options: { holdBlocks?: boolean } = {}) {
       const call = payload as {
         id: string;
         method: string;
-        params: { historyId?: string; mode?: string };
+        params: { historyId?: string; mode?: string; sessionId?: string };
       };
       if (call.method === "claude.prompt") {
         byHistory.set(call.params.historyId ?? "", call.id);
@@ -73,6 +79,9 @@ function harness(options: { holdBlocks?: boolean } = {}) {
         return new Promise<PromptResult>((resolve) => {
           inflight.set(call.id, resolve);
         });
+      }
+      if (call.method === "pipeline.get") {
+        return { sessionId: call.params.sessionId ?? "", stages: STAGES };
       }
       if (call.method === "history.blocks") {
         if (options.holdBlocks !== true) {
@@ -142,6 +151,19 @@ describe("useTurns", () => {
     });
     expect(result.current.turns.get("a")?.entries).toEqual(BLOCKS);
     expect(result.current.turns.get("a")?.sdkSessionId).toBe("sdk-9");
+  });
+
+  it("brings a stored session's pipeline back with its blocks", async () => {
+    harness();
+    const { result } = renderHook(() => useTurns(vi.fn()));
+
+    act(() => {
+      result.current.loadTurn(STORED);
+    });
+
+    await waitFor(() => {
+      expect(result.current.turns.get("a")?.stages).toEqual(STAGES);
+    });
   });
 
   it("loads a session's blocks once, however often it is opened", async () => {

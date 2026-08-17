@@ -12,6 +12,7 @@ import {
   SIDECAR_PROTOCOL,
 } from "@/shared/ipc";
 import type { Asset, AssetDraft } from "@/shared/library";
+import type { PipelineStage } from "@/shared/pipeline";
 import { pipelineBrief } from "./claude/conventions";
 import { eventsOf } from "./claude/events";
 import { failureFromText, failureOf } from "./claude/failure";
@@ -199,6 +200,19 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
         .pipeline(params.historyId)
         .pipe(Effect.catch(() => Effect.succeed([])));
 
+      // The agent moves the pipeline through its own MCP tools, so the webview
+      // has no other way to hear about it: the stages ride on the turn's stream
+      // the way the session row does, or the dock would only catch up when the
+      // turn ends and someone refetched.
+      const moved = (
+        moving: Effect.Effect<readonly PipelineStage[], HistoryError>
+      ) =>
+        Effect.runPromise(
+          moving.pipe(
+            Effect.tap((rows) => emit({ stages: rows, type: "pipeline" }))
+          )
+        );
+
       const approved = (mode: SessionMode) =>
         switcher.set(mode).pipe(
           Effect.andThen(
@@ -229,11 +243,8 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
           onStop: () => Effect.runSync(gate.abandon(turnId)),
           pipeline: pipelineServer({
             setStage: (stage, status) =>
-              Effect.runPromise(
-                store.setStage(params.historyId, stage, status)
-              ),
-            start: () =>
-              Effect.runPromise(store.startPipeline(params.historyId)),
+              moved(store.setStage(params.historyId, stage, status)),
+            start: () => moved(store.startPipeline(params.historyId)),
           }),
         }),
         (message) =>

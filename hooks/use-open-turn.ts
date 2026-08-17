@@ -22,6 +22,7 @@ import {
   type TranscriptEntry,
 } from "@/shared/ipc";
 import type { PromptAsset } from "@/shared/library";
+import type { PipelineStage } from "@/shared/pipeline";
 
 export interface OpenTurnSettings {
   changeMode: (historyId: string, mode: SessionMode) => void;
@@ -57,6 +58,7 @@ export interface OpenTurn {
     assets?: readonly PromptAsset[],
     media?: readonly PromptMedia[]
   ) => boolean;
+  stages: readonly PipelineStage[];
   startedAt: number | null;
   stop: () => void;
   turnError: string | null;
@@ -154,6 +156,7 @@ export function useOpenTurn({
       queue: turn.queue,
       removeQueued,
       send,
+      stages: turn.stages,
       startedAt: turn.startedAt,
       stop,
       turnError: turn.error,

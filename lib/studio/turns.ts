@@ -11,6 +11,7 @@ import {
   type TranscriptEntry,
 } from "@/shared/ipc";
 import type { PromptAsset } from "@/shared/library";
+import type { PipelineStage } from "@/shared/pipeline";
 import type { ReferenceCounts } from "@/shared/references";
 
 export type SessionStatus = "failed" | "idle" | "running" | "waiting";
@@ -46,6 +47,7 @@ export interface TurnState {
   permissions: readonly PendingPermission[];
   queue: readonly QueuedMessage[];
   sdkSessionId: string | null;
+  stages: readonly PipelineStage[];
   startedAt: number | null;
   unread: boolean;
 }
@@ -60,6 +62,7 @@ export const IDLE_TURN: TurnState = {
   permissions: [],
   queue: [],
   sdkSessionId: null,
+  stages: [],
   startedAt: null,
   unread: false,
 };

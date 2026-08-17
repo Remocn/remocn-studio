@@ -6,6 +6,7 @@ import { causeMessage } from "@/lib/error-message";
 import { answerPermission, promptClaude } from "@/lib/studio/claude";
 import { loadTranscript } from "@/lib/studio/history";
 import type { PermissionAction } from "@/lib/studio/permission";
+import { loadPipeline } from "@/lib/studio/pipeline";
 import type { SidecarError } from "@/lib/studio/sidecar";
 import {
   dropQueued,
@@ -150,6 +151,22 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       }));
 
       Effect.runFork(
+        loadPipeline(session.id).pipe(
+          Effect.tap((state) =>
+            Effect.sync(() =>
+              update(session.id, (turn) => ({
+                ...turn,
+                // A turn started while this was in flight has already reported
+                // the live stages; a reading taken before it must not undo them.
+                stages: turn.stages.length > 0 ? turn.stages : state.stages,
+              }))
+            )
+          ),
+          Effect.ignore
+        )
+      );
+
+      Effect.runFork(
         loadTranscript(session.id).pipe(
           Effect.tap((entries) =>
             Effect.sync(() =>
@@ -242,6 +259,13 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
               mode: event.session.mode,
             }));
             onSession(event.session);
+            return;
+          }
+          if (event.type === "pipeline") {
+            update(historyId, (current) => ({
+              ...current,
+              stages: event.stages,
+            }));
             return;
           }
           if (event.type === "permission") {

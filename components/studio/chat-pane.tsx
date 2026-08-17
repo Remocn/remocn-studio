@@ -30,7 +30,6 @@ import { useLocateProject } from "@/hooks/use-locate-project";
 import type { NewProject } from "@/hooks/use-new-project";
 import { useNow } from "@/hooks/use-now";
 import type { OpenTurn } from "@/hooks/use-open-turn";
-import { usePipeline } from "@/hooks/use-pipeline";
 import type { Queue } from "@/hooks/use-queue";
 import type { StudioSettings } from "@/lib/studio/settings";
 import { currentTasks } from "@/lib/studio/tasks";
@@ -199,7 +198,6 @@ function Conversation({
   const isCreating = newProject.isOpen;
   const isStartup = !(hasProject || hasTranscript);
   const now = useNow(turn.isRunning ? TICK : null);
-  const pipeline = usePipeline(turn.openId, turn.isRunning);
   const offer = useAssetOffer({
     entries: turn.entries,
     isRunning: turn.isRunning,
@@ -283,7 +281,7 @@ function Conversation({
           <DockStack>
             <TaskDock
               settings={settings}
-              stages={pipeline.stages}
+              stages={turn.stages}
               tasks={currentTasks(turn.entries)}
             />
             <QueueDock queue={queue} />
