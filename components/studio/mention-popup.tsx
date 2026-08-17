@@ -1,11 +1,12 @@
 "use client";
 
-import { CornerDownLeftIcon, FileIcon, FolderIcon } from "lucide-react";
+import { CornerDownLeftIcon, FolderIcon } from "lucide-react";
 import { memo } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { useKeptInView } from "@/hooks/use-kept-in-view";
 import type { MentionItem, Mentions } from "@/hooks/use-mentions";
 import { cn } from "@/lib/utils";
+import { FileIcon } from "./file-icon";
 
 function MentionPopupBlock({ mentions }: { mentions: Mentions }) {
   if (!mentions.isOpen) {
@@ -57,7 +58,6 @@ function MentionRow({
   onHold: Mentions["onHold"];
   onPoint: Mentions["onPoint"];
 }) {
-  const Icon = item.folder ? FolderIcon : FileIcon;
   const ref = useKeptInView<HTMLButtonElement>(isActive, `${keyed}:${index}`);
 
   return (
@@ -75,7 +75,17 @@ function MentionRow({
       type="button"
       value={index}
     >
-      <Icon className="size-4 shrink-0 text-muted-foreground" />
+      {item.folder ? (
+        <FolderIcon
+          aria-hidden={true}
+          className="size-4 shrink-0 text-muted-foreground"
+        />
+      ) : (
+        <FileIcon
+          className="size-4 shrink-0 text-muted-foreground"
+          path={item.path}
+        />
+      )}
       <span className="shrink-0 truncate text-foreground">{item.label}</span>
       {item.hint === "" ? null : (
         <span className="min-w-0 flex-1 truncate text-muted-foreground text-xs">

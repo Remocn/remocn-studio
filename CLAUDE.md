@@ -1648,6 +1648,25 @@ instead.
 - **Escape is remembered per token.** The dismissed `@`'s offset is kept, so typing on into the same
   word does not bring the list back — while a different `@`, or moving away and starting another,
   opens it as usual.
+- **A row leads with the mark of what the file *is*.** `lib/studio/file-icons.ts` maps a name to a
+  kind and `components/studio/file-icon.tsx` maps that kind to a glyph — the same two-step
+  `activity-icon.tsx` uses, and for the same reason it uses a `Map` rather than a `Record`: the key
+  comes from a filename, so `constructor.js` would otherwise resolve off `Object.prototype`.
+  Brand marks come from **Simple Icons** (`@icons-pack/react-simple-icons`) — React on a `.tsx`,
+  TypeScript, JSON, Markdown, CSS — and everything with no brand to speak of falls to lucide's
+  `File*` family by category: image, video, audio, font, archive, text.
+  - **Imported one file at a time**, `@icons-pack/react-simple-icons/icons/SiReact`, never from the
+    package root: that barrel re-exports 10,359 icons and there is no reason to hand it to the
+    bundler and hope. Measured on a *clean* `out/`, sixteen brand marks cost **26 KB**.
+    Measure it that way or not at all — chunk filenames carry a content hash, so a stale `out/`
+    keeps every previous build's chunks and reads as a megabyte of growth that never happened.
+  - **They are monochrome by construction.** Each component defaults to `color="currentColor"` and
+    only paints its brand colour when asked with `color="default"`, so the column inherits
+    `text-muted-foreground` like every other icon in the app. The marks are *filled* where lucide's
+    are 1.5px outlines, which reads heavier at the same box — `scale-90` on the branded ones is
+    what evens the two out.
+  - Each Simple Icon renders a `<title>`, so the glyph is `aria-hidden`: the row's own text is what
+    a screen reader should read, not "React Intro.tsx src/scenes".
 - **The list scrolls to the row the keyboard is on**, which it has to: twelve rows do not fit in
   `max-h-64` and the arrows used to walk the highlight straight out of the visible part.
   `useKeptInView` is a layout effect on the row itself with `block: "nearest"`, so a row already in

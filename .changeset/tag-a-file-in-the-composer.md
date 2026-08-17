@@ -10,6 +10,10 @@ writes the file into the message as a path in backticks, and the sentence around
 it is what says what to do with it. Escape leaves the `@` as the plain text it
 was.
 
+Each row leads with the mark of what the file is — the React logo on a `.tsx`,
+TypeScript, JSON, Markdown, CSS, and a plain glyph by category for pictures,
+video, sound, fonts and archives.
+
 The arrows walk the list and the list follows them, so the highlighted row is
 always the one you can see — including after typing narrows the list and moves
 the row you were on.
