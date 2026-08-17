@@ -3,6 +3,7 @@
 import { CornerDownLeftIcon, FileIcon, FolderIcon } from "lucide-react";
 import { memo } from "react";
 import { Spinner } from "@/components/ui/spinner";
+import { useKeptInView } from "@/hooks/use-kept-in-view";
 import type { MentionItem, Mentions } from "@/hooks/use-mentions";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ function MentionPopupBlock({ mentions }: { mentions: Mentions }) {
                 isActive={index === mentions.active}
                 item={item}
                 key={item.path}
+                keyed={mentions.keyed}
                 onChoose={mentions.onChoose}
                 onHold={mentions.onHold}
                 onPoint={mentions.onPoint}
@@ -42,6 +44,7 @@ function MentionRow({
   index,
   isActive,
   item,
+  keyed,
   onChoose,
   onHold,
   onPoint,
@@ -49,11 +52,13 @@ function MentionRow({
   index: number;
   isActive: boolean;
   item: MentionItem;
+  keyed: number;
   onChoose: Mentions["onChoose"];
   onHold: Mentions["onHold"];
   onPoint: Mentions["onPoint"];
 }) {
   const Icon = item.folder ? FolderIcon : FileIcon;
+  const ref = useKeptInView<HTMLButtonElement>(isActive, `${keyed}:${index}`);
 
   return (
     <button
@@ -65,6 +70,7 @@ function MentionRow({
       onClick={onChoose}
       onMouseDown={onHold}
       onMouseMove={onPoint}
+      ref={ref}
       role="option"
       type="button"
       value={index}

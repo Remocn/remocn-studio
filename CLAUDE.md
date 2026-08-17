@@ -1648,6 +1648,15 @@ instead.
 - **Escape is remembered per token.** The dismissed `@`'s offset is kept, so typing on into the same
   word does not bring the list back — while a different `@`, or moving away and starting another,
   opens it as usual.
+- **The list scrolls to the row the keyboard is on**, which it has to: twelve rows do not fit in
+  `max-h-64` and the arrows used to walk the highlight straight out of the visible part.
+  `useKeptInView` is a layout effect on the row itself with `block: "nearest"`, so a row already in
+  view costs nothing. Its trigger is `${keyed}:${index}` rather than the active index alone, and
+  both halves earn their place: `keyed` counts *arrow presses*, so a row that is merely re-rendered
+  is not dragged back into view, and `index` catches the case `keyed` cannot — a filter that keeps
+  the highlighted row but moves it, where the row is the same component instance and nothing else
+  would change. Hovering can only ever re-scroll a row the cursor is already on, which `nearest`
+  makes a no-op.
 - **The path is coloured, and colouring it costs nothing extra.** `MessageText` already draws both
   the composer's overlay and the user's bubble, so splitting its *text* segments once more — into
   plain runs and backticked paths — lights the mention in both places and in history, where the
@@ -1655,11 +1664,20 @@ instead.
   `shared/references.ts`: `dropReference` walks those segments and treats anything that is not
   `text` as a reference to renumber, so a fourth kind there would make a typed path behave like an
   attachment. Splitting inside the renderer keeps that fold untouched.
-- **The same `--reference` colour, and colour only.** A path is a thing the person pointed at, like
-  `[Image #N]`, so it speaks the same colour rather than inventing a second one. And it can differ
-  in *nothing else*: the overlay's metrics are what position the caret, so weight, tracking or size
-  on the span would desync it — the accumulating error that `font-medium` on a reference already
-  cost once.
+- **A chip, and one that costs no layout.** `.file-mention` in `app/globals.css` is a background, a
+  radius and a shadow — nothing that takes width. The overlay's own metrics are what position the
+  caret in the textarea beneath it, so padding, a border, tracking or a weight would drift the two
+  apart a character at a time; that is the accumulating error `font-medium` on a reference already
+  cost once. The side air is therefore an **offset** shadow rather than a spread one: a spread would
+  grow the chip vertically too, and a path that wraps — the normal case for an absolute one — would
+  stack its lines' alpha where they met. `box-decoration-break: clone` is what gives each wrapped
+  fragment its own rounded chip instead of one box torn across three lines.
+- **The chip is `currentColor`, so one rule serves both surfaces.** It is drawn over the composer,
+  where the text is `foreground`, and inside the sent bubble, which is `bg-primary` with
+  `text-primary-foreground`. A fixed tint had to read on both: `--reference` teal was the first
+  version and it was legible on neither. A mix of the *inherited* colour is right on each by
+  construction, which is also why a file mention no longer speaks the reference colour that
+  `[Image #N]` does — the two now differ in kind, a chip against a coloured word.
 - **Only a path lights up, not every code span.** A backticked run counts when it holds a `/` or is
   a bare name with a real extension, so `` `src/Root.tsx` ``, `` `~/My Movies/clip.mp4` `` and
   `` `package.json` `` colour while `` `Main` `` and `` `TransitionSeries` `` — the words the

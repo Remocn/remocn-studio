@@ -33,7 +33,7 @@ function TextRun({ segment }: { segment: TextSegment }) {
 
   return pieces.map((piece) =>
     piece.isPath ? (
-      <span className="text-reference" key={`${segment.id}:${piece.start}`}>
+      <span className="file-mention" key={`${segment.id}:${piece.start}`}>
         {piece.text}
       </span>
     ) : (

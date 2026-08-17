@@ -36,6 +36,7 @@ export interface Mentions {
   isLoading: boolean;
   isOpen: boolean;
   items: readonly MentionItem[];
+  keyed: number;
   note: string | null;
   onChoose: (event: MouseEvent<HTMLButtonElement>) => void;
   onHold: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -59,6 +60,7 @@ export function useMentions({
 }: MentionSettings): Mentions {
   const [mention, setMention] = useState<Mention | null>(null);
   const [active, setActive] = useState(0);
+  const [keyed, setKeyed] = useState(0);
   const [files, setFiles] = useState<ProjectFiles | null>(null);
   const [listing, setListing] = useState<Listed | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -158,6 +160,7 @@ export function useMentions({
         event.preventDefault();
         const step = event.key === "ArrowDown" ? 1 : count - 1;
         setActive((current) => (current + step) % count);
+        setKeyed((current) => current + 1);
         return true;
       }
 
@@ -207,6 +210,7 @@ export function useMentions({
       isLoading,
       isOpen: mention !== null,
       items,
+      keyed,
       note,
       onChoose,
       onHold,
@@ -220,6 +224,7 @@ export function useMentions({
       error,
       isLoading,
       items,
+      keyed,
       mention,
       note,
       onChoose,
