@@ -17,6 +17,7 @@ import { type Selections, useSelections } from "@/hooks/use-selections";
 import { imageFilesOf } from "@/lib/studio/clipboard";
 import { insertMention, type Mention, openFolder } from "@/lib/studio/mentions";
 import type { PreviewRect } from "@/lib/studio/preview";
+import type { QueuedMessage } from "@/lib/studio/turns";
 import type {
   PromptAttachment,
   PromptElement,
@@ -44,7 +45,7 @@ export interface ComposerSettings {
     elements: readonly PromptElement[],
     assets: readonly PromptAsset[],
     media: readonly PromptMedia[]
-  ) => void;
+  ) => boolean;
   projectId: string | null;
 }
 
@@ -58,6 +59,7 @@ export interface Composer {
   caret: Caret;
   counts: ReferenceCounts;
   drop: (paths: readonly string[]) => void;
+  isEmpty: boolean;
   media: Media;
   mentions: Mentions;
   onBlur: () => void;
@@ -70,6 +72,7 @@ export interface Composer {
   onRemoveSelection: (event: MouseEvent<HTMLButtonElement>) => void;
   onSelect: (event: SyntheticEvent<HTMLTextAreaElement>) => void;
   pick: (asset: Asset) => void;
+  restore: (message: QueuedMessage) => void;
   select: (
     element: PromptElement,
     rect: PreviewRect,
@@ -128,12 +131,14 @@ export function useComposer({
     [assets.items.length, attachments.items.length, selections.items.length]
   );
 
-  const canSubmit =
-    value.trim().length > 0 ||
+  const carries =
     counts.image > 0 ||
     counts.element > 0 ||
     counts.asset > 0 ||
     media.items.length > 0;
+
+  const canSubmit = value.trim().length > 0 || carries;
+  const isEmpty = value.length === 0 && !carries;
 
   const refer = useCallback(
     (at: number, first: number, count: number) => {
@@ -325,17 +330,35 @@ export function useComposer({
     [media]
   );
 
+  const restore = useCallback(
+    (message: QueuedMessage) => {
+      attachments.restore(message.attachments);
+      selections.restore(message.elements);
+      assets.restore(message.assets);
+      media.restore(message.media);
+      setValue(message.text);
+      caret.moveTo(message.text.length);
+      mentions.sync("", 0);
+    },
+    [assets, attachments, caret, media, mentions, selections]
+  );
+
   const submit = useCallback(() => {
     if (!canSubmit) {
       return;
     }
-    onSubmit(
+
+    const taken = onSubmit(
       value,
       attachments.items,
       selections.items.map((item) => item.element),
       assets.items,
       media.items
     );
+    if (!taken) {
+      return;
+    }
+
     setValue("");
     attachments.clear();
     selections.clear();
@@ -458,6 +481,7 @@ export function useComposer({
       caret,
       counts,
       drop,
+      isEmpty,
       media,
       mentions,
       onBlur,
@@ -470,6 +494,7 @@ export function useComposer({
       onRemoveSelection,
       onSelect,
       pick,
+      restore,
       select,
       selections,
       submit,
@@ -486,6 +511,7 @@ export function useComposer({
       caret,
       counts,
       drop,
+      isEmpty,
       media,
       mentions,
       onBlur,
@@ -498,6 +524,7 @@ export function useComposer({
       onRemoveSelection,
       onSelect,
       pick,
+      restore,
       select,
       selections,
       submit,

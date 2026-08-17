@@ -8,6 +8,7 @@ export interface PickedAssets {
   clear: () => void;
   items: PromptAsset[];
   removeAt: (index: number) => void;
+  restore: (items: readonly PromptAsset[]) => void;
 }
 
 export function usePickedAssets(): PickedAssets {
@@ -42,8 +43,13 @@ export function usePickedAssets(): PickedAssets {
 
   const clear = useCallback(() => commit([]), [commit]);
 
+  const restore = useCallback(
+    (next: readonly PromptAsset[]) => commit([...next]),
+    [commit]
+  );
+
   return useMemo(
-    () => ({ add, clear, items, removeAt }),
-    [add, clear, items, removeAt]
+    () => ({ add, clear, items, removeAt, restore }),
+    [add, clear, items, removeAt, restore]
   );
 }

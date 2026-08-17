@@ -6,6 +6,7 @@ import type { PermissionAction } from "@/lib/studio/permission";
 import {
   IDLE_TURN,
   type PendingPermission,
+  type QueuedMessage,
   type TurnState,
 } from "@/lib/studio/turns";
 import {
@@ -47,13 +48,15 @@ export interface OpenTurn {
   onModeChange: (value: string) => void;
   openId: string;
   permission: PendingPermission | null;
+  queue: readonly QueuedMessage[];
+  removeQueued: (id: string) => void;
   send: (
     prompt: string,
     attachments?: readonly PromptAttachment[],
     elements?: readonly PromptElement[],
     assets?: readonly PromptAsset[],
     media?: readonly PromptMedia[]
-  ) => void;
+  ) => boolean;
   startedAt: number | null;
   stop: () => void;
   turnError: string | null;
@@ -71,6 +74,7 @@ export function useOpenTurn({
 }: OpenTurnSettings): OpenTurn {
   const openId = session?.id ?? draftId;
   const { answerTurn, loadTurn, markOpen, sendTurn, stopTurn } = turns;
+  const dropQueued = turns.removeQueued;
   const turn: TurnState = turns.turns.get(openId) ?? IDLE_TURN;
 
   useEffect(() => {
@@ -92,9 +96,9 @@ export function useOpenTurn({
       media: readonly PromptMedia[] = []
     ) => {
       if (projectId === null) {
-        return;
+        return false;
       }
-      sendTurn({
+      return sendTurn({
         assets,
         attachments,
         effort,
@@ -112,6 +116,11 @@ export function useOpenTurn({
   );
 
   const stop = useCallback(() => stopTurn(openId), [openId, stopTurn]);
+
+  const removeQueued = useCallback(
+    (id: string) => dropQueued(openId, id),
+    [dropQueued, openId]
+  );
 
   const answer = useCallback(
     (
@@ -142,11 +151,13 @@ export function useOpenTurn({
       onModeChange,
       openId,
       permission: turn.permissions[0] ?? null,
+      queue: turn.queue,
+      removeQueued,
       send,
       startedAt: turn.startedAt,
       stop,
       turnError: turn.error,
     }),
-    [answer, onModeChange, openId, send, stop, turn]
+    [answer, onModeChange, openId, removeQueued, send, stop, turn]
   );
 }

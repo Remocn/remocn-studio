@@ -12,6 +12,7 @@ import { type NewProject, useNewProject } from "@/hooks/use-new-project";
 import { type OpenTurn, useOpenTurn } from "@/hooks/use-open-turn";
 import { type Panes, usePanes } from "@/hooks/use-panes";
 import { usePreview } from "@/hooks/use-preview";
+import { type Queue, useQueue } from "@/hooks/use-queue";
 import { type Tools, useTools } from "@/hooks/use-tools";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
 import type { VideoFormat } from "@/lib/studio/formats";
@@ -27,6 +28,7 @@ export type Studio = ClaudeEffort &
     environment: Environment;
     library: Library;
     newProject: NewProject;
+    queue: Queue;
     settings: StudioSettings | null;
     tools: Tools;
     turn: OpenTurn;
@@ -91,6 +93,8 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     projectId: opened?.id ?? null,
   });
 
+  const queue = useQueue(turn, composer);
+
   const tools = useTools({
     composer,
     isMissing: opened?.missing ?? false,
@@ -129,6 +133,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       environment,
       library,
       newProject,
+      queue,
       settings,
       tools,
       turn,
@@ -142,6 +147,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       model,
       newProject,
       panes,
+      queue,
       settings,
       tools,
       turn,
