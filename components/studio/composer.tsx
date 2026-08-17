@@ -45,6 +45,7 @@ import {
 import { AssetRow } from "./asset-row";
 import { ContextMeter } from "./context-meter";
 import { MediaRow } from "./media-row";
+import { MentionPopup } from "./mention-popup";
 import { MessageText } from "./message-text";
 import { SelectionRow } from "./selection-row";
 import { useStudio } from "./studio-provider";
@@ -109,7 +110,9 @@ function ComposerBlock({
 
   return (
     <div className="relative z-10 shrink-0 px-4 pb-4">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-1">
+      <div className="relative mx-auto flex w-full max-w-2xl flex-col gap-1">
+        <MentionPopup mentions={composer.mentions} />
+
         <InputGroup
           className={cn(
             "rounded-xl border-none",
@@ -171,10 +174,12 @@ function ComposerBlock({
               aria-label="Message Claude"
               className="relative max-h-64 text-transparent caret-foreground [scrollbar-gutter:stable] selection:bg-primary/30"
               disabled={isLocked}
+              onBlur={composer.onBlur}
               onChange={composer.onChange}
               onKeyDown={composer.onKeyDown}
               onPaste={composer.onPaste}
               onScroll={composer.caret.onScroll}
+              onSelect={composer.onSelect}
               placeholder={
                 isWaiting
                   ? "Answer the approval request to continue…"
