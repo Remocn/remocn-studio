@@ -20,7 +20,10 @@ export interface Selections {
   clear: () => void;
   items: Selection[];
   removeAt: (index: number) => void;
+  restore: (elements: readonly PromptElement[]) => void;
 }
+
+const OFF_FRAME: PreviewRect = { height: 0, width: 0, x: 0, y: 0 };
 
 export function useSelections(): Selections {
   const [items, setItems] = useState<Selection[]>([]);
@@ -51,8 +54,24 @@ export function useSelections(): Selections {
 
   const clear = useCallback(() => commit([]), [commit]);
 
+  const restore = useCallback(
+    (elements: readonly PromptElement[]) => {
+      commit(
+        elements.map((element) => {
+          minted.current += 1;
+          return {
+            element,
+            id: `selection-${minted.current}`,
+            rect: OFF_FRAME,
+          };
+        })
+      );
+    },
+    [commit]
+  );
+
   return useMemo(
-    () => ({ add, clear, items, removeAt }),
-    [add, clear, items, removeAt]
+    () => ({ add, clear, items, removeAt, restore }),
+    [add, clear, items, removeAt, restore]
   );
 }

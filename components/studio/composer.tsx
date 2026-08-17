@@ -6,6 +6,7 @@ import {
   FilmIcon,
   ImagePlusIcon,
   LibraryBigIcon,
+  ListPlusIcon,
   PlusIcon,
   SettingsIcon,
   ShieldIcon,
@@ -254,14 +255,28 @@ function ComposerBlock({
               />
 
               {isRunning ? (
-                <InputGroupButton
-                  onClick={onStop}
-                  size="icon-sm"
-                  variant="outline"
-                >
-                  <SquareIcon />
-                  <span className="sr-only">Stop</span>
-                </InputGroupButton>
+                <>
+                  {composer.canSubmit ? (
+                    <InputGroupButton
+                      className="h-8 gap-1 px-2.5"
+                      disabled={cannotSend}
+                      onClick={composer.submit}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <ListPlusIcon />
+                      Queue
+                    </InputGroupButton>
+                  ) : null}
+                  <InputGroupButton
+                    onClick={onStop}
+                    size="icon-sm"
+                    variant="outline"
+                  >
+                    <SquareIcon />
+                    <span className="sr-only">Stop</span>
+                  </InputGroupButton>
+                </>
               ) : (
                 <InputGroupButton
                   disabled={cannotSend || !composer.canSubmit}

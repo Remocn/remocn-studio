@@ -6,8 +6,16 @@ import { causeMessage } from "@/lib/error-message";
 import { answerPermission, promptClaude } from "@/lib/studio/claude";
 import { loadTranscript } from "@/lib/studio/history";
 import type { PermissionAction } from "@/lib/studio/permission";
+import { loadPipeline } from "@/lib/studio/pipeline";
 import type { SidecarError } from "@/lib/studio/sidecar";
-import { IDLE_TURN, type TurnState } from "@/lib/studio/turns";
+import {
+  dropQueued,
+  enqueue,
+  IDLE_TURN,
+  nextQueued,
+  type QueuedMessage,
+  type TurnState,
+} from "@/lib/studio/turns";
 import type {
   EffortLevel,
   HistorySession,
@@ -45,13 +53,59 @@ export interface Turns {
   hasRunningTurns: boolean;
   loadTurn: (session: HistorySession) => void;
   markOpen: (historyId: string | null) => void;
-  sendTurn: (input: StartTurn) => void;
+  removeQueued: (historyId: string, id: string) => void;
+  sendTurn: (input: StartTurn) => boolean;
   setTurnMode: (historyId: string, mode: SessionMode) => void;
   stopTurn: (historyId: string) => void;
   turns: ReadonlyMap<string, TurnState>;
 }
 
 type Running = Fiber.Fiber<PromptResult, SidecarError>;
+
+function isBlank(input: StartTurn): boolean {
+  return (
+    input.prompt.trim().length === 0 &&
+    input.attachments.length === 0 &&
+    input.elements.length === 0 &&
+    input.media.length === 0 &&
+    input.assets.length === 0
+  );
+}
+
+function queuedOf(input: StartTurn, id: string): QueuedMessage {
+  return {
+    assets: input.assets,
+    attachments: input.attachments,
+    effort: input.effort,
+    elements: input.elements,
+    id,
+    media: input.media,
+    model: input.model,
+    playing: input.playing,
+    projectId: input.projectId,
+    text: input.prompt,
+  };
+}
+
+function startOf(
+  message: QueuedMessage,
+  historyId: string,
+  mode: SessionMode
+): StartTurn {
+  return {
+    assets: message.assets,
+    attachments: message.attachments,
+    effort: message.effort,
+    elements: message.elements,
+    historyId,
+    media: message.media,
+    mode,
+    model: message.model,
+    playing: message.playing,
+    projectId: message.projectId,
+    prompt: message.text,
+  };
+}
 
 export function useTurns(onSession: (session: HistorySession) => void): Turns {
   const [turns, setTurns] = useState<ReadonlyMap<string, TurnState>>(
@@ -97,6 +151,22 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       }));
 
       Effect.runFork(
+        loadPipeline(session.id).pipe(
+          Effect.tap((state) =>
+            Effect.sync(() =>
+              update(session.id, (turn) => ({
+                ...turn,
+                // A turn started while this was in flight has already reported
+                // the live stages; a reading taken before it must not undo them.
+                stages: turn.stages.length > 0 ? turn.stages : state.stages,
+              }))
+            )
+          ),
+          Effect.ignore
+        )
+      );
+
+      Effect.runFork(
         loadTranscript(session.id).pipe(
           Effect.tap((entries) =>
             Effect.sync(() =>
@@ -136,19 +206,11 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
     }
   }, []);
 
-  const sendTurn = useCallback(
+  const launcher = useRef<(input: StartTurn) => void>(() => undefined);
+
+  const launch = useCallback(
     (input: StartTurn) => {
       const trimmed = input.prompt.trim();
-      const isEmpty =
-        trimmed.length === 0 &&
-        input.attachments.length === 0 &&
-        input.elements.length === 0 &&
-        input.media.length === 0 &&
-        input.assets.length === 0;
-      if (isEmpty || fibers.current.has(input.historyId)) {
-        return;
-      }
-
       const { historyId } = input;
       const started = snapshot.current.get(historyId) ?? IDLE_TURN;
 
@@ -199,6 +261,13 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
             onSession(event.session);
             return;
           }
+          if (event.type === "pipeline") {
+            update(historyId, (current) => ({
+              ...current,
+              stages: event.stages,
+            }));
+            return;
+          }
           if (event.type === "permission") {
             update(historyId, (current) => ({
               ...current,
@@ -225,10 +294,14 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
           Effect.sync(() => {
             fibers.current.delete(historyId);
             const away = open.current !== historyId;
+            const hasFailed =
+              exit._tag === "Failure" || exit.value.failure !== null;
+            const before = snapshot.current.get(historyId) ?? IDLE_TURN;
+            const head = nextQueued(before, hasFailed);
 
             update(historyId, (current) => {
               const settled = {
-                ...current,
+                ...(head === null ? current : dropQueued(current, head.id)),
                 isRunning: false,
                 permissions: [],
                 startedAt: null,
@@ -246,6 +319,10 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
                 sdkSessionId: exit.value.sessionId ?? current.sdkSessionId,
               };
             });
+
+            if (head !== null) {
+              launcher.current(startOf(head, historyId, before.mode));
+            }
           })
         )
       );
@@ -253,6 +330,34 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       fibers.current.set(historyId, Effect.runFork(request));
     },
     [onSession, update]
+  );
+
+  launcher.current = launch;
+
+  const sendTurn = useCallback(
+    (input: StartTurn): boolean => {
+      if (isBlank(input)) {
+        return false;
+      }
+
+      if (fibers.current.has(input.historyId)) {
+        update(input.historyId, (current) =>
+          enqueue(current, queuedOf(input, crypto.randomUUID()))
+        );
+        return true;
+      }
+
+      launch(input);
+      return true;
+    },
+    [launch, update]
+  );
+
+  const removeQueued = useCallback(
+    (historyId: string, id: string) => {
+      update(historyId, (current) => dropQueued(current, id));
+    },
+    [update]
   );
 
   const answerTurn = useCallback(
@@ -301,6 +406,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       hasRunningTurns,
       loadTurn,
       markOpen,
+      removeQueued,
       sendTurn,
       setTurnMode,
       stopTurn,
@@ -311,6 +417,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       hasRunningTurns,
       loadTurn,
       markOpen,
+      removeQueued,
       sendTurn,
       setTurnMode,
       stopTurn,

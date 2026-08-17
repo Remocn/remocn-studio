@@ -538,6 +538,10 @@ export const ClaudeEvent = Schema.Union([
     reason: PermissionReason,
     type: Schema.Literal("permission"),
   }),
+  Schema.Struct({
+    stages: Schema.Array(PipelineStage),
+    type: Schema.Literal("pipeline"),
+  }),
 ]);
 
 export const PromptResult = Schema.Struct({

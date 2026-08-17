@@ -30,18 +30,20 @@ import { useLocateProject } from "@/hooks/use-locate-project";
 import type { NewProject } from "@/hooks/use-new-project";
 import { useNow } from "@/hooks/use-now";
 import type { OpenTurn } from "@/hooks/use-open-turn";
-import { usePipeline } from "@/hooks/use-pipeline";
+import type { Queue } from "@/hooks/use-queue";
 import type { StudioSettings } from "@/lib/studio/settings";
 import { currentTasks } from "@/lib/studio/tasks";
 import type { HistorySession, Project } from "@/shared/ipc";
 import { AssetOfferCard } from "./asset-offer-card";
 import { Composer } from "./composer";
+import { DockStack } from "./dock";
 import { EnvironmentChecklist } from "./environment-checklist";
 import { LogoMark } from "./logo-mark";
 import { MarkdownProvider } from "./markdown";
 import { NewProjectWizard } from "./new-project-wizard";
 import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { PermissionCard } from "./permission-card";
+import { QueueDock } from "./queue-dock";
 import { Startup } from "./startup";
 import { StartupBackdrop } from "./startup-backdrop";
 import { useStudio } from "./studio-provider";
@@ -61,6 +63,7 @@ export function ChatPane() {
     newProject,
     openedProject,
     openFolder,
+    queue,
     relocateProject,
     settings,
     togglePreview,
@@ -135,6 +138,7 @@ export function ChatPane() {
           newProject={newProject}
           onLocate={locate}
           onOpenFolder={openFolder}
+          queue={queue}
           settings={settings}
           turn={turn}
         />
@@ -174,6 +178,7 @@ function Conversation({
   newProject,
   onLocate,
   onOpenFolder,
+  queue,
   settings,
   turn,
 }: {
@@ -185,6 +190,7 @@ function Conversation({
   newProject: NewProject;
   onLocate: () => void;
   onOpenFolder: () => void;
+  queue: Queue;
   settings: StudioSettings | null;
   turn: OpenTurn;
 }) {
@@ -192,7 +198,6 @@ function Conversation({
   const isCreating = newProject.isOpen;
   const isStartup = !(hasProject || hasTranscript);
   const now = useNow(turn.isRunning ? TICK : null);
-  const pipeline = usePipeline(turn.openId, turn.isRunning);
   const offer = useAssetOffer({
     entries: turn.entries,
     isRunning: turn.isRunning,
@@ -267,15 +272,20 @@ function Conversation({
             </div>
           )}
 
-          {/* The plan sits on top of the composer, collapsed to the task in
-              hand, and opens upwards into the whole list. It reads the same
-              `currentTasks` the transcript and the projects pane read, so the
-              three cannot disagree about what the plan is. */}
-          <TaskDock
-            settings={settings}
-            stages={pipeline.stages}
-            tasks={currentTasks(turn.entries)}
-          />
+          {/* Both drawers sit on top of the composer, collapsed to one line
+              each and opening upwards. The plan reads the same `currentTasks`
+              the transcript and the projects pane read, so the three cannot
+              disagree about what the plan is; the queue sits under it, against
+              the composer, because it is the composer's own outbox and a
+              message you just queued must land where you were typing. */}
+          <DockStack>
+            <TaskDock
+              settings={settings}
+              stages={turn.stages}
+              tasks={currentTasks(turn.entries)}
+            />
+            <QueueDock queue={queue} />
+          </DockStack>
 
           <Composer
             context={turn.context}

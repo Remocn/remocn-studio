@@ -20,6 +20,7 @@ import type {
 } from "@/shared/ipc";
 
 interface ComposerShape {
+  isRunning?: boolean;
   mode?: SessionMode;
   onModeChange?: (value: string) => void;
 }
@@ -207,7 +208,11 @@ function SelectProbe() {
 
 async function renderComposer(
   _onSubmit = vi.fn(),
-  { mode = "auto", onModeChange = vi.fn() }: ComposerShape = {}
+  {
+    isRunning = false,
+    mode = "auto",
+    onModeChange = vi.fn(),
+  }: ComposerShape = {}
 ) {
   render(
     <StudioProvider>
@@ -218,7 +223,7 @@ async function renderComposer(
           context={{ maxTokens: 200_000, totalTokens: 50_000 }}
           cwd={PROJECT.path}
           disabled={false}
-          isRunning={false}
+          isRunning={isRunning}
           isWaiting={false}
           mode={mode}
           onModeChange={onModeChange}
@@ -248,6 +253,20 @@ describe("Composer", () => {
       screen.getByRole("button", { name: "Effort: Default" })
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
+  });
+
+  it("says the message will be queued while a turn is running", async () => {
+    const { textarea } = await renderComposer(vi.fn(), { isRunning: true });
+
+    expect(screen.getByRole("button", { name: "Stop" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Queue" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send" })).toBeNull();
+
+    fireEvent.change(textarea, { target: { value: "then export it" } });
+
+    expect(await screen.findByRole("button", { name: "Queue" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Stop" })).toBeVisible();
+    expect(textarea).toBeEnabled();
   });
 
   it("picks a mode from the menu", async () => {
