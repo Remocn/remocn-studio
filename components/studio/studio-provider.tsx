@@ -5,6 +5,7 @@ import { type ClaudeEffort, useClaudeEffort } from "@/hooks/use-claude-effort";
 import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
 import { type Composer, useComposer } from "@/hooks/use-composer";
 import { type Environment, useEnvironment } from "@/hooks/use-environment";
+import { type FileDrops, useFileDrops } from "@/hooks/use-file-drops";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
 import { type Library, useLibrary } from "@/hooks/use-library";
 import { type NewProject, useNewProject } from "@/hooks/use-new-project";
@@ -22,6 +23,7 @@ export type Studio = ClaudeEffort &
   Panes &
   Workspace & {
     composer: Composer;
+    drops: FileDrops;
     environment: Environment;
     library: Library;
     newProject: NewProject;
@@ -104,6 +106,18 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     previewProjectId === opened?.id ? tools.preview.pick : null
   );
 
+  const drops = useFileDrops({
+    drop: composer.drop,
+    isComposerOpen:
+      opened !== null &&
+      !opened.missing &&
+      !environment.isBlocking &&
+      turn.permission === null,
+    paneView: panes.paneView,
+    save: library.save,
+    showPane,
+  });
+
   const studio = useMemo(
     () => ({
       ...workspace,
@@ -111,6 +125,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       ...effort,
       ...panes,
       composer,
+      drops,
       environment,
       library,
       newProject,
@@ -120,6 +135,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       composer,
+      drops,
       effort,
       environment,
       library,

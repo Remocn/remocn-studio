@@ -35,6 +35,7 @@ import { useKeepAttachment } from "@/hooks/use-keep-attachment";
 import { type Sidecar, useSidecar } from "@/hooks/use-sidecar";
 import { SAVE_SCENE_PROMPT } from "@/lib/studio/library";
 import { CLAUDE_MODELS } from "@/lib/studio/models";
+import { cn } from "@/lib/utils";
 import {
   type ContextUsage,
   SESSION_MODE_LABELS,
@@ -89,6 +90,7 @@ function ComposerBlock({
     claudeEffort,
     claudeModel,
     composer,
+    drops,
     library,
     onEffortChange,
     onModelChange,
@@ -108,7 +110,13 @@ function ComposerBlock({
   return (
     <div className="relative z-10 shrink-0 px-4 pb-4">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-1">
-        <InputGroup className="rounded-xl border-none">
+        <InputGroup
+          className={cn(
+            "rounded-xl border-none",
+            drops.composer.isOver && "bg-primary/5 ring-2 ring-primary/40"
+          )}
+          ref={drops.composer.ref}
+        >
           {composer.attachments.items.length > 0 ? (
             <InputGroupAddon align="block-start">
               <MediaRow
@@ -270,6 +278,7 @@ function ComposerBlock({
         >
           <ComposerStatus
             error={composer.attachments.error}
+            isOver={drops.composer.isOver}
             sidecar={sidecar}
           />
         </p>
@@ -335,11 +344,17 @@ function labelOf(
 
 function ComposerStatus({
   error,
+  isOver,
   sidecar,
 }: {
   error: string | null;
+  isOver: boolean;
   sidecar: Sidecar;
 }) {
+  if (isOver) {
+    return <span className="text-primary">Drop to attach to this message</span>;
+  }
+
   if (error !== null) {
     return <span className="text-destructive">{error}</span>;
   }

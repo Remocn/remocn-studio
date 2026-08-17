@@ -304,6 +304,65 @@ describe("useComposer", () => {
     ]);
   });
 
+  it("lays a dropped mix out into the list each kind belongs in", () => {
+    const { result } = composer();
+
+    act(() => {
+      result.current.drop([
+        "/tmp/shot.png",
+        "/tmp/intro.mp4",
+        "/tmp/theme.wav",
+      ]);
+    });
+
+    expect(result.current.attachments.items.map((item) => item.name)).toEqual([
+      "shot.png",
+    ]);
+    expect(result.current.media.items.map((item) => item.name)).toEqual([
+      "intro.mp4",
+      "theme.wav",
+    ]);
+  });
+
+  it("refers to a dropped picture the way a pasted one is referred to", () => {
+    const { result } = composer();
+
+    act(() => {
+      result.current.onChange(typing("use this"));
+    });
+    act(() => {
+      result.current.drop(["/tmp/shot.png", "/tmp/logo.png"]);
+    });
+
+    expect(result.current.value).toBe("use this [Image #1] [Image #2] ");
+    expect(result.current.counts).toEqual({ asset: 0, element: 0, image: 2 });
+  });
+
+  it("leaves the text alone when the drop held no picture", () => {
+    const { result } = composer();
+
+    act(() => {
+      result.current.drop(["/tmp/intro.mp4"]);
+    });
+
+    expect(result.current.value).toBe("");
+    expect(result.current.canSubmit).toBe(true);
+  });
+
+  it("writes no second reference for a picture already attached", () => {
+    const { result } = composer();
+
+    act(() => {
+      result.current.drop(["/tmp/shot.png"]);
+    });
+    act(() => {
+      result.current.drop(["/tmp/shot.png"]);
+    });
+
+    expect(result.current.value).toBe("[Image #1] ");
+    expect(result.current.attachments.items).toHaveLength(1);
+  });
+
   // These handlers are handed to memoised rows in the assets panel. Reminting
   // them per keystroke would re-render every row while you type.
   it("keeps the callbacks that insert at the caret stable as the text changes", () => {

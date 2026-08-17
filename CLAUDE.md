@@ -1571,7 +1571,7 @@ over an `AttachmentTitle` — rather than a list of rows with an icon and a type
 - **The kind moved from a visible second line into the trigger's `aria-label`.** The tile now says
   what it is by showing it; a screen reader still hears "Neon Title, Component".
 
-### Dragging into the library
+### Dragging into the library, or into the message
 
 `onDragDropEvent` from Tauri, not HTML5 drag events: with `dragDropEnabled` on — the default — the
 webview never fires them for files, and a `File` from a WKWebView drop carries no path anyway. The
@@ -1585,7 +1585,27 @@ IPC.
   part no seam can exercise.
 - **Anything that is not media is refused out loud.** A dropped `.tsx` is not an asset the panel can
   make — a component's boundaries are the agent's to work out — so the pane says what it skipped
-  rather than saving half a drop in silence.
+  rather than saving half a drop in silence. The same sentence names where they did not go, because
+  there are two places they could have gone.
+- **The composer is the second zone, and there is still one watcher** (REM-255). `useFileDrops` owns
+  the only `onDragDropEvent` subscription and asks `zoneAt` — an ordered list of boxes, first match
+  wins — which zone a point is in; the two zones are disjoint on screen today, so the order is
+  insurance rather than arbitration, and a zone whose box is `null` is simply not on screen. Two
+  listeners racing over the same drop is the thing this avoids: each one would have to know the
+  other's rectangle to stay out of its way.
+- **A dropped file is sorted by kind, not by where it landed.** Pictures go to `attachments` with an
+  `[Image #N]` written at the caret, exactly as a paste does — the gesture is the same one — and
+  video and audio go to `media`, which carries no reference kind. A mixed drop splits across both,
+  and each list filters the paths itself, so the split is the two `arriving` functions that already
+  existed rather than a third place that decides what an image is.
+- **A locked composer is not a zone.** Waiting on a permission card, a folder that is gone, a
+  blocking environment check: `isComposerOpen` goes false, the box leaves the hit test and the ring
+  never lights, so the composer cannot promise something it would drop on the floor. A composer that
+  is not rendered at all — the new-project wizard, a transcript still loading — falls out for free,
+  since its ref is null.
+- **A drop that misses both zones is silent.** It also puts the left pane back: a drag that passed
+  over the library to reach the composer switched the view to Assets on the way, and letting go
+  anywhere reverts it.
 
 ## Layout
 
