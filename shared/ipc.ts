@@ -2,7 +2,7 @@ import { Effect, type Exit, Schema, type SchemaError } from "effect";
 import { Asset, AssetDraft, PromptAsset } from "./library";
 import { PipelineStage, PipelineStageId, PipelineStatus } from "./pipeline";
 
-export const SIDECAR_PROTOCOL = 18;
+export const SIDECAR_PROTOCOL = 19;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -24,6 +24,7 @@ const RequestId = Schema.NonEmptyString;
 export const METHOD_NAMES = [
   "claude.permission",
   "claude.prompt",
+  "files.list",
   "history.blocks",
   "history.mode",
   "history.remove",
@@ -46,6 +47,7 @@ export const METHOD_NAMES = [
   "preview.warm",
   "project.check",
   "project.create",
+  "project.files",
   "project.install",
   "project.list",
   "project.open",
@@ -365,6 +367,26 @@ export const ProjectMove = Schema.Struct({
 
 export const ProjectRemoved = Schema.Struct({ removed: Schema.Boolean });
 
+export const ProjectFiles = Schema.Struct({
+  files: Schema.Array(Schema.NonEmptyString),
+  root: Schema.NonEmptyString,
+  truncated: Schema.Boolean,
+});
+
+export const DirectoryPath = Schema.Struct({
+  path: Schema.NonEmptyString,
+});
+
+export const DirectoryEntry = Schema.Struct({
+  directory: Schema.Boolean,
+  name: Schema.NonEmptyString,
+});
+
+export const DirectoryListing = Schema.Struct({
+  entries: Schema.Array(DirectoryEntry),
+  path: Schema.NonEmptyString,
+});
+
 export const VideoSize = Schema.Struct({
   height: Schema.Int,
   width: Schema.Int,
@@ -543,6 +565,10 @@ export type ProjectDraft = (typeof ProjectDraft)["Type"];
 export type ProjectName = (typeof ProjectName)["Type"];
 export type ProjectMove = (typeof ProjectMove)["Type"];
 export type ProjectRemoved = (typeof ProjectRemoved)["Type"];
+export type ProjectFiles = (typeof ProjectFiles)["Type"];
+export type DirectoryPath = (typeof DirectoryPath)["Type"];
+export type DirectoryEntry = (typeof DirectoryEntry)["Type"];
+export type DirectoryListing = (typeof DirectoryListing)["Type"];
 export type VideoSize = (typeof VideoSize)["Type"];
 export type ScaffoldParams = (typeof ScaffoldParams)["Type"];
 export type ScaffoldStep = (typeof ScaffoldStep)["Type"];
@@ -663,6 +689,11 @@ export const SIDECAR_METHODS = {
     result: PromptResult,
     stream: ClaudeEvent,
   },
+  "files.list": {
+    params: DirectoryPath,
+    result: DirectoryListing,
+    stream: Schema.Never,
+  },
   "history.blocks": {
     params: HistorySessionRef,
     result: Schema.Array(TranscriptEntry),
@@ -771,6 +802,11 @@ export const SIDECAR_METHODS = {
   "project.create": {
     params: ProjectDraft,
     result: Project,
+    stream: Schema.Never,
+  },
+  "project.files": {
+    params: ProjectRef,
+    result: ProjectFiles,
     stream: Schema.Never,
   },
   "project.install": {

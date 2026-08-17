@@ -20,6 +20,7 @@ import { makeModeSwitch } from "./claude/mode";
 import { pipelineServer } from "./claude/pipeline-tools";
 import { messages } from "./claude/session";
 import { checksFor, makeAccountCache } from "./environment";
+import { type FilesError, listFolder, projectFiles } from "./files";
 import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
 import { type HistoryError, HistoryStore } from "./history/store";
@@ -44,6 +45,7 @@ import {
   unofferedFrom,
 } from "./library/store";
 import { libraryServer } from "./library/tools";
+import { remotionRootOf } from "./preview/project";
 import {
   clipFrom,
   exportFrom,
@@ -84,6 +86,9 @@ const unscaffolded = (error: ScaffoldError) =>
   new HandlerError({ message: error.message });
 
 const unlibraried = (error: LibraryError) =>
+  new HandlerError({ message: error.message });
+
+const unlisted = (error: FilesError) =>
   new HandlerError({ message: error.message });
 
 const previewed = (projectId: string, playing: PromptFrame, asset: Asset) =>
@@ -265,6 +270,9 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
       };
     }),
 
+  "files.list": ({ params }) =>
+    listFolder(params.path).pipe(Effect.mapError(unlisted)),
+
   "history.blocks": ({ params }) =>
     Effect.flatMap(HistoryStore, (store) =>
       store.blocks(params.sessionId)
@@ -409,6 +417,16 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
       });
 
       return yield* Effect.mapError(projects.open(path), unstored);
+    }),
+
+  "project.files": ({ params }) =>
+    Effect.gen(function* () {
+      const project = yield* located(params.projectId);
+
+      return yield* Effect.mapError(
+        projectFiles(remotionRootOf(project.path)),
+        unlisted
+      );
     }),
 
   "project.install": ({ emit, log, params }) =>

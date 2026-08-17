@@ -1607,6 +1607,68 @@ IPC.
   over the library to reach the composer switched the view to Assets on the way, and letting go
   anywhere reverts it.
 
+### Tagging a file
+
+`@` in the composer opens a list of the project's files; picking one writes its path in backticks
+into the sentence being typed (REM-249). A query beginning `/` or `~` browses the whole filesystem
+instead.
+
+- **A tagged file is plain text, and that is the design.** A fourth reference kind beside
+  `[Image #N]`, `[Element #N]` and `[Asset #N]` would need a field on the stored `TranscriptEntry`
+  and a change in the recorder — the argument that already sank `[Media #N]` — and it would buy
+  nothing, because a file needs neither a splice nor a trailer: **the path is the whole payload**.
+  So `shared/references.ts`, `shared/transcript.ts`, the history store and `content.ts` are all
+  untouched, and a reopened session renders what was sent because nothing about sending changed.
+- **Reading the file costs nothing to arrange.** The agent's `cwd` *is* the project, and every path
+  inside it is auto-allowed by the gate, so a relative path raises no card and nothing has to be
+  resolved or attached on our side. A path outside the folder goes through the ordinary Allow/Deny
+  card — that is the #223 invariant working, not a gap.
+- **Two methods, because they are cached by different keys.** `project.files` walks the project once
+  per project and the webview filters the result on every keystroke; `files.list` reads one folder
+  and is cached per folder. Folding both into one "suggest" method would put an IPC round trip on
+  every keystroke and make the list's responsiveness the sidecar's problem. `~` is expanded in the
+  sidecar, because the webview has no home directory to expand it against.
+- **The walk skips what a person would never tag** — `node_modules`, `out`, `dist`, `build`,
+  `coverage`, `target`, `tmp`, and every dot entry — and stops at 4000 files, reporting `truncated`
+  rather than trimming in silence. Reaching what it skipped is what typing an absolute path is for.
+- **The composer owns the text, so it owns the mention**, exactly as it owns the references:
+  `useMentions` holds the candidates, the query and the highlighted row and decides nothing about
+  the text, while `useComposer` runs `insertMention` / `openFolder` against the live field. Its
+  `onKeyDown` is consulted **first** and answers whether it took the key, so Escape closes the list
+  instead of clearing the composer and Enter picks a file instead of sending the message — and when
+  nothing matched, Enter falls straight through and sends, because a list with no rows must not
+  swallow a keystroke.
+- **Drilling into a folder does not wait for a round trip.** `choose` knows exactly what the text
+  will become — `@` plus the folder plus a slash — so it sets its own query at the same moment it
+  asks the composer to write it, rather than waiting for a `sync` that a programmatic `setValue`
+  never fires.
+- **A space ends a mention, unless the path is absolute.** `~/My Movies/` is a folder people really
+  have, and the drill-down produces exactly that text; a relative query keeps the Claude Code rule
+  that a space is the end of the token.
+- **Escape is remembered per token.** The dismissed `@`'s offset is kept, so typing on into the same
+  word does not bring the list back — while a different `@`, or moving away and starting another,
+  opens it as usual.
+- **The path is coloured, and colouring it costs nothing extra.** `MessageText` already draws both
+  the composer's overlay and the user's bubble, so splitting its *text* segments once more — into
+  plain runs and backticked paths — lights the mention in both places and in history, where the
+  stored prompt is the same string. It is deliberately **not** a segment kind in
+  `shared/references.ts`: `dropReference` walks those segments and treats anything that is not
+  `text` as a reference to renumber, so a fourth kind there would make a typed path behave like an
+  attachment. Splitting inside the renderer keeps that fold untouched.
+- **The same `--reference` colour, and colour only.** A path is a thing the person pointed at, like
+  `[Image #N]`, so it speaks the same colour rather than inventing a second one. And it can differ
+  in *nothing else*: the overlay's metrics are what position the caret, so weight, tracking or size
+  on the span would desync it — the accumulating error that `font-medium` on a reference already
+  cost once.
+- **Only a path lights up, not every code span.** A backticked run counts when it holds a `/` or is
+  a bare name with a real extension, so `` `src/Root.tsx` ``, `` `~/My Movies/clip.mp4` `` and
+  `` `package.json` `` colour while `` `Main` `` and `` `TransitionSeries` `` — the words the
+  conventions themselves put in backticks — stay plain.
+- **Both pure halves are tested without rendering anything**: `lib/studio/mentions.ts` (what counts
+  as a mention, where a folder query splits, the ranking, what is a path) and `sidecar/files.ts`
+  (what the walk skips, the limit, `~` expansion) — and the wiring is tested through `useComposer`
+  against a fake IPC, which is the only place the two meet.
+
 ## Layout
 
 Flat root, no monorepo — per #218.
@@ -1624,7 +1686,8 @@ shared/               ipc.ts: the typed contract, and the media types it carries
                       transcript.ts: the one fold; references.ts: the one reader of
                       `[Image #N]`/`[Element #N]`/`[Asset #N]`; library.ts: the
                       asset manifest format
-sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
+sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history;
+                      files.ts is the project walk and the folder read behind `@`
 sidecar/history/      driver seam, migrations, project and session stores, recorder
 sidecar/library/      the asset library: the folder store, the copy into a project,
                       and the remocn-library tools the agent saves through
