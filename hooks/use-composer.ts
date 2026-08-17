@@ -54,6 +54,7 @@ export interface Composer {
   capture: (file: File) => Promise<void>;
   caret: Caret;
   counts: ReferenceCounts;
+  drop: (paths: readonly string[]) => void;
   media: Media;
   onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
@@ -171,6 +172,27 @@ export function useComposer({
       refer(at, first, await attachments.attach(files));
     },
     [attachments, refer]
+  );
+
+  const drop = useCallback(
+    (paths: readonly string[]) => {
+      const field = caret.ref.current;
+      const text = field?.value ?? latest.current;
+      const at = field?.selectionStart ?? text.length;
+      const first = attachments.items.length;
+
+      const added = attachments.attachPaths(paths);
+      media.attach(paths);
+
+      if (added === 0) {
+        return;
+      }
+
+      const next = insertReferences(text, at, "image", first, added);
+      caret.moveTo(next.caret);
+      setValue(next.text);
+    },
+    [attachments, caret, media]
   );
 
   const select = useCallback(
@@ -371,6 +393,7 @@ export function useComposer({
       capture,
       caret,
       counts,
+      drop,
       media,
       onChange,
       onKeyDown,
@@ -395,6 +418,7 @@ export function useComposer({
       capture,
       caret,
       counts,
+      drop,
       media,
       onChange,
       onKeyDown,
