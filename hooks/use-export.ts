@@ -4,7 +4,13 @@ import { Effect, type Exit, Fiber } from "effect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRevealInFinder } from "@/hooks/use-reveal-in-finder";
 import { causeMessage } from "@/lib/error-message";
-import { exportPercent, exportStatus, renderExport } from "@/lib/studio/export";
+import {
+  type ExportBrief,
+  exportBrief,
+  exportPercent,
+  exportStatus,
+  renderExport,
+} from "@/lib/studio/export";
 import type { SidecarError } from "@/lib/studio/sidecar";
 import type { ExportEvent, Exported } from "@/shared/ipc";
 
@@ -15,6 +21,7 @@ export type ExportState =
   | { phase: "idle" };
 
 export interface Exporting {
+  brief: ExportBrief | null;
   cancel: () => void;
   canExport: boolean;
   isRunning: boolean;
@@ -96,6 +103,7 @@ export function useExport({
 
   return useMemo(
     () => ({
+      brief: mine?.phase === "running" ? exportBrief(mine.event) : null,
       cancel,
       canExport: unavailable === null,
       isRunning: mine?.phase === "running",

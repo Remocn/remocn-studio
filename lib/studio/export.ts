@@ -51,6 +51,37 @@ export function exportStatus(event: ExportEvent | null): string | null {
     : "Finishing the file…";
 }
 
+export interface ExportBrief {
+  label: string;
+  percent: number | null;
+}
+
+export function exportBrief(event: ExportEvent | null): ExportBrief {
+  if (event === null) {
+    return { label: "Starting…", percent: null };
+  }
+
+  if (event.type === "browser") {
+    return { label: `Downloading · ${event.percent}%`, percent: event.percent };
+  }
+
+  if (event.total === 0) {
+    return { label: "Measuring…", percent: null };
+  }
+
+  if (event.rendered < event.total) {
+    return { label: `Rendering · ${event.percent}%`, percent: event.percent };
+  }
+
+  if (event.encoded < event.total) {
+    return { label: `Encoding · ${event.percent}%`, percent: event.percent };
+  }
+
+  return event.stage === "muxing"
+    ? { label: "Combining…", percent: null }
+    : { label: "Finishing…", percent: null };
+}
+
 export function exportPercent(event: ExportEvent | null): number | null {
   return event === null ? null : event.percent;
 }
