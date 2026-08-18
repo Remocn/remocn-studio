@@ -63,6 +63,7 @@ export function ChatPane() {
     newProject,
     openedProject,
     openFolder,
+    preferences,
     queue,
     relocateProject,
     settings,
@@ -136,6 +137,7 @@ export function ChatPane() {
           library={library}
           missing={openedProject?.missing ?? false}
           newProject={newProject}
+          offersEnabled={preferences.assetOffers}
           onLocate={locate}
           onOpenFolder={openFolder}
           queue={queue}
@@ -176,6 +178,7 @@ function Conversation({
   library,
   missing,
   newProject,
+  offersEnabled,
   onLocate,
   onOpenFolder,
   queue,
@@ -188,6 +191,7 @@ function Conversation({
   library: Library;
   missing: boolean;
   newProject: NewProject;
+  offersEnabled: boolean;
   onLocate: () => void;
   onOpenFolder: () => void;
   queue: Queue;
@@ -199,6 +203,7 @@ function Conversation({
   const isStartup = !(hasProject || hasTranscript);
   const now = useNow(turn.isRunning ? TICK : null);
   const offer = useAssetOffer({
+    enabled: offersEnabled,
     entries: turn.entries,
     isRunning: turn.isRunning,
     save: library.save,

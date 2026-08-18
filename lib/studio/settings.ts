@@ -13,6 +13,7 @@ const CODEX_MODEL_KEY = "codexModel";
 const COPILOT_MODEL_KEY = "copilotModel";
 const GROK_MODEL_KEY = "grokModel";
 const CLAUDE_EFFORT_KEY = "claudeEffort";
+const ASSET_OFFERS_KEY = "assetOffers";
 const PREVIEW_PANE_KEY = "previewPane";
 const PROJECTS_PANE_KEY = "projectsPane";
 const TASK_DOCK_KEY = "taskDock";
@@ -26,6 +27,7 @@ const openStore = Effect.runSync(
 );
 
 export interface StudioSettings {
+  assetOffers: boolean | null;
   claudeEffort: EffortLevel | null;
   claudeModel: string | null;
   codexModel: string | null;
@@ -50,6 +52,7 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
       }
     }
     return {
+      assetOffers: enabledOf(cache.get(ASSET_OFFERS_KEY)),
       claudeEffort: effortOf(cache.get(CLAUDE_EFFORT_KEY)),
       claudeModel: cache.get(CLAUDE_MODEL_KEY) ?? null,
       codexModel: cache.get(CODEX_MODEL_KEY) ?? null,
@@ -71,6 +74,16 @@ function effortOf(value: string | undefined): EffortLevel | null {
 
 function paneViewOf(value: string | undefined): PaneView | null {
   return value !== undefined && isPaneView(value) ? value : null;
+}
+
+function enabledOf(value: string | undefined): boolean | null {
+  if (value === "enabled") {
+    return true;
+  }
+  if (value === "disabled") {
+    return false;
+  }
+  return null;
 }
 
 function shownOf(value: string | undefined): boolean | null {
@@ -154,6 +167,10 @@ export function saveTaskDock(shown: boolean): Effect.Effect<void> {
 
 export function savePaneView(view: PaneView): Effect.Effect<void> {
   return remember(PANE_VIEW_KEY, view);
+}
+
+export function saveAssetOffers(enabled: boolean): Effect.Effect<void> {
+  return remember(ASSET_OFFERS_KEY, enabled ? "enabled" : "disabled");
 }
 
 export function saveClaudeEffort(

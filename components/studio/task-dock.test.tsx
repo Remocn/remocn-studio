@@ -6,6 +6,7 @@ import type { TaskRow } from "@/lib/studio/tasks";
 import type { PipelineStage } from "@/shared/pipeline";
 
 const SETTINGS: StudioSettings = {
+  assetOffers: null,
   claudeEffort: null,
   claudeModel: null,
   codexModel: null,

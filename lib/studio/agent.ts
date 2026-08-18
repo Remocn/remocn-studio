@@ -40,17 +40,16 @@ export function answerPermission(
   });
 }
 
-export function providerAccounts(): Effect.Effect<
-  readonly EnvironmentCheck[],
-  SidecarError
-> {
+export function providerAccounts(
+  force = false
+): Effect.Effect<readonly EnvironmentCheck[], SidecarError> {
   return Effect.gen(function* () {
     const id = yield* newRequestId;
 
     return yield* requestSidecar({
       id,
       method: "agent.accounts",
-      params: null,
+      params: force ? { force } : null,
     });
   });
 }

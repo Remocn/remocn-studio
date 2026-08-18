@@ -14,14 +14,16 @@ import type { Environment } from "@/hooks/use-environment";
 import { cn } from "@/lib/utils";
 import type { EnvironmentCheck, EnvironmentState } from "@/shared/ipc";
 
-const ICONS = {
+// Shared with the Settings dialog's AI accounts section, so a state reads
+// the same everywhere it appears.
+export const CHECK_ICONS = {
   failed: XCircleIcon,
   ok: CheckIcon,
   pending: RotateCwIcon,
   warn: AlertTriangleIcon,
 } satisfies Record<EnvironmentState, typeof CheckIcon>;
 
-const TONES = {
+export const CHECK_TONES = {
   failed: "text-destructive",
   ok: "text-muted-foreground",
   pending: "text-muted-foreground",
@@ -95,11 +97,13 @@ function CheckRow({
   environment: Environment;
   onCopy: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
-  const Icon = ICONS[check.state];
+  const Icon = CHECK_ICONS[check.state];
 
   return (
     <div className="flex items-start gap-2">
-      <Icon className={cn("mt-0.5 size-3.5 shrink-0", TONES[check.state])} />
+      <Icon
+        className={cn("mt-0.5 size-3.5 shrink-0", CHECK_TONES[check.state])}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="text-xs leading-snug">{check.title}</p>

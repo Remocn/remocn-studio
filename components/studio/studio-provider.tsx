@@ -11,13 +11,19 @@ import { type StudioModels, useModels } from "@/hooks/use-models";
 import { type NewProject, useNewProject } from "@/hooks/use-new-project";
 import { type OpenTurn, useOpenTurn } from "@/hooks/use-open-turn";
 import { type Panes, usePanes } from "@/hooks/use-panes";
+import { type Preferences, usePreferences } from "@/hooks/use-preferences";
 import { usePreview } from "@/hooks/use-preview";
 import {
-  type ProviderAccounts,
+  type Accounts,
   useProviderAccounts,
 } from "@/hooks/use-provider-accounts";
 import { type Queue, useQueue } from "@/hooks/use-queue";
+import {
+  type SettingsDialog,
+  useSettingsDialog,
+} from "@/hooks/use-settings-dialog";
 import { type Tools, useTools } from "@/hooks/use-tools";
+import { type Updates, useUpdates } from "@/hooks/use-updates";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
 import type { VideoFormat } from "@/lib/studio/formats";
 import type { StudioSettings } from "@/lib/studio/settings";
@@ -27,16 +33,19 @@ export type Studio = ClaudeEffort &
   StudioModels &
   Panes &
   Workspace & {
-    accounts: ProviderAccounts;
+    accounts: Accounts;
     composer: Composer;
     drops: FileDrops;
     environment: Environment;
     library: Library;
     newProject: NewProject;
+    preferences: Preferences;
     queue: Queue;
     settings: StudioSettings | null;
+    settingsDialog: SettingsDialog;
     tools: Tools;
     turn: OpenTurn;
+    updates: Updates;
   };
 
 const StudioContext = createContext<Studio | null>(null);
@@ -55,6 +64,9 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const model = useModels(settings);
   const accounts = useProviderAccounts();
   const effort = useClaudeEffort(settings);
+  const preferences = usePreferences(settings);
+  const settingsDialog = useSettingsDialog();
+  const updates = useUpdates();
   const panes = usePanes(
     settings,
     workspace.projects.length > 0,
@@ -141,10 +153,13 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       environment,
       library,
       newProject,
+      preferences,
       queue,
       settings,
+      settingsDialog,
       tools,
       turn,
+      updates,
     }),
     [
       accounts,
@@ -156,10 +171,13 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       model,
       newProject,
       panes,
+      preferences,
       queue,
       settings,
+      settingsDialog,
       tools,
       turn,
+      updates,
       workspace,
     ]
   );

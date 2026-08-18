@@ -15,6 +15,7 @@ import { ChatPane } from "./chat-pane";
 import { PreviewPane } from "./preview-pane";
 import { ProjectsPane } from "./projects-pane";
 import { QuitGuard } from "./quit-guard";
+import { SettingsDialog } from "./settings-dialog";
 import { StudioProvider, useStudio } from "./studio-provider";
 import { Titlebar } from "./titlebar";
 
@@ -26,6 +27,7 @@ export function AppShell() {
       <TooltipProvider delay={500}>
         <Toaster>
           <ShellLayout />
+          <SettingsDialog />
           <QuitGuard />
         </Toaster>
       </TooltipProvider>

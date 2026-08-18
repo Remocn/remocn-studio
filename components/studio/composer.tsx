@@ -133,9 +133,12 @@ function ComposerBlock({
       <div className="relative mx-auto flex w-full max-w-2xl flex-col gap-1">
         <MentionPopup mentions={composer.mentions} />
 
+        {/* In dark the surface is a tonal fill (`dark:bg-input/30` on the
+            group) and a border would double the edge; light has no tone to
+            offer, so the border is the edge there. */}
         <InputGroup
           className={cn(
-            "rounded-xl border-none",
+            "rounded-xl dark:border-none",
             drops.composer.isOver && "bg-primary/5 ring-2 ring-primary/40"
           )}
           ref={drops.composer.ref}
@@ -258,7 +261,7 @@ function ComposerBlock({
               ) : null}
 
               <ModelMenu
-                accounts={accounts}
+                accounts={accounts.rows}
                 canPickProvider={canPickProvider}
                 models={models}
                 onPick={pickModel}

@@ -16,12 +16,14 @@ export interface AssetOffer {
 }
 
 export interface AssetOfferSettings {
+  enabled: boolean;
   entries: readonly TranscriptEntry[];
   isRunning: boolean;
   save: (attachment: PromptMedia) => Promise<Asset | null>;
 }
 
 export function useAssetOffer({
+  enabled,
   entries,
   isRunning,
   save,
@@ -36,7 +38,7 @@ export function useAssetOffer({
     const settled = was.current && !isRunning;
     was.current = isRunning;
 
-    if (!settled) {
+    if (!(settled && enabled)) {
       return;
     }
 
@@ -57,7 +59,7 @@ export function useAssetOffer({
         Effect.ignore
       )
     );
-  }, [isRunning]);
+  }, [enabled, isRunning]);
 
   const forget = useCallback((dropped: readonly PromptMedia[]) => {
     if (dropped.length > 0) {
