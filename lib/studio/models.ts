@@ -24,10 +24,19 @@ export const CODEX_MODELS: readonly ModelChoice[] = [
   { label: "GPT-5.6 Luna", value: "gpt-5.6-luna" },
 ];
 
-// Copilot's models are account-shaped and the CLI documents only "auto", so
-// the group carries the one entry that cannot drift.
+// A curated head of the 27 models `copilot help config` documents (CLI
+// 1.0.80) — Copilot is a router over other vendors' models, so the group
+// samples one strong entry per family rather than mirroring the whole
+// catalog. Which of them an account may actually use is plan-shaped; a
+// refused model fails the turn with the router's own sentence. "Default"
+// is `auto` — Copilot picks — and cannot drift.
 export const COPILOT_MODELS: readonly ModelChoice[] = [
   { label: "Default", value: "" },
+  { label: "Claude Sonnet 5", value: "claude-sonnet-5" },
+  { label: "Claude Opus 5", value: "claude-opus-5" },
+  { label: "GPT-5.6 Terra", value: "gpt-5.6-terra" },
+  { label: "Gemini 3.1 Pro", value: "gemini-3.1-pro-preview" },
+  { label: "Grok 4.5", value: "grok-4.5" },
 ];
 
 export const PROVIDER_MODELS: Record<AgentProvider, readonly ModelChoice[]> = {
