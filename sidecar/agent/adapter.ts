@@ -6,13 +6,9 @@ import type {
   PromptResult,
   SessionMode,
 } from "@/shared/ipc";
-import type { Asset, AssetDraft } from "@/shared/library";
-import type {
-  PipelineStage,
-  PipelineStageId,
-  PipelineStatus,
-} from "@/shared/pipeline";
 import type { ProviderInfo } from "@/shared/providers";
+import type { StdioTransport } from "../tools/gateway";
+import type { ToolServer } from "../tools/specs";
 import type { PermissionGate } from "./gate";
 import type { ApplyMode } from "./mode";
 
@@ -22,36 +18,22 @@ export interface TurnBriefs {
   readonly pipeline: string | null;
 }
 
-export interface LibraryCalls {
-  readonly list: () => Promise<readonly Asset[]>;
-  readonly save: (draft: AssetDraft) => Promise<Asset>;
-}
-
-export interface PipelineCalls {
-  readonly setStage: (
-    stage: PipelineStageId,
-    status: PipelineStatus
-  ) => Promise<readonly PipelineStage[]>;
-  readonly start: () => Promise<readonly PipelineStage[]>;
-}
-
 // Everything a turn needs from the app, in provider-neutral terms: the gate
-// and the mode switch are pure Effect, the library and pipeline calls are the
-// tool *implementations* — how they reach the agent (in-process MCP, stdio
-// MCP, instructions) is each adapter's own business. `emit` is the raw stream;
-// `record` is the history write, kept separate because a permission ask rides
-// the stream but must not land in the transcript.
+// and the mode switch are pure Effect, and the studio's tools arrive as
+// stdio-MCP transports every CLI can spawn — the implementations stay behind
+// the gateway in the sidecar. `emit` is the raw stream; `record` is the
+// history write, kept separate because a permission ask rides the stream but
+// must not land in the transcript.
 export interface TurnServices {
   readonly briefs: TurnBriefs;
   readonly cwd: string;
   readonly emit: (event: AgentEvent) => Effect.Effect<void>;
   readonly gate: PermissionGate;
-  readonly library: LibraryCalls;
   readonly log: (line: string) => Effect.Effect<void>;
   readonly onApprove: (mode: SessionMode) => Effect.Effect<void>;
   readonly onMode: (apply: ApplyMode) => Effect.Effect<void>;
-  readonly pipeline: PipelineCalls;
   readonly record: (event: AgentEvent) => Effect.Effect<void>;
+  readonly tools: Readonly<Record<ToolServer, StdioTransport>>;
   readonly turnId: string;
 }
 

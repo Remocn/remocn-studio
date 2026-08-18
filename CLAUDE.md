@@ -304,8 +304,8 @@ an **`AgentAdapter`** — `{ info, account, turn }` in `sidecar/agent/adapter.ts
 and `sidecar/claude/` is the first adapter. What stays neutral lives in
 `sidecar/agent/` (the permission gate's Effect skeleton, the mode switch, the
 per-provider account cache, the registry); what speaks SDK stays in
-`sidecar/claude/` (the `CanUseTool` guard, the in-process MCP servers, the
-event translation, the failure classifier, the auth probe).
+`sidecar/claude/` (the `CanUseTool` guard, the event translation, the failure
+classifier, the auth probe).
 
 - **`shared/providers.ts` is the provider contract**: `AGENT_PROVIDERS`, the
   `AgentCapabilities` shape (`context`, `effort`, `modes`, `planTool`, `resume`,
@@ -330,10 +330,28 @@ event translation, the failure classifier, the auth probe).
   translates. Detail rendering (`lib/studio/activity.ts`) and the task-checklist
   parser still read Claude's names; they move behind the seam when adapter #2
   needs them to.
+- **The studio's tools are stdio-MCP servers any CLI can spawn** (phase 2 of
+  REM-251). `sidecar/tools/` holds the whole seam: `specs.ts` declares the
+  tools (names, wording, zod shapes — the contract with the agent, moved
+  verbatim from the old in-process servers), `execute.ts` runs them, and the
+  split between the two processes is the point: the *state* a tool touches —
+  the SQLite stages, the turn's stream, the preview stills a `save_asset`
+  renders — lives only in the sidecar, so the child the CLI spawns
+  (`sidecar/index.ts --tools-host <server>`, the same re-exec the preview host
+  uses) owns nothing and forwards every call over a unix socket to
+  `gateway.ts`. The gateway holds a registry of turn contexts keyed by
+  `turnId` (registered around `adapter.turn` in an `acquireRelease`, so a
+  finished or interrupted turn always unregisters), and the socket path and
+  turn id travel to the child in env vars on the transport the adapter hands
+  its CLI. Tool names stay `mcp__remocn-*__*`, so the permission gate's
+  auto-allow and the conventions' wording are untouched — a test pins both.
+  Failure directions: a call for a turn that is gone gets a sentence, not a
+  hang; a gateway that cannot listen is logged and the turn still runs,
+  because the words matter more than the tools. Measured end to end — spawn,
+  MCP handshake, `tools/call` through the socket — a call answers in ~20 ms.
 - Still Claude-shaped, deliberately, until the next phases: the model picker,
-  the `remocn-pipeline`/`remocn-library` servers (in-process SDK MCP → stdio MCP
-  is phase 2), knowledge delivery (plugins are Claude Code's mechanism), and a
-  handful of user-facing strings that say "Claude".
+  knowledge delivery (plugins are Claude Code's mechanism), and a handful of
+  user-facing strings that say "Claude".
 
 ### The sidecar
 
@@ -436,7 +454,9 @@ event.
   step), release resolves the bundled `sidecar/main.js` from the resource dir.
   The release bundle is **minified with no sourcemap** — bundling Effect makes
   the map 4.16 MB of mostly third-party sources, and dev already runs from
-  source where traces are exact. 0.51 MB shipped, against 26 KB before Effect.
+  source where traces are exact. 2.5 MB shipped today — Effect, the preview
+  machinery and the MCP SDK behind the stdio tool hosts — against 26 KB
+  before Effect.
 - **Inside the sidecar, everything is Effect.** `SidecarChannel` is a
   `Context.Service` over stdio (`sidecar/channel.ts`), so tests provide a
   `PassThrough` instead of the process. In-flight requests live in a `FiberMap`
@@ -1558,8 +1578,8 @@ Remotion component (REM-8). It is a drawer at the foot of the left pane, and its
   the turn still runs, because the words the person wrote are worth more than the attachment.
 - **The agent saves components, the UI saves media** — the split is about who knows the boundaries.
   The agent wrote the code and knows the import graph, so it gathers the files, names them and calls
-  `save_asset` on a second in-process MCP server, `remocn-library`, modelled on `remocn-pipeline`
-  and auto-allowed by the same rule in `permission.ts`: the library is app data, and `save_asset`
+  `save_asset` on a second MCP server, `remocn-library` — served the same stdio way as
+  `remocn-pipeline` (see *The agent seam*) — and auto-allowed by the same rule in `permission.ts`: the library is app data, and `save_asset`
   only ever reads from `cwd` and writes into the library. There is no file-tree picker, because the
   studio's user does not read code.
   - **Which is why the pane lists again when a turn settles.** A component reaches the library
@@ -1843,9 +1863,10 @@ sidecar/agent/        the provider-neutral seam: AgentAdapter, the permission
 sidecar/claude/       the Claude Code adapter: Agent SDK session, event and
                       failure translation, the CanUseTool guard, auth probe,
                       tool-name→verb vocabulary
+sidecar/tools/        the studio's own tools as stdio MCP: specs, execution,
+                      the unix-socket gateway and the --tools-host child
 sidecar/history/      driver seam, migrations, project and session stores, recorder
-sidecar/library/      the asset library: the folder store, the copy into a project,
-                      and the remocn-library tools the agent saves through
+sidecar/library/      the asset library: the folder store and the copy into a project
 sidecar/scaffold/     what "New project…" expands and installs
 templates/remotion/   that project, vendored here and shipped as a Tauri resource
 agent/                the Claude Code plugin we hand the SDK: vendored skills, plus

@@ -9,6 +9,8 @@ import { runHost } from "./host";
 import { untilOrphaned, untilSignalled } from "./lifecycle";
 import { runPreviewHost } from "./preview/host";
 import { PREVIEW_HOST_FLAG } from "./preview/supervisor";
+import { runToolsHost } from "./tools/host";
+import { TOOLS_HOST_FLAG } from "./tools/protocol";
 
 const sidecar = Effect.gen(function* () {
   const channel = yield* SidecarChannel;
@@ -29,9 +31,15 @@ const sidecar = Effect.gen(function* () {
   yield* channel.log(reason);
 }).pipe(Effect.scoped, Effect.provide(layerProcess));
 
-const main = process.argv.includes(PREVIEW_HOST_FLAG)
-  ? runPreviewHost
-  : sidecar;
+const main = (() => {
+  if (process.argv.includes(PREVIEW_HOST_FLAG)) {
+    return runPreviewHost;
+  }
+  if (process.argv.includes(TOOLS_HOST_FLAG)) {
+    return runToolsHost;
+  }
+  return sidecar;
+})();
 
 const exit = await Effect.runPromiseExit(main);
 

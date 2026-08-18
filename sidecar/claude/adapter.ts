@@ -7,12 +7,10 @@ import type {
 } from "@/shared/ipc";
 import { PROVIDER_INFO } from "@/shared/providers";
 import type { AgentAdapter, TurnServices } from "../agent/adapter";
-import { libraryServer } from "../library/tools";
 import { accountCheck } from "./account";
 import { eventsOf } from "./events";
 import { failureFromText, failureOf } from "./failure";
 import { permissionGuard } from "./guard";
-import { pipelineServer } from "./pipeline-tools";
 import { messages } from "./session";
 
 export const claudeAdapter: AgentAdapter = {
@@ -38,17 +36,12 @@ export const claudeAdapter: AgentAdapter = {
             turnId: services.turnId,
           }),
           cwd: services.cwd,
-          library: libraryServer({
-            cwd: services.cwd,
-            list: services.library.list,
-            save: services.library.save,
-          }),
           log: (line) => Effect.runSync(services.log(line)),
           media: services.briefs.media,
           onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
           onMode: (apply) => Effect.runSync(services.onMode(apply)),
           onStop: () => Effect.runSync(services.gate.abandon(services.turnId)),
-          pipeline: pipelineServer(services.pipeline),
+          tools: services.tools,
         }),
         (message) =>
           Effect.gen(function* () {

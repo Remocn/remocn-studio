@@ -51,6 +51,8 @@ import {
 } from "./preview/supervisor";
 import { installDependencies } from "./scaffold/install";
 import { expandTemplate, type ScaffoldError } from "./scaffold/template";
+import { makeGateway } from "./tools/gateway";
+import { LIBRARY_SERVER, PIPELINE_SERVER } from "./tools/specs";
 
 const TOKENS = [
   "Streaming",
@@ -72,6 +74,8 @@ const MAX_COUNT = 500;
 const MAX_DELAY_MS = 2000;
 
 const gate = makeGate();
+
+const gateway = makeGateway((line) => process.stderr.write(`${line}\n`));
 
 const account = Effect.runSync(makeAccountCache());
 
@@ -215,27 +219,41 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
           )
         );
 
-      return yield* adapter.turn(params, {
-        briefs: {
-          assets: assetBrief(placed),
-          media: mediaBrief(placedMedia),
-          pipeline: pipelineBrief(stages),
-        },
-        cwd: project.path,
-        emit,
-        gate,
-        library: librarian(params),
-        log,
-        onApprove: approved,
-        onMode: switcher.bind,
-        pipeline: {
-          setStage: (stage, status) =>
-            moved(store.setStage(params.historyId, stage, status)),
-          start: () => moved(store.startPipeline(params.historyId)),
-        },
-        record: recorder.event,
-        turnId,
-      });
+      return yield* Effect.scoped(
+        gateway
+          .serving(turnId, {
+            cwd: project.path,
+            library: librarian(params),
+            pipeline: {
+              setStage: (stage, status) =>
+                moved(store.setStage(params.historyId, stage, status)),
+              start: () => moved(store.startPipeline(params.historyId)),
+            },
+          })
+          .pipe(
+            Effect.andThen(
+              adapter.turn(params, {
+                briefs: {
+                  assets: assetBrief(placed),
+                  media: mediaBrief(placedMedia),
+                  pipeline: pipelineBrief(stages),
+                },
+                cwd: project.path,
+                emit,
+                gate,
+                log,
+                onApprove: approved,
+                onMode: switcher.bind,
+                record: recorder.event,
+                tools: {
+                  [LIBRARY_SERVER]: gateway.transport(LIBRARY_SERVER, turnId),
+                  [PIPELINE_SERVER]: gateway.transport(PIPELINE_SERVER, turnId),
+                },
+                turnId,
+              })
+            )
+          )
+      );
     }),
 
   "files.list": ({ params }) =>
