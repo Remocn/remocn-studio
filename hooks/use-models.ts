@@ -26,6 +26,8 @@ export function useModels(settings: StudioSettings | null): StudioModels {
       models: {
         claude: chosen.claude ?? settings?.claudeModel ?? DEFAULT_MODELS.claude,
         codex: chosen.codex ?? settings?.codexModel ?? DEFAULT_MODELS.codex,
+        copilot:
+          chosen.copilot ?? settings?.copilotModel ?? DEFAULT_MODELS.copilot,
       },
       onPickModel,
     }),

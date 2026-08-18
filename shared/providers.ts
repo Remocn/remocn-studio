@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-export const AGENT_PROVIDERS = ["claude", "codex"] as const;
+export const AGENT_PROVIDERS = ["claude", "codex", "copilot"] as const;
 
 export const AgentProvider = Schema.Literals(AGENT_PROVIDERS);
 
@@ -69,6 +69,24 @@ export const PROVIDER_INFO: Record<AgentProvider, ProviderInfo> = {
     experimental: true,
     id: "codex",
     name: "Codex",
+  },
+  // Speaks the Agent Client Protocol, which is why it gets real permission
+  // cards where Codex has only the sandbox. Experimental for the same
+  // reason Codex is — and the account this was built against is blocked by
+  // an org policy, so the model path is verified against the protocol, not
+  // against a live subscription.
+  copilot: {
+    capabilities: {
+      context: false,
+      effort: true,
+      modes: true,
+      planTool: false,
+      resume: true,
+      thinking: true,
+    },
+    experimental: true,
+    id: "copilot",
+    name: "Copilot",
   },
 };
 

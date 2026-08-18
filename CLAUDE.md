@@ -380,6 +380,41 @@ classifier, the auth probe).
     skills are not delivered (plugins are Claude Code's mechanism) —
     `developer_instructions` carries only the studio conventions and the
     pipeline brief.
+- **Copilot is the third adapter, and it rides a bridge the fourth can reuse.**
+  `sidecar/acp/` speaks the Agent Client Protocol — JSON-RPC 2.0, newline-
+  delimited over the child's stdio, requests in *both* directions — and
+  carries nothing Copilot-specific; `sidecar/copilot/` adds only the CLI
+  resolution, the spawn flags, the failure wording and the provider info, so
+  Grok Build (which also claims ACP) starts from the bridge, not from zero.
+  Measured against copilot 1.0.80:
+  - **ACP gives the permission cards back.** `session/request_permission`
+    routes through the same gate as Claude's `canUseTool`: `reviewAcp` speaks
+    #223 in ACP's vocabulary — `execute` always asks, file kinds whose every
+    location resolves inside the folder run silently, anything else asks —
+    and the answer picks among the *options the agent offered* (`allow_once`
+    / `allow_always` / `reject_once`), cancelling rather than inventing an
+    option that was not on the card.
+  - **Resume is `session/load`, and the replay is deliberately dropped.** The
+    agent streams the whole conversation back as updates before the load
+    answers; the transcript already has it, so updates are ignored until the
+    response arrives.
+  - **Both login failures arrive as ordinary message text**, not errors: a
+    logged-out CLI and an org-policy block each "succeed" with a turn whose
+    entire answer starts with `Error:`. `inBandFailure` matches exactly those
+    two shapes — no wider, or it would eat real answers that mention errors —
+    and converts them into the auth failure the composer already renders.
+  - **The auth probe speaks the protocol instead of scraping.** `copilot` has
+    no `login status`; an unauthenticated agent answers `session/new` with
+    ACP's `AUTH_REQUIRED` (-32000), a logged-in one opens a session, and no
+    model is ever asked. What the probe cannot see is the org-policy block —
+    that state only speaks inside a turn.
+  - The studio conventions ride as the leading text block of every prompt
+    (ACP has no system-prompt hook); modes map by URI fragment — `plan` to
+    Plan, `auto`/`acceptEdits` to Agent, never to Autopilot, which is
+    Copilot's allow-all and has no story here; `--effort` takes the studio's
+    levels verbatim; the spawn adds `--no-remote` (a desktop studio must not
+    export sessions to GitHub web behind the person's back) and
+    `--no-auto-update`.
 - **The provider is picked through the model, not beside it.** The Model chip
   opens one menu grouped by provider — a submenu per provider, its models
   inside — because "which model" and "whose model" are one decision, not two
@@ -1912,6 +1947,10 @@ sidecar/claude/       the Claude Code adapter: Agent SDK session, event and
 sidecar/codex/        the Codex adapter: SDK thread per turn, the item-stream
                       translator, sandbox mapping, `codex login status` probe,
                       CLI resolution
+sidecar/acp/          the Agent Client Protocol bridge: the JSON-RPC peer, the
+                      update translator, the permission mapping, prompt blocks
+sidecar/copilot/      the Copilot adapter over that bridge: CLI resolution,
+                      spawn flags, the in-band failure classifier, ACP probe
 sidecar/tools/        the studio's own tools as stdio MCP: specs, execution,
                       the unix-socket gateway and the --tools-host child
 sidecar/history/      driver seam, migrations, project and session stores, recorder

@@ -24,14 +24,22 @@ export const CODEX_MODELS: readonly ModelChoice[] = [
   { label: "GPT-5.6 Luna", value: "gpt-5.6-luna" },
 ];
 
+// Copilot's models are account-shaped and the CLI documents only "auto", so
+// the group carries the one entry that cannot drift.
+export const COPILOT_MODELS: readonly ModelChoice[] = [
+  { label: "Default", value: "" },
+];
+
 export const PROVIDER_MODELS: Record<AgentProvider, readonly ModelChoice[]> = {
   claude: CLAUDE_MODELS,
   codex: CODEX_MODELS,
+  copilot: COPILOT_MODELS,
 };
 
 export const DEFAULT_MODELS: Record<AgentProvider, string> = {
   claude: DEFAULT_CLAUDE_MODEL,
   codex: "",
+  copilot: "",
 };
 
 export function modelLabelOf(provider: AgentProvider, value: string): string {

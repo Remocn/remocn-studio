@@ -1,6 +1,7 @@
 "use client";
 
 import SiClaude from "@icons-pack/react-simple-icons/icons/SiClaude";
+import SiGithubcopilot from "@icons-pack/react-simple-icons/icons/SiGithubcopilot";
 import type { ComponentType, SVGProps } from "react";
 import { cn } from "@/lib/utils";
 import type { AgentProvider } from "@/shared/providers";
@@ -29,6 +30,7 @@ const MARKS: ReadonlyMap<
 > = new Map<AgentProvider, ComponentType<SVGProps<SVGSVGElement>>>([
   ["claude", SiClaude],
   ["codex", OpenAiMark],
+  ["copilot", SiGithubcopilot],
 ]);
 
 export function ProviderIcon({

@@ -9,6 +9,7 @@ const SETTINGS: StudioSettings = {
   claudeEffort: null,
   claudeModel: null,
   codexModel: null,
+  copilotModel: null,
   expandedProjects: [],
   legacyProjectFolder: null,
   paneView: null,

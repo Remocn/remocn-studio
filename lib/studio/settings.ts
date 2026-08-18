@@ -10,6 +10,7 @@ const PROJECT_FOLDER_KEY = "projectFolder";
 const EXPANDED_PROJECTS_KEY = "expandedProjects";
 const CLAUDE_MODEL_KEY = "claudeModel";
 const CODEX_MODEL_KEY = "codexModel";
+const COPILOT_MODEL_KEY = "copilotModel";
 const CLAUDE_EFFORT_KEY = "claudeEffort";
 const PREVIEW_PANE_KEY = "previewPane";
 const PROJECTS_PANE_KEY = "projectsPane";
@@ -27,6 +28,7 @@ export interface StudioSettings {
   claudeEffort: EffortLevel | null;
   claudeModel: string | null;
   codexModel: string | null;
+  copilotModel: string | null;
   expandedProjects: readonly string[];
   legacyProjectFolder: string | null;
   paneView: PaneView | null;
@@ -49,6 +51,7 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
       claudeEffort: effortOf(cache.get(CLAUDE_EFFORT_KEY)),
       claudeModel: cache.get(CLAUDE_MODEL_KEY) ?? null,
       codexModel: cache.get(CODEX_MODEL_KEY) ?? null,
+      copilotModel: cache.get(COPILOT_MODEL_KEY) ?? null,
       expandedProjects: idsOf(cache.get(EXPANDED_PROJECTS_KEY)),
       legacyProjectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
       paneView: paneViewOf(cache.get(PANE_VIEW_KEY)),
@@ -123,6 +126,7 @@ export function saveExpandedProjects(
 const MODEL_KEYS: Record<AgentProvider, string> = {
   claude: CLAUDE_MODEL_KEY,
   codex: CODEX_MODEL_KEY,
+  copilot: COPILOT_MODEL_KEY,
 };
 
 export function saveProviderModel(

@@ -432,6 +432,7 @@ export const ScaffoldEvent = Schema.Union([
 export const ENVIRONMENT_CHECKS = [
   "claude",
   "codex",
+  "copilot",
   "runtime",
   "remotion",
   "dependencies",

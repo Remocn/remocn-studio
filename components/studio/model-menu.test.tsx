@@ -26,7 +26,7 @@ function renderMenu(shape: {
     <ModelMenu
       accounts={shape.accounts ?? {}}
       canPickProvider={shape.canPickProvider ?? true}
-      models={{ claude: "claude-opus-5", codex: "" }}
+      models={{ claude: "claude-opus-5", codex: "", copilot: "" }}
       onPick={onPick}
       provider={shape.provider ?? "claude"}
     />
@@ -51,7 +51,7 @@ describe("ModelMenu", () => {
       screen.getByText("Claude", { selector: "span" })
     ).toBeInTheDocument();
     expect(screen.getByText("Codex")).toBeInTheDocument();
-    expect(screen.getByText("Experimental")).toBeInTheDocument();
+    expect(screen.getAllByText("Experimental")).toHaveLength(2);
   });
 
   it("tells a signed-out provider to sign in and refuses to pick it", () => {
