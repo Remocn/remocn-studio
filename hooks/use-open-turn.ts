@@ -29,7 +29,7 @@ export interface OpenTurnSettings {
   changeMode: (historyId: string, mode: SessionMode) => void;
   draftId: string;
   effort: EffortLevel | null;
-  model: string | null;
+  models: Record<AgentProvider, string>;
   playing: PromptFrame | null;
   projectId: string | null;
   session: HistorySession | null;
@@ -72,7 +72,7 @@ export function useOpenTurn({
   changeMode,
   draftId,
   effort,
-  model,
+  models,
   playing,
   projectId,
   session,
@@ -104,6 +104,7 @@ export function useOpenTurn({
       if (projectId === null) {
         return false;
       }
+      const model = models[turn.provider];
       return sendTurn({
         assets,
         attachments,
@@ -112,13 +113,22 @@ export function useOpenTurn({
         historyId: openId,
         media,
         mode: turn.mode,
-        model,
+        model: model.length === 0 ? null : model,
         playing,
         projectId,
         prompt,
       });
     },
-    [effort, model, openId, playing, projectId, sendTurn, turn.mode]
+    [
+      effort,
+      models,
+      openId,
+      playing,
+      projectId,
+      sendTurn,
+      turn.mode,
+      turn.provider,
+    ]
   );
 
   const stop = useCallback(() => stopTurn(openId), [openId, stopTurn]);

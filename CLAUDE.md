@@ -376,15 +376,25 @@ classifier, the auth probe).
     sessions.
   - **What Experimental means here**: `context` is per-turn usage, not a
     window reading, so the meter never shows; `todo_list` does not speak the
-    checklist's `TaskCreate` vocabulary, so no plan dock; the model picker
-    still lists Claude models, so `params.model` is deliberately ignored; and
-    the remocn skills are not delivered (plugins are Claude Code's
-    mechanism) — `developer_instructions` carries only the studio conventions
-    and the pipeline brief.
-- **The provider is picked once, on a session that has not spoken yet** — a
-  chip beside Mode, rendered only while the draft has no entries, no SDK
-  session id and no running turn, because resume tokens are not portable and
-  changing provider mid-session means starting a new session.
+    checklist's `TaskCreate` vocabulary, so no plan dock; and the remocn
+    skills are not delivered (plugins are Claude Code's mechanism) —
+    `developer_instructions` carries only the studio conventions and the
+    pipeline brief.
+- **The provider is picked through the model, not beside it.** The Model chip
+  opens one menu grouped by provider — a submenu per provider, its models
+  inside — because "which model" and "whose model" are one decision, not two
+  chips. Picking a model in another provider's group switches the session's
+  provider; groups other than the session's are disabled once the session has
+  spoken (resume tokens are not portable), and a provider whose account probe
+  failed is disabled with *Sign in* or *Unavailable* on the row — fetched once
+  per app run through `agent.accounts`, which shares `project.check`'s cache.
+  A provider with no probe row yet is presented plainly: "unknown" must never
+  read as "signed out". The model choice itself is per provider
+  (`claudeModel`/`codexModel` in `settings.json`), and the turn sends the
+  model of the session's provider — Codex's list is short and
+  account-measured (`Default`, the one entry that cannot drift, then the two
+  gpt-5.6 slugs a ChatGPT login actually accepted; every other slug in the
+  CLI source answered 400).
 - Still Claude-shaped, deliberately, until the next phases: the model picker,
   knowledge delivery (plugins are Claude Code's mechanism), and a handful of
   user-facing strings that say "Claude".

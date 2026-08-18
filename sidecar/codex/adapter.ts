@@ -85,6 +85,7 @@ export const codexAdapter: AgentAdapter = {
         ...(params.effort === null
           ? {}
           : { modelReasoningEffort: EFFORTS[params.effort] }),
+        ...(params.model === null ? {} : { model: params.model }),
       };
 
       const thread =

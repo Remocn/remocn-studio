@@ -23,6 +23,7 @@ export const CANCELLED = "cancelled";
 const RequestId = Schema.NonEmptyString;
 
 export const METHOD_NAMES = [
+  "agent.accounts",
   "agent.permission",
   "agent.prompt",
   "files.list",
@@ -701,6 +702,11 @@ export type ExportProgress = Extract<ExportEvent, { type: "progress" }>;
 export type Exported = (typeof Exported)["Type"];
 
 export const SIDECAR_METHODS = {
+  "agent.accounts": {
+    params: Schema.Null,
+    result: Schema.Array(EnvironmentCheck),
+    stream: Schema.Never,
+  },
   "agent.permission": {
     params: PermissionParams,
     result: PermissionAnswer,

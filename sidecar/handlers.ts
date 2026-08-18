@@ -11,6 +11,7 @@ import {
 } from "@/shared/ipc";
 import type { Asset, AssetDraft } from "@/shared/library";
 import type { PipelineStage } from "@/shared/pipeline";
+import { AGENT_PROVIDERS } from "@/shared/providers";
 import { makeAccountCache } from "./agent/account";
 import { makeGate } from "./agent/gate";
 import { makeModeSwitch } from "./agent/mode";
@@ -145,6 +146,14 @@ const located = (projectId: string) =>
   );
 
 export const handlers: Handlers<HistoryStore | ProjectStore> = {
+  // One row per provider, for the model picker to mark who is actually
+  // reachable. The probes share project.check's cache, so a warm answer
+  // costs nothing and Recheck refreshes both.
+  "agent.accounts": () =>
+    Effect.forEach(AGENT_PROVIDERS, (provider) =>
+      account.row(provider, process.cwd())
+    ),
+
   "agent.permission": ({ params }) =>
     Effect.map(
       gate.answer(params.id, params.decision, params.mode),

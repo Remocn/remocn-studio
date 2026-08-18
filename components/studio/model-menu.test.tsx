@@ -1,0 +1,78 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { ModelMenu } from "@/components/studio/model-menu";
+import type { ProviderAccounts } from "@/hooks/use-provider-accounts";
+
+const MODEL_CHIP = /Model:/;
+
+const SIGNED_OUT: ProviderAccounts = {
+  codex: {
+    detail: "Codex is not signed in.",
+    fix: { command: "codex login", type: "command" },
+    id: "codex",
+    state: "failed",
+    title: "Codex is not logged in",
+  },
+};
+
+function renderMenu(shape: {
+  accounts?: ProviderAccounts;
+  canPickProvider?: boolean;
+  provider?: "claude" | "codex";
+}) {
+  const onPick = vi.fn();
+
+  render(
+    <ModelMenu
+      accounts={shape.accounts ?? {}}
+      canPickProvider={shape.canPickProvider ?? true}
+      models={{ claude: "claude-opus-5", codex: "" }}
+      onPick={onPick}
+      provider={shape.provider ?? "claude"}
+    />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: MODEL_CHIP }));
+
+  return { onPick };
+}
+
+describe("ModelMenu", () => {
+  it("leads with the current provider's model on the chip", () => {
+    renderMenu({});
+
+    expect(screen.getByRole("button", { name: "Model: Opus 5" })).toBeVisible();
+  });
+
+  it("groups the models by provider and marks the experimental one", () => {
+    renderMenu({});
+
+    expect(
+      screen.getByText("Claude", { selector: "span" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Codex")).toBeInTheDocument();
+    expect(screen.getByText("Experimental")).toBeInTheDocument();
+  });
+
+  it("tells a signed-out provider to sign in and refuses to pick it", () => {
+    renderMenu({ accounts: SIGNED_OUT });
+
+    expect(screen.getByText("Sign in")).toBeInTheDocument();
+    expect(
+      screen.getByText("Codex").closest("[role='menuitem']")
+    ).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("locks the other providers once the session has spoken", () => {
+    renderMenu({ canPickProvider: false, provider: "claude" });
+
+    expect(
+      screen.getByText("Codex").closest("[role='menuitem']")
+    ).toHaveAttribute("aria-disabled", "true");
+    expect(
+      screen
+        .getByText("Claude", { selector: "span" })
+        .closest("[role='menuitem']")
+    ).not.toHaveAttribute("aria-disabled", "true");
+  });
+});

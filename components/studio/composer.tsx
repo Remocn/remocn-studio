@@ -2,7 +2,6 @@
 
 import {
   ArrowUpIcon,
-  BotIcon,
   ChevronDownIcon,
   FilmIcon,
   ImagePlusIcon,
@@ -11,7 +10,7 @@ import {
   PlusIcon,
   SettingsIcon,
   ShieldIcon,
-  SparklesIcon,
+  type SparklesIcon,
   SquareIcon,
 } from "lucide-react";
 import { memo, useCallback } from "react";
@@ -36,7 +35,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { useKeepAttachment } from "@/hooks/use-keep-attachment";
 import { type Sidecar, useSidecar } from "@/hooks/use-sidecar";
 import { SAVE_SCENE_PROMPT } from "@/lib/studio/library";
-import { CLAUDE_MODELS } from "@/lib/studio/models";
 import { cn } from "@/lib/utils";
 import {
   type ContextUsage,
@@ -44,17 +42,13 @@ import {
   SESSION_MODES,
   type SessionMode,
 } from "@/shared/ipc";
-import {
-  AGENT_PROVIDERS,
-  type AgentProvider,
-  capabilitiesOf,
-  PROVIDER_INFO,
-} from "@/shared/providers";
+import { type AgentProvider, capabilitiesOf } from "@/shared/providers";
 import { AssetRow } from "./asset-row";
 import { ContextMeter } from "./context-meter";
 import { MediaRow } from "./media-row";
 import { MentionPopup } from "./mention-popup";
 import { MessageText } from "./message-text";
+import { ModelMenu } from "./model-menu";
 import { SelectionRow } from "./selection-row";
 import { useStudio } from "./studio-provider";
 
@@ -66,14 +60,6 @@ const MODES = SESSION_MODES.map((mode) => ({
   label: SESSION_MODE_LABELS[mode],
   value: mode,
 }));
-
-const PROVIDERS = AGENT_PROVIDERS.map((provider) => {
-  const info = PROVIDER_INFO[provider];
-  return {
-    label: info.experimental ? `${info.name} — Experimental` : info.name,
-    value: provider,
-  };
-});
 
 const EFFORTS = [
   { label: "Default", value: DEFAULT },
@@ -110,13 +96,14 @@ function ComposerBlock({
   provider: AgentProvider;
 }) {
   const {
+    accounts,
     claudeEffort,
-    claudeModel,
     composer,
     drops,
     library,
+    models,
     onEffortChange,
-    onModelChange,
+    onPickModel,
     tools,
   } = useStudio();
   const sidecar = useSidecar();
@@ -130,6 +117,16 @@ function ComposerBlock({
   const isLocked = disabled || isWaiting;
   const cannotSend = isLocked || sidecar.phase === "down";
   const capabilities = capabilitiesOf(provider);
+
+  const pickModel = useCallback(
+    (picked: AgentProvider, value: string) => {
+      onPickModel(picked, value);
+      if (picked !== provider) {
+        onProviderChange(picked);
+      }
+    },
+    [onPickModel, onProviderChange, provider]
+  );
 
   return (
     <div className="relative z-10 shrink-0 px-4 pb-4">
@@ -249,17 +246,6 @@ function ComposerBlock({
             <div className="ml-auto flex items-center gap-1">
               {context === null ? null : <ContextMeter usage={context} />}
 
-              {PROVIDERS.length > 1 && canPickProvider ? (
-                <MenuChip
-                  icon={BotIcon}
-                  items={PROVIDERS}
-                  label={PROVIDER_INFO[provider].name}
-                  onChange={onProviderChange}
-                  title="Provider"
-                  value={provider}
-                />
-              ) : null}
-
               {capabilities.modes ? (
                 <MenuChip
                   icon={ShieldIcon}
@@ -271,13 +257,12 @@ function ComposerBlock({
                 />
               ) : null}
 
-              <MenuChip
-                icon={SparklesIcon}
-                items={CLAUDE_MODELS}
-                label={labelOf(CLAUDE_MODELS, claudeModel)}
-                onChange={onModelChange}
-                title="Model"
-                value={claudeModel}
+              <ModelMenu
+                accounts={accounts}
+                canPickProvider={canPickProvider}
+                models={models}
+                onPick={pickModel}
+                provider={provider}
               />
 
               {capabilities.effort ? (

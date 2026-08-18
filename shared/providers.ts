@@ -51,7 +51,7 @@ export const PROVIDER_INFO: Record<AgentProvider, ProviderInfo> = {
     },
     experimental: false,
     id: "claude",
-    name: "Claude Code",
+    name: "Claude",
   },
   // context is false because Codex reports per-turn token usage, not how full
   // the context window is; planTool is false because its todo_list item does

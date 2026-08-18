@@ -7,6 +7,7 @@ import {
 } from "@/lib/studio/sidecar";
 import type {
   AgentEvent,
+  EnvironmentCheck,
   PermissionAnswer,
   PermissionParams,
   PromptParams,
@@ -36,5 +37,20 @@ export function answerPermission(
     const id = yield* newRequestId;
 
     return yield* requestSidecar({ id, method: "agent.permission", params });
+  });
+}
+
+export function providerAccounts(): Effect.Effect<
+  readonly EnvironmentCheck[],
+  SidecarError
+> {
+  return Effect.gen(function* () {
+    const id = yield* newRequestId;
+
+    return yield* requestSidecar({
+      id,
+      method: "agent.accounts",
+      params: null,
+    });
   });
 }
