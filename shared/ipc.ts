@@ -705,7 +705,7 @@ export type Exported = (typeof Exported)["Type"];
 
 export const SIDECAR_METHODS = {
   "agent.accounts": {
-    params: Schema.Null,
+    params: Schema.NullOr(Schema.Struct({ force: Schema.Boolean })),
     result: Schema.Array(EnvironmentCheck),
     stream: Schema.Never,
   },

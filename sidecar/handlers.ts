@@ -149,9 +149,13 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
   // One row per provider, for the model picker to mark who is actually
   // reachable. The probes share project.check's cache, so a warm answer
   // costs nothing and Recheck refreshes both.
-  "agent.accounts": () =>
-    Effect.forEach(AGENT_PROVIDERS, (provider) =>
-      account.row(provider, process.cwd())
+  "agent.accounts": ({ params }) =>
+    (params?.force === true ? account.clear : Effect.void).pipe(
+      Effect.andThen(
+        Effect.forEach(AGENT_PROVIDERS, (provider) =>
+          account.row(provider, process.cwd())
+        )
+      )
     ),
 
   "agent.permission": ({ params }) =>

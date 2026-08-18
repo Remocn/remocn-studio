@@ -90,6 +90,7 @@ export function ProjectsPane() {
     renameProject,
     scaffolds,
     sessionsError,
+    settingsDialog,
     showPane,
     toggleProjects,
   } = useStudio();
@@ -188,7 +189,10 @@ export function ProjectsPane() {
             <UpdateStatus />
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton className="text-muted-foreground" disabled>
+            <SidebarMenuButton
+              className="text-muted-foreground"
+              onClick={settingsDialog.open}
+            >
               <SettingsIcon />
               Settings
             </SidebarMenuButton>

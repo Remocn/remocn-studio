@@ -16,14 +16,15 @@ export function DockStack({ children }: { children: ReactNode }) {
       {/* `px-3` inside the composer's own column is what makes the strip
           narrower than it, so it reads as coming out from behind. */}
       <div className="mx-auto w-full max-w-2xl px-3">
-        {/* `bg-card` rather than a muted tint: the composer's own surface is a
-            translucent lift over the background, so anything translucent here
-            lands on the same colour and the two merge. The colour is the whole
-            separation — the composer draws no border, and one here would be the
-            only line on this edge of the screen. The radius is the stack's, not
-            each section's, so two sections stack into one drawer rather than
-            leaving a notch where their corners meet. */}
-        <div className="divide-y divide-border/50 overflow-hidden rounded-t-xl bg-card empty:hidden">
+        {/* In dark, `bg-card` rather than a muted tint: the composer's own
+            surface is a translucent lift over the background, so anything
+            translucent there lands on the same colour and the two merge — the
+            colour is the whole separation, since the dark composer draws no
+            border. In light `--card` equals the background, so the drawer is a
+            muted well behind the composer's bordered field instead. The radius
+            is the stack's, not each section's, so two sections stack into one
+            drawer rather than leaving a notch where their corners meet. */}
+        <div className="divide-y divide-border/50 overflow-hidden rounded-t-xl bg-muted empty:hidden dark:bg-card">
           {children}
         </div>
       </div>
