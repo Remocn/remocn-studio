@@ -68,6 +68,7 @@ export function ModelMenu({
                 accounts
               )}
               key={candidate}
+              locked={candidate !== provider && !canPickProvider}
               onPick={onPick}
               value={candidate === provider ? models[candidate] : ELSEWHERE}
             />
@@ -82,12 +83,14 @@ function ProviderGroup({
   accounts,
   candidate,
   disabled,
+  locked,
   onPick,
   value,
 }: {
   accounts: ProviderAccounts;
   candidate: AgentProvider;
   disabled: boolean;
+  locked: boolean;
   onPick: (provider: AgentProvider, value: string) => void;
   value: string;
 }) {
@@ -101,8 +104,13 @@ function ProviderGroup({
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger
+        className="data-disabled:pointer-events-none data-disabled:opacity-50"
         disabled={disabled}
-        title={accounts[candidate]?.detail ?? undefined}
+        title={
+          locked
+            ? "This session already speaks another provider — start a new session to switch."
+            : (accounts[candidate]?.detail ?? undefined)
+        }
       >
         <ProviderIcon className="text-muted-foreground" provider={candidate} />
         <span className="flex-1 whitespace-nowrap">{info.name}</span>
