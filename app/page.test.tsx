@@ -2,10 +2,12 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import Page from "@/app/page";
-import type { HistorySession, Project } from "@/shared/ipc";
+import type { HistorySession, Project, TranscriptEntry } from "@/shared/ipc";
 
 const PICKED_FOLDER = "/Users/me/projects/my-video";
 const SESSION_ROW = /^A promo for the launch/;
+const PRODUCT_DEMO_ROW = /^Product demo/;
+const LAUNCH_TEASER_ROW = /^Launch teaser/;
 const WORDMARK = /^emocn/;
 const STARTUP = "Make a video by describing it";
 
@@ -39,6 +41,7 @@ const STORED_SESSION: HistorySession = {
 
 function mockStudio(
   options: {
+    blocks?: TranscriptEntry[];
     folder?: string | null;
     projects?: Project[];
     sessions?: HistorySession[];
@@ -58,7 +61,7 @@ function mockStudio(
           return options.sessions ?? [];
         }
         if (method === "history.blocks") {
-          return [];
+          return options.blocks ?? [];
         }
         if (method === "history.remove") {
           return { removed: true };
@@ -296,6 +299,38 @@ describe("app shell", () => {
     expect(
       await screen.findByRole("heading", { name: "A promo for the launch" })
     ).toBeVisible();
+  });
+
+  it("offers the templates on a fresh session, and a pick fills without sending", async () => {
+    mockStudio({ folder: PICKED_FOLDER });
+    await renderShell();
+    fireEvent.click(await openFolderButton());
+    await screen.findByText("What should we make?");
+
+    fireEvent.click(screen.getByRole("button", { name: PRODUCT_DEMO_ROW }));
+
+    const field = screen.getByRole("textbox", { name: "Message Claude" });
+    expect((field as HTMLTextAreaElement).value).toContain("[product name]");
+    expect(screen.getByText("What should we make?")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: LAUNCH_TEASER_ROW })
+    ).toBeVisible();
+  });
+
+  it("keeps the templates out of a session that has already spoken", async () => {
+    mockStudio({
+      blocks: [{ id: "block-0", kind: "assistant", text: "All done." }],
+      projects: [PROJECT],
+      sessions: [STORED_SESSION],
+    });
+    await renderShell();
+
+    fireEvent.click(await screen.findByRole("button", { name: SESSION_ROW }));
+
+    expect(await screen.findByText("All done.")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: PRODUCT_DEMO_ROW })
+    ).not.toBeInTheDocument();
   });
 
   it("drops a deleted session and puts the chat back on a new one", async () => {

@@ -405,4 +405,37 @@ describe("useComposer", () => {
     expect(result.current.value).toBe("save this to the library ");
     expect(result.current.counts).toEqual({ asset: 0, element: 0, image: 0 });
   });
+
+  it("fills the composer with a template without sending it", () => {
+    const onSubmit = vi.fn();
+    const { result } = renderHook(() =>
+      useComposer({ onSubmit, projectId: "project-1" })
+    );
+
+    act(() => {
+      result.current.fill("Make a demo for [product name] today");
+    });
+
+    expect(result.current.value).toBe("Make a demo for [product name] today");
+    expect(result.current.canSubmit).toBe(true);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("replaces the draft and its carried items when a template is picked", async () => {
+    const { result } = composer();
+
+    await act(async () => {
+      await result.current.attachments.attach([pngFile("shot.png")]);
+    });
+    act(() => {
+      result.current.onChange(typing("half a thought [Image #1]"));
+    });
+    act(() => {
+      result.current.fill("Create a quote video for [quote]");
+    });
+
+    expect(result.current.value).toBe("Create a quote video for [quote]");
+    expect(result.current.attachments.items).toHaveLength(0);
+    expect(result.current.counts).toEqual({ asset: 0, element: 0, image: 0 });
+  });
 });
