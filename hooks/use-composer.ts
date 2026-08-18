@@ -17,6 +17,7 @@ import { type Selections, useSelections } from "@/hooks/use-selections";
 import { imageFilesOf } from "@/lib/studio/clipboard";
 import { insertMention, type Mention, openFolder } from "@/lib/studio/mentions";
 import type { PreviewRect } from "@/lib/studio/preview";
+import { firstPlaceholder } from "@/lib/studio/templates";
 import type { QueuedMessage } from "@/lib/studio/turns";
 import type {
   PromptAttachment,
@@ -59,6 +60,7 @@ export interface Composer {
   caret: Caret;
   counts: ReferenceCounts;
   drop: (paths: readonly string[]) => void;
+  fill: (prompt: string) => void;
   isEmpty: boolean;
   media: Media;
   mentions: Mentions;
@@ -286,6 +288,26 @@ export function useComposer({
     [caret]
   );
 
+  const fill = useCallback(
+    (prompt: string) => {
+      attachments.clear();
+      selections.clear();
+      assets.clear();
+      media.clear();
+
+      const text = prompt.trim();
+      const placeholder = firstPlaceholder(text);
+      if (placeholder === null) {
+        caret.moveTo(text.length);
+      } else {
+        caret.select(placeholder.start, placeholder.end);
+      }
+      setValue(text);
+      mentions.sync("", 0);
+    },
+    [assets, attachments, caret, media, mentions, selections]
+  );
+
   const onRemove = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
       const index = Number(event.currentTarget.value);
@@ -481,6 +503,7 @@ export function useComposer({
       caret,
       counts,
       drop,
+      fill,
       isEmpty,
       media,
       mentions,
@@ -511,6 +534,7 @@ export function useComposer({
       caret,
       counts,
       drop,
+      fill,
       isEmpty,
       media,
       mentions,

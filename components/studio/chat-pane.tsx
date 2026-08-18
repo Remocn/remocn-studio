@@ -4,6 +4,7 @@ import { PanelLeftOpenIcon, PanelRightOpenIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -48,6 +49,7 @@ import { Startup } from "./startup";
 import { StartupBackdrop } from "./startup-backdrop";
 import { useStudio } from "./studio-provider";
 import { TaskDock } from "./task-dock";
+import { TemplateList } from "./template-list";
 import { Transcript } from "./transcript";
 
 const PLACEHOLDERS = ["one", "two", "three"];
@@ -369,6 +371,8 @@ function ChatEmptyState({
   onNewProject: () => void;
   onOpenFolder: () => void;
 }) {
+  const { composer } = useStudio();
+
   if (!hasProject) {
     return (
       <Startup
@@ -380,22 +384,25 @@ function ChatEmptyState({
   }
 
   return (
-    <Empty className="border-none">
-      <EmptyHeader>
+    <Empty className="items-start border-none text-left">
+      <EmptyHeader className="max-w-none items-start text-left">
         <EmptyMedia>
-          <LogoMark className="size-10 text-foreground" />
+          <LogoMark className="size-8 text-foreground" />
         </EmptyMedia>
         <EmptyTitle className="text-balance text-2xl">
           What should we make?
         </EmptyTitle>
-        {/* The panes are resizable, so this block is the app's only prose that
-            reflows to arbitrary widths — `pretty` is what keeps a lone word off
-            the last line as the divider moves. */}
+        {/* The panes are resizable, so this block is the app's only prose
+            that reflows to arbitrary widths — `pretty` is what keeps a lone
+            word off the last line as the divider moves. */}
         <EmptyDescription className="text-pretty">
           Describe the video you want and Claude builds it as real Remotion
           components in your project.
         </EmptyDescription>
       </EmptyHeader>
+      <EmptyContent className="max-w-full items-start">
+        <TemplateList className="-mx-3 w-auto" onPick={composer.fill} />
+      </EmptyContent>
     </Empty>
   );
 }
