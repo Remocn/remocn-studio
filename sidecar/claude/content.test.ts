@@ -21,6 +21,7 @@ function params(shape: Partial<PromptParams>): PromptParams {
     playing: null,
     projectId: "project-1",
     prompt: "",
+    provider: "claude",
     sessionId: null,
     ...shape,
   };

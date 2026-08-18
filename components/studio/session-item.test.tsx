@@ -16,6 +16,7 @@ const SESSION: HistorySession = {
   id: "session-1",
   mode: "auto",
   projectId: "project-1",
+  provider: "claude" as const,
   sdkSessionId: "sdk-1",
   title: "A promo for the launch",
   updatedAt: NOW - 2 * MINUTE,

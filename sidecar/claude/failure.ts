@@ -4,7 +4,7 @@ import {
   type SDKMessage,
   USAGE_LIMIT_ERROR_PREFIXES,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { ClaudeFailure, ClaudeFailureKind } from "@/shared/ipc";
+import type { AgentFailure, AgentFailureKind } from "@/shared/ipc";
 import { flatten } from "./events";
 
 export const NOT_AUTHENTICATED =
@@ -13,7 +13,7 @@ export const NOT_AUTHENTICATED =
 const UNKNOWN = "Claude stopped without saying why.";
 
 const BY_ASSISTANT_ERROR: Partial<
-  Record<SDKAssistantMessageError, ClaudeFailureKind>
+  Record<SDKAssistantMessageError, AgentFailureKind>
 > = {
   authentication_failed: "auth",
   billing_error: "usage",
@@ -41,12 +41,12 @@ const USAGE_MARKERS = [
 
 const MODEL_MARKERS = ["model_not_found", "unknown model"];
 
-export function failureFromText(text: string): ClaudeFailure {
+export function failureFromText(text: string): AgentFailure {
   const kind = kindOfText(text);
   return { kind, message: readable(text, kind) };
 }
 
-export function failureOf(message: SDKMessage): ClaudeFailure | null {
+export function failureOf(message: SDKMessage): AgentFailure | null {
   if (message.type === "assistant" && message.error !== undefined) {
     const text = flatten(message.message.content);
     const kind = BY_ASSISTANT_ERROR[message.error] ?? kindOfText(text);
@@ -64,7 +64,7 @@ export function failureOf(message: SDKMessage): ClaudeFailure | null {
   return null;
 }
 
-function kindOfText(text: string): ClaudeFailureKind {
+function kindOfText(text: string): AgentFailureKind {
   const haystack = text.toLowerCase();
 
   if (USAGE_MARKERS.some((marker) => haystack.includes(marker))) {
@@ -79,7 +79,7 @@ function kindOfText(text: string): ClaudeFailureKind {
   return "unknown";
 }
 
-function readable(text: string, kind: ClaudeFailureKind): string {
+function readable(text: string, kind: AgentFailureKind): string {
   if (kind === "auth") {
     return NOT_AUTHENTICATED;
   }

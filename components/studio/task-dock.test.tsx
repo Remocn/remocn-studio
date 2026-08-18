@@ -8,7 +8,10 @@ import type { PipelineStage } from "@/shared/pipeline";
 const SETTINGS: StudioSettings = {
   claudeEffort: null,
   claudeModel: null,
+  codexModel: null,
+  copilotModel: null,
   expandedProjects: [],
+  grokModel: null,
   legacyProjectFolder: null,
   paneView: null,
   previewPane: null,

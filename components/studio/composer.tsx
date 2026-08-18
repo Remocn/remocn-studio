@@ -10,7 +10,7 @@ import {
   PlusIcon,
   SettingsIcon,
   ShieldIcon,
-  SparklesIcon,
+  type SparklesIcon,
   SquareIcon,
 } from "lucide-react";
 import { memo, useCallback } from "react";
@@ -35,7 +35,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { useKeepAttachment } from "@/hooks/use-keep-attachment";
 import { type Sidecar, useSidecar } from "@/hooks/use-sidecar";
 import { SAVE_SCENE_PROMPT } from "@/lib/studio/library";
-import { CLAUDE_MODELS } from "@/lib/studio/models";
 import { cn } from "@/lib/utils";
 import {
   type ContextUsage,
@@ -43,11 +42,13 @@ import {
   SESSION_MODES,
   type SessionMode,
 } from "@/shared/ipc";
+import { type AgentProvider, capabilitiesOf } from "@/shared/providers";
 import { AssetRow } from "./asset-row";
 import { ContextMeter } from "./context-meter";
 import { MediaRow } from "./media-row";
 import { MentionPopup } from "./mention-popup";
 import { MessageText } from "./message-text";
+import { ModelMenu } from "./model-menu";
 import { SelectionRow } from "./selection-row";
 import { useStudio } from "./studio-provider";
 
@@ -70,6 +71,7 @@ const EFFORTS = [
 ];
 
 function ComposerBlock({
+  canPickProvider,
   context,
   cwd,
   disabled,
@@ -77,8 +79,11 @@ function ComposerBlock({
   isWaiting,
   mode,
   onModeChange,
+  onProviderChange,
   onStop,
+  provider,
 }: {
+  canPickProvider: boolean;
   context: ContextUsage | null;
   cwd: string | null;
   disabled: boolean;
@@ -86,16 +91,19 @@ function ComposerBlock({
   isWaiting: boolean;
   mode: SessionMode;
   onModeChange: (value: string) => void;
+  onProviderChange: (value: string) => void;
   onStop: () => void;
+  provider: AgentProvider;
 }) {
   const {
+    accounts,
     claudeEffort,
-    claudeModel,
     composer,
     drops,
     library,
+    models,
     onEffortChange,
-    onModelChange,
+    onPickModel,
     tools,
   } = useStudio();
   const sidecar = useSidecar();
@@ -108,6 +116,17 @@ function ComposerBlock({
   const onSaveScene = useCallback(() => write(SAVE_SCENE_PROMPT), [write]);
   const isLocked = disabled || isWaiting;
   const cannotSend = isLocked || sidecar.phase === "down";
+  const capabilities = capabilitiesOf(provider);
+
+  const pickModel = useCallback(
+    (picked: AgentProvider, value: string) => {
+      onPickModel(picked, value);
+      if (picked !== provider) {
+        onProviderChange(picked);
+      }
+    },
+    [onPickModel, onProviderChange, provider]
+  );
 
   return (
     <div className="relative z-10 shrink-0 px-4 pb-4">
@@ -227,32 +246,35 @@ function ComposerBlock({
             <div className="ml-auto flex items-center gap-1">
               {context === null ? null : <ContextMeter usage={context} />}
 
-              <MenuChip
-                icon={ShieldIcon}
-                items={MODES}
-                label={labelOf(MODES, mode)}
-                onChange={onModeChange}
-                title="Mode"
-                value={mode}
+              {capabilities.modes ? (
+                <MenuChip
+                  icon={ShieldIcon}
+                  items={MODES}
+                  label={labelOf(MODES, mode)}
+                  onChange={onModeChange}
+                  title="Mode"
+                  value={mode}
+                />
+              ) : null}
+
+              <ModelMenu
+                accounts={accounts}
+                canPickProvider={canPickProvider}
+                models={models}
+                onPick={pickModel}
+                provider={provider}
               />
 
-              <MenuChip
-                icon={SparklesIcon}
-                items={CLAUDE_MODELS}
-                label={labelOf(CLAUDE_MODELS, claudeModel)}
-                onChange={onModelChange}
-                title="Model"
-                value={claudeModel}
-              />
-
-              <MenuChip
-                icon={SettingsIcon}
-                items={EFFORTS}
-                label={labelOf(EFFORTS, claudeEffort)}
-                onChange={onEffortChange}
-                title="Effort"
-                value={claudeEffort}
-              />
+              {capabilities.effort ? (
+                <MenuChip
+                  icon={SettingsIcon}
+                  items={EFFORTS}
+                  label={labelOf(EFFORTS, claudeEffort)}
+                  onChange={onEffortChange}
+                  title="Effort"
+                  value={claudeEffort}
+                />
+              ) : null}
 
               {isRunning ? (
                 <>

@@ -9,12 +9,12 @@ import {
 import { Data, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { ContextUsage, PromptParams } from "@/shared/ipc";
-import { LIBRARY_SERVER, type libraryServer } from "../library/tools";
+import type { ApplyMode } from "../agent/mode";
+import type { StdioTransport } from "../tools/gateway";
+import type { ToolServer } from "../tools/specs";
 import { contentOf } from "./content";
 import { conventionsFor } from "./conventions";
 import { pluginsFor } from "./knowledge";
-import type { ApplyMode } from "./mode";
-import { PIPELINE_SERVER, type pipelineServer } from "./pipeline-tools";
 
 export class ClaudeError extends Data.TaggedError("ClaudeError")<{
   message: string;
@@ -30,13 +30,12 @@ export interface TurnCallbacks {
   readonly brief: string | null;
   readonly canUseTool: CanUseTool;
   readonly cwd: string;
-  readonly library: ReturnType<typeof libraryServer>;
   readonly log: (line: string) => void;
   readonly media: string | null;
   readonly onContext: (usage: ContextUsage) => void;
   readonly onMode: (apply: ApplyMode) => void;
   readonly onStop: () => void;
-  readonly pipeline: ReturnType<typeof pipelineServer>;
+  readonly tools: Readonly<Record<ToolServer, StdioTransport>>;
 }
 
 export function messages(
@@ -114,10 +113,17 @@ function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
     canUseTool: callbacks.canUseTool,
     cwd: callbacks.cwd,
     includePartialMessages: true,
-    mcpServers: {
-      [LIBRARY_SERVER]: callbacks.library,
-      [PIPELINE_SERVER]: callbacks.pipeline,
-    },
+    mcpServers: Object.fromEntries(
+      Object.entries(callbacks.tools).map(([name, transport]) => [
+        name,
+        {
+          args: [...transport.args],
+          command: transport.command,
+          env: { ...transport.env },
+          type: "stdio" as const,
+        },
+      ])
+    ),
     permissionMode: params.mode,
     plugins,
     settingSources: ["project"],

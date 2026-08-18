@@ -2,7 +2,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
-import type { ClaudeEvent, PromptParams, TranscriptEntry } from "@/shared/ipc";
+import type { AgentEvent, PromptParams, TranscriptEntry } from "@/shared/ipc";
 import { appendUser, fold } from "@/shared/transcript";
 import type { SqlDriver, SqlRow, SqlValue } from "@/sidecar/history/driver";
 import { migrate, prepare } from "@/sidecar/history/migrations";
@@ -45,12 +45,13 @@ function params(shape: Partial<PromptParams>): PromptParams {
     playing: null,
     projectId: PROJECT_ID,
     prompt: "make a title card",
+    provider: "claude",
     sessionId: null,
     ...shape,
   };
 }
 
-const TURN: ClaudeEvent[] = [
+const TURN: AgentEvent[] = [
   { mode: "auto", model: "claude-opus-5", sessionId: "sdk-7", type: "session" },
   { text: "Writing ", type: "text" },
   { text: "the scene.", type: "text" },
@@ -59,6 +60,7 @@ const TURN: ClaudeEvent[] = [
     input: { file_path: "/videos/promo/src/Main.tsx" },
     name: "Write",
     type: "tool_use",
+    verb: "create",
   },
   { id: "toolu_1", isError: false, text: "written", type: "tool_result" },
   { text: "Done.", type: "text" },
@@ -70,7 +72,7 @@ function bare(entry: TranscriptEntry) {
   );
 }
 
-function live(input: PromptParams, events: readonly ClaudeEvent[]) {
+function live(input: PromptParams, events: readonly AgentEvent[]) {
   return events
     .reduce(
       fold,

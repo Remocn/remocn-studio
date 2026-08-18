@@ -38,6 +38,7 @@ function edit(index: number): TranscriptEntry {
     name: "Edit",
     result: "updated",
     state: "done",
+    verb: null,
   };
 }
 
@@ -52,6 +53,7 @@ function read(
     name: "Read",
     result: state === "failed" ? "File does not exist." : "…",
     state,
+    verb: null,
   };
 }
 
@@ -63,6 +65,7 @@ function shell(id: string, command: string): TranscriptEntry {
     name: "Bash",
     result: "…",
     state: "done",
+    verb: null,
   };
 }
 
@@ -86,6 +89,7 @@ const ENTRIES: TranscriptEntry[] = [
     name: "Bash",
     result: "compiled",
     state: "failed",
+    verb: null,
   },
   { id: "assistant-0", kind: "assistant", text: ANSWER },
 ];
@@ -347,6 +351,7 @@ describe("Transcript", () => {
         name: "TaskCreate",
         result: "Task #1 created successfully: Backend",
         state: "done",
+        verb: null,
       },
       {
         id: "c2",
@@ -355,6 +360,7 @@ describe("Transcript", () => {
         name: "TaskCreate",
         result: "Task #2 created successfully: Frontend",
         state: "done",
+        verb: null,
       },
       {
         id: "u1",
@@ -363,6 +369,7 @@ describe("Transcript", () => {
         name: "TaskUpdate",
         result: "Updated task #1 status",
         state: "done",
+        verb: null,
       },
     ]);
 
@@ -390,6 +397,7 @@ describe("Transcript", () => {
           name: "TaskCreate",
           result: "Task #1 created successfully: Backend",
           state: "done",
+          verb: null,
         },
         {
           id: "u1",
@@ -398,6 +406,7 @@ describe("Transcript", () => {
           name: "TaskUpdate",
           result: "Updated task #1 status",
           state: "done",
+          verb: null,
         },
       ],
       true

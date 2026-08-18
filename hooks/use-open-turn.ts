@@ -23,12 +23,13 @@ import {
 } from "@/shared/ipc";
 import type { PromptAsset } from "@/shared/library";
 import type { PipelineStage } from "@/shared/pipeline";
+import { type AgentProvider, isAgentProvider } from "@/shared/providers";
 
 export interface OpenTurnSettings {
   changeMode: (historyId: string, mode: SessionMode) => void;
   draftId: string;
   effort: EffortLevel | null;
-  model: string | null;
+  models: Record<AgentProvider, string>;
   playing: PromptFrame | null;
   projectId: string | null;
   session: HistorySession | null;
@@ -41,14 +42,17 @@ export interface OpenTurn {
     action: PermissionAction,
     mode: SessionMode | null
   ) => void;
+  canPickProvider: boolean;
   context: ContextUsage | null;
   entries: readonly TranscriptEntry[];
   isLoadingTranscript: boolean;
   isRunning: boolean;
   mode: SessionMode;
   onModeChange: (value: string) => void;
+  onProviderChange: (value: string) => void;
   openId: string;
   permission: PendingPermission | null;
+  provider: AgentProvider;
   queue: readonly QueuedMessage[];
   removeQueued: (id: string) => void;
   send: (
@@ -68,7 +72,7 @@ export function useOpenTurn({
   changeMode,
   draftId,
   effort,
-  model,
+  models,
   playing,
   projectId,
   session,
@@ -100,6 +104,7 @@ export function useOpenTurn({
       if (projectId === null) {
         return false;
       }
+      const model = models[turn.provider];
       return sendTurn({
         assets,
         attachments,
@@ -108,13 +113,22 @@ export function useOpenTurn({
         historyId: openId,
         media,
         mode: turn.mode,
-        model,
+        model: model.length === 0 ? null : model,
         playing,
         projectId,
         prompt,
       });
     },
-    [effort, model, openId, playing, projectId, sendTurn, turn.mode]
+    [
+      effort,
+      models,
+      openId,
+      playing,
+      projectId,
+      sendTurn,
+      turn.mode,
+      turn.provider,
+    ]
   );
 
   const stop = useCallback(() => stopTurn(openId), [openId, stopTurn]);
@@ -142,17 +156,39 @@ export function useOpenTurn({
     [changeMode, openId]
   );
 
+  // The provider is picked once, for a session that has not spoken yet:
+  // resume tokens are not portable, so a session with any history keeps the
+  // provider it started with, and changing it means starting a new session.
+  const canPickProvider =
+    session === null &&
+    turn.entries.length === 0 &&
+    turn.sdkSessionId === null &&
+    !turn.isRunning;
+
+  const setProvider = turns.setTurnProvider;
+  const onProviderChange = useCallback(
+    (value: string) => {
+      if (isAgentProvider(value)) {
+        setProvider(openId, value);
+      }
+    },
+    [openId, setProvider]
+  );
+
   return useMemo(
     () => ({
       answer,
+      canPickProvider,
       context: turn.context,
       entries: turn.entries,
       isLoadingTranscript: turn.isLoading,
       isRunning: turn.isRunning,
       mode: turn.mode,
       onModeChange,
+      onProviderChange,
       openId,
       permission: turn.permissions[0] ?? null,
+      provider: turn.provider,
       queue: turn.queue,
       removeQueued,
       send,
@@ -161,6 +197,16 @@ export function useOpenTurn({
       stop,
       turnError: turn.error,
     }),
-    [answer, onModeChange, openId, removeQueued, send, stop, turn]
+    [
+      answer,
+      canPickProvider,
+      onModeChange,
+      onProviderChange,
+      openId,
+      removeQueued,
+      send,
+      stop,
+      turn,
+    ]
   );
 }

@@ -297,6 +297,157 @@ code, because v4 rewrote Schema and v3 knowledge is wrong rather than stale.
   hook drops late results with a closure flag on purpose; a fiber interrupt there
   hangs the boot screen in `next dev` only, because of StrictMode's double mount.
 
+### The agent seam
+
+The turn machinery is provider-neutral (REM-251, phase 1): `handlers.ts` talks to
+an **`AgentAdapter`** — `{ info, account, turn }` in `sidecar/agent/adapter.ts` —
+and `sidecar/claude/` is the first adapter. What stays neutral lives in
+`sidecar/agent/` (the permission gate's Effect skeleton, the mode switch, the
+per-provider account cache, the registry); what speaks SDK stays in
+`sidecar/claude/` (the `CanUseTool` guard, the event translation, the failure
+classifier, the auth probe).
+
+- **`shared/providers.ts` is the provider contract**: `AGENT_PROVIDERS`, the
+  `AgentCapabilities` shape (`context`, `effort`, `modes`, `planTool`, `resume`,
+  `thinking`) and the static `PROVIDER_INFO` table. The table is static on
+  purpose — the webview and the sidecar ship in one bundle, so it cannot drift
+  from the adapters the registry carries, and the composer's chips need no
+  loading state. **Capabilities, not `if provider`**: the Mode and Effort chips
+  render only when the provider claims them; context meter, thinking marker and
+  plan checklist already degrade to nothing when their events never arrive.
+- **The provider is a property of the session** — a column (migration 5, default
+  `claude`), a field on `HistorySession` and on `agent.prompt`'s params (decoding
+  default `claude`, so a session row or a stored turn written before the field
+  existed still decodes). The webview
+  reads it back into `TurnState` exactly as it does `sdkSessionId`, and only the
+  session's own provider failing its login check locks the composer
+  (`isBlocked(checks, provider)` — the account row's id *is* the provider id).
+- **The tool dictionary crosses the wire as a verb.** A `tool_use` event and its
+  stored activity entry carry `verb` — the adapter's translation of its own tool
+  name into the neutral vocabulary (`read`/`edit`/`create`/`run`/`search`/`find`/
+  `web`/`plan`/`task`/`subagent`) that `activity-icon.tsx` keys on, with the old
+  name map behind it for rows stored before verbs existed and names no adapter
+  translates. Detail rendering (`lib/studio/activity.ts`) and the task-checklist
+  parser still read Claude's names; they move behind the seam when adapter #2
+  needs them to.
+- **The studio's tools are stdio-MCP servers any CLI can spawn** (phase 2 of
+  REM-251). `sidecar/tools/` holds the whole seam: `specs.ts` declares the
+  tools (names, wording, zod shapes — the contract with the agent, moved
+  verbatim from the old in-process servers), `execute.ts` runs them, and the
+  split between the two processes is the point: the *state* a tool touches —
+  the SQLite stages, the turn's stream, the preview stills a `save_asset`
+  renders — lives only in the sidecar, so the child the CLI spawns
+  (`sidecar/index.ts --tools-host <server>`, the same re-exec the preview host
+  uses) owns nothing and forwards every call over a unix socket to
+  `gateway.ts`. The gateway holds a registry of turn contexts keyed by
+  `turnId` (registered around `adapter.turn` in an `acquireRelease`, so a
+  finished or interrupted turn always unregisters), and the socket path and
+  turn id travel to the child in env vars on the transport the adapter hands
+  its CLI. Tool names stay `mcp__remocn-*__*`, so the permission gate's
+  auto-allow and the conventions' wording are untouched — a test pins both.
+  Failure directions: a call for a turn that is gone gets a sentence, not a
+  hang; a gateway that cannot listen is logged and the turn still runs,
+  because the words matter more than the tools. Measured end to end — spawn,
+  MCP handshake, `tools/call` through the socket — a call answers in ~20 ms.
+- **Codex is the second adapter** (phase 3 of REM-251), and it is what proved
+  the seam: `sidecar/codex/` translates `@openai/codex-sdk`'s item stream —
+  items that start, update and complete, not deltas — into the same
+  `AgentEvent`s, with a stateful translator that remembers how much of each
+  text item it has already emitted. Three findings there were measured, not
+  read: the wire carries explicit `null`s where the SDK types say optional
+  (`error`, `result` on an MCP call — trusting the types crashed a turn); the
+  studio's MCP servers need `default_tools_approval_mode: "approve"`, because
+  `"auto"` reads tool annotations, treats an unannotated tool as destructive,
+  and headless Codex then kills the call as *"user cancelled MCP tool call"*;
+  and Codex names MCP tools `mcp__{server}__{tool}` — the same spelling Claude
+  uses, so the conventions text works verbatim as `developer_instructions`.
+  - **The permission card never appears for a Codex turn — the OS sandbox is
+    the gate.** Headless Codex has nobody to answer approvals, so
+    `approvalPolicy` is always `never` and the modes map to sandboxes: `auto`
+    and `acceptEdits` → `workspace-write` (a write outside the folder is
+    *blocked*, which is #223 enforced harder than Claude's `auto` manages),
+    `plan` → `read-only`. That trade is the mapping, not an oversight.
+  - **The CLI is the user's, resolved, never bundled** — `findCodex` walks
+    `$REMOCN_STUDIO_CODEX`, `$PATH`, then the usual install dirs; a machine
+    without it gets the *not installed* row with the install command, and a
+    `~/.codex/auth.json` written by an IDE extension does not by itself put a
+    binary on `$PATH`. `codex login status` is the auth probe: exit 0 =
+    logged in, *"Not logged in"* + exit 1 locks the composer for Codex
+    sessions.
+  - **What Experimental means here**: `context` is per-turn usage, not a
+    window reading, so the meter never shows; `todo_list` does not speak the
+    checklist's `TaskCreate` vocabulary, so no plan dock; and the remocn
+    skills are not delivered (plugins are Claude Code's mechanism) —
+    `developer_instructions` carries only the studio conventions and the
+    pipeline brief.
+- **Copilot is the third adapter, and it rides a bridge the fourth can reuse.**
+  `sidecar/acp/` speaks the Agent Client Protocol — JSON-RPC 2.0, newline-
+  delimited over the child's stdio, requests in *both* directions — and
+  carries nothing Copilot-specific; `sidecar/copilot/` adds only the CLI
+  resolution, the spawn flags, the failure wording and the provider info, so
+  Grok Build (which also claims ACP) starts from the bridge, not from zero.
+  Measured against copilot 1.0.80:
+  - **ACP gives the permission cards back.** `session/request_permission`
+    routes through the same gate as Claude's `canUseTool`: `reviewAcp` speaks
+    #223 in ACP's vocabulary — `execute` always asks, file kinds whose every
+    location resolves inside the folder run silently, anything else asks —
+    and the answer picks among the *options the agent offered* (`allow_once`
+    / `allow_always` / `reject_once`), cancelling rather than inventing an
+    option that was not on the card.
+  - **Resume is `session/load`, and the replay is deliberately dropped.** The
+    agent streams the whole conversation back as updates before the load
+    answers; the transcript already has it, so updates are ignored until the
+    response arrives.
+  - **Both login failures arrive as ordinary message text**, not errors: a
+    logged-out CLI and an org-policy block each "succeed" with a turn whose
+    entire answer starts with `Error:`. `inBandFailure` matches exactly those
+    two shapes — no wider, or it would eat real answers that mention errors —
+    and converts them into the auth failure the composer already renders.
+  - **The auth probe speaks the protocol instead of scraping.** `copilot` has
+    no `login status`; an unauthenticated agent answers `session/new` with
+    ACP's `AUTH_REQUIRED` (-32000), a logged-in one opens a session, and no
+    model is ever asked. What the probe cannot see is the org-policy block —
+    that state only speaks inside a turn.
+  - The studio conventions ride as the leading text block of every prompt
+    (ACP has no system-prompt hook); modes map by URI fragment — `plan` to
+    Plan, `auto`/`acceptEdits` to Agent, never to Autopilot, which is
+    Copilot's allow-all and has no story here; `--effort` takes the studio's
+    levels verbatim; the spawn adds `--no-remote` (a desktop studio must not
+    export sessions to GitHub web behind the person's back) and
+    `--no-auto-update`.
+- **Grok Build is the fourth adapter, and it cost almost nothing** — which
+  was the ACP bridge's whole promise: `sidecar/grok/` is CLI resolution
+  (`~/.grok/bin` first — its installer's home), the failure wording, the
+  same protocol probe Copilot has, and a config over `acpTurn` (`grok agent
+  stdio`, effort clamped to low/medium/high, model via `-m`). Accepted live
+  end to end against a grok.com login: thinking and text stream as deltas,
+  the studio's MCP pipeline tool was found and called through the gateway,
+  a real shell command ran and answered. Three findings worth keeping:
+  Grok sets no ACP `kind` on tool calls (its own names — `use_tool`,
+  `run_terminal_command` — reach the rows with the wrench), its prompt
+  capabilities say `image: false` so attached pictures degrade to a notice
+  rather than a silent drop, and safe commands are self-approved by its own
+  heuristics without a permission request — parity with what Claude's
+  `auto` costs, not with the gate.
+- **The provider is picked through the model, not beside it.** The Model chip
+  opens one menu grouped by provider — a submenu per provider, its models
+  inside — because "which model" and "whose model" are one decision, not two
+  chips. Picking a model in another provider's group switches the session's
+  provider; groups other than the session's are disabled once the session has
+  spoken (resume tokens are not portable), and a provider whose account probe
+  failed is disabled with *Sign in* or *Unavailable* on the row — fetched once
+  per app run through `agent.accounts`, which shares `project.check`'s cache.
+  A provider with no probe row yet is presented plainly: "unknown" must never
+  read as "signed out". The model choice itself is per provider
+  (`claudeModel`/`codexModel` in `settings.json`), and the turn sends the
+  model of the session's provider — Codex's list is short and
+  account-measured (`Default`, the one entry that cannot drift, then the two
+  gpt-5.6 slugs a ChatGPT login actually accepted; every other slug in the
+  CLI source answered 400).
+- Still Claude-shaped, deliberately, until the next phases: the model picker,
+  knowledge delivery (plugins are Claude Code's mechanism), and a handful of
+  user-facing strings that say "Claude".
+
 ### The sidecar
 
 One bun process, owned by the Rust core, supervised in `src-tauri/src/sidecar/`.
@@ -327,7 +478,7 @@ event.
     it separately. If the envelope rejected unknown methods, a bad method would
     be dropped as unparseable and the caller would wait forever instead of
     getting `there is no method called …`.
-- **A turn carries more than a prompt.** `claude.prompt` takes the reasoning
+- **A turn carries more than a prompt.** `agent.prompt` takes the reasoning
   `effort` and image `attachments`, and answers with the context-window reading
   next to the session id. Two decisions there are deliberate: attachments travel
   as **paths**, and `sidecar/claude/content.ts` reads and base64-encodes them, so
@@ -344,7 +495,7 @@ event.
   everything lands inside `params.cwd`. Bash always asks; so does a tool with no
   path rule. What the *mode* changes is how much traffic ever reaches it, because
   the SDK routes a call to `canUseTool` only when the mode would otherwise prompt.
-  - **The mode belongs to the session** and travels on `claude.prompt` as
+  - **The mode belongs to the session** and travels on `agent.prompt` as
     `permissionMode`. Three values, spelled the way the SDK spells them so there is
     no translation table: `auto` (the default), `acceptEdits`, `plan`.
     `bypassPermissions` and `dontAsk` are deliberately not offered — a mode that
@@ -368,9 +519,9 @@ event.
     starts building — then persists it and re-emits the `history` chunk, which the
     webview already folds into the session row. Denying is "keep planning" and says
     so to the agent, rather than the standard refusal.
-  - **The ask is a stream chunk of the turn** (`ClaudeEvent` `permission`), not a
+  - **The ask is a stream chunk of the turn** (`AgentEvent` `permission`), not a
     notification, so it belongs to the turn that raised it and dies with it. The
-    answer is a *separate* `claude.permission` request, which works because
+    answer is a *separate* `agent.permission` request, which works because
     `dispatch` forks each request into a `FiberMap` rather than serving them in
     order.
   - The card renders **above the composer, not in the transcript** — an approval
@@ -398,7 +549,9 @@ event.
   step), release resolves the bundled `sidecar/main.js` from the resource dir.
   The release bundle is **minified with no sourcemap** — bundling Effect makes
   the map 4.16 MB of mostly third-party sources, and dev already runs from
-  source where traces are exact. 0.51 MB shipped, against 26 KB before Effect.
+  source where traces are exact. 2.5 MB shipped today — Effect, the preview
+  machinery and the MCP SDK behind the stdio tool hosts — against 26 KB
+  before Effect.
 - **Inside the sidecar, everything is Effect.** `SidecarChannel` is a
   `Context.Service` over stdio (`sidecar/channel.ts`), so tests provide a
   `PassThrough` instead of the process. In-flight requests live in a `FiberMap`
@@ -696,7 +849,7 @@ Send during a running turn queues the message instead of dropping it, and the
 queue is a field on `TurnState` like everything else about a turn — so it belongs
 to the session, dispatches while you are looking somewhere else, and is gone on
 relaunch. The sidecar and `shared/ipc.ts` are untouched: a queued message becomes
-an ordinary `claude.prompt` when its turn comes.
+an ordinary `agent.prompt` when its turn comes.
 
 - **This started as a silent data loss.** The textarea was never disabled on
   `isRunning`, so you could type — and Enter then cleared the field and every
@@ -711,9 +864,10 @@ an ordinary `claude.prompt` when its turn comes.
   SDK's already-open input generator is the v2 branch, and a different contract.
 - **A queued message is captured whole, at the moment it was written** — text,
   attachments, elements, assets, media, *and* the model, effort, frame and
-  project the composer was set to. Only the **mode** is re-read at dispatch, from
-  the turn that just ended, because approving a plan mid-turn changes the mode
-  the session is in and the follow-up belongs in that one. Capturing the frame at
+  project the composer was set to. Only the **mode** and the **provider** are re-read at
+  dispatch, from the turn that just ended — the mode because approving a plan
+  mid-turn changes the mode the session is in and the follow-up belongs in that
+  one, the provider because it is a property of the session, not of the message. Capturing the frame at
   enqueue is the point of doing it this way round: "make this bit slower" means
   the frame you were looking at when you wrote it, not the one on screen three
   minutes later.
@@ -1500,7 +1654,7 @@ Remotion component (REM-8). It is a drawer at the foot of the left pane, and its
 - **The slug is the folder and never moves.** Renaming rewrites `name` in the manifest, so a
   reference already in a composer, and a copy already in a project, cannot be orphaned by a rename.
   A second asset of the same name gets `-2`.
-- **Insertion is a copy, made before the turn starts.** `claude.prompt` carries the picked assets
+- **Insertion is a copy, made before the turn starts.** `agent.prompt` carries the picked assets
   positionally (`assets[i]` ↔ `[Asset #{i+1}]`, the same invariant `[Image #N]` has) and
   `placeAssets` copies them in: media to `public/library/`, a component to `src/library/<slug>/`,
   resolved against `remotionRootOf(cwd)` rather than the opened folder. Three things fall out of
@@ -1519,8 +1673,8 @@ Remotion component (REM-8). It is a drawer at the foot of the left pane, and its
   the turn still runs, because the words the person wrote are worth more than the attachment.
 - **The agent saves components, the UI saves media** — the split is about who knows the boundaries.
   The agent wrote the code and knows the import graph, so it gathers the files, names them and calls
-  `save_asset` on a second in-process MCP server, `remocn-library`, modelled on `remocn-pipeline`
-  and auto-allowed by the same rule in `permission.ts`: the library is app data, and `save_asset`
+  `save_asset` on a second MCP server, `remocn-library` — served the same stdio way as
+  `remocn-pipeline` (see *The agent seam*) — and auto-allowed by the same rule in `permission.ts`: the library is app data, and `save_asset`
   only ever reads from `cwd` and writes into the library. There is no file-tree picker, because the
   studio's user does not read code.
   - **Which is why the pane lists again when a turn settles.** A component reaches the library
@@ -1793,14 +1947,29 @@ preview/              what the *project's* webpack compiles instead of Studio's 
                       entry.tsx, the two-way bridge, hot reload, grab, source paths,
                       the element picker and the snapshot marquee
 shared/               ipc.ts: the typed contract, and the media types it carries;
-                      transcript.ts: the one fold; references.ts: the one reader of
-                      `[Image #N]`/`[Element #N]`/`[Asset #N]`; library.ts: the
-                      asset manifest format
-sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history;
+                      providers.ts: the provider registry, capabilities and the
+                      neutral tool verbs; transcript.ts: the one fold;
+                      references.ts: the one reader of `[Image #N]`/`[Element #N]`/
+                      `[Asset #N]`; library.ts: the asset manifest format
+sidecar/              bun: frame loop, method handlers, SQLite history;
                       files.ts is the project walk and the folder read behind `@`
+sidecar/agent/        the provider-neutral seam: AgentAdapter, the permission
+                      gate's skeleton, the mode switch, account cache, registry
+sidecar/claude/       the Claude Code adapter: Agent SDK session, event and
+                      failure translation, the CanUseTool guard, auth probe,
+                      tool-name→verb vocabulary
+sidecar/codex/        the Codex adapter: SDK thread per turn, the item-stream
+                      translator, sandbox mapping, `codex login status` probe,
+                      CLI resolution
+sidecar/acp/          the Agent Client Protocol bridge: the JSON-RPC peer, the
+                      update translator, the permission mapping, prompt blocks
+sidecar/copilot/      the Copilot adapter over that bridge: CLI resolution,
+                      spawn flags, the in-band failure classifier, ACP probe
+sidecar/grok/         the Grok Build adapter, second rider on the bridge
+sidecar/tools/        the studio's own tools as stdio MCP: specs, execution,
+                      the unix-socket gateway and the --tools-host child
 sidecar/history/      driver seam, migrations, project and session stores, recorder
-sidecar/library/      the asset library: the folder store, the copy into a project,
-                      and the remocn-library tools the agent saves through
+sidecar/library/      the asset library: the folder store and the copy into a project
 sidecar/scaffold/     what "New project…" expands and installs
 templates/remotion/   that project, vendored here and shipped as a Tauri resource
 agent/                the Claude Code plugin we hand the SDK: vendored skills, plus

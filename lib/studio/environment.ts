@@ -11,11 +11,13 @@ import type {
   InstallEvent,
   Installed,
 } from "@/shared/ipc";
+import type { AgentProvider } from "@/shared/providers";
 import type { PreviewComposition } from "./preview";
 
 export function checkEnvironment(
   projectId: string,
-  force: boolean
+  force: boolean,
+  provider: AgentProvider
 ): Effect.Effect<EnvironmentReport, SidecarError> {
   return Effect.gen(function* () {
     const id = yield* newRequestId;
@@ -23,7 +25,7 @@ export function checkEnvironment(
     return yield* requestSidecar({
       id,
       method: "project.check",
-      params: { force, projectId },
+      params: { force, projectId, provider },
     }).pipe(Effect.onInterrupt(() => Effect.ignore(cancelSidecarRequest(id))));
   });
 }
@@ -106,8 +108,13 @@ export function unresolved(
   );
 }
 
-export function isBlocked(checks: readonly EnvironmentCheck[]): boolean {
+// Only the session's own provider being logged out locks the composer: the
+// account row's id is the provider id, so the check is one comparison.
+export function isBlocked(
+  checks: readonly EnvironmentCheck[],
+  provider: AgentProvider
+): boolean {
   return checks.some(
-    (check) => check.id === "claude" && check.state === "failed"
+    (check) => check.id === provider && check.state === "failed"
   );
 }

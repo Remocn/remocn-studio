@@ -94,15 +94,19 @@ describe("unresolved", () => {
 });
 
 describe("isBlocked", () => {
-  it("blocks on a failed Claude check", () => {
-    expect(isBlocked([row({ id: "claude", state: "failed" })])).toBe(true);
+  it("blocks on the session's provider failing its login check", () => {
+    expect(isBlocked([row({ id: "claude", state: "failed" })], "claude")).toBe(
+      true
+    );
   });
 
   it("does not block on a folder that is not a Remotion project", () => {
-    expect(isBlocked([row({ id: "remotion", state: "failed" })])).toBe(false);
+    expect(
+      isBlocked([row({ id: "remotion", state: "failed" })], "claude")
+    ).toBe(false);
   });
 
   it("does not block before the first report arrives", () => {
-    expect(isBlocked([])).toBe(false);
+    expect(isBlocked([], "claude")).toBe(false);
   });
 });

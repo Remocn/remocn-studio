@@ -3,7 +3,7 @@
 import { Effect, Fiber } from "effect";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { causeMessage } from "@/lib/error-message";
-import { answerPermission, promptClaude } from "@/lib/studio/claude";
+import { answerPermission, promptAgent } from "@/lib/studio/agent";
 import { loadTranscript } from "@/lib/studio/history";
 import type { PermissionAction } from "@/lib/studio/permission";
 import { loadPipeline } from "@/lib/studio/pipeline";
@@ -27,6 +27,7 @@ import type {
   SessionMode,
 } from "@/shared/ipc";
 import type { PromptAsset } from "@/shared/library";
+import type { AgentProvider } from "@/shared/providers";
 import { appendUser, fold } from "@/shared/transcript";
 
 export interface StartTurn {
@@ -56,6 +57,7 @@ export interface Turns {
   removeQueued: (historyId: string, id: string) => void;
   sendTurn: (input: StartTurn) => boolean;
   setTurnMode: (historyId: string, mode: SessionMode) => void;
+  setTurnProvider: (historyId: string, provider: AgentProvider) => void;
   stopTurn: (historyId: string) => void;
   turns: ReadonlyMap<string, TurnState>;
 }
@@ -147,6 +149,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
         ...turn,
         isLoading: true,
         mode: session.mode,
+        provider: session.provider,
         sdkSessionId: session.sdkSessionId,
       }));
 
@@ -199,6 +202,13 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
     [update]
   );
 
+  const setTurnProvider = useCallback(
+    (historyId: string, provider: AgentProvider) => {
+      update(historyId, (turn) => ({ ...turn, provider }));
+    },
+    [update]
+  );
+
   const stopTurn = useCallback((historyId: string) => {
     const fiber = fibers.current.get(historyId);
     if (fiber !== undefined) {
@@ -229,7 +239,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
         unread: false,
       }));
 
-      const request = promptClaude(
+      const request = promptAgent(
         {
           assets: input.assets,
           attachments: input.attachments,
@@ -242,6 +252,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
           playing: input.playing,
           projectId: input.projectId,
           prompt: trimmed,
+          provider: started.provider,
           sessionId: started.sdkSessionId,
         },
         (event) => {
@@ -409,6 +420,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       removeQueued,
       sendTurn,
       setTurnMode,
+      setTurnProvider,
       stopTurn,
       turns,
     }),
@@ -420,6 +432,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       removeQueued,
       sendTurn,
       setTurnMode,
+      setTurnProvider,
       stopTurn,
       turns,
     ]

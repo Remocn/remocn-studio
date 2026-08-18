@@ -1,8 +1,9 @@
 import { Effect, type Exit, Schema, type SchemaError } from "effect";
 import { Asset, AssetDraft, PromptAsset } from "./library";
 import { PipelineStage, PipelineStageId, PipelineStatus } from "./pipeline";
+import { AgentProvider, DEFAULT_AGENT_PROVIDER, ToolVerb } from "./providers";
 
-export const SIDECAR_PROTOCOL = 19;
+export const SIDECAR_PROTOCOL = 20;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -22,8 +23,9 @@ export const CANCELLED = "cancelled";
 const RequestId = Schema.NonEmptyString;
 
 export const METHOD_NAMES = [
-  "claude.permission",
-  "claude.prompt",
+  "agent.accounts",
+  "agent.permission",
+  "agent.prompt",
   "files.list",
   "history.blocks",
   "history.mode",
@@ -202,6 +204,10 @@ const frame = Schema.NullOr(PromptFrame).pipe(
   Schema.withDecodingDefault(Effect.succeed(null))
 );
 
+const provider = AgentProvider.pipe(
+  Schema.withDecodingDefault(Effect.succeed(DEFAULT_AGENT_PROVIDER))
+);
+
 export const PromptParams = Schema.Struct({
   assets,
   attachments: Schema.Array(PromptAttachment),
@@ -214,10 +220,18 @@ export const PromptParams = Schema.Struct({
   playing: frame,
   projectId: Schema.NonEmptyString,
   prompt: Schema.String,
+  provider,
   sessionId: Schema.NullOr(Schema.NonEmptyString),
 });
 
 export const ActivityState = Schema.Literals(["done", "failed", "running"]);
+
+// The verb is the adapter's translation of its own tool name into the neutral
+// vocabulary the icons key on. Rows stored before it existed decode to null
+// and fall back to the name.
+const verb = Schema.NullOr(ToolVerb).pipe(
+  Schema.withDecodingDefault(Effect.succeed(null))
+);
 
 export const TranscriptEntry = Schema.Union([
   Schema.Struct({
@@ -241,6 +255,7 @@ export const TranscriptEntry = Schema.Union([
     name: Schema.String,
     result: Schema.NullOr(Schema.String),
     state: ActivityState,
+    verb,
   }),
   Schema.Struct({
     id: Schema.String,
@@ -254,6 +269,7 @@ export const HistorySession = Schema.Struct({
   id: Schema.NonEmptyString,
   mode: SessionMode,
   projectId: Schema.NonEmptyString,
+  provider,
   sdkSessionId: Schema.NullOr(Schema.String),
   title: Schema.String,
   updatedAt: Schema.Int,
@@ -415,6 +431,9 @@ export const ScaffoldEvent = Schema.Union([
 
 export const ENVIRONMENT_CHECKS = [
   "claude",
+  "codex",
+  "copilot",
+  "grok",
   "runtime",
   "remotion",
   "dependencies",
@@ -453,6 +472,7 @@ export const EnvironmentReport = Schema.Struct({
 export const EnvironmentParams = Schema.Struct({
   force: Schema.Boolean,
   projectId: Schema.NonEmptyString,
+  provider,
 });
 
 export const InstallEvent = Schema.Struct({
@@ -467,15 +487,15 @@ export const ContextUsage = Schema.Struct({
   totalTokens: Schema.Int,
 });
 
-export const ClaudeFailureKind = Schema.Literals([
+export const AgentFailureKind = Schema.Literals([
   "auth",
   "usage",
   "model",
   "unknown",
 ]);
 
-export const ClaudeFailure = Schema.Struct({
-  kind: ClaudeFailureKind,
+export const AgentFailure = Schema.Struct({
+  kind: AgentFailureKind,
   message: Schema.String,
 });
 
@@ -496,7 +516,7 @@ export const PermissionParams = Schema.Struct({
 
 export const PermissionAnswer = Schema.Struct({ matched: Schema.Boolean });
 
-export const ClaudeEvent = Schema.Union([
+export const AgentEvent = Schema.Union([
   Schema.Struct({
     mode: Schema.NullOr(SessionMode),
     model: Schema.String,
@@ -520,6 +540,7 @@ export const ClaudeEvent = Schema.Union([
     input: Schema.Unknown,
     name: Schema.String,
     type: Schema.Literal("tool_use"),
+    verb,
   }),
   Schema.Struct({
     id: Schema.String,
@@ -546,7 +567,7 @@ export const ClaudeEvent = Schema.Union([
 
 export const PromptResult = Schema.Struct({
   context: Schema.NullOr(ContextUsage),
-  failure: Schema.NullOr(ClaudeFailure),
+  failure: Schema.NullOr(AgentFailure),
   sessionId: Schema.NullOr(Schema.String),
 });
 
@@ -586,9 +607,9 @@ export type EnvironmentParams = (typeof EnvironmentParams)["Type"];
 export type InstallEvent = (typeof InstallEvent)["Type"];
 export type Installed = (typeof Installed)["Type"];
 export type ContextUsage = (typeof ContextUsage)["Type"];
-export type ClaudeFailureKind = (typeof ClaudeFailureKind)["Type"];
-export type ClaudeFailure = (typeof ClaudeFailure)["Type"];
-export type ClaudeEvent = (typeof ClaudeEvent)["Type"];
+export type AgentFailureKind = (typeof AgentFailureKind)["Type"];
+export type AgentFailure = (typeof AgentFailure)["Type"];
+export type AgentEvent = (typeof AgentEvent)["Type"];
 export type PromptResult = (typeof PromptResult)["Type"];
 
 export const PreviewParams = Schema.Struct({
@@ -683,15 +704,20 @@ export type ExportProgress = Extract<ExportEvent, { type: "progress" }>;
 export type Exported = (typeof Exported)["Type"];
 
 export const SIDECAR_METHODS = {
-  "claude.permission": {
+  "agent.accounts": {
+    params: Schema.Null,
+    result: Schema.Array(EnvironmentCheck),
+    stream: Schema.Never,
+  },
+  "agent.permission": {
     params: PermissionParams,
     result: PermissionAnswer,
     stream: Schema.Never,
   },
-  "claude.prompt": {
+  "agent.prompt": {
     params: PromptParams,
     result: PromptResult,
-    stream: ClaudeEvent,
+    stream: AgentEvent,
   },
   "files.list": {
     params: DirectoryPath,

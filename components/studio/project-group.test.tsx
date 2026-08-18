@@ -45,6 +45,7 @@ function sessions(count: number): HistorySession[] {
     id: `session-${index}`,
     mode: "auto",
     projectId: PROJECT.id,
+    provider: "claude" as const,
     sdkSessionId: null,
     title: `Session ${index}`,
     updatedAt: 0,

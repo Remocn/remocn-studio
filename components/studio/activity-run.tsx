@@ -40,7 +40,7 @@ export function ActivityRun({
         onClick={disclosure.toggle}
         type="button"
       >
-        <ActivityIcon name={newest.name} state={state} />
+        <ActivityIcon name={newest.name} state={state} verb={newest.verb} />
         <span className="shrink-0 text-foreground">{newest.name}</span>
         {target === null ? null : <ActivityTarget target={target} />}
         <span className="shrink-0 text-muted-foreground tabular-nums">{`+${hidden}`}</span>

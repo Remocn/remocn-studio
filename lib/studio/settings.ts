@@ -3,11 +3,15 @@ import { Effect } from "effect";
 import type { LayoutStorage } from "react-resizable-panels";
 import { isPaneView, type PaneView } from "@/lib/studio/pane-view";
 import { type EffortLevel, isEffortLevel } from "@/shared/ipc";
+import type { AgentProvider } from "@/shared/providers";
 
 const SETTINGS_FILE = "settings.json";
 const PROJECT_FOLDER_KEY = "projectFolder";
 const EXPANDED_PROJECTS_KEY = "expandedProjects";
 const CLAUDE_MODEL_KEY = "claudeModel";
+const CODEX_MODEL_KEY = "codexModel";
+const COPILOT_MODEL_KEY = "copilotModel";
+const GROK_MODEL_KEY = "grokModel";
 const CLAUDE_EFFORT_KEY = "claudeEffort";
 const PREVIEW_PANE_KEY = "previewPane";
 const PROJECTS_PANE_KEY = "projectsPane";
@@ -24,7 +28,10 @@ const openStore = Effect.runSync(
 export interface StudioSettings {
   claudeEffort: EffortLevel | null;
   claudeModel: string | null;
+  codexModel: string | null;
+  copilotModel: string | null;
   expandedProjects: readonly string[];
+  grokModel: string | null;
   legacyProjectFolder: string | null;
   paneView: PaneView | null;
   previewPane: boolean | null;
@@ -45,7 +52,10 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
     return {
       claudeEffort: effortOf(cache.get(CLAUDE_EFFORT_KEY)),
       claudeModel: cache.get(CLAUDE_MODEL_KEY) ?? null,
+      codexModel: cache.get(CODEX_MODEL_KEY) ?? null,
+      copilotModel: cache.get(COPILOT_MODEL_KEY) ?? null,
       expandedProjects: idsOf(cache.get(EXPANDED_PROJECTS_KEY)),
+      grokModel: cache.get(GROK_MODEL_KEY) ?? null,
       legacyProjectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
       paneView: paneViewOf(cache.get(PANE_VIEW_KEY)),
       previewPane: shownOf(cache.get(PREVIEW_PANE_KEY)),
@@ -116,8 +126,18 @@ export function saveExpandedProjects(
   return remember(EXPANDED_PROJECTS_KEY, JSON.stringify(ids));
 }
 
-export function saveClaudeModel(model: string | null): Effect.Effect<void> {
-  return remember(CLAUDE_MODEL_KEY, model);
+const MODEL_KEYS: Record<AgentProvider, string> = {
+  claude: CLAUDE_MODEL_KEY,
+  codex: CODEX_MODEL_KEY,
+  copilot: COPILOT_MODEL_KEY,
+  grok: GROK_MODEL_KEY,
+};
+
+export function saveProviderModel(
+  provider: AgentProvider,
+  model: string | null
+): Effect.Effect<void> {
+  return remember(MODEL_KEYS[provider], model);
 }
 
 export function savePreviewPane(shown: boolean): Effect.Effect<void> {

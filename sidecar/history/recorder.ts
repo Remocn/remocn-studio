@@ -1,6 +1,6 @@
 import { Effect, Ref } from "effect";
 import type {
-  ClaudeEvent,
+  AgentEvent,
   HistorySession,
   PromptParams,
   TranscriptEntry,
@@ -12,7 +12,7 @@ const TITLE_LIMIT = 60;
 const WHITESPACE = /\s+/g;
 
 export interface Recorder {
-  readonly event: (event: ClaudeEvent) => Effect.Effect<void>;
+  readonly event: (event: AgentEvent) => Effect.Effect<void>;
   readonly session: HistorySession | null;
 }
 
@@ -36,6 +36,7 @@ export function recording(
         id: params.historyId,
         mode: params.mode,
         projectId: params.projectId,
+        provider: params.provider,
         title: titleOf(params),
       })
     );

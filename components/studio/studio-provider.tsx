@@ -2,16 +2,20 @@
 
 import { createContext, use, useCallback, useMemo } from "react";
 import { type ClaudeEffort, useClaudeEffort } from "@/hooks/use-claude-effort";
-import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
 import { type Composer, useComposer } from "@/hooks/use-composer";
 import { type Environment, useEnvironment } from "@/hooks/use-environment";
 import { type FileDrops, useFileDrops } from "@/hooks/use-file-drops";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
 import { type Library, useLibrary } from "@/hooks/use-library";
+import { type StudioModels, useModels } from "@/hooks/use-models";
 import { type NewProject, useNewProject } from "@/hooks/use-new-project";
 import { type OpenTurn, useOpenTurn } from "@/hooks/use-open-turn";
 import { type Panes, usePanes } from "@/hooks/use-panes";
 import { usePreview } from "@/hooks/use-preview";
+import {
+  type ProviderAccounts,
+  useProviderAccounts,
+} from "@/hooks/use-provider-accounts";
 import { type Queue, useQueue } from "@/hooks/use-queue";
 import { type Tools, useTools } from "@/hooks/use-tools";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
@@ -20,9 +24,10 @@ import type { StudioSettings } from "@/lib/studio/settings";
 import type { ProjectDraft, PromptFrame } from "@/shared/ipc";
 
 export type Studio = ClaudeEffort &
-  ClaudeModel &
+  StudioModels &
   Panes &
   Workspace & {
+    accounts: ProviderAccounts;
     composer: Composer;
     drops: FileDrops;
     environment: Environment;
@@ -47,7 +52,8 @@ export function useStudio(): Studio {
 export function StudioProvider({ children }: { children: React.ReactNode }) {
   const settings = useHydratedSettings();
   const workspace = useWorkspace(settings);
-  const model = useClaudeModel(settings);
+  const model = useModels(settings);
+  const accounts = useProviderAccounts();
   const effort = useClaudeEffort(settings);
   const panes = usePanes(
     settings,
@@ -78,7 +84,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     changeMode: workspace.changeSessionMode,
     draftId: workspace.draftId,
     effort: effort.claudeEffort,
-    model: model.claudeModel,
+    models: model.models,
     playing: playingFrame(preview.composition, preview.frame),
     projectId: workspace.activeProject?.id ?? null,
     session: workspace.openedSession,
@@ -107,7 +113,8 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
 
   const environment = useEnvironment(
     opened === null || opened.missing ? null : opened.id,
-    previewProjectId === opened?.id ? tools.preview.pick : null
+    previewProjectId === opened?.id ? tools.preview.pick : null,
+    turn.provider
   );
 
   const drops = useFileDrops({
@@ -128,6 +135,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       ...model,
       ...effort,
       ...panes,
+      accounts,
       composer,
       drops,
       environment,
@@ -139,6 +147,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       turn,
     }),
     [
+      accounts,
       composer,
       drops,
       effort,

@@ -26,6 +26,7 @@ function create(
         ? null
         : `Task #${taskId} created successfully: ${subject}`,
     state: taskId === null ? "running" : "done",
+    verb: null,
   };
 }
 
@@ -37,6 +38,7 @@ function update(id: string, input: Record<string, unknown>): ActivityEntry {
     name: "TaskUpdate",
     result: "Updated task status",
     state: "done",
+    verb: null,
   };
 }
 
@@ -48,6 +50,7 @@ function read(id: string, file: string): ActivityEntry {
     name: "Read",
     result: "…",
     state: "done",
+    verb: null,
   };
 }
 

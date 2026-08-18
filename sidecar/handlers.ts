@@ -1,10 +1,8 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { Clock, Effect, Ref, Stream } from "effect";
+import { Clock, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import {
-  type ClaudeFailure,
-  type ContextUsage,
   type Project,
   type PromptFrame,
   type PromptParams,
@@ -13,14 +11,13 @@ import {
 } from "@/shared/ipc";
 import type { Asset, AssetDraft } from "@/shared/library";
 import type { PipelineStage } from "@/shared/pipeline";
+import { AGENT_PROVIDERS } from "@/shared/providers";
+import { makeAccountCache } from "./agent/account";
+import { makeGate } from "./agent/gate";
+import { makeModeSwitch } from "./agent/mode";
+import { adapterFor } from "./agent/registry";
 import { pipelineBrief } from "./claude/conventions";
-import { eventsOf } from "./claude/events";
-import { failureFromText, failureOf } from "./claude/failure";
-import { makeGate, permissionGuard } from "./claude/gate";
-import { makeModeSwitch } from "./claude/mode";
-import { pipelineServer } from "./claude/pipeline-tools";
-import { messages } from "./claude/session";
-import { checksFor, makeAccountCache } from "./environment";
+import { checksFor } from "./environment";
 import { type FilesError, listFolder, projectFiles } from "./files";
 import { ProjectStore } from "./history/projects";
 import { recording } from "./history/recorder";
@@ -45,7 +42,6 @@ import {
   saveAsset,
   unofferedFrom,
 } from "./library/store";
-import { libraryServer } from "./library/tools";
 import { remotionRootOf } from "./preview/project";
 import {
   clipFrom,
@@ -56,6 +52,8 @@ import {
 } from "./preview/supervisor";
 import { installDependencies } from "./scaffold/install";
 import { expandTemplate, type ScaffoldError } from "./scaffold/template";
+import { makeGateway } from "./tools/gateway";
+import { LIBRARY_SERVER, PIPELINE_SERVER } from "./tools/specs";
 
 const TOKENS = [
   "Streaming",
@@ -77,6 +75,8 @@ const MAX_COUNT = 500;
 const MAX_DELAY_MS = 2000;
 
 const gate = makeGate();
+
+const gateway = makeGateway((line) => process.stderr.write(`${line}\n`));
 
 const account = Effect.runSync(makeAccountCache());
 
@@ -110,11 +110,10 @@ const clipped = (projectId: string, playing: PromptFrame, asset: Asset) =>
       )
     : Effect.succeed(asset);
 
-const librarian = (params: PromptParams, cwd: string) => {
+const librarian = (params: PromptParams) => {
   const { playing, projectId } = params;
 
-  return libraryServer({
-    cwd,
+  return {
     list: () => Effect.runPromise(listAssets()),
     save: (draft: AssetDraft) =>
       Effect.runPromise(
@@ -128,7 +127,7 @@ const librarian = (params: PromptParams, cwd: string) => {
           )
         )
       ),
-  });
+  };
 };
 
 const onDisk = (project: Project) =>
@@ -147,19 +146,25 @@ const located = (projectId: string) =>
   );
 
 export const handlers: Handlers<HistoryStore | ProjectStore> = {
-  "claude.permission": ({ params }) =>
+  // One row per provider, for the model picker to mark who is actually
+  // reachable. The probes share project.check's cache, so a warm answer
+  // costs nothing and Recheck refreshes both.
+  "agent.accounts": () =>
+    Effect.forEach(AGENT_PROVIDERS, (provider) =>
+      account.row(provider, process.cwd())
+    ),
+
+  "agent.permission": ({ params }) =>
     Effect.map(
       gate.answer(params.id, params.decision, params.mode),
       (matched) => ({ matched })
     ),
 
-  "claude.prompt": ({ emit, log, params }) =>
+  "agent.prompt": ({ emit, log, params }) =>
     Effect.gen(function* () {
       const turnId = yield* Effect.sync(() => crypto.randomUUID());
       const project = yield* located(params.projectId);
-      const sessionId = yield* Ref.make(params.sessionId);
-      const failure = yield* Ref.make<ClaudeFailure | null>(null);
-      const context = yield* Ref.make<ContextUsage | null>(null);
+      const adapter = adapterFor(params.provider);
 
       const store = yield* HistoryStore;
       const recorder = yield* recording(store, params, log);
@@ -223,62 +228,41 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
           )
         );
 
-      yield* Stream.runForEach(
-        messages(params, {
-          assets: assetBrief(placed),
-          brief: pipelineBrief(stages),
-          canUseTool: permissionGuard({
+      return yield* Effect.scoped(
+        gateway
+          .serving(turnId, {
             cwd: project.path,
-            emit,
-            gate,
-            onApprove: approved,
-            turnId,
-          }),
-          cwd: project.path,
-          library: librarian(params, project.path),
-          log: (line) => Effect.runSync(log(line)),
-          media: mediaBrief(placedMedia),
-          onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
-          onMode: (apply) => Effect.runSync(switcher.bind(apply)),
-          onStop: () => Effect.runSync(gate.abandon(turnId)),
-          pipeline: pipelineServer({
-            setStage: (stage, status) =>
-              moved(store.setStage(params.historyId, stage, status)),
-            start: () => moved(store.startPipeline(params.historyId)),
-          }),
-        }),
-        (message) =>
-          Effect.gen(function* () {
-            if (message.type === "system" && message.subtype === "init") {
-              yield* Ref.set(sessionId, message.session_id);
-            }
-
-            const found = failureOf(message);
-            if (found !== null) {
-              yield* Ref.set(failure, found);
-            }
-
-            yield* Effect.forEach(
-              eventsOf(message, params.mode),
-              (event) => Effect.andThen(emit(event), recorder.event(event)),
-              { discard: true }
-            );
+            library: librarian(params),
+            pipeline: {
+              setStage: (stage, status) =>
+                moved(store.setStage(params.historyId, stage, status)),
+              start: () => moved(store.startPipeline(params.historyId)),
+            },
           })
-      ).pipe(
-        Effect.catch((error) =>
-          Ref.update(
-            failure,
-            (current) => current ?? failureFromText(error.message)
+          .pipe(
+            Effect.andThen(
+              adapter.turn(params, {
+                briefs: {
+                  assets: assetBrief(placed),
+                  media: mediaBrief(placedMedia),
+                  pipeline: pipelineBrief(stages),
+                },
+                cwd: project.path,
+                emit,
+                gate,
+                log,
+                onApprove: approved,
+                onMode: switcher.bind,
+                record: recorder.event,
+                tools: {
+                  [LIBRARY_SERVER]: gateway.transport(LIBRARY_SERVER, turnId),
+                  [PIPELINE_SERVER]: gateway.transport(PIPELINE_SERVER, turnId),
+                },
+                turnId,
+              })
+            )
           )
-        ),
-        Effect.onExit(() => gate.abandon(turnId))
       );
-
-      return {
-        context: yield* Ref.get(context),
-        failure: yield* Ref.get(failure),
-        sessionId: yield* Ref.get(sessionId),
-      };
     }),
 
   "files.list": ({ params }) =>
@@ -412,7 +396,7 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
       return {
         checks: yield* checksFor(
           project.path,
-          yield* account.row(project.path)
+          yield* account.row(params.provider, project.path)
         ),
       };
     }),

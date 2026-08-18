@@ -14,6 +14,7 @@ function entry(shape: Partial<ActivityEntry>): ActivityEntry {
     name: "Read",
     result: null,
     state: "done",
+    verb: null,
     ...shape,
   };
 }

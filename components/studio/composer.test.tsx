@@ -107,7 +107,7 @@ function mockShell(
         if (request.method === "preview.start") {
           return new Promise(() => undefined);
         }
-        if (request.method === "claude.prompt") {
+        if (request.method === "agent.prompt") {
           sent.push(request.params as PromptParams);
           return { context: null, failure: null, sessionId: "sdk-1" };
         }
@@ -220,6 +220,7 @@ async function renderComposer(
         <SelectProbe />
         <CaptureProbe />
         <Composer
+          canPickProvider={true}
           context={{ maxTokens: 200_000, totalTokens: 50_000 }}
           cwd={PROJECT.path}
           disabled={false}
@@ -227,7 +228,9 @@ async function renderComposer(
           isWaiting={false}
           mode={mode}
           onModeChange={onModeChange}
+          onProviderChange={vi.fn()}
           onStop={vi.fn()}
+          provider="claude"
         />
       </TooltipProvider>
     </StudioProvider>

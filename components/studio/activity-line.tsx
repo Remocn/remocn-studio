@@ -39,7 +39,7 @@ export function ActivityLine({
         onClick={disclosure.toggle}
         type="button"
       >
-        <ActivityIcon name={entry.name} state={entry.state} />
+        <ActivityIcon name={entry.name} state={entry.state} verb={entry.verb} />
         <span className="shrink-0 text-foreground">{entry.name}</span>
         {target === null ? null : <ActivityTarget target={target} />}
         {detail === null ? null : (

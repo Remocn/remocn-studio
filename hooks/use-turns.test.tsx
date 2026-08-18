@@ -20,6 +20,7 @@ const STORED: HistorySession = {
   id: "a",
   mode: "plan",
   projectId: "project-1",
+  provider: "claude" as const,
   sdkSessionId: "sdk-9",
   title: "A promo",
   updatedAt: 0,
@@ -73,7 +74,7 @@ function harness(options: { holdBlocks?: boolean } = {}) {
         method: string;
         params: { historyId?: string; mode?: string; sessionId?: string };
       };
-      if (call.method === "claude.prompt") {
+      if (call.method === "agent.prompt") {
         byHistory.set(call.params.historyId ?? "", call.id);
         modes.set(call.params.historyId ?? "", call.params.mode ?? "");
         return new Promise<PromptResult>((resolve) => {
