@@ -108,7 +108,7 @@ function AssetRowItem({
         <AttachmentActions>
           <AttachmentAction
             aria-label={`Delete ${asset.name}`}
-            className="bg-black/60 text-white opacity-0 hover:bg-black/80 hover:text-white focus-visible:opacity-100 group-hover/attachment:opacity-100"
+            className="relative bg-black/60 text-white opacity-0 after:absolute after:-inset-1 hover:bg-black/80 hover:text-white focus-visible:opacity-100 group-hover/attachment:opacity-100"
             onClick={onRemove}
             value={asset.slug}
           >

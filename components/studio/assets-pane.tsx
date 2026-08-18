@@ -131,7 +131,9 @@ function AssetsBody({
     return (
       <Empty className="px-4 py-8">
         <EmptyHeader>
-          <EmptyTitle>The library is unavailable</EmptyTitle>
+          <EmptyTitle className="text-balance">
+            The library is unavailable
+          </EmptyTitle>
           <EmptyDescription className="break-words">{error}</EmptyDescription>
         </EmptyHeader>
         <Button onClick={onRetry} size="sm" variant="outline">

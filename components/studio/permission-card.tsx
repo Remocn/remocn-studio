@@ -64,7 +64,7 @@ export function PermissionCard({
         <div className="flex flex-col">
           {permissionChoices(permission.reason).map((choice, index) => (
             <button
-              className="-mx-1 flex items-baseline gap-2 rounded-lg px-2 py-1.5 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="-mx-1 flex items-baseline gap-2 rounded-lg px-2 py-1.5 text-left outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted/80"
               key={choice.id}
               onClick={card.onChoose}
               ref={index === 0 ? card.first : undefined}
@@ -80,7 +80,7 @@ export function PermissionCard({
               >
                 {choice.label}
               </span>
-              <span className="truncate text-muted-foreground text-xs">
+              <span className="min-w-0 text-pretty text-muted-foreground text-xs">
                 {choice.description}
               </span>
             </button>

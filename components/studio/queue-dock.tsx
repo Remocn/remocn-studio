@@ -37,7 +37,7 @@ function QueueDockBlock({ queue }: { queue: Queue }) {
                 rows wrap: a queue you cannot read is not a queue you can edit,
                 and the block is free to grow downwards once it is open. */}
             <button
-              className="wrap-break-word min-w-0 flex-1 text-pretty rounded-lg px-2 py-1.5 text-left text-sm leading-snug outline-none focus-visible:ring-2 focus-visible:ring-ring/50 enabled:hover:bg-muted/60 disabled:cursor-default"
+              className="wrap-break-word min-w-0 flex-1 text-pretty rounded-lg px-2 py-1.5 text-left text-sm leading-snug outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 enabled:active:bg-muted enabled:hover:bg-muted/60 disabled:cursor-default"
               disabled={!queue.canEdit}
               onClick={queue.onEdit}
               title={editTitle(queue.canEdit)}
@@ -48,7 +48,7 @@ function QueueDockBlock({ queue }: { queue: Queue }) {
             </button>
             <Button
               aria-label={`Remove queued message ${index + 1}`}
-              className="mt-1 shrink-0 text-muted-foreground"
+              className="relative mt-1 shrink-0 text-muted-foreground after:absolute after:-inset-1"
               onClick={queue.onRemove}
               size="icon-xs"
               value={message.id}

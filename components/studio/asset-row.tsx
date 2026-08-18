@@ -76,6 +76,7 @@ function AssetCard({
         <AttachmentActions>
           <AttachmentAction
             aria-label={`Remove ${item.name}`}
+            className="relative after:absolute after:-inset-1"
             onClick={onRemove}
             value={String(index)}
             variant="secondary"

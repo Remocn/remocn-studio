@@ -385,7 +385,9 @@ function ChatEmptyState({
         <EmptyMedia>
           <LogoMark className="size-10 text-foreground" />
         </EmptyMedia>
-        <EmptyTitle className="text-2xl">What should we make?</EmptyTitle>
+        <EmptyTitle className="text-balance text-2xl">
+          What should we make?
+        </EmptyTitle>
         {/* The panes are resizable, so this block is the app's only prose that
             reflows to arbitrary widths — `pretty` is what keeps a lone word off
             the last line as the divider moves. */}

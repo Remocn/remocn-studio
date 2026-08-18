@@ -31,7 +31,7 @@ export function exportStatus(event: ExportEvent | null): string | null {
   }
 
   if (event.type === "browser") {
-    return `Downloading the renderer's browser — ${event.percent}%`;
+    return `Downloading the renderer’s browser — ${event.percent}%`;
   }
 
   if (event.total === 0) {

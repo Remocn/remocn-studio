@@ -81,12 +81,12 @@ function SelectionChip({
             {frameTime(element.frame, element.fps)}
           </span>
         </TooltipTrigger>
-        <TooltipContent>{whereOf(element, cwd)}</TooltipContent>
+        <TooltipContent>{`${labelOf(element)} · ${whereOf(element, cwd)}`}</TooltipContent>
       </Tooltip>
 
       <Button
         aria-label={`Remove ${labelOf(element)}`}
-        className="size-5"
+        className="relative size-5 after:absolute after:-inset-1"
         onClick={onRemove}
         size="icon-xs"
         value={String(index)}

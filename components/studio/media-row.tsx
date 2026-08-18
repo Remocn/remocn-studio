@@ -82,6 +82,7 @@ function MediaCard({
           {onKeep ? (
             <AttachmentAction
               aria-label={`Save ${item.name} to the library`}
+              className="relative after:absolute after:-inset-y-1"
               onClick={onKeep}
               value={String(index)}
               variant="secondary"
@@ -92,6 +93,7 @@ function MediaCard({
           {onRemove ? (
             <AttachmentAction
               aria-label={`Remove ${item.name}`}
+              className="relative after:absolute after:-inset-y-1"
               onClick={onRemove}
               value={String(index)}
               variant="secondary"

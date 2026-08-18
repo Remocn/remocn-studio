@@ -29,7 +29,7 @@ describe("exportStatus", () => {
 
   it("names the browser download for what it is", () => {
     expect(exportStatus({ percent: 40, type: "browser" })).toBe(
-      "Downloading the renderer's browser — 40%"
+      "Downloading the renderer’s browser — 40%"
     );
   });
 

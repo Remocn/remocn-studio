@@ -116,7 +116,7 @@ function RowShell({
       {busy ? null : (
         <Button
           aria-label={`Delete ${session.title}`}
-          className="absolute top-1 right-1 z-10 opacity-0 focus-visible:opacity-100 group-hover/session:opacity-100"
+          className="absolute top-1 right-1 z-10 opacity-0 after:absolute after:-inset-1 focus-visible:opacity-100 group-hover/session:opacity-100"
           onClick={onRemove}
           size="icon-xs"
           value={session.id}

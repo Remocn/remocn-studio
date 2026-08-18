@@ -92,7 +92,10 @@ function CommentCard({
         width: `${CARD.width}px`,
       }}
     >
-      <p className="truncate px-1 text-muted-foreground text-xs">
+      <p
+        className="truncate px-1 text-muted-foreground text-xs"
+        title={whereOf(element, cwd)}
+      >
         <span className="text-foreground">
           {element.component ?? "This element"}
         </span>
