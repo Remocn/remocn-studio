@@ -14,14 +14,18 @@ export const CLAUDE_MODELS: readonly ModelChoice[] = [
 
 export const DEFAULT_CLAUDE_MODEL = "claude-opus-5";
 
-// Codex's catalog is dynamic and account-shaped: every explicit gpt-5.x slug
-// from the CLI source was refused for a ChatGPT login except these two,
-// measured against codex-cli 0.147.0 — and "Default" (no model at all) is the
-// one entry that can never drift, so it leads.
+// Codex's catalog is dynamic and account-shaped: thirteen explicit gpt-5.x
+// slugs from the CLI source and the wider lineup were probed against a
+// ChatGPT login (codex-cli 0.147.0) and every one answered 400 except Terra
+// and Luna. Sol is the third sibling in the source — refused on the probed
+// plan, plausibly open on higher tiers, and a refusal fails the turn with
+// the router's own sentence. "Default" (no model at all) is the one entry
+// that can never drift, so it leads.
 export const CODEX_MODELS: readonly ModelChoice[] = [
   { label: "Default", value: "" },
   { label: "GPT-5.6 Terra", value: "gpt-5.6-terra" },
   { label: "GPT-5.6 Luna", value: "gpt-5.6-luna" },
+  { label: "GPT-5.6 Sol", value: "gpt-5.6-sol" },
 ];
 
 // A curated head of the 27 models `copilot help config` documents (CLI
