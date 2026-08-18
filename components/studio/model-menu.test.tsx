@@ -6,6 +6,16 @@ import type { ProviderAccounts } from "@/hooks/use-provider-accounts";
 
 const MODEL_CHIP = /Model:/;
 
+const HEALTHY: ProviderAccounts = {
+  grok: {
+    detail: "Grok Build 1.0.5",
+    fix: null,
+    id: "grok",
+    state: "ok",
+    title: "Grok is logged in",
+  },
+};
+
 const SIGNED_OUT: ProviderAccounts = {
   codex: {
     detail: "Codex is not signed in.",
@@ -19,7 +29,7 @@ const SIGNED_OUT: ProviderAccounts = {
 function renderMenu(shape: {
   accounts?: ProviderAccounts;
   canPickProvider?: boolean;
-  provider?: "claude" | "codex";
+  provider?: "claude" | "codex" | "grok";
 }) {
   const onPick = vi.fn();
 
@@ -64,6 +74,20 @@ describe("ModelMenu", () => {
     expect(
       screen.getByText("Codex").closest("[role='menuitem']")
     ).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("keeps a healthy group free of tooltips, whose balloon would cover the submenu", () => {
+    renderMenu({ accounts: HEALTHY, provider: "grok" });
+
+    const grok = screen
+      .getByText("Grok", { selector: "span" })
+      .closest("[role='menuitem']");
+
+    fireEvent.pointerEnter(grok as Element);
+    fireEvent.mouseEnter(grok as Element);
+    fireEvent.pointerMove(grok as Element);
+
+    expect(screen.queryByText("Grok Build 1.0.5")).not.toBeInTheDocument();
   });
 
   it("locks the other providers once the session has spoken, and says why", async () => {

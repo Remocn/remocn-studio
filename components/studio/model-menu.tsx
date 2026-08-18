@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { ProviderAccounts } from "@/hooks/use-provider-accounts";
 import { modelLabelOf, PROVIDER_MODELS } from "@/lib/studio/models";
+import type { EnvironmentCheck } from "@/shared/ipc";
 import {
   AGENT_PROVIDERS,
   type AgentProvider,
@@ -109,7 +110,7 @@ function ProviderGroup({
     [candidate, onPick]
   );
 
-  const reason = locked ? LOCKED_REASON : (accounts[candidate]?.detail ?? null);
+  const reason = disabledReason(locked, accounts[candidate]);
 
   const trigger = (
     <DropdownMenuSubTrigger
@@ -181,6 +182,22 @@ function statusOf(
   }
 
   return PROVIDER_INFO[candidate].experimental ? "Experimental" : null;
+}
+
+// A tooltip is for a group you cannot open — the lock, or a failed probe's
+// own detail. A healthy group explains nothing, or the balloon would sit on
+// top of the submenu it just opened.
+function disabledReason(
+  locked: boolean,
+  row: EnvironmentCheck | undefined
+): string | null {
+  if (locked) {
+    return LOCKED_REASON;
+  }
+  if (row !== undefined && row.state === "failed") {
+    return row.detail;
+  }
+  return null;
 }
 
 function groupDisabled(
