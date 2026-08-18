@@ -104,7 +104,7 @@ function ProviderGroup({
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger
-        className="data-disabled:pointer-events-none data-disabled:opacity-50"
+        className="data-disabled:opacity-50"
         disabled={disabled}
         title={
           locked

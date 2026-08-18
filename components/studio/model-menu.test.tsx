@@ -63,12 +63,15 @@ describe("ModelMenu", () => {
     ).toHaveAttribute("aria-disabled", "true");
   });
 
-  it("locks the other providers once the session has spoken", () => {
+  it("locks the other providers once the session has spoken, and says why", () => {
     renderMenu({ canPickProvider: false, provider: "claude" });
 
-    expect(
-      screen.getByText("Codex").closest("[role='menuitem']")
-    ).toHaveAttribute("aria-disabled", "true");
+    const codex = screen.getByText("Codex").closest("[role='menuitem']");
+    expect(codex).toHaveAttribute("aria-disabled", "true");
+    expect(codex).toHaveAttribute(
+      "title",
+      "This session already speaks another provider — start a new session to switch."
+    );
     expect(
       screen
         .getByText("Claude", { selector: "span" })
