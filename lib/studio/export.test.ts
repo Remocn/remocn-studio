@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ExportEvent } from "@/shared/ipc";
-import { exportLabel, exportPercent, exportStatus, fileSize } from "./export";
+import {
+  exportBrief,
+  exportLabel,
+  exportPercent,
+  exportStatus,
+  fileSize,
+} from "./export";
 
 function progress(
   overrides: Partial<Extract<ExportEvent, { type: "progress" }>> = {}
@@ -51,6 +57,53 @@ describe("exportStatus", () => {
     expect(exportStatus(progress({ total: 0 }))).toBe(
       "Measuring the composition…"
     );
+  });
+});
+
+describe("exportBrief", () => {
+  it("says it is starting, with no number, before the first event", () => {
+    expect(exportBrief(null)).toEqual({ label: "Starting…", percent: null });
+  });
+
+  it("names the browser download and its percentage", () => {
+    expect(exportBrief({ percent: 40, type: "browser" })).toEqual({
+      label: "Downloading · 40%",
+      percent: 40,
+    });
+  });
+
+  it("measures with no number rather than dividing by zero", () => {
+    expect(exportBrief(progress({ total: 0 }))).toEqual({
+      label: "Measuring…",
+      percent: null,
+    });
+  });
+
+  it("names the render stage next to its percentage", () => {
+    expect(exportBrief(progress({ percent: 21, rendered: 64 }))).toEqual({
+      label: "Rendering · 21%",
+      percent: 21,
+    });
+  });
+
+  it("moves on to encoding once every frame is rendered", () => {
+    expect(
+      exportBrief(progress({ encoded: 280, percent: 95, rendered: 300 }))
+    ).toEqual({ label: "Encoding · 95%", percent: 95 });
+  });
+
+  it("combines with no number rather than a stalled 100%", () => {
+    expect(
+      exportBrief(
+        progress({ encoded: 300, percent: 100, rendered: 300, stage: "muxing" })
+      )
+    ).toEqual({ label: "Combining…", percent: null });
+  });
+
+  it("finishes with no number when the stage is not muxing", () => {
+    expect(
+      exportBrief(progress({ encoded: 300, percent: 100, rendered: 300 }))
+    ).toEqual({ label: "Finishing…", percent: null });
   });
 });
 

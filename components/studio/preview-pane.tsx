@@ -2,14 +2,12 @@
 
 import {
   CameraIcon,
-  DownloadIcon,
   FolderOpenIcon,
   FolderPlusIcon,
   MonitorPlayIcon,
   PanelRightCloseIcon,
   RotateCwIcon,
   SquareDashedMousePointerIcon,
-  XIcon,
 } from "lucide-react";
 import type { RefObject } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +18,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Tooltip,
@@ -29,6 +26,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { Preview } from "@/hooks/use-preview";
 import { exportLabel } from "@/lib/studio/export";
+import { ExportButton } from "./export-button";
 import { InspectOverlay } from "./inspect-overlay";
 import { Pane, PaneActions, PaneBody, PaneHeader, PaneTitle } from "./pane";
 import { useStudio } from "./studio-provider";
@@ -86,25 +84,7 @@ export function PreviewPane() {
             )}
             Snapshot
           </Button>
-          {exporting.isRunning ? (
-            <Button onClick={exporting.cancel} size="sm" variant="outline">
-              <XIcon data-icon="inline-start" />
-              Cancel
-            </Button>
-          ) : (
-            <Button
-              aria-disabled={!exporting.canExport}
-              className="aria-disabled:opacity-50"
-              onClick={exporting.start}
-              size="sm"
-              title={
-                exporting.unavailable ?? "Render this composition into out/"
-              }
-            >
-              <DownloadIcon data-icon="inline-start" />
-              Export
-            </Button>
-          )}
+          <ExportButton exporting={exporting} />
           <Tooltip>
             <TooltipTrigger
               render={
@@ -166,15 +146,6 @@ export function PreviewPane() {
               {snapshot.status}
             </p>
           )}
-
-          {exporting.isRunning ? (
-            <div className="flex shrink-0 flex-col gap-2">
-              <p className="text-muted-foreground text-xs tabular-nums">
-                {exporting.status}
-              </p>
-              <Progress value={exporting.percent} />
-            </div>
-          ) : null}
 
           {exporting.result === null ? null : (
             <div
