@@ -11,6 +11,7 @@ const EXPANDED_PROJECTS_KEY = "expandedProjects";
 const CLAUDE_MODEL_KEY = "claudeModel";
 const CODEX_MODEL_KEY = "codexModel";
 const COPILOT_MODEL_KEY = "copilotModel";
+const GROK_MODEL_KEY = "grokModel";
 const CLAUDE_EFFORT_KEY = "claudeEffort";
 const PREVIEW_PANE_KEY = "previewPane";
 const PROJECTS_PANE_KEY = "projectsPane";
@@ -30,6 +31,7 @@ export interface StudioSettings {
   codexModel: string | null;
   copilotModel: string | null;
   expandedProjects: readonly string[];
+  grokModel: string | null;
   legacyProjectFolder: string | null;
   paneView: PaneView | null;
   previewPane: boolean | null;
@@ -53,6 +55,7 @@ export const hydrateSettings: Effect.Effect<StudioSettings> = openStore.pipe(
       codexModel: cache.get(CODEX_MODEL_KEY) ?? null,
       copilotModel: cache.get(COPILOT_MODEL_KEY) ?? null,
       expandedProjects: idsOf(cache.get(EXPANDED_PROJECTS_KEY)),
+      grokModel: cache.get(GROK_MODEL_KEY) ?? null,
       legacyProjectFolder: cache.get(PROJECT_FOLDER_KEY) ?? null,
       paneView: paneViewOf(cache.get(PANE_VIEW_KEY)),
       previewPane: shownOf(cache.get(PREVIEW_PANE_KEY)),
@@ -127,6 +130,7 @@ const MODEL_KEYS: Record<AgentProvider, string> = {
   claude: CLAUDE_MODEL_KEY,
   codex: CODEX_MODEL_KEY,
   copilot: COPILOT_MODEL_KEY,
+  grok: GROK_MODEL_KEY,
 };
 
 export function saveProviderModel(

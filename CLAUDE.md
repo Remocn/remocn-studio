@@ -415,6 +415,20 @@ classifier, the auth probe).
     levels verbatim; the spawn adds `--no-remote` (a desktop studio must not
     export sessions to GitHub web behind the person's back) and
     `--no-auto-update`.
+- **Grok Build is the fourth adapter, and it cost almost nothing** — which
+  was the ACP bridge's whole promise: `sidecar/grok/` is CLI resolution
+  (`~/.grok/bin` first — its installer's home), the failure wording, the
+  same protocol probe Copilot has, and a config over `acpTurn` (`grok agent
+  stdio`, effort clamped to low/medium/high, model via `-m`). Accepted live
+  end to end against a grok.com login: thinking and text stream as deltas,
+  the studio's MCP pipeline tool was found and called through the gateway,
+  a real shell command ran and answered. Three findings worth keeping:
+  Grok sets no ACP `kind` on tool calls (its own names — `use_tool`,
+  `run_terminal_command` — reach the rows with the wrench), its prompt
+  capabilities say `image: false` so attached pictures degrade to a notice
+  rather than a silent drop, and safe commands are self-approved by its own
+  heuristics without a permission request — parity with what Claude's
+  `auto` costs, not with the gate.
 - **The provider is picked through the model, not beside it.** The Model chip
   opens one menu grouped by provider — a submenu per provider, its models
   inside — because "which model" and "whose model" are one decision, not two
@@ -1951,6 +1965,7 @@ sidecar/acp/          the Agent Client Protocol bridge: the JSON-RPC peer, the
                       update translator, the permission mapping, prompt blocks
 sidecar/copilot/      the Copilot adapter over that bridge: CLI resolution,
                       spawn flags, the in-band failure classifier, ACP probe
+sidecar/grok/         the Grok Build adapter, second rider on the bridge
 sidecar/tools/        the studio's own tools as stdio MCP: specs, execution,
                       the unix-socket gateway and the --tools-host child
 sidecar/history/      driver seam, migrations, project and session stores, recorder

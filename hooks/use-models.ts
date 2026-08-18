@@ -28,6 +28,7 @@ export function useModels(settings: StudioSettings | null): StudioModels {
         codex: chosen.codex ?? settings?.codexModel ?? DEFAULT_MODELS.codex,
         copilot:
           chosen.copilot ?? settings?.copilotModel ?? DEFAULT_MODELS.copilot,
+        grok: chosen.grok ?? settings?.grokModel ?? DEFAULT_MODELS.grok,
       },
       onPickModel,
     }),

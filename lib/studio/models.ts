@@ -43,16 +43,26 @@ export const COPILOT_MODELS: readonly ModelChoice[] = [
   { label: "Grok 4.5", value: "grok-4.5" },
 ];
 
+// Measured live with `grok models` against a grok.com login: 4.6 is the
+// default, 4.5 the one alternative.
+export const GROK_MODELS: readonly ModelChoice[] = [
+  { label: "Default", value: "" },
+  { label: "Grok 4.6", value: "grok-4.6" },
+  { label: "Grok 4.5", value: "grok-4.5" },
+];
+
 export const PROVIDER_MODELS: Record<AgentProvider, readonly ModelChoice[]> = {
   claude: CLAUDE_MODELS,
   codex: CODEX_MODELS,
   copilot: COPILOT_MODELS,
+  grok: GROK_MODELS,
 };
 
 export const DEFAULT_MODELS: Record<AgentProvider, string> = {
   claude: DEFAULT_CLAUDE_MODEL,
   codex: "",
   copilot: "",
+  grok: "",
 };
 
 export function modelLabelOf(provider: AgentProvider, value: string): string {

@@ -11,6 +11,7 @@ const SETTINGS: StudioSettings = {
   codexModel: null,
   copilotModel: null,
   expandedProjects: [],
+  grokModel: null,
   legacyProjectFolder: null,
   paneView: null,
   previewPane: null,

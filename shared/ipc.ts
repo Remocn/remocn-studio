@@ -433,6 +433,7 @@ export const ENVIRONMENT_CHECKS = [
   "claude",
   "codex",
   "copilot",
+  "grok",
   "runtime",
   "remotion",
   "dependencies",

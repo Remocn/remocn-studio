@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-export const AGENT_PROVIDERS = ["claude", "codex", "copilot"] as const;
+export const AGENT_PROVIDERS = ["claude", "codex", "copilot", "grok"] as const;
 
 export const AgentProvider = Schema.Literals(AGENT_PROVIDERS);
 
@@ -87,6 +87,22 @@ export const PROVIDER_INFO: Record<AgentProvider, ProviderInfo> = {
     experimental: true,
     id: "copilot",
     name: "Copilot",
+  },
+  // The second rider on the ACP bridge. Its prompt capabilities say
+  // image: false, so attached pictures degrade to a notice rather than a
+  // silent drop.
+  grok: {
+    capabilities: {
+      context: false,
+      effort: true,
+      modes: true,
+      planTool: false,
+      resume: true,
+      thinking: true,
+    },
+    experimental: true,
+    id: "grok",
+    name: "Grok",
   },
 };
 
