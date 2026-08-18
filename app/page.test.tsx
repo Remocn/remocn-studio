@@ -6,6 +6,8 @@ import type { HistorySession, Project, TranscriptEntry } from "@/shared/ipc";
 
 const PICKED_FOLDER = "/Users/me/projects/my-video";
 const SESSION_ROW = /^A promo for the launch/;
+const PRODUCT_DEMO_ROW = /^Product demo/;
+const LAUNCH_TEASER_ROW = /^Launch teaser/;
 const WORDMARK = /^emocn/;
 const STARTUP = "Make a video by describing it";
 
@@ -305,13 +307,13 @@ describe("app shell", () => {
     fireEvent.click(await openFolderButton());
     await screen.findByText("What should we make?");
 
-    fireEvent.click(screen.getByRole("button", { name: /^Product demo/ }));
+    fireEvent.click(screen.getByRole("button", { name: PRODUCT_DEMO_ROW }));
 
     const field = screen.getByRole("textbox", { name: "Message Claude" });
     expect((field as HTMLTextAreaElement).value).toContain("[product name]");
     expect(screen.getByText("What should we make?")).toBeVisible();
     expect(
-      screen.getByRole("button", { name: /^Launch teaser/ })
+      screen.getByRole("button", { name: LAUNCH_TEASER_ROW })
     ).toBeVisible();
   });
 
@@ -327,7 +329,7 @@ describe("app shell", () => {
 
     expect(await screen.findByText("All done.")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /^Product demo/ })
+      screen.queryByRole("button", { name: PRODUCT_DEMO_ROW })
     ).not.toBeInTheDocument();
   });
 
