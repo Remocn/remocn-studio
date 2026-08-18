@@ -16,6 +16,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { InputGroupButton } from "@/components/ui/input-group";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { ProviderAccounts } from "@/hooks/use-provider-accounts";
 import { modelLabelOf, PROVIDER_MODELS } from "@/lib/studio/models";
 import {
@@ -79,6 +84,9 @@ export function ModelMenu({
   );
 }
 
+export const LOCKED_REASON =
+  "This session already speaks another provider — start a new session to switch.";
+
 function ProviderGroup({
   accounts,
   candidate,
@@ -101,21 +109,31 @@ function ProviderGroup({
     [candidate, onPick]
   );
 
+  const reason = locked ? LOCKED_REASON : (accounts[candidate]?.detail ?? null);
+
+  const trigger = (
+    <DropdownMenuSubTrigger
+      className="data-disabled:opacity-50"
+      disabled={disabled}
+    >
+      <ProviderIcon className="text-muted-foreground" provider={candidate} />
+      <span className="flex-1 whitespace-nowrap">{info.name}</span>
+      <StatusMark accounts={accounts} candidate={candidate} />
+    </DropdownMenuSubTrigger>
+  );
+
   return (
     <DropdownMenuSub>
-      <DropdownMenuSubTrigger
-        className="data-disabled:opacity-50"
-        disabled={disabled}
-        title={
-          locked
-            ? "This session already speaks another provider — start a new session to switch."
-            : (accounts[candidate]?.detail ?? undefined)
-        }
-      >
-        <ProviderIcon className="text-muted-foreground" provider={candidate} />
-        <span className="flex-1 whitespace-nowrap">{info.name}</span>
-        <StatusMark accounts={accounts} candidate={candidate} />
-      </DropdownMenuSubTrigger>
+      {reason === null ? (
+        trigger
+      ) : (
+        <Tooltip>
+          <TooltipTrigger render={trigger} />
+          <TooltipContent className="max-w-64" side="right">
+            {reason}
+          </TooltipContent>
+        </Tooltip>
+      )}
       <DropdownMenuSubContent>
         <DropdownMenuRadioGroup onValueChange={pick} value={value}>
           {PROVIDER_MODELS[candidate].map((choice) => (

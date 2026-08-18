@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ModelMenu } from "@/components/studio/model-menu";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ProviderAccounts } from "@/hooks/use-provider-accounts";
 
 const MODEL_CHIP = /Model:/;
@@ -23,13 +24,15 @@ function renderMenu(shape: {
   const onPick = vi.fn();
 
   render(
-    <ModelMenu
-      accounts={shape.accounts ?? {}}
-      canPickProvider={shape.canPickProvider ?? true}
-      models={{ claude: "claude-opus-5", codex: "", copilot: "", grok: "" }}
-      onPick={onPick}
-      provider={shape.provider ?? "claude"}
-    />
+    <TooltipProvider>
+      <ModelMenu
+        accounts={shape.accounts ?? {}}
+        canPickProvider={shape.canPickProvider ?? true}
+        models={{ claude: "claude-opus-5", codex: "", copilot: "", grok: "" }}
+        onPick={onPick}
+        provider={shape.provider ?? "claude"}
+      />
+    </TooltipProvider>
   );
 
   fireEvent.click(screen.getByRole("button", { name: MODEL_CHIP }));
@@ -63,19 +66,22 @@ describe("ModelMenu", () => {
     ).toHaveAttribute("aria-disabled", "true");
   });
 
-  it("locks the other providers once the session has spoken, and says why", () => {
+  it("locks the other providers once the session has spoken, and says why", async () => {
     renderMenu({ canPickProvider: false, provider: "claude" });
 
     const codex = screen.getByText("Codex").closest("[role='menuitem']");
     expect(codex).toHaveAttribute("aria-disabled", "true");
-    expect(codex).toHaveAttribute(
-      "title",
-      "This session already speaks another provider — start a new session to switch."
-    );
     expect(
       screen
         .getByText("Claude", { selector: "span" })
         .closest("[role='menuitem']")
     ).not.toHaveAttribute("aria-disabled", "true");
+
+    fireEvent.pointerEnter(codex as Element);
+    fireEvent.mouseEnter(codex as Element);
+    fireEvent.pointerMove(codex as Element);
+    await screen.findByText(
+      "This session already speaks another provider — start a new session to switch."
+    );
   });
 });
