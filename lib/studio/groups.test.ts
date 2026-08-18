@@ -20,6 +20,7 @@ const session = (id: string, projectId: string): HistorySession => ({
   id,
   mode: "auto",
   projectId,
+  provider: "claude" as const,
   sdkSessionId: null,
   title: id,
   updatedAt: 0,
@@ -57,6 +58,7 @@ const create = (
   name: "TaskCreate",
   result: `Task #${id} created successfully: ${subject}`,
   state: "done",
+  verb: null,
 });
 
 const update = (id: string, status: string): TranscriptEntry => ({
@@ -66,6 +68,7 @@ const update = (id: string, status: string): TranscriptEntry => ({
   name: "TaskUpdate",
   result: `Updated task #${id} status`,
   state: "done",
+  verb: null,
 });
 
 const planning = (startedAt = NOW - MINUTE): TurnState => ({

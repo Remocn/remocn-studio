@@ -297,6 +297,44 @@ code, because v4 rewrote Schema and v3 knowledge is wrong rather than stale.
   hook drops late results with a closure flag on purpose; a fiber interrupt there
   hangs the boot screen in `next dev` only, because of StrictMode's double mount.
 
+### The agent seam
+
+The turn machinery is provider-neutral (REM-251, phase 1): `handlers.ts` talks to
+an **`AgentAdapter`** — `{ info, account, turn }` in `sidecar/agent/adapter.ts` —
+and `sidecar/claude/` is the first adapter. What stays neutral lives in
+`sidecar/agent/` (the permission gate's Effect skeleton, the mode switch, the
+per-provider account cache, the registry); what speaks SDK stays in
+`sidecar/claude/` (the `CanUseTool` guard, the in-process MCP servers, the
+event translation, the failure classifier, the auth probe).
+
+- **`shared/providers.ts` is the provider contract**: `AGENT_PROVIDERS`, the
+  `AgentCapabilities` shape (`context`, `effort`, `modes`, `planTool`, `resume`,
+  `thinking`) and the static `PROVIDER_INFO` table. The table is static on
+  purpose — the webview and the sidecar ship in one bundle, so it cannot drift
+  from the adapters the registry carries, and the composer's chips need no
+  loading state. **Capabilities, not `if provider`**: the Mode and Effort chips
+  render only when the provider claims them; context meter, thinking marker and
+  plan checklist already degrade to nothing when their events never arrive.
+- **The provider is a property of the session** — a column (migration 5, default
+  `claude`), a field on `HistorySession` and on `agent.prompt`'s params (decoding
+  default `claude`, so a session row or a stored turn written before the field
+  existed still decodes). The webview
+  reads it back into `TurnState` exactly as it does `sdkSessionId`, and only the
+  session's own provider failing its login check locks the composer
+  (`isBlocked(checks, provider)` — the account row's id *is* the provider id).
+- **The tool dictionary crosses the wire as a verb.** A `tool_use` event and its
+  stored activity entry carry `verb` — the adapter's translation of its own tool
+  name into the neutral vocabulary (`read`/`edit`/`create`/`run`/`search`/`find`/
+  `web`/`plan`/`task`/`subagent`) that `activity-icon.tsx` keys on, with the old
+  name map behind it for rows stored before verbs existed and names no adapter
+  translates. Detail rendering (`lib/studio/activity.ts`) and the task-checklist
+  parser still read Claude's names; they move behind the seam when adapter #2
+  needs them to.
+- Still Claude-shaped, deliberately, until the next phases: the model picker,
+  the `remocn-pipeline`/`remocn-library` servers (in-process SDK MCP → stdio MCP
+  is phase 2), knowledge delivery (plugins are Claude Code's mechanism), and a
+  handful of user-facing strings that say "Claude".
+
 ### The sidecar
 
 One bun process, owned by the Rust core, supervised in `src-tauri/src/sidecar/`.
@@ -327,7 +365,7 @@ event.
     it separately. If the envelope rejected unknown methods, a bad method would
     be dropped as unparseable and the caller would wait forever instead of
     getting `there is no method called …`.
-- **A turn carries more than a prompt.** `claude.prompt` takes the reasoning
+- **A turn carries more than a prompt.** `agent.prompt` takes the reasoning
   `effort` and image `attachments`, and answers with the context-window reading
   next to the session id. Two decisions there are deliberate: attachments travel
   as **paths**, and `sidecar/claude/content.ts` reads and base64-encodes them, so
@@ -344,7 +382,7 @@ event.
   everything lands inside `params.cwd`. Bash always asks; so does a tool with no
   path rule. What the *mode* changes is how much traffic ever reaches it, because
   the SDK routes a call to `canUseTool` only when the mode would otherwise prompt.
-  - **The mode belongs to the session** and travels on `claude.prompt` as
+  - **The mode belongs to the session** and travels on `agent.prompt` as
     `permissionMode`. Three values, spelled the way the SDK spells them so there is
     no translation table: `auto` (the default), `acceptEdits`, `plan`.
     `bypassPermissions` and `dontAsk` are deliberately not offered — a mode that
@@ -368,9 +406,9 @@ event.
     starts building — then persists it and re-emits the `history` chunk, which the
     webview already folds into the session row. Denying is "keep planning" and says
     so to the agent, rather than the standard refusal.
-  - **The ask is a stream chunk of the turn** (`ClaudeEvent` `permission`), not a
+  - **The ask is a stream chunk of the turn** (`AgentEvent` `permission`), not a
     notification, so it belongs to the turn that raised it and dies with it. The
-    answer is a *separate* `claude.permission` request, which works because
+    answer is a *separate* `agent.permission` request, which works because
     `dispatch` forks each request into a `FiberMap` rather than serving them in
     order.
   - The card renders **above the composer, not in the transcript** — an approval
@@ -696,7 +734,7 @@ Send during a running turn queues the message instead of dropping it, and the
 queue is a field on `TurnState` like everything else about a turn — so it belongs
 to the session, dispatches while you are looking somewhere else, and is gone on
 relaunch. The sidecar and `shared/ipc.ts` are untouched: a queued message becomes
-an ordinary `claude.prompt` when its turn comes.
+an ordinary `agent.prompt` when its turn comes.
 
 - **This started as a silent data loss.** The textarea was never disabled on
   `isRunning`, so you could type — and Enter then cleared the field and every
@@ -711,9 +749,10 @@ an ordinary `claude.prompt` when its turn comes.
   SDK's already-open input generator is the v2 branch, and a different contract.
 - **A queued message is captured whole, at the moment it was written** — text,
   attachments, elements, assets, media, *and* the model, effort, frame and
-  project the composer was set to. Only the **mode** is re-read at dispatch, from
-  the turn that just ended, because approving a plan mid-turn changes the mode
-  the session is in and the follow-up belongs in that one. Capturing the frame at
+  project the composer was set to. Only the **mode** and the **provider** are re-read at
+  dispatch, from the turn that just ended — the mode because approving a plan
+  mid-turn changes the mode the session is in and the follow-up belongs in that
+  one, the provider because it is a property of the session, not of the message. Capturing the frame at
   enqueue is the point of doing it this way round: "make this bit slower" means
   the frame you were looking at when you wrote it, not the one on screen three
   minutes later.
@@ -1500,7 +1539,7 @@ Remotion component (REM-8). It is a drawer at the foot of the left pane, and its
 - **The slug is the folder and never moves.** Renaming rewrites `name` in the manifest, so a
   reference already in a composer, and a copy already in a project, cannot be orphaned by a rename.
   A second asset of the same name gets `-2`.
-- **Insertion is a copy, made before the turn starts.** `claude.prompt` carries the picked assets
+- **Insertion is a copy, made before the turn starts.** `agent.prompt` carries the picked assets
   positionally (`assets[i]` ↔ `[Asset #{i+1}]`, the same invariant `[Image #N]` has) and
   `placeAssets` copies them in: media to `public/library/`, a component to `src/library/<slug>/`,
   resolved against `remotionRootOf(cwd)` rather than the opened folder. Three things fall out of
@@ -1793,11 +1832,17 @@ preview/              what the *project's* webpack compiles instead of Studio's 
                       entry.tsx, the two-way bridge, hot reload, grab, source paths,
                       the element picker and the snapshot marquee
 shared/               ipc.ts: the typed contract, and the media types it carries;
-                      transcript.ts: the one fold; references.ts: the one reader of
-                      `[Image #N]`/`[Element #N]`/`[Asset #N]`; library.ts: the
-                      asset manifest format
-sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history;
+                      providers.ts: the provider registry, capabilities and the
+                      neutral tool verbs; transcript.ts: the one fold;
+                      references.ts: the one reader of `[Image #N]`/`[Element #N]`/
+                      `[Asset #N]`; library.ts: the asset manifest format
+sidecar/              bun: frame loop, method handlers, SQLite history;
                       files.ts is the project walk and the folder read behind `@`
+sidecar/agent/        the provider-neutral seam: AgentAdapter, the permission
+                      gate's skeleton, the mode switch, account cache, registry
+sidecar/claude/       the Claude Code adapter: Agent SDK session, event and
+                      failure translation, the CanUseTool guard, auth probe,
+                      tool-name→verb vocabulary
 sidecar/history/      driver seam, migrations, project and session stores, recorder
 sidecar/library/      the asset library: the folder store, the copy into a project,
                       and the remocn-library tools the agent saves through

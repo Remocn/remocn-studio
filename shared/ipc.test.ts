@@ -70,7 +70,7 @@ describe("decodeMethod", () => {
 
 describe("the mode on the wire", () => {
   it("carries the mode a turn should run in", () => {
-    const params = codecsFor("claude.prompt").params(TURN);
+    const params = codecsFor("agent.prompt").params(TURN);
 
     expect(Exit.isSuccess(params) && params.value.mode).toBe("plan");
   });
@@ -78,7 +78,7 @@ describe("the mode on the wire", () => {
   it("refuses a mode the sidecar does not know", () => {
     expect(
       Exit.isFailure(
-        codecsFor("claude.prompt").params({
+        codecsFor("agent.prompt").params({
           ...TURN,
           mode: "bypassPermissions",
         })
@@ -87,7 +87,7 @@ describe("the mode on the wire", () => {
   });
 
   it("lets a permission answer say which mode to continue in", () => {
-    const params = codecsFor("claude.permission").params({
+    const params = codecsFor("agent.permission").params({
       decision: "allow",
       id: "p1",
       mode: "acceptEdits",
@@ -97,7 +97,7 @@ describe("the mode on the wire", () => {
   });
 
   it("keeps the mode out of every other answer", () => {
-    const params = codecsFor("claude.permission").params({
+    const params = codecsFor("agent.permission").params({
       decision: "deny",
       id: "p1",
       mode: null,
@@ -127,7 +127,7 @@ describe("the element selections on the wire", () => {
   };
 
   it("carries what the preview resolved", () => {
-    const params = codecsFor("claude.prompt").params({
+    const params = codecsFor("agent.prompt").params({
       ...TURN,
       elements: [SELECTION],
     });
@@ -138,7 +138,7 @@ describe("the element selections on the wire", () => {
   });
 
   it("carries a selection whose source could not be resolved", () => {
-    const params = codecsFor("claude.prompt").params({
+    const params = codecsFor("agent.prompt").params({
       ...TURN,
       elements: [
         { ...SELECTION, column: null, file: null, line: null, stack: [] },
@@ -149,7 +149,7 @@ describe("the element selections on the wire", () => {
   });
 
   it("reads a turn that predates the feature as having none", () => {
-    const params = codecsFor("claude.prompt").params(TURN);
+    const params = codecsFor("agent.prompt").params(TURN);
 
     expect(Exit.isSuccess(params) && params.value.elements).toEqual([]);
   });

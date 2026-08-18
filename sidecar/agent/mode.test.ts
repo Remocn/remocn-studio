@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import type { SessionMode } from "@/shared/ipc";
-import { makeModeSwitch } from "@/sidecar/claude/mode";
+import { makeModeSwitch } from "@/sidecar/agent/mode";
 
 describe("makeModeSwitch", () => {
   it("passes the mode to the session it was bound to", async () => {

@@ -12,6 +12,7 @@ import {
 } from "@/shared/ipc";
 import type { PromptAsset } from "@/shared/library";
 import type { PipelineStage } from "@/shared/pipeline";
+import { type AgentProvider, DEFAULT_AGENT_PROVIDER } from "@/shared/providers";
 import type { ReferenceCounts } from "@/shared/references";
 
 export type SessionStatus = "failed" | "idle" | "running" | "waiting";
@@ -45,6 +46,7 @@ export interface TurnState {
   isRunning: boolean;
   mode: SessionMode;
   permissions: readonly PendingPermission[];
+  provider: AgentProvider;
   queue: readonly QueuedMessage[];
   sdkSessionId: string | null;
   stages: readonly PipelineStage[];
@@ -60,6 +62,7 @@ export const IDLE_TURN: TurnState = {
   isRunning: false,
   mode: DEFAULT_SESSION_MODE,
   permissions: [],
+  provider: DEFAULT_AGENT_PROVIDER,
   queue: [],
   sdkSessionId: null,
   stages: [],

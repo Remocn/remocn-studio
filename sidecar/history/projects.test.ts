@@ -115,6 +115,7 @@ describe("ProjectStore", () => {
         id: "s-1",
         mode: "auto",
         projectId: first.id,
+        provider: "claude" as const,
         title: "A promo",
       })
     );
@@ -138,6 +139,7 @@ describe("ProjectStore", () => {
         id: "s-1",
         mode: "auto",
         projectId: project.id,
+        provider: "claude" as const,
         title: "A promo",
       })
     );

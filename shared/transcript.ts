@@ -1,5 +1,5 @@
 import type {
-  ClaudeEvent,
+  AgentEvent,
   PromptAttachment,
   PromptElement,
   PromptMedia,
@@ -33,7 +33,7 @@ export function appendUser(
 
 export function fold(
   entries: readonly TranscriptEntry[],
-  event: ClaudeEvent
+  event: AgentEvent
 ): readonly TranscriptEntry[] {
   if (event.type === "text") {
     return appendText(entries, event.text);
@@ -49,6 +49,7 @@ export function fold(
         name: event.name,
         result: null,
         state: "running",
+        verb: event.verb,
       },
     ];
   }

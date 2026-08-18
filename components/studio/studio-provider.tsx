@@ -107,7 +107,8 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
 
   const environment = useEnvironment(
     opened === null || opened.missing ? null : opened.id,
-    previewProjectId === opened?.id ? tools.preview.pick : null
+    previewProjectId === opened?.id ? tools.preview.pick : null,
+    turn.provider
   );
 
   const drops = useFileDrops({

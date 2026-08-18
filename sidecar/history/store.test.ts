@@ -38,7 +38,14 @@ async function studio() {
     title: string,
     id = crypto.randomUUID(),
     mode: SessionMode = MODE
-  ) => history.open({ id, mode, projectId: project.id, title });
+  ) =>
+    history.open({
+      id,
+      mode,
+      projectId: project.id,
+      provider: "claude",
+      title,
+    });
 
   return { history, open, project };
 }
@@ -91,6 +98,38 @@ describe("migrate", () => {
     const [session] = await run(make(driver).sessions);
     expect(session.mode).toBe("auto");
     expect(session.title).toBe("A promo");
+  });
+
+  it("leaves a session that predates the provider column on Claude", async () => {
+    const driver = nodeDriver();
+    prepare(driver);
+
+    driver.exec("PRAGMA foreign_keys = OFF");
+    for (const step of MIGRATIONS.slice(0, 4).flat()) {
+      if (typeof step === "string") {
+        driver.exec(step);
+      } else {
+        step(driver);
+      }
+    }
+    driver.exec("PRAGMA user_version = 4");
+    driver.exec("PRAGMA foreign_keys = ON");
+
+    driver.run(
+      `INSERT INTO project (id, path, name, created_at, updated_at)
+       VALUES ('p', ?, 'promo', 0, 0)`,
+      [FOLDER]
+    );
+    driver.run(
+      `INSERT INTO session (id, project_id, sdk_session_id, title, mode, created_at, updated_at)
+       VALUES ('s', 'p', NULL, 'A promo', 'plan', 0, 0)`
+    );
+
+    migrate(driver);
+
+    const [session] = await run(make(driver).sessions);
+    expect(session.provider).toBe("claude");
+    expect(session.mode).toBe("plan");
   });
 });
 
@@ -199,6 +238,7 @@ describe("HistoryStore", () => {
           name: "Write",
           result: null,
           state: "running",
+          verb: null,
         },
         ordinal: 1,
         sessionId: session.id,
@@ -222,6 +262,7 @@ describe("HistoryStore", () => {
         name: "Write",
         result: null,
         state: "running",
+        verb: null,
       },
     ]);
   });
@@ -316,6 +357,7 @@ describe("HistoryStore", () => {
         id: "s-1",
         mode: MODE,
         projectId: "gone",
+        provider: "claude",
         title: "Orphan",
       })
     );

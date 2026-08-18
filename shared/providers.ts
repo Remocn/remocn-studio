@@ -1,0 +1,77 @@
+import { Schema } from "effect";
+
+export const AGENT_PROVIDERS = ["claude"] as const;
+
+export const AgentProvider = Schema.Literals(AGENT_PROVIDERS);
+
+export type AgentProvider = (typeof AgentProvider)["Type"];
+
+export const DEFAULT_AGENT_PROVIDER: AgentProvider = "claude";
+
+export function isAgentProvider(value: unknown): value is AgentProvider {
+  return (
+    typeof value === "string" &&
+    (AGENT_PROVIDERS as readonly string[]).includes(value)
+  );
+}
+
+export const AgentCapabilities = Schema.Struct({
+  context: Schema.Boolean,
+  effort: Schema.Boolean,
+  modes: Schema.Boolean,
+  planTool: Schema.Boolean,
+  resume: Schema.Boolean,
+  thinking: Schema.Boolean,
+});
+
+export type AgentCapabilities = (typeof AgentCapabilities)["Type"];
+
+export const ProviderInfo = Schema.Struct({
+  capabilities: AgentCapabilities,
+  experimental: Schema.Boolean,
+  id: AgentProvider,
+  name: Schema.String,
+});
+
+export type ProviderInfo = (typeof ProviderInfo)["Type"];
+
+// The webview and the sidecar ship in one bundle, so a static table cannot
+// drift from the adapters the sidecar actually carries — and the chips never
+// need a loading state. A capability discovered at run time would need a
+// method instead; none exists yet.
+export const PROVIDER_INFO: Record<AgentProvider, ProviderInfo> = {
+  claude: {
+    capabilities: {
+      context: true,
+      effort: true,
+      modes: true,
+      planTool: true,
+      resume: true,
+      thinking: true,
+    },
+    experimental: false,
+    id: "claude",
+    name: "Claude Code",
+  },
+};
+
+export function capabilitiesOf(provider: AgentProvider): AgentCapabilities {
+  return PROVIDER_INFO[provider].capabilities;
+}
+
+export const TOOL_VERBS = [
+  "create",
+  "edit",
+  "find",
+  "plan",
+  "read",
+  "run",
+  "search",
+  "subagent",
+  "task",
+  "web",
+] as const;
+
+export const ToolVerb = Schema.Literals(TOOL_VERBS);
+
+export type ToolVerb = (typeof ToolVerb)["Type"];

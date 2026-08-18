@@ -18,6 +18,25 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ActivityState } from "@/shared/ipc";
+import type { ToolVerb } from "@/shared/providers";
+
+// The verb is the adapter's neutral vocabulary; the name map stays behind it
+// for rows stored before verbs existed, and for names no adapter translates.
+const VERB_ICONS: ReadonlyMap<ToolVerb, LucideIcon> = new Map<
+  ToolVerb,
+  LucideIcon
+>([
+  ["create", FilePlusIcon],
+  ["edit", PencilIcon],
+  ["find", FolderSearchIcon],
+  ["plan", ClipboardCheckIcon],
+  ["read", EyeIcon],
+  ["run", TerminalIcon],
+  ["search", SearchIcon],
+  ["subagent", BotIcon],
+  ["task", ListTodoIcon],
+  ["web", GlobeIcon],
+]);
 
 const ICONS: ReadonlyMap<string, LucideIcon> = new Map<string, LucideIcon>([
   ["Bash", TerminalIcon],
@@ -49,11 +68,16 @@ const STATES: Record<ActivityState, string> = {
 export function ActivityIcon({
   name,
   state,
+  verb,
 }: {
   name: string;
   state: ActivityState;
+  verb: ToolVerb | null;
 }) {
-  const Icon = ICONS.get(name) ?? WrenchIcon;
+  const Icon =
+    (verb === null ? undefined : VERB_ICONS.get(verb)) ??
+    ICONS.get(name) ??
+    WrenchIcon;
 
   return (
     <Icon

@@ -12,6 +12,7 @@ function read(id: string, file: string): ActivityEntry {
     name: "Read",
     result: "…",
     state: "done",
+    verb: null,
   };
 }
 

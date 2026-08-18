@@ -2,9 +2,41 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ActivityIcon } from "@/components/studio/activity-icon";
 import type { ActivityState } from "@/shared/ipc";
+import type { ToolVerb } from "@/shared/providers";
+import { verbOf } from "@/sidecar/claude/vocabulary";
+
+const CLAUDE_TOOLS = [
+  "Bash",
+  "Edit",
+  "ExitPlanMode",
+  "Glob",
+  "Grep",
+  "MultiEdit",
+  "NotebookEdit",
+  "NotebookRead",
+  "Read",
+  "Task",
+  "TaskCreate",
+  "TaskGet",
+  "TaskList",
+  "TaskUpdate",
+  "TodoWrite",
+  "WebFetch",
+  "WebSearch",
+  "Write",
+];
 
 function iconOf(name: string, state: ActivityState = "done"): Element | null {
-  const { container } = render(<ActivityIcon name={name} state={state} />);
+  const { container } = render(
+    <ActivityIcon name={name} state={state} verb={null} />
+  );
+  return container.querySelector("svg");
+}
+
+function iconOfVerb(verb: ToolVerb, name = "SomeProviderTool"): Element | null {
+  const { container } = render(
+    <ActivityIcon name={name} state="done" verb={verb} />
+  );
   return container.querySelector("svg");
 }
 
@@ -16,6 +48,29 @@ describe("ActivityIcon", () => {
     expect(iconOf("Edit")).toHaveClass("lucide-pencil");
     expect(iconOf("Grep")).toHaveClass("lucide-search");
     expect(iconOf("Task")).toHaveClass("lucide-bot");
+  });
+
+  it("draws the same silhouette through the verb as the name map does", () => {
+    for (const name of CLAUDE_TOOLS) {
+      const verb = verbOf(name);
+      if (verb !== null) {
+        expect(iconOfVerb(verb)?.getAttribute("class"), name).toBe(
+          iconOf(name)?.getAttribute("class")
+        );
+      }
+    }
+  });
+
+  it("keys on the adapter's verb first, whatever the tool is called", () => {
+    expect(iconOfVerb("run")).toHaveClass("lucide-terminal");
+    expect(iconOfVerb("edit")).toHaveClass("lucide-pencil");
+    expect(iconOfVerb("create")).toHaveClass("lucide-file-plus");
+    expect(iconOfVerb("plan")).toHaveClass("lucide-clipboard-check");
+    expect(iconOfVerb("subagent")).toHaveClass("lucide-bot");
+  });
+
+  it("reads the name when there is no verb, so stored rows keep their icons", () => {
+    expect(iconOf("NotebookEdit")).toHaveClass("lucide-notebook-pen");
   });
 
   it("falls back to a tool rather than to nothing", () => {

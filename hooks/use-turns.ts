@@ -3,7 +3,7 @@
 import { Effect, Fiber } from "effect";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { causeMessage } from "@/lib/error-message";
-import { answerPermission, promptClaude } from "@/lib/studio/claude";
+import { answerPermission, promptAgent } from "@/lib/studio/agent";
 import { loadTranscript } from "@/lib/studio/history";
 import type { PermissionAction } from "@/lib/studio/permission";
 import { loadPipeline } from "@/lib/studio/pipeline";
@@ -147,6 +147,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
         ...turn,
         isLoading: true,
         mode: session.mode,
+        provider: session.provider,
         sdkSessionId: session.sdkSessionId,
       }));
 
@@ -229,7 +230,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
         unread: false,
       }));
 
-      const request = promptClaude(
+      const request = promptAgent(
         {
           assets: input.assets,
           attachments: input.attachments,
@@ -242,6 +243,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
           playing: input.playing,
           projectId: input.projectId,
           prompt: trimmed,
+          provider: started.provider,
           sessionId: started.sdkSessionId,
         },
         (event) => {

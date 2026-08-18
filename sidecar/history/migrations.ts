@@ -54,6 +54,7 @@ export const MIGRATIONS: readonly (readonly Migration[])[] = [
       PRIMARY KEY (session_id, stage)
     )`,
   ],
+  ["ALTER TABLE session ADD COLUMN provider TEXT NOT NULL DEFAULT 'claude'"],
 ];
 
 export function prepare(driver: SqlDriver): void {

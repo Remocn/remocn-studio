@@ -107,7 +107,7 @@ function mockShell(
         if (request.method === "preview.start") {
           return new Promise(() => undefined);
         }
-        if (request.method === "claude.prompt") {
+        if (request.method === "agent.prompt") {
           sent.push(request.params as PromptParams);
           return { context: null, failure: null, sessionId: "sdk-1" };
         }
@@ -228,6 +228,7 @@ async function renderComposer(
           mode={mode}
           onModeChange={onModeChange}
           onStop={vi.fn()}
+          provider="claude"
         />
       </TooltipProvider>
     </StudioProvider>

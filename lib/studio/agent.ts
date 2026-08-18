@@ -6,23 +6,23 @@ import {
   type SidecarError,
 } from "@/lib/studio/sidecar";
 import type {
-  ClaudeEvent,
+  AgentEvent,
   PermissionAnswer,
   PermissionParams,
   PromptParams,
   PromptResult,
 } from "@/shared/ipc";
 
-export function promptClaude(
+export function promptAgent(
   params: PromptParams,
-  onEvent: (event: ClaudeEvent) => void
+  onEvent: (event: AgentEvent) => void
 ): Effect.Effect<PromptResult, SidecarError> {
   return Effect.gen(function* () {
     const id = yield* newRequestId;
 
     return yield* requestSidecar({
       id,
-      method: "claude.prompt",
+      method: "agent.prompt",
       onStream: onEvent,
       params,
     }).pipe(Effect.onInterrupt(() => Effect.ignore(cancelSidecarRequest(id))));
@@ -35,6 +35,6 @@ export function answerPermission(
   return Effect.gen(function* () {
     const id = yield* newRequestId;
 
-    return yield* requestSidecar({ id, method: "claude.permission", params });
+    return yield* requestSidecar({ id, method: "agent.permission", params });
   });
 }

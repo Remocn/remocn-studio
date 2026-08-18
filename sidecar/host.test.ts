@@ -136,7 +136,7 @@ describe("runHost", () => {
     const host = harness();
 
     host.push(
-      request("perm-1", "claude.permission", {
+      request("perm-1", "agent.permission", {
         decision: "allow",
         id: "gone",
         mode: null,

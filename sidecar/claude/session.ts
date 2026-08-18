@@ -9,11 +9,11 @@ import {
 import { Data, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { ContextUsage, PromptParams } from "@/shared/ipc";
+import type { ApplyMode } from "../agent/mode";
 import { LIBRARY_SERVER, type libraryServer } from "../library/tools";
 import { contentOf } from "./content";
 import { conventionsFor } from "./conventions";
 import { pluginsFor } from "./knowledge";
-import type { ApplyMode } from "./mode";
 import { PIPELINE_SERVER, type pipelineServer } from "./pipeline-tools";
 
 export class ClaudeError extends Data.TaggedError("ClaudeError")<{

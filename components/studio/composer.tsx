@@ -43,6 +43,7 @@ import {
   SESSION_MODES,
   type SessionMode,
 } from "@/shared/ipc";
+import { type AgentProvider, capabilitiesOf } from "@/shared/providers";
 import { AssetRow } from "./asset-row";
 import { ContextMeter } from "./context-meter";
 import { MediaRow } from "./media-row";
@@ -78,6 +79,7 @@ function ComposerBlock({
   mode,
   onModeChange,
   onStop,
+  provider,
 }: {
   context: ContextUsage | null;
   cwd: string | null;
@@ -87,6 +89,7 @@ function ComposerBlock({
   mode: SessionMode;
   onModeChange: (value: string) => void;
   onStop: () => void;
+  provider: AgentProvider;
 }) {
   const {
     claudeEffort,
@@ -108,6 +111,7 @@ function ComposerBlock({
   const onSaveScene = useCallback(() => write(SAVE_SCENE_PROMPT), [write]);
   const isLocked = disabled || isWaiting;
   const cannotSend = isLocked || sidecar.phase === "down";
+  const capabilities = capabilitiesOf(provider);
 
   return (
     <div className="relative z-10 shrink-0 px-4 pb-4">
@@ -227,14 +231,16 @@ function ComposerBlock({
             <div className="ml-auto flex items-center gap-1">
               {context === null ? null : <ContextMeter usage={context} />}
 
-              <MenuChip
-                icon={ShieldIcon}
-                items={MODES}
-                label={labelOf(MODES, mode)}
-                onChange={onModeChange}
-                title="Mode"
-                value={mode}
-              />
+              {capabilities.modes ? (
+                <MenuChip
+                  icon={ShieldIcon}
+                  items={MODES}
+                  label={labelOf(MODES, mode)}
+                  onChange={onModeChange}
+                  title="Mode"
+                  value={mode}
+                />
+              ) : null}
 
               <MenuChip
                 icon={SparklesIcon}
@@ -245,14 +251,16 @@ function ComposerBlock({
                 value={claudeModel}
               />
 
-              <MenuChip
-                icon={SettingsIcon}
-                items={EFFORTS}
-                label={labelOf(EFFORTS, claudeEffort)}
-                onChange={onEffortChange}
-                title="Effort"
-                value={claudeEffort}
-              />
+              {capabilities.effort ? (
+                <MenuChip
+                  icon={SettingsIcon}
+                  items={EFFORTS}
+                  label={labelOf(EFFORTS, claudeEffort)}
+                  onChange={onEffortChange}
+                  title="Effort"
+                  value={claudeEffort}
+                />
+              ) : null}
 
               {isRunning ? (
                 <>

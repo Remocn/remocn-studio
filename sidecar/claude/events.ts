@@ -1,15 +1,16 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import {
-  type ClaudeEvent,
+  type AgentEvent,
   isSessionMode,
   SESSION_MODE_LABELS,
   type SessionMode,
 } from "@/shared/ipc";
+import { verbOf } from "./vocabulary";
 
 export function eventsOf(
   message: SDKMessage,
   requested: SessionMode
-): ClaudeEvent[] {
+): AgentEvent[] {
   if (message.type === "system") {
     if (message.subtype === "init") {
       return sessionEvents(
@@ -50,8 +51,8 @@ function sessionEvents(
   opened: { model: string; sessionId: string },
   effective: string,
   requested: SessionMode
-): ClaudeEvent[] {
-  const session: ClaudeEvent = {
+): AgentEvent[] {
+  const session: AgentEvent = {
     ...opened,
     mode: isSessionMode(effective) ? effective : null,
     type: "session",
@@ -74,7 +75,7 @@ function labelOf(mode: string): string {
   return isSessionMode(mode) ? SESSION_MODE_LABELS[mode] : mode;
 }
 
-function deltaEvents(event: { delta?: unknown; type: string }): ClaudeEvent[] {
+function deltaEvents(event: { delta?: unknown; type: string }): AgentEvent[] {
   if (event.type !== "content_block_delta") {
     return [];
   }
@@ -92,7 +93,7 @@ function deltaEvents(event: { delta?: unknown; type: string }): ClaudeEvent[] {
   return [];
 }
 
-function toolUses(content: unknown): ClaudeEvent[] {
+function toolUses(content: unknown): AgentEvent[] {
   return blocks(content).flatMap((block) =>
     block.type === "tool_use" &&
     typeof block.id === "string" &&
@@ -103,13 +104,14 @@ function toolUses(content: unknown): ClaudeEvent[] {
             input: block.input,
             name: block.name,
             type: "tool_use",
+            verb: verbOf(block.name),
           },
         ]
       : []
   );
 }
 
-function toolResults(content: unknown): ClaudeEvent[] {
+function toolResults(content: unknown): AgentEvent[] {
   return blocks(content).flatMap((block) =>
     block.type === "tool_result" && typeof block.tool_use_id === "string"
       ? [

@@ -12,6 +12,7 @@ import {
   type PipelineStatus,
   startedStages,
 } from "@/shared/pipeline";
+import type { AgentProvider } from "@/shared/providers";
 import type { SqlDriver, SqlRow } from "./driver";
 
 export class HistoryError extends Data.TaggedError("HistoryError")<{
@@ -22,6 +23,7 @@ export interface OpenSession {
   readonly id: string;
   readonly mode: SessionMode;
   readonly projectId: string;
+  readonly provider: AgentProvider;
   readonly title: string;
 }
 
@@ -70,7 +72,7 @@ export const HistoryStore = Context.Service<HistoryStore>(
 );
 
 const COLUMNS =
-  "id, project_id, sdk_session_id, title, mode, created_at, updated_at" as const;
+  "id, project_id, sdk_session_id, title, mode, provider, created_at, updated_at" as const;
 
 const decodeSession = Schema.decodeUnknownEffect(HistorySession);
 const decodeEntry = Schema.decodeUnknownEffect(TranscriptEntry);
@@ -149,12 +151,21 @@ export function make(driver: SqlDriver): HistoryStore {
 
         yield* attempt(() =>
           driver.run(
-            `INSERT INTO session (${COLUMNS}) VALUES (?, ?, NULL, ?, ?, ?, ?)
+            `INSERT INTO session (${COLUMNS}) VALUES (?, ?, NULL, ?, ?, ?, ?, ?)
              ON CONFLICT (id) DO UPDATE SET
                project_id = excluded.project_id,
                mode = excluded.mode,
+               provider = excluded.provider,
                updated_at = excluded.updated_at`,
-            [input.id, input.projectId, input.title, input.mode, now, now]
+            [
+              input.id,
+              input.projectId,
+              input.title,
+              input.mode,
+              input.provider,
+              now,
+              now,
+            ]
           )
         );
 
@@ -260,6 +271,7 @@ function sessionOf(row: SqlRow): Effect.Effect<HistorySession, HistoryError> {
     id: row.id,
     mode: row.mode,
     projectId: row.project_id,
+    provider: row.provider,
     sdkSessionId: row.sdk_session_id,
     title: row.title,
     updatedAt: row.updated_at,

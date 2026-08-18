@@ -23,6 +23,7 @@ import {
 } from "@/shared/ipc";
 import type { PromptAsset } from "@/shared/library";
 import type { PipelineStage } from "@/shared/pipeline";
+import type { AgentProvider } from "@/shared/providers";
 
 export interface OpenTurnSettings {
   changeMode: (historyId: string, mode: SessionMode) => void;
@@ -49,6 +50,7 @@ export interface OpenTurn {
   onModeChange: (value: string) => void;
   openId: string;
   permission: PendingPermission | null;
+  provider: AgentProvider;
   queue: readonly QueuedMessage[];
   removeQueued: (id: string) => void;
   send: (
@@ -153,6 +155,7 @@ export function useOpenTurn({
       onModeChange,
       openId,
       permission: turn.permissions[0] ?? null,
+      provider: turn.provider,
       queue: turn.queue,
       removeQueued,
       send,

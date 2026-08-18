@@ -296,6 +296,7 @@ function Conversation({
             mode={turn.mode}
             onModeChange={turn.onModeChange}
             onStop={turn.stop}
+            provider={turn.provider}
           />
         </>
       )}

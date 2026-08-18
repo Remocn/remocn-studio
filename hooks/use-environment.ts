@@ -12,6 +12,7 @@ import {
 } from "@/lib/studio/environment";
 import type { PreviewComposition } from "@/lib/studio/preview";
 import type { EnvironmentCheck } from "@/shared/ipc";
+import type { AgentProvider } from "@/shared/providers";
 
 export interface Environment {
   checks: readonly EnvironmentCheck[];
@@ -31,7 +32,8 @@ type Running = Fiber.Fiber<unknown, unknown>;
 
 export function useEnvironment(
   projectId: string | null,
-  pick: PreviewComposition | null
+  pick: PreviewComposition | null,
+  provider: AgentProvider
 ): Environment {
   const [checks, setChecks] = useState<readonly EnvironmentCheck[]>(NONE);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export function useEnvironment(
       setIsChecking(true);
 
       running.current = Effect.runFork(
-        checkEnvironment(target, force).pipe(
+        checkEnvironment(target, force, provider).pipe(
           Effect.onExit((exit) =>
             Effect.sync(() => {
               running.current = null;
@@ -74,7 +76,7 @@ export function useEnvironment(
         )
       );
     },
-    [stop]
+    [provider, stop]
   );
 
   useEffect(() => {
@@ -136,13 +138,13 @@ export function useEnvironment(
       checks: shown,
       error,
       install,
-      isBlocking: isBlocked(shown),
+      isBlocking: isBlocked(shown, provider),
       isChecking,
       isInstalling,
       output,
       recheck,
       troubles: unresolved(shown),
     }),
-    [error, install, isChecking, isInstalling, output, recheck, shown]
+    [error, install, isChecking, isInstalling, output, provider, recheck, shown]
   );
 }

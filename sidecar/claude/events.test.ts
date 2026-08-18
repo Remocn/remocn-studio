@@ -138,6 +138,7 @@ describe("eventsOf", () => {
         input: { file_path: "/a.tsx" },
         name: "Edit",
         type: "tool_use",
+        verb: "edit",
       },
     ]);
   });
