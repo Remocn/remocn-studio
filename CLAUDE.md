@@ -349,6 +349,42 @@ classifier, the auth probe).
   hang; a gateway that cannot listen is logged and the turn still runs,
   because the words matter more than the tools. Measured end to end — spawn,
   MCP handshake, `tools/call` through the socket — a call answers in ~20 ms.
+- **Codex is the second adapter** (phase 3 of REM-251), and it is what proved
+  the seam: `sidecar/codex/` translates `@openai/codex-sdk`'s item stream —
+  items that start, update and complete, not deltas — into the same
+  `AgentEvent`s, with a stateful translator that remembers how much of each
+  text item it has already emitted. Three findings there were measured, not
+  read: the wire carries explicit `null`s where the SDK types say optional
+  (`error`, `result` on an MCP call — trusting the types crashed a turn); the
+  studio's MCP servers need `default_tools_approval_mode: "approve"`, because
+  `"auto"` reads tool annotations, treats an unannotated tool as destructive,
+  and headless Codex then kills the call as *"user cancelled MCP tool call"*;
+  and Codex names MCP tools `mcp__{server}__{tool}` — the same spelling Claude
+  uses, so the conventions text works verbatim as `developer_instructions`.
+  - **The permission card never appears for a Codex turn — the OS sandbox is
+    the gate.** Headless Codex has nobody to answer approvals, so
+    `approvalPolicy` is always `never` and the modes map to sandboxes: `auto`
+    and `acceptEdits` → `workspace-write` (a write outside the folder is
+    *blocked*, which is #223 enforced harder than Claude's `auto` manages),
+    `plan` → `read-only`. That trade is the mapping, not an oversight.
+  - **The CLI is the user's, resolved, never bundled** — `findCodex` walks
+    `$REMOCN_STUDIO_CODEX`, `$PATH`, then the usual install dirs; a machine
+    without it gets the *not installed* row with the install command, and a
+    `~/.codex/auth.json` written by an IDE extension does not by itself put a
+    binary on `$PATH`. `codex login status` is the auth probe: exit 0 =
+    logged in, *"Not logged in"* + exit 1 locks the composer for Codex
+    sessions.
+  - **What Experimental means here**: `context` is per-turn usage, not a
+    window reading, so the meter never shows; `todo_list` does not speak the
+    checklist's `TaskCreate` vocabulary, so no plan dock; the model picker
+    still lists Claude models, so `params.model` is deliberately ignored; and
+    the remocn skills are not delivered (plugins are Claude Code's
+    mechanism) — `developer_instructions` carries only the studio conventions
+    and the pipeline brief.
+- **The provider is picked once, on a session that has not spoken yet** — a
+  chip beside Mode, rendered only while the draft has no entries, no SDK
+  session id and no running turn, because resume tokens are not portable and
+  changing provider mid-session means starting a new session.
 - Still Claude-shaped, deliberately, until the next phases: the model picker,
   knowledge delivery (plugins are Claude Code's mechanism), and a handful of
   user-facing strings that say "Claude".
@@ -1863,6 +1899,9 @@ sidecar/agent/        the provider-neutral seam: AgentAdapter, the permission
 sidecar/claude/       the Claude Code adapter: Agent SDK session, event and
                       failure translation, the CanUseTool guard, auth probe,
                       tool-name→verb vocabulary
+sidecar/codex/        the Codex adapter: SDK thread per turn, the item-stream
+                      translator, sandbox mapping, `codex login status` probe,
+                      CLI resolution
 sidecar/tools/        the studio's own tools as stdio MCP: specs, execution,
                       the unix-socket gateway and the --tools-host child
 sidecar/history/      driver seam, migrations, project and session stores, recorder

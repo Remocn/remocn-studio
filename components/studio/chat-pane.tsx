@@ -288,6 +288,7 @@ function Conversation({
           </DockStack>
 
           <Composer
+            canPickProvider={turn.canPickProvider}
             context={turn.context}
             cwd={cwd}
             disabled={!hasProject || missing || environment.isBlocking}
@@ -295,6 +296,7 @@ function Conversation({
             isWaiting={turn.permission !== null}
             mode={turn.mode}
             onModeChange={turn.onModeChange}
+            onProviderChange={turn.onProviderChange}
             onStop={turn.stop}
             provider={turn.provider}
           />

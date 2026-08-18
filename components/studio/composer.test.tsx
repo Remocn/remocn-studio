@@ -220,6 +220,7 @@ async function renderComposer(
         <SelectProbe />
         <CaptureProbe />
         <Composer
+          canPickProvider={true}
           context={{ maxTokens: 200_000, totalTokens: 50_000 }}
           cwd={PROJECT.path}
           disabled={false}
@@ -227,6 +228,7 @@ async function renderComposer(
           isWaiting={false}
           mode={mode}
           onModeChange={onModeChange}
+          onProviderChange={vi.fn()}
           onStop={vi.fn()}
           provider="claude"
         />

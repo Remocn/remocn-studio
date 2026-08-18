@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-export const AGENT_PROVIDERS = ["claude"] as const;
+export const AGENT_PROVIDERS = ["claude", "codex"] as const;
 
 export const AgentProvider = Schema.Literals(AGENT_PROVIDERS);
 
@@ -52,6 +52,23 @@ export const PROVIDER_INFO: Record<AgentProvider, ProviderInfo> = {
     experimental: false,
     id: "claude",
     name: "Claude Code",
+  },
+  // context is false because Codex reports per-turn token usage, not how full
+  // the context window is; planTool is false because its todo_list item does
+  // not speak the TaskCreate vocabulary the checklist parses. Experimental
+  // until a real session has run the whole path from prompt to export.
+  codex: {
+    capabilities: {
+      context: false,
+      effort: true,
+      modes: true,
+      planTool: false,
+      resume: true,
+      thinking: true,
+    },
+    experimental: true,
+    id: "codex",
+    name: "Codex",
   },
 };
 

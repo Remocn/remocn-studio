@@ -27,6 +27,7 @@ import type {
   SessionMode,
 } from "@/shared/ipc";
 import type { PromptAsset } from "@/shared/library";
+import type { AgentProvider } from "@/shared/providers";
 import { appendUser, fold } from "@/shared/transcript";
 
 export interface StartTurn {
@@ -56,6 +57,7 @@ export interface Turns {
   removeQueued: (historyId: string, id: string) => void;
   sendTurn: (input: StartTurn) => boolean;
   setTurnMode: (historyId: string, mode: SessionMode) => void;
+  setTurnProvider: (historyId: string, provider: AgentProvider) => void;
   stopTurn: (historyId: string) => void;
   turns: ReadonlyMap<string, TurnState>;
 }
@@ -196,6 +198,13 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
   const setTurnMode = useCallback(
     (historyId: string, mode: SessionMode) => {
       update(historyId, (turn) => ({ ...turn, mode }));
+    },
+    [update]
+  );
+
+  const setTurnProvider = useCallback(
+    (historyId: string, provider: AgentProvider) => {
+      update(historyId, (turn) => ({ ...turn, provider }));
     },
     [update]
   );
@@ -411,6 +420,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       removeQueued,
       sendTurn,
       setTurnMode,
+      setTurnProvider,
       stopTurn,
       turns,
     }),
@@ -422,6 +432,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       removeQueued,
       sendTurn,
       setTurnMode,
+      setTurnProvider,
       stopTurn,
       turns,
     ]

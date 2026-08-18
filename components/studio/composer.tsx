@@ -2,6 +2,7 @@
 
 import {
   ArrowUpIcon,
+  BotIcon,
   ChevronDownIcon,
   FilmIcon,
   ImagePlusIcon,
@@ -43,7 +44,12 @@ import {
   SESSION_MODES,
   type SessionMode,
 } from "@/shared/ipc";
-import { type AgentProvider, capabilitiesOf } from "@/shared/providers";
+import {
+  AGENT_PROVIDERS,
+  type AgentProvider,
+  capabilitiesOf,
+  PROVIDER_INFO,
+} from "@/shared/providers";
 import { AssetRow } from "./asset-row";
 import { ContextMeter } from "./context-meter";
 import { MediaRow } from "./media-row";
@@ -61,6 +67,14 @@ const MODES = SESSION_MODES.map((mode) => ({
   value: mode,
 }));
 
+const PROVIDERS = AGENT_PROVIDERS.map((provider) => {
+  const info = PROVIDER_INFO[provider];
+  return {
+    label: info.experimental ? `${info.name} — Experimental` : info.name,
+    value: provider,
+  };
+});
+
 const EFFORTS = [
   { label: "Default", value: DEFAULT },
   { label: "Low", value: "low" },
@@ -71,6 +85,7 @@ const EFFORTS = [
 ];
 
 function ComposerBlock({
+  canPickProvider,
   context,
   cwd,
   disabled,
@@ -78,9 +93,11 @@ function ComposerBlock({
   isWaiting,
   mode,
   onModeChange,
+  onProviderChange,
   onStop,
   provider,
 }: {
+  canPickProvider: boolean;
   context: ContextUsage | null;
   cwd: string | null;
   disabled: boolean;
@@ -88,6 +105,7 @@ function ComposerBlock({
   isWaiting: boolean;
   mode: SessionMode;
   onModeChange: (value: string) => void;
+  onProviderChange: (value: string) => void;
   onStop: () => void;
   provider: AgentProvider;
 }) {
@@ -230,6 +248,17 @@ function ComposerBlock({
 
             <div className="ml-auto flex items-center gap-1">
               {context === null ? null : <ContextMeter usage={context} />}
+
+              {PROVIDERS.length > 1 && canPickProvider ? (
+                <MenuChip
+                  icon={BotIcon}
+                  items={PROVIDERS}
+                  label={PROVIDER_INFO[provider].name}
+                  onChange={onProviderChange}
+                  title="Provider"
+                  value={provider}
+                />
+              ) : null}
 
               {capabilities.modes ? (
                 <MenuChip
