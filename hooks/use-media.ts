@@ -13,6 +13,7 @@ export interface Media {
   error: string | null;
   items: PromptMedia[];
   removeAt: (index: number) => void;
+  restore: (items: readonly PromptMedia[]) => void;
 }
 
 export function useMedia(): Media {
@@ -50,9 +51,14 @@ export function useMedia(): Media {
 
   const clear = useCallback(() => commit([]), [commit]);
 
+  const restore = useCallback(
+    (next: readonly PromptMedia[]) => commit([...next]),
+    [commit]
+  );
+
   return useMemo(
-    () => ({ add, attach, clear, error, items, removeAt }),
-    [add, attach, clear, error, items, removeAt]
+    () => ({ add, attach, clear, error, items, removeAt, restore }),
+    [add, attach, clear, error, items, removeAt, restore]
   );
 }
 

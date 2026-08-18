@@ -189,6 +189,29 @@
   }
 }
 
+@layer base {
+  /* A tagged file, drawn in the composer's overlay and in the sent bubble. Only
+     properties that cost no layout are allowed here: the overlay's own metrics
+     are what position the caret in the textarea underneath it, so padding, a
+     border, tracking or a weight would drift the two apart a character at a
+     time. The side air is therefore a shadow — offset, never spread, or a
+     wrapped path's chips would grow into the lines above and below and stack
+     their alpha where they met.
+
+     The colour is `currentColor`, so one chip serves both surfaces: near-white
+     over the composer, the bubble's own foreground over `bg-primary`. A fixed
+     tint had to be readable on both and was legible on neither. */
+  .file-mention {
+    background-color: color-mix(in oklab, currentColor 14%, transparent);
+    border-radius: 0.25rem;
+    box-shadow:
+      2px 0 0 color-mix(in oklab, currentColor 14%, transparent),
+      -2px 0 0 color-mix(in oklab, currentColor 14%, transparent);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+}
+
 /* macOS Reduce Motion. Spinners keep turning — a frozen loader glyph reads as
    a hang, and rotation in place is status, not motion across the screen. The
    word-by-word reveal is switched off in components/studio/markdown.tsx, which

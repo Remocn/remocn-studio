@@ -5,12 +5,14 @@ import { type ClaudeEffort, useClaudeEffort } from "@/hooks/use-claude-effort";
 import { type ClaudeModel, useClaudeModel } from "@/hooks/use-claude-model";
 import { type Composer, useComposer } from "@/hooks/use-composer";
 import { type Environment, useEnvironment } from "@/hooks/use-environment";
+import { type FileDrops, useFileDrops } from "@/hooks/use-file-drops";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
 import { type Library, useLibrary } from "@/hooks/use-library";
 import { type NewProject, useNewProject } from "@/hooks/use-new-project";
 import { type OpenTurn, useOpenTurn } from "@/hooks/use-open-turn";
 import { type Panes, usePanes } from "@/hooks/use-panes";
 import { usePreview } from "@/hooks/use-preview";
+import { type Queue, useQueue } from "@/hooks/use-queue";
 import { type Tools, useTools } from "@/hooks/use-tools";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
 import type { VideoFormat } from "@/lib/studio/formats";
@@ -22,9 +24,11 @@ export type Studio = ClaudeEffort &
   Panes &
   Workspace & {
     composer: Composer;
+    drops: FileDrops;
     environment: Environment;
     library: Library;
     newProject: NewProject;
+    queue: Queue;
     settings: StudioSettings | null;
     tools: Tools;
     turn: OpenTurn;
@@ -89,6 +93,8 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     projectId: opened?.id ?? null,
   });
 
+  const queue = useQueue(turn, composer);
+
   const tools = useTools({
     composer,
     isMissing: opened?.missing ?? false,
@@ -104,6 +110,18 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     previewProjectId === opened?.id ? tools.preview.pick : null
   );
 
+  const drops = useFileDrops({
+    drop: composer.drop,
+    isComposerOpen:
+      opened !== null &&
+      !opened.missing &&
+      !environment.isBlocking &&
+      turn.permission === null,
+    paneView: panes.paneView,
+    save: library.save,
+    showPane,
+  });
+
   const studio = useMemo(
     () => ({
       ...workspace,
@@ -111,21 +129,25 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       ...effort,
       ...panes,
       composer,
+      drops,
       environment,
       library,
       newProject,
+      queue,
       settings,
       tools,
       turn,
     }),
     [
       composer,
+      drops,
       effort,
       environment,
       library,
       model,
       newProject,
       panes,
+      queue,
       settings,
       tools,
       turn,

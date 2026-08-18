@@ -36,7 +36,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAssetDrop } from "@/hooks/use-asset-drop";
 import { useNow } from "@/hooks/use-now";
 import { usePickAsset } from "@/hooks/use-pick-asset";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
@@ -69,6 +68,7 @@ export function ProjectsPane() {
     actionError,
     activeSession,
     composer,
+    drops,
     expandedProjects,
     folderError,
     groups,
@@ -105,7 +105,6 @@ export function ProjectsPane() {
     [library.assets, library.bundled]
   );
   const onPickAsset = usePickAsset(pickable, composer.pick);
-  const drop = useAssetDrop({ paneView, save: library.save, showPane });
 
   const media = useMemo(
     () => library.assets.filter((asset) => isMediaAsset(asset.type)),
@@ -150,7 +149,7 @@ export function ProjectsPane() {
           assets={media}
           error={library.error}
           isLoading={library.isLoading}
-          isOver={drop.isOver}
+          isOver={drops.library.isOver}
           onPick={onPickAsset}
           onRemove={library.onRemove}
           onRetry={library.reload}
@@ -212,7 +211,7 @@ export function ProjectsPane() {
       <Sidebar
         className="w-full bg-transparent"
         collapsible="none"
-        ref={drop.ref}
+        ref={drops.library.ref}
       >
         <SidebarHeader className="gap-0 p-0">
           <SidebarBrand onHide={toggleProjects} />

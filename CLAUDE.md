@@ -476,13 +476,14 @@ public contract and would break the left pane on any CLI update. Only
   of this, and it cost every `TaskUpdate` of a second turn: the id matched
   nothing, so the call fell out of the checklist and drew a row saying "Updated
   task #6 description, status" while the plan above it stayed all-pending.
-- **The plan also sits on top of the composer.** `TaskDock` is a strip in the
-  composer's own `max-w-2xl` column, collapsed to the task in hand — its
-  `activeForm` — with the count on the right, and it opens *upwards* into the
-  whole list. It has no bottom radius and no gap under it, so it abuts the
-  composer and reads as a drawer behind it; overlapping the composer to get that
-  effect is what the first two versions did, and each of them ended up putting an
-  edge or a shadow of ours across the input. It lived in the transcript's
+- **The plan also sits on top of the composer.** `TaskDock` is a section of the
+  `DockStack` in the composer's own `max-w-2xl` column, collapsed to the task in
+  hand — its `activeForm` — with the count on the right, and it opens *upwards*
+  into the whole list. The stack has no bottom radius and no gap under it, so it
+  abuts the composer and reads as a drawer behind it; overlapping the composer to
+  get that effect is what the first two versions did, and each of them ended up
+  putting an edge or a shadow of ours across the input. The queue is the stack's
+  other section — see *The next message waits its turn*. It lived in the transcript's
   left gutter first, measured against the pane with a `ResizeObserver` and three
   visibility rules; sharing the composer's column deletes all of that — a pane
   resize reflows both together and there is nothing left to measure. Expanded or
@@ -688,6 +689,78 @@ remount *was* the cancel, cancellation is now `stopTurn`, said out loud.
   invoking `quit_studio` immediately when nothing is in flight, or after the
   confirmation when something is. The flag that lets the second attempt through
   lives in Rust, so `app.exit(0)` cannot deadlock against its own guard.
+
+### The next message waits its turn
+
+Send during a running turn queues the message instead of dropping it, and the
+queue is a field on `TurnState` like everything else about a turn — so it belongs
+to the session, dispatches while you are looking somewhere else, and is gone on
+relaunch. The sidecar and `shared/ipc.ts` are untouched: a queued message becomes
+an ordinary `claude.prompt` when its turn comes.
+
+- **This started as a silent data loss.** The textarea was never disabled on
+  `isRunning`, so you could type — and Enter then cleared the field and every
+  attachment list while `sendTurn` dropped the call on its `fibers.current.has`
+  guard. `onSubmit` answers with a boolean now and `submit` clears only on a
+  `true`, which also covers the other refusal (no project open) rather than only
+  the one this feature added.
+- **One fiber per session is the constraint, not a limitation to route around.**
+  Two prompts on one `sdkSessionId` would fork two CLI processes against one SDK
+  session and take `nextOrdinal` twice, so serialising is the design and the
+  queue is what makes waiting visible. Streaming into the live turn through the
+  SDK's already-open input generator is the v2 branch, and a different contract.
+- **A queued message is captured whole, at the moment it was written** — text,
+  attachments, elements, assets, media, *and* the model, effort, frame and
+  project the composer was set to. Only the **mode** is re-read at dispatch, from
+  the turn that just ended, because approving a plan mid-turn changes the mode
+  the session is in and the follow-up belongs in that one. Capturing the frame at
+  enqueue is the point of doing it this way round: "make this bit slower" means
+  the frame you were looking at when you wrote it, not the one on screen three
+  minutes later.
+- **Dispatch is decided outside the state updater.** `nextQueued` is pure and is
+  called on the pre-settle snapshot; the updater only drops the head it names.
+  Reading the head *inside* the updater would send twice under StrictMode, which
+  double-invokes updaters in dev.
+- **Three things hold the queue where it is**, all of them "not what the person
+  meant": a turn stopped by hand (a deliberate cancel, which reaches `onExit` as
+  an interrupt), a turn that failed, and a permission still unanswered. The last
+  one is `nextQueued`'s only reason to read `permissions`, since the settled state
+  has none by then.
+- **Recursion goes through a ref.** The `onExit` that dispatches lives inside the
+  function it calls, so `launcher.current = launch` — the same shape `useComposer`
+  uses to read the live text — keeps `sendTurn` a plain "start or enqueue" and the
+  chaining out of it.
+- **The queue is the second drawer, and it shares the plan's chrome.**
+  `DockStack` in `components/studio/dock.tsx` is the geometry both use — the
+  `max-w-2xl` column, the `px-3` inset that makes a strip narrower than the
+  composer, `bg-card`, and the top radius; `DockSection` is one line of it, with
+  the disclosure and the count. Rows under the composer were the first version and
+  they grew the input downwards one line per message, which is the thing a queue
+  must not do: collapsed, this is one line whatever is in it. The radius belongs to
+  the *stack* rather than to each section, or two open drawers would leave a notch
+  where their corners meet, and `empty:hidden` is what keeps the wrapper from
+  painting a strip when neither has anything to say.
+- **The plan is above the queue, and the queue is against the composer**, because
+  the queue is the composer's own outbox: a message you just queued has to land
+  where you were typing. The plan is context and moves up a line to make room.
+- **A queued row wraps, exactly as a plan row does.** Collapsed, the strip
+  truncates the message that goes out next; open, the rows wrap — a queue you
+  cannot read is not a queue you can edit. `useQueue` is the only place the turn
+  map and the composer meet: clicking a row drops it from the queue and restores it
+  whole, which needs the composer's stores to take items back, so `restore` exists
+  on each of them. Editing needs an empty composer and the row's title says so —
+  overwriting a draft to recover an older one is a trade nobody asked for.
+- **The queue's open state is not remembered, where the plan's is.** `taskDock`
+  lives in `settings.json` because a plan outlives the turn that wrote it; a queue
+  drains as its turns settle, so it is `useDisclosure` and starts collapsed.
+- **A restored selection comes back without its rectangle.** The queue carries
+  `PromptElement`, which is what the turn sends; the marker geometry is inspect's
+  and is drawn only for selections made in the armed session, so a zero rect draws
+  nothing rather than drawing a box over a frame that has since rebuilt.
+- **Element references are not dropped on a project change here**, unlike in the
+  composer: every queued message carries the project it was written in and is
+  dispatched into that project's session, so its `[Element #N]` can never point
+  somewhere the message is not going.
 
 ### Pasting a picture, and pointing at it
 
@@ -1571,7 +1644,7 @@ over an `AttachmentTitle` — rather than a list of rows with an icon and a type
 - **The kind moved from a visible second line into the trigger's `aria-label`.** The tile now says
   what it is by showing it; a screen reader still hears "Neon Title, Component".
 
-### Dragging into the library
+### Dragging into the library, or into the message
 
 `onDragDropEvent` from Tauri, not HTML5 drag events: with `dragDropEnabled` on — the default — the
 webview never fires them for files, and a `File` from a WKWebView drop carries no path anyway. The
@@ -1585,7 +1658,126 @@ IPC.
   part no seam can exercise.
 - **Anything that is not media is refused out loud.** A dropped `.tsx` is not an asset the panel can
   make — a component's boundaries are the agent's to work out — so the pane says what it skipped
-  rather than saving half a drop in silence.
+  rather than saving half a drop in silence. The same sentence names where they did not go, because
+  there are two places they could have gone.
+- **The composer is the second zone, and there is still one watcher** (REM-255). `useFileDrops` owns
+  the only `onDragDropEvent` subscription and asks `zoneAt` — an ordered list of boxes, first match
+  wins — which zone a point is in; the two zones are disjoint on screen today, so the order is
+  insurance rather than arbitration, and a zone whose box is `null` is simply not on screen. Two
+  listeners racing over the same drop is the thing this avoids: each one would have to know the
+  other's rectangle to stay out of its way.
+- **A dropped file is sorted by kind, not by where it landed.** Pictures go to `attachments` with an
+  `[Image #N]` written at the caret, exactly as a paste does — the gesture is the same one — and
+  video and audio go to `media`, which carries no reference kind. A mixed drop splits across both,
+  and each list filters the paths itself, so the split is the two `arriving` functions that already
+  existed rather than a third place that decides what an image is.
+- **A locked composer is not a zone.** Waiting on a permission card, a folder that is gone, a
+  blocking environment check: `isComposerOpen` goes false, the box leaves the hit test and the ring
+  never lights, so the composer cannot promise something it would drop on the floor. A composer that
+  is not rendered at all — the new-project wizard, a transcript still loading — falls out for free,
+  since its ref is null.
+- **A drop that misses both zones is silent.** It also puts the left pane back: a drag that passed
+  over the library to reach the composer switched the view to Assets on the way, and letting go
+  anywhere reverts it.
+
+### Tagging a file
+
+`@` in the composer opens a list of the project's files; picking one writes its path in backticks
+into the sentence being typed (REM-249). A query beginning `/` or `~` browses the whole filesystem
+instead.
+
+- **A tagged file is plain text, and that is the design.** A fourth reference kind beside
+  `[Image #N]`, `[Element #N]` and `[Asset #N]` would need a field on the stored `TranscriptEntry`
+  and a change in the recorder — the argument that already sank `[Media #N]` — and it would buy
+  nothing, because a file needs neither a splice nor a trailer: **the path is the whole payload**.
+  So `shared/references.ts`, `shared/transcript.ts`, the history store and `content.ts` are all
+  untouched, and a reopened session renders what was sent because nothing about sending changed.
+- **Reading the file costs nothing to arrange.** The agent's `cwd` *is* the project, and every path
+  inside it is auto-allowed by the gate, so a relative path raises no card and nothing has to be
+  resolved or attached on our side. A path outside the folder goes through the ordinary Allow/Deny
+  card — that is the #223 invariant working, not a gap.
+- **Two methods, because they are cached by different keys.** `project.files` walks the project once
+  per project and the webview filters the result on every keystroke; `files.list` reads one folder
+  and is cached per folder. Folding both into one "suggest" method would put an IPC round trip on
+  every keystroke and make the list's responsiveness the sidecar's problem. `~` is expanded in the
+  sidecar, because the webview has no home directory to expand it against.
+- **The walk skips what a person would never tag** — `node_modules`, `out`, `dist`, `build`,
+  `coverage`, `target`, `tmp`, and every dot entry — and stops at 4000 files, reporting `truncated`
+  rather than trimming in silence. Reaching what it skipped is what typing an absolute path is for.
+- **The composer owns the text, so it owns the mention**, exactly as it owns the references:
+  `useMentions` holds the candidates, the query and the highlighted row and decides nothing about
+  the text, while `useComposer` runs `insertMention` / `openFolder` against the live field. Its
+  `onKeyDown` is consulted **first** and answers whether it took the key, so Escape closes the list
+  instead of clearing the composer and Enter picks a file instead of sending the message — and when
+  nothing matched, Enter falls straight through and sends, because a list with no rows must not
+  swallow a keystroke.
+- **Drilling into a folder does not wait for a round trip.** `choose` knows exactly what the text
+  will become — `@` plus the folder plus a slash — so it sets its own query at the same moment it
+  asks the composer to write it, rather than waiting for a `sync` that a programmatic `setValue`
+  never fires.
+- **A space ends a mention, unless the path is absolute.** `~/My Movies/` is a folder people really
+  have, and the drill-down produces exactly that text; a relative query keeps the Claude Code rule
+  that a space is the end of the token.
+- **Escape is remembered per token.** The dismissed `@`'s offset is kept, so typing on into the same
+  word does not bring the list back — while a different `@`, or moving away and starting another,
+  opens it as usual.
+- **A row leads with the mark of what the file *is*.** `lib/studio/file-icons.ts` maps a name to a
+  kind and `components/studio/file-icon.tsx` maps that kind to a glyph — the same two-step
+  `activity-icon.tsx` uses, and for the same reason it uses a `Map` rather than a `Record`: the key
+  comes from a filename, so `constructor.js` would otherwise resolve off `Object.prototype`.
+  Brand marks come from **Simple Icons** (`@icons-pack/react-simple-icons`) — React on a `.tsx`,
+  TypeScript, JSON, Markdown, CSS — and everything with no brand to speak of falls to lucide's
+  `File*` family by category: image, video, audio, font, archive, text.
+  - **Imported one file at a time**, `@icons-pack/react-simple-icons/icons/SiReact`, never from the
+    package root: that barrel re-exports 10,359 icons and there is no reason to hand it to the
+    bundler and hope. Measured on a *clean* `out/`, sixteen brand marks cost **26 KB**.
+    Measure it that way or not at all — chunk filenames carry a content hash, so a stale `out/`
+    keeps every previous build's chunks and reads as a megabyte of growth that never happened.
+  - **They are monochrome by construction.** Each component defaults to `color="currentColor"` and
+    only paints its brand colour when asked with `color="default"`, so the column inherits
+    `text-muted-foreground` like every other icon in the app. The marks are *filled* where lucide's
+    are 1.5px outlines, which reads heavier at the same box — `scale-90` on the branded ones is
+    what evens the two out.
+  - Each Simple Icon renders a `<title>`, so the glyph is `aria-hidden`: the row's own text is what
+    a screen reader should read, not "React Intro.tsx src/scenes".
+- **The list scrolls to the row the keyboard is on**, which it has to: twelve rows do not fit in
+  `max-h-64` and the arrows used to walk the highlight straight out of the visible part.
+  `useKeptInView` is a layout effect on the row itself with `block: "nearest"`, so a row already in
+  view costs nothing. Its trigger is `${keyed}:${index}` rather than the active index alone, and
+  both halves earn their place: `keyed` counts *arrow presses*, so a row that is merely re-rendered
+  is not dragged back into view, and `index` catches the case `keyed` cannot — a filter that keeps
+  the highlighted row but moves it, where the row is the same component instance and nothing else
+  would change. Hovering can only ever re-scroll a row the cursor is already on, which `nearest`
+  makes a no-op.
+- **The path is coloured, and colouring it costs nothing extra.** `MessageText` already draws both
+  the composer's overlay and the user's bubble, so splitting its *text* segments once more — into
+  plain runs and backticked paths — lights the mention in both places and in history, where the
+  stored prompt is the same string. It is deliberately **not** a segment kind in
+  `shared/references.ts`: `dropReference` walks those segments and treats anything that is not
+  `text` as a reference to renumber, so a fourth kind there would make a typed path behave like an
+  attachment. Splitting inside the renderer keeps that fold untouched.
+- **A chip, and one that costs no layout.** `.file-mention` in `app/globals.css` is a background, a
+  radius and a shadow — nothing that takes width. The overlay's own metrics are what position the
+  caret in the textarea beneath it, so padding, a border, tracking or a weight would drift the two
+  apart a character at a time; that is the accumulating error `font-medium` on a reference already
+  cost once. The side air is therefore an **offset** shadow rather than a spread one: a spread would
+  grow the chip vertically too, and a path that wraps — the normal case for an absolute one — would
+  stack its lines' alpha where they met. `box-decoration-break: clone` is what gives each wrapped
+  fragment its own rounded chip instead of one box torn across three lines.
+- **The chip is `currentColor`, so one rule serves both surfaces.** It is drawn over the composer,
+  where the text is `foreground`, and inside the sent bubble, which is `bg-primary` with
+  `text-primary-foreground`. A fixed tint had to read on both: `--reference` teal was the first
+  version and it was legible on neither. A mix of the *inherited* colour is right on each by
+  construction, which is also why a file mention no longer speaks the reference colour that
+  `[Image #N]` does — the two now differ in kind, a chip against a coloured word.
+- **Only a path lights up, not every code span.** A backticked run counts when it holds a `/` or is
+  a bare name with a real extension, so `` `src/Root.tsx` ``, `` `~/My Movies/clip.mp4` `` and
+  `` `package.json` `` colour while `` `Main` `` and `` `TransitionSeries` `` — the words the
+  conventions themselves put in backticks — stay plain.
+- **Both pure halves are tested without rendering anything**: `lib/studio/mentions.ts` (what counts
+  as a mention, where a folder query splits, the ranking, what is a path) and `sidecar/files.ts`
+  (what the walk skips, the limit, `~` expansion) — and the wiring is tested through `useComposer`
+  against a fake IPC, which is the only place the two meet.
 
 ## Layout
 
@@ -1604,7 +1796,8 @@ shared/               ipc.ts: the typed contract, and the media types it carries
                       transcript.ts: the one fold; references.ts: the one reader of
                       `[Image #N]`/`[Element #N]`/`[Asset #N]`; library.ts: the
                       asset manifest format
-sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history
+sidecar/              bun: frame loop, method handlers, Agent SDK, SQLite history;
+                      files.ts is the project walk and the folder read behind `@`
 sidecar/history/      driver seam, migrations, project and session stores, recorder
 sidecar/library/      the asset library: the folder store, the copy into a project,
                       and the remocn-library tools the agent saves through

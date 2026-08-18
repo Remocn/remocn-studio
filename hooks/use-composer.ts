@@ -5,15 +5,19 @@ import type {
   ClipboardEvent,
   KeyboardEvent,
   MouseEvent,
+  SyntheticEvent,
 } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Attachments, useAttachments } from "@/hooks/use-attachments";
 import { type Caret, useCaret } from "@/hooks/use-caret";
 import { type Media, useMedia } from "@/hooks/use-media";
+import { type Mentions, useMentions } from "@/hooks/use-mentions";
 import { type PickedAssets, usePickedAssets } from "@/hooks/use-picked-assets";
 import { type Selections, useSelections } from "@/hooks/use-selections";
 import { imageFilesOf } from "@/lib/studio/clipboard";
+import { insertMention, type Mention, openFolder } from "@/lib/studio/mentions";
 import type { PreviewRect } from "@/lib/studio/preview";
+import type { QueuedMessage } from "@/lib/studio/turns";
 import type {
   PromptAttachment,
   PromptElement,
@@ -41,7 +45,7 @@ export interface ComposerSettings {
     elements: readonly PromptElement[],
     assets: readonly PromptAsset[],
     media: readonly PromptMedia[]
-  ) => void;
+  ) => boolean;
   projectId: string | null;
 }
 
@@ -54,7 +58,11 @@ export interface Composer {
   capture: (file: File) => Promise<void>;
   caret: Caret;
   counts: ReferenceCounts;
+  drop: (paths: readonly string[]) => void;
+  isEmpty: boolean;
   media: Media;
+  mentions: Mentions;
+  onBlur: () => void;
   onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   onPaste: (event: ClipboardEvent<HTMLTextAreaElement>) => Promise<void>;
@@ -62,7 +70,9 @@ export interface Composer {
   onRemoveAsset: (event: MouseEvent<HTMLButtonElement>) => void;
   onRemoveMedia: (event: MouseEvent<HTMLButtonElement>) => void;
   onRemoveSelection: (event: MouseEvent<HTMLButtonElement>) => void;
+  onSelect: (event: SyntheticEvent<HTMLTextAreaElement>) => void;
   pick: (asset: Asset) => void;
+  restore: (message: QueuedMessage) => void;
   select: (
     element: PromptElement,
     rect: PreviewRect,
@@ -121,12 +131,14 @@ export function useComposer({
     [assets.items.length, attachments.items.length, selections.items.length]
   );
 
-  const canSubmit =
-    value.trim().length > 0 ||
+  const carries =
     counts.image > 0 ||
     counts.element > 0 ||
     counts.asset > 0 ||
     media.items.length > 0;
+
+  const canSubmit = value.trim().length > 0 || carries;
+  const isEmpty = value.length === 0 && !carries;
 
   const refer = useCallback(
     (at: number, first: number, count: number) => {
@@ -173,6 +185,27 @@ export function useComposer({
     [attachments, refer]
   );
 
+  const drop = useCallback(
+    (paths: readonly string[]) => {
+      const field = caret.ref.current;
+      const text = field?.value ?? latest.current;
+      const at = field?.selectionStart ?? text.length;
+      const first = attachments.items.length;
+
+      const added = attachments.attachPaths(paths);
+      media.attach(paths);
+
+      if (added === 0) {
+        return;
+      }
+
+      const next = insertReferences(text, at, "image", first, added);
+      caret.moveTo(next.caret);
+      setValue(next.text);
+    },
+    [attachments, caret, media]
+  );
+
   const select = useCallback(
     (element: PromptElement, rect: PreviewRect, comment: string) => {
       const field = caret.ref.current;
@@ -210,6 +243,35 @@ export function useComposer({
     },
     [assets, caret]
   );
+
+  const onInsertMention = useCallback(
+    (mention: Mention, path: string) => {
+      const field = caret.ref.current;
+      const next = insertMention(field?.value ?? latest.current, mention, path);
+
+      caret.moveTo(next.caret);
+      setValue(next.text);
+    },
+    [caret]
+  );
+
+  const onOpenFolder = useCallback(
+    (mention: Mention, folder: string) => {
+      const field = caret.ref.current;
+      const next = openFolder(field?.value ?? latest.current, mention, folder);
+
+      caret.moveTo(next.caret);
+      setValue(next.text);
+    },
+    [caret]
+  );
+
+  const mentions = useMentions({
+    isEnabled: projectId !== null,
+    onInsert: onInsertMention,
+    onOpenFolder,
+    projectId,
+  });
 
   const write = useCallback(
     (phrase: string) => {
@@ -268,23 +330,51 @@ export function useComposer({
     [media]
   );
 
+  const restore = useCallback(
+    (message: QueuedMessage) => {
+      attachments.restore(message.attachments);
+      selections.restore(message.elements);
+      assets.restore(message.assets);
+      media.restore(message.media);
+      setValue(message.text);
+      caret.moveTo(message.text.length);
+      mentions.sync("", 0);
+    },
+    [assets, attachments, caret, media, mentions, selections]
+  );
+
   const submit = useCallback(() => {
     if (!canSubmit) {
       return;
     }
-    onSubmit(
+
+    const taken = onSubmit(
       value,
       attachments.items,
       selections.items.map((item) => item.element),
       assets.items,
       media.items
     );
+    if (!taken) {
+      return;
+    }
+
     setValue("");
     attachments.clear();
     selections.clear();
     assets.clear();
     media.clear();
-  }, [assets, attachments, canSubmit, media, onSubmit, selections, value]);
+    mentions.sync("", 0);
+  }, [
+    assets,
+    attachments,
+    canSubmit,
+    media,
+    mentions,
+    onSubmit,
+    selections,
+    value,
+  ]);
 
   const onChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -293,6 +383,7 @@ export function useComposer({
 
       if (!hasLostReferences(lost)) {
         setValue(next);
+        mentions.sync(next, event.target.selectionStart);
         return;
       }
 
@@ -309,14 +400,32 @@ export function useComposer({
         assets.removeAt(index);
       }
 
-      caret.moveTo(Math.min(at, settled.length));
+      const moved = Math.min(at, settled.length);
+      caret.moveTo(moved);
       setValue(settled);
+      mentions.sync(settled, moved);
     },
-    [assets, attachments, caret, counts, selections, value]
+    [assets, attachments, caret, counts, mentions, selections, value]
   );
+
+  const onSelect = useCallback(
+    (event: SyntheticEvent<HTMLTextAreaElement>) => {
+      const field = event.currentTarget;
+      mentions.sync(field.value, field.selectionStart);
+    },
+    [mentions]
+  );
+
+  const onBlur = useCallback(() => {
+    mentions.close();
+  }, [mentions]);
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
+      if (mentions.onKeyDown(event)) {
+        return;
+      }
+
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
         submit();
@@ -356,7 +465,7 @@ export function useComposer({
       }
       selections.removeAt(span.index);
     },
-    [assets, attachments, caret, counts, onEscape, selections, submit]
+    [assets, attachments, caret, counts, mentions, onEscape, selections, submit]
   );
 
   useForgetSelections(projectId, counts, selections.clear, setValue);
@@ -371,7 +480,11 @@ export function useComposer({
       capture,
       caret,
       counts,
+      drop,
+      isEmpty,
       media,
+      mentions,
+      onBlur,
       onChange,
       onKeyDown,
       onPaste,
@@ -379,7 +492,9 @@ export function useComposer({
       onRemoveAsset,
       onRemoveMedia,
       onRemoveSelection,
+      onSelect,
       pick,
+      restore,
       select,
       selections,
       submit,
@@ -395,7 +510,11 @@ export function useComposer({
       capture,
       caret,
       counts,
+      drop,
+      isEmpty,
       media,
+      mentions,
+      onBlur,
       onChange,
       onKeyDown,
       onPaste,
@@ -403,7 +522,9 @@ export function useComposer({
       onRemoveAsset,
       onRemoveMedia,
       onRemoveSelection,
+      onSelect,
       pick,
+      restore,
       select,
       selections,
       submit,

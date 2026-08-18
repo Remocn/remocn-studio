@@ -10,10 +10,12 @@ import type { PromptAttachment } from "@/shared/ipc";
 export interface Attachments {
   add: () => Promise<number>;
   attach: (files: readonly File[]) => Promise<number>;
+  attachPaths: (paths: readonly string[]) => number;
   clear: () => void;
   error: string | null;
   items: PromptAttachment[];
   removeAt: (index: number) => void;
+  restore: (items: readonly PromptAttachment[]) => void;
 }
 
 export function useAttachments(): Attachments {
@@ -59,9 +61,23 @@ export function useAttachments(): Attachments {
 
   const clear = useCallback(() => commit([]), [commit]);
 
+  const restore = useCallback(
+    (next: readonly PromptAttachment[]) => commit([...next]),
+    [commit]
+  );
+
   return useMemo(
-    () => ({ add, attach, clear, error, items, removeAt }),
-    [add, attach, clear, error, items, removeAt]
+    () => ({
+      add,
+      attach,
+      attachPaths: append,
+      clear,
+      error,
+      items,
+      removeAt,
+      restore,
+    }),
+    [add, append, attach, clear, error, items, removeAt, restore]
   );
 }
 

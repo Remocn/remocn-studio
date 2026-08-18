@@ -27,6 +27,11 @@ hint taken from a live render, not a contract: they locate the JSX that produced
 the node, so start there, but confirm against the file before editing, and edit
 the component the block names rather than a wrapper it renders through.
 
+A path in backticks is a file the person picked from the app's own file list, not
+one they typed from memory — a relative path is against this project, an absolute
+one is somewhere else on their machine. Read it before changing anything around
+it, and treat it as the file they mean even when the sentence around it is vague.
+
 Making a video here runs through a fixed six-stage production pipeline:
 analysis, brand, script, motion, build, review. When the person asks to create
 a video — or to rework one from the ground up — and no active stage is named in
