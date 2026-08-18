@@ -113,6 +113,7 @@ function ProjectGroupBlock({
             render={
               <Button
                 aria-label={`New session in ${project.name}`}
+                className="relative after:absolute after:-inset-y-1 after:right-0 after:-left-1"
                 disabled={project.missing}
                 onClick={onNewSession}
                 size="icon-xs"

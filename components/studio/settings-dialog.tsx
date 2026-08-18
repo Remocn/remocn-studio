@@ -138,7 +138,7 @@ function SectionRail({
           <button
             aria-current={active === entry.id ? "true" : undefined}
             className={cn(
-              "flex h-8 items-center gap-2 rounded-md px-2 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
+              "flex h-8 items-center gap-2 rounded-md px-2 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 active:bg-accent",
               active === entry.id
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -182,7 +182,7 @@ const THEME_TILES: readonly {
 }[] = [
   {
     bar: "bg-white/25",
-    caption: "The studio's native palette",
+    caption: "The studio’s native palette",
     chip: "bg-white/10",
     id: "dark",
     label: "Dark",
@@ -227,7 +227,7 @@ function AppearanceSection() {
         {THEME_TILES.map((tile) => (
           <button
             aria-pressed={choice === tile.id}
-            className="group flex min-w-0 flex-1 flex-col items-stretch gap-2 rounded-lg outline-none"
+            className="group flex min-w-0 flex-1 flex-col items-stretch gap-2 rounded-lg outline-none active:translate-y-px"
             key={tile.id}
             onClick={onPickTheme}
             type="button"

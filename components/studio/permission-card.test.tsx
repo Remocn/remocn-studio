@@ -111,7 +111,7 @@ describe("PermissionCard", () => {
     });
 
     expect(
-      screen.getByText("Don't ask again for this path this session")
+      screen.getByText("Don’t ask again for this path this session")
     ).toBeVisible();
   });
 });

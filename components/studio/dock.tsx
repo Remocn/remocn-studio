@@ -58,7 +58,7 @@ export function DockSection({
       <button
         aria-expanded={isExpanded}
         aria-label={summary}
-        className="flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+        className="flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-foreground/5 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset active:bg-foreground/10"
         onClick={onToggle}
         type="button"
       >

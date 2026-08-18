@@ -53,6 +53,7 @@ export function ProjectMenu({
           render={
             <Button
               aria-label={`Options for ${project.name}`}
+              className="relative after:absolute after:-inset-y-1 after:-right-1 after:left-0"
               size="icon-xs"
               variant="ghost"
             />

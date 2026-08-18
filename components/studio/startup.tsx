@@ -23,7 +23,7 @@ const STEPS = [
     title: "Watch it, and point at it",
   },
   {
-    body: "Rendered by the project's own Remotion, so the file is what you watched.",
+    body: "Rendered by the project’s own Remotion, so the file is what you watched.",
     id: "export",
     title: "Export the mp4",
   },

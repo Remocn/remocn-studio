@@ -22,9 +22,9 @@ const TITLES: Record<PermissionReason, string> = {
 };
 
 const AGAIN: Record<Exclude<PermissionReason, "plan">, string> = {
-  bash: "Don't ask again for this command this session",
-  outside: "Don't ask again for this path this session",
-  tool: "Don't ask again for this call this session",
+  bash: "Don’t ask again for this command this session",
+  outside: "Don’t ask again for this path this session",
+  tool: "Don’t ask again for this call this session",
 };
 
 const PLAN_CHOICES: PermissionChoice[] = [

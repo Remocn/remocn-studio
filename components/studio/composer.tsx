@@ -220,6 +220,7 @@ function ComposerBlock({
                 render={
                   <InputGroupButton
                     aria-label="Add to this message"
+                    className="relative after:absolute after:-inset-1"
                     disabled={isLocked}
                     size="icon-xs"
                     variant="ghost"
@@ -409,7 +410,7 @@ function ComposerStatus({
       <span className="flex items-center gap-1 text-destructive">
         The sidecar is not running.
         <Button
-          className="h-auto p-0 text-destructive text-xs"
+          className="relative h-auto p-0 text-destructive text-xs after:absolute after:-inset-2"
           onClick={sidecar.restart}
           size="xs"
           variant="link"

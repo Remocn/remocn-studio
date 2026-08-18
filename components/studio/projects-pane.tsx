@@ -396,7 +396,9 @@ function ProjectsBody({
     return (
       <Empty className="px-4 py-8">
         <EmptyHeader>
-          <EmptyTitle>History is unavailable</EmptyTitle>
+          <EmptyTitle className="text-balance">
+            History is unavailable
+          </EmptyTitle>
           <EmptyDescription className="break-words">{error}</EmptyDescription>
         </EmptyHeader>
         <Button onClick={onRetry} size="sm" variant="outline">
