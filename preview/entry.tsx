@@ -9,6 +9,8 @@ import { armInspect, freezeInspect, type Stage as Spot } from "./inspect";
 import { armSnapshot, type Frame } from "./snapshot";
 
 const MAIN_ID = "Main";
+// Generated compositions commonly overlap more than Player's five-tag default.
+const SHARED_AUDIO_TAGS = 20;
 
 connectHotReload();
 
@@ -75,12 +77,39 @@ function Stage() {
       compositionWidth={width}
       controls
       durationInFrames={durationInFrames}
+      errorFallback={PreviewError}
       fps={fps}
       inputProps={defaultProps}
       loop
+      numberOfSharedAudioTags={SHARED_AUDIO_TAGS}
       ref={player}
       style={{ height: "100%", width: "100%" }}
     />
+  );
+}
+
+function PreviewError({ error }: { readonly error: Error }) {
+  return (
+    <div
+      role="alert"
+      style={{
+        alignItems: "center",
+        boxSizing: "border-box",
+        color: "white",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        height: "100%",
+        justifyContent: "center",
+        overflow: "auto",
+        padding: 24,
+        textAlign: "center",
+        width: "100%",
+      }}
+    >
+      <strong>Preview stopped</strong>
+      <span style={{ color: "#a1a1aa", fontSize: 13 }}>{error.message}</span>
+    </div>
   );
 }
 

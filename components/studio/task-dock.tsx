@@ -34,9 +34,13 @@ export function TaskDock({
   const dock = useTaskDock(settings);
   const pipeline = pipelineProgress(stages);
 
-  // A finished pipeline leaves the dock to the turn's own plan; an unfinished
-  // one is always on screen — between turns and on a reopened session too, so
-  // the six stages read as "where we are" rather than as one turn's plan.
+  // The dock is live status for the current assistant turn. Pipeline progress
+  // remains persisted, but between turns it must not imply work is happening.
+  if (!isRunning) {
+    return null;
+  }
+
+  // A finished pipeline leaves the dock to the turn's own plan.
   if (pipeline !== null) {
     return (
       <DockShell
@@ -48,13 +52,6 @@ export function TaskDock({
         total={pipeline.total}
       />
     );
-  }
-
-  // A task plan is live status for one assistant turn. Its checklist remains
-  // in the transcript, but a settled turn must not pin that history above a
-  // later conversation.
-  if (!isRunning) {
-    return null;
   }
 
   const progress = taskProgress(tasks);

@@ -172,14 +172,9 @@ const STAGES: readonly PipelineStage[] = [
 ];
 
 describe("TaskDock with a pipeline", () => {
-  it("stays on screen with no plan at all while the pipeline is unfinished", () => {
+  it("shows the unfinished pipeline while the turn is running", () => {
     render(
-      <TaskDock
-        isRunning={false}
-        settings={SETTINGS}
-        stages={STAGES}
-        tasks={[]}
-      />
+      <TaskDock isRunning settings={SETTINGS} stages={STAGES} tasks={[]} />
     );
 
     expect(screen.getByText("Video plan")).toBeVisible();
@@ -191,6 +186,20 @@ describe("TaskDock with a pipeline", () => {
       )
     ).not.toBeInTheDocument();
     expect(screen.getByText("2 of 6")).toBeVisible();
+  });
+
+  it("does not imply the pipeline is running after the turn settles", () => {
+    render(
+      <TaskDock
+        isRunning={false}
+        settings={SETTINGS}
+        stages={STAGES}
+        tasks={[]}
+      />
+    );
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByText("Video plan")).not.toBeInTheDocument();
   });
 
   it("collapses to the running sub-task when the turn has one", () => {
