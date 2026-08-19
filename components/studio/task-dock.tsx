@@ -205,7 +205,10 @@ function pipelineSummary(
   }
 
   return {
-    detail: `${current.template.title}: ${current.template.goal}`,
+    // The active-form label already answers "what is happening now". Keep the
+    // full stage goal in the expanded checklist, where it adds useful context
+    // without turning the collapsed dock into a repeated, truncated sentence.
+    detail: null,
     glyph: isActive ? "in_progress" : "pending",
     label: current.template.activeForm,
     state,

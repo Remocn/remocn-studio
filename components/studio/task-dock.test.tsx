@@ -186,10 +186,10 @@ describe("TaskDock with a pipeline", () => {
     expect(screen.getByText("In progress")).toBeVisible();
     expect(screen.getByText("Writing the script")).toBeVisible();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Script: Write the script scene by scene: what is said, what is on screen, and for how long."
       )
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
     expect(screen.getByText("2 of 6")).toBeVisible();
   });
 
@@ -241,10 +241,10 @@ describe("TaskDock with a pipeline", () => {
     expect(screen.getByText("Up next")).toBeVisible();
     expect(screen.getByText("Collecting the brand")).toBeVisible();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Brand: Collect the visual language: palette, fonts, logos and tone."
       )
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
   });
 
   it("hands the dock back to the plan once every stage is done", () => {
