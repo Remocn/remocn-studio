@@ -1,5 +1,12 @@
 import { Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
+import {
+  type FrameDesignAudit,
+  finishDesignContrast,
+  type PreparedDesignAudit,
+  prepareDesignAudit,
+  restoreDesignAudit,
+} from "./design";
 import { type Measured, PreviewError, type RenderOptions } from "./project";
 
 const FORWARDED = [
@@ -41,6 +48,10 @@ export interface WarmInternals {
 }
 
 export interface Session {
+  readonly audit: (
+    frame: number,
+    output: string
+  ) => Effect.Effect<FrameDesignAudit, PreviewError>;
   readonly capture: (
     frame: number,
     output: string
@@ -130,42 +141,115 @@ export function openSession(
       return { browser, measured: input.measured, page };
     },
   }).pipe(
-    Effect.map(({ browser, measured, page }) => ({
-      capture: (frame: number, output: string) =>
-        Effect.tryPromise({
-          catch: failed,
-          try: async () => {
-            await input.internals.seekToFrame({
-              attempt: 0,
-              composition: input.composition,
-              frame,
-              indent: false,
-              logLevel: "error",
-              page,
-              timeoutInMilliseconds: input.timeoutMs,
-            });
+    Effect.map(({ browser, measured, page }) => {
+      const seek = (frame: number) =>
+        input.internals.seekToFrame({
+          attempt: 0,
+          composition: input.composition,
+          frame,
+          indent: false,
+          logLevel: "error",
+          page,
+          timeoutInMilliseconds: input.timeoutMs,
+        });
 
-            await input.internals.takeFrame({
-              freePage: page,
-              height: measured.height,
-              imageFormat: "png",
-              jpegQuality: 80,
-              output,
-              scale: 1,
-              timeoutInMilliseconds: input.timeoutMs,
-              wantsBuffer: false,
-              width: measured.width,
-            });
-          },
-        }),
-      close: Effect.ignore(
-        Effect.tryPromise(() => browser.close({ silent: true }))
-      ),
-      composition: input.composition,
-      height: Math.round(measured.height),
-      width: Math.round(measured.width),
-    }))
+      const take = (output: string | null, wantsBuffer: boolean) =>
+        input.internals.takeFrame({
+          freePage: page,
+          height: measured.height,
+          imageFormat: "png",
+          jpegQuality: 80,
+          output,
+          scale: 1,
+          timeoutInMilliseconds: input.timeoutMs,
+          wantsBuffer,
+          width: measured.width,
+        });
+
+      const evaluate = async <A>(
+        pageFunction: (...args: never[]) => unknown,
+        args: readonly unknown[]
+      ): Promise<A> => {
+        const result = await input.internals.evaluate({
+          args,
+          frame: null,
+          page,
+          pageFunction,
+          timeoutInMilliseconds: input.timeoutMs,
+        });
+        return evaluated<A>(result);
+      };
+
+      return {
+        audit: (frame: number, output: string) =>
+          Effect.tryPromise({
+            catch: failed,
+            try: async () => {
+              let prepared = false;
+              try {
+                await seek(frame);
+                prepared = true;
+                const audit = await evaluate<PreparedDesignAudit>(
+                  prepareDesignAudit as (...args: never[]) => unknown,
+                  [frame]
+                );
+                const measurement = bytesOf(await take(null, true));
+                const contrast = await evaluate<
+                  readonly FrameDesignAudit["findings"][number][]
+                >(finishDesignContrast as (...args: never[]) => unknown, [
+                  measurement.toString("base64"),
+                  frame,
+                  audit.candidates,
+                ]);
+                await take(output, false);
+                return {
+                  findings: [...audit.findings, ...contrast],
+                  fingerprint: audit.fingerprint,
+                };
+              } finally {
+                if (prepared) {
+                  await evaluate<void>(
+                    restoreDesignAudit as (...args: never[]) => unknown,
+                    []
+                  ).catch(() => undefined);
+                }
+              }
+            },
+          }),
+        capture: (frame: number, output: string) =>
+          Effect.tryPromise({
+            catch: failed,
+            try: async () => {
+              await seek(frame);
+              await take(output, false);
+            },
+          }),
+        close: Effect.ignore(
+          Effect.tryPromise(() => browser.close({ silent: true }))
+        ),
+        composition: input.composition,
+        height: Math.round(measured.height),
+        width: Math.round(measured.width),
+      };
+    })
   );
+}
+
+function evaluated<A>(result: unknown): A {
+  if (typeof result === "object" && result !== null && "value" in result) {
+    return (result as { value: A }).value;
+  }
+  return result as A;
+}
+
+function bytesOf(result: unknown): Buffer {
+  if (Buffer.isBuffer(result)) {
+    return result;
+  }
+  if (result instanceof Uint8Array) {
+    return Buffer.from(result);
+  }
+  throw new Error("the render browser did not return a PNG buffer");
 }
 
 function bundleMode(

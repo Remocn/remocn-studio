@@ -21,6 +21,9 @@ function socketPath(): string {
 function tools(): TurnTools {
   return {
     cwd: "/videos/promo",
+    design: {
+      check: () => Promise.reject(new Error("unused")),
+    },
     library: {
       list: () => Promise.resolve([]),
       save: () => Promise.reject(new Error("unused")),

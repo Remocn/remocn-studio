@@ -9,8 +9,13 @@ import {
 
 export const LIBRARY_SERVER = "remocn-library";
 export const PIPELINE_SERVER = "remocn-pipeline";
+export const DESIGN_SERVER = "remocn-design";
 
-export const TOOL_SERVERS = [LIBRARY_SERVER, PIPELINE_SERVER] as const;
+export const TOOL_SERVERS = [
+  DESIGN_SERVER,
+  LIBRARY_SERVER,
+  PIPELINE_SERVER,
+] as const;
 
 export type ToolServer = (typeof TOOL_SERVERS)[number];
 
@@ -28,12 +33,32 @@ export const LIST_ASSETS = "list_assets";
 export const SAVE_ASSET = "save_asset";
 export const START_PIPELINE = "start_video_pipeline";
 export const SET_PIPELINE_STAGE = "set_pipeline_stage";
+export const DESIGN_CHECK = "design_check";
 
 // The specs are declarative so the stdio child can register them with any
 // MCP transport while the execution stays in the sidecar, where the stores
 // and the turn's stream live. The wording is the contract with the agent —
 // it moved here verbatim from the in-process servers.
 export const TOOL_SPECS: Record<ToolServer, readonly ToolSpec[]> = {
+  [DESIGN_SERVER]: [
+    {
+      description:
+        "Mechanically review 2–9 key frames of Main before calling a scene finished. It renders temporary snapshots and reports measurable WCAG contrast, clipped/occluded/out-of-frame text, and a timeline that did not visibly advance. Fix every finding or explain why it is intentional; inspect the returned snapshot paths for design judgement the checks cannot make.",
+      name: DESIGN_CHECK,
+      shape: {
+        frames: z
+          .array(z.number().int().min(0))
+          .min(2)
+          .max(9)
+          .refine((frames) => new Set(frames).size === frames.length, {
+            message: "frames must be distinct",
+          })
+          .describe(
+            "Two to nine distinct key frames from Main, normally the settled hero moments and one motion-separated pair."
+          ),
+      },
+    },
+  ],
   [LIBRARY_SERVER]: [
     {
       description:

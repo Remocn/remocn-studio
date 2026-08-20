@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 import { ExportEvent, Exported, Still, StillEvent } from "@/shared/ipc";
+import { DesignResult } from "./design";
 
 export const RENDER_BASE = "/__remocn/render";
 
@@ -25,6 +26,12 @@ export const HostCommand = Schema.Union([
     frame: Schema.Int,
     id: Schema.NonEmptyString,
     type: Schema.Literal("clip"),
+  }),
+  Schema.Struct({
+    composition: Schema.NonEmptyString,
+    frames: Schema.Array(Schema.Int),
+    id: Schema.NonEmptyString,
+    type: Schema.Literal("design"),
   }),
   Schema.Struct({
     id: Schema.NonEmptyString,
@@ -77,6 +84,16 @@ export const HostReply = Schema.Union([
     message: Schema.String,
     type: Schema.Literal("clip-failed"),
   }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    result: DesignResult,
+    type: Schema.Literal("design-done"),
+  }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    message: Schema.String,
+    type: Schema.Literal("design-failed"),
+  }),
 ]);
 
 export type HostCommand = (typeof HostCommand)["Type"];
@@ -84,6 +101,7 @@ export type HostReply = (typeof HostReply)["Type"];
 export type StillCommand = Extract<HostCommand, { type: "still" | "warm" }>;
 export type ExportCommand = Extract<HostCommand, { type: "export" }>;
 export type ClipCommand = Extract<HostCommand, { type: "clip" }>;
+export type DesignCommand = Extract<HostCommand, { type: "design" }>;
 
 export const decodeHostCommand = Schema.decodeExit(
   Schema.fromJsonString(HostCommand)

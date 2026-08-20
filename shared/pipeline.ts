@@ -104,7 +104,7 @@ export const STAGE_TEMPLATES: readonly StageTemplate[] = [
     discover:
       "Check video/review.md for notes already taken, and compare the built video against video/script.md scene by scene.",
     doneWhen:
-      "Every note in video/review.md is closed or explicitly deferred by the person.",
+      "Every note in video/review.md is closed or explicitly deferred by the person, and design_check has run on two or three key frames with every mechanical finding fixed or explicitly explained.",
     goal: "Review the result against the script, collect notes, and close them.",
     id: "review",
     outputs: ["video/review.md"],

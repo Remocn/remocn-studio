@@ -2,6 +2,7 @@ import { realpath } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { Effect } from "effect";
 import { type PermissionReason, PLUGIN_DIR_ENV } from "@/shared/ipc";
+import { TOOL_SERVERS } from "../tools/specs";
 
 export type PermissionVerdict =
   | { readonly kind: "allow" }
@@ -36,10 +37,7 @@ export const EXIT_PLAN_TOOL = "ExitPlanMode";
 
 const ALLOW: PermissionVerdict = { kind: "allow" };
 
-const STUDIO_TOOL_PREFIXES = [
-  "mcp__remocn-pipeline__",
-  "mcp__remocn-library__",
-];
+const STUDIO_TOOL_PREFIXES = TOOL_SERVERS.map((server) => `mcp__${server}__`);
 
 export function review(
   cwd: string,

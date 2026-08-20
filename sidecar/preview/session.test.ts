@@ -27,10 +27,15 @@ interface Journal {
   internals: WarmInternals;
   seeks: number[];
   steps: string[];
-  taken: { height: number; output: string; width: number }[];
+  taken: { height: number; output: string | null; width: number }[];
 }
 
-function fakes(overrides: { onSeek?: () => Promise<unknown> } = {}): Journal {
+function fakes(
+  overrides: {
+    onSeek?: () => Promise<unknown>;
+    onTake?: (output: string | null) => Promise<unknown>;
+  } = {}
+): Journal {
   const journal: Journal = {
     closed: 0,
     internals: {} as WarmInternals,
@@ -50,6 +55,14 @@ function fakes(overrides: { onSeek?: () => Promise<unknown> } = {}): Journal {
     evaluate: async (options) => {
       const named = (options.pageFunction as { name?: string }).name ?? "?";
       journal.steps.push(`evaluate:${named}`);
+      if (named === "prepareDesignAudit") {
+        return await Promise.resolve({
+          value: { candidates: [], findings: [], fingerprint: "frame-state" },
+        });
+      }
+      if (named === "finishDesignContrast") {
+        return await Promise.resolve({ value: [] });
+      }
       return await Promise.resolve({ value: null });
     },
     openBrowser: async () => {
@@ -78,12 +91,18 @@ function fakes(overrides: { onSeek?: () => Promise<unknown> } = {}): Journal {
       await Promise.resolve();
     },
     takeFrame: async (options) => {
+      const output = options.output as string | null;
       journal.taken.push({
         height: options.height as number,
-        output: options.output as string,
+        output,
         width: options.width as number,
       });
-      await Promise.resolve();
+      if (overrides.onTake !== undefined) {
+        return await overrides.onTake(output);
+      }
+      return await Promise.resolve(
+        options.wantsBuffer === true ? Buffer.from("png") : undefined
+      );
     },
   };
 
@@ -155,6 +174,42 @@ describe("openSession", () => {
       output: "/tmp/a.png",
       width: 1280,
     });
+  });
+
+  it("audits and restores a frame before writing its visible snapshot", async () => {
+    const journal = fakes();
+    const session = await Effect.runPromise(open(journal));
+
+    const audit = await Effect.runPromise(session.audit(20, "/tmp/design.png"));
+
+    expect(audit).toEqual({ findings: [], fingerprint: "frame-state" });
+    expect(journal.seeks).toEqual([20]);
+    expect(journal.taken.map(({ output }) => output)).toEqual([
+      null,
+      "/tmp/design.png",
+    ]);
+    expect(journal.steps.slice(-3)).toEqual([
+      "evaluate:prepareDesignAudit",
+      "evaluate:finishDesignContrast",
+      "evaluate:restoreDesignAudit",
+    ]);
+  });
+
+  it("restores hidden text when the measurement capture fails", async () => {
+    const journal = fakes({
+      onTake: (output) =>
+        output === null
+          ? Promise.reject(new Error("measurement failed"))
+          : Promise.resolve(),
+    });
+    const session = await Effect.runPromise(open(journal));
+
+    const exit = await Effect.runPromiseExit(
+      session.audit(20, "/tmp/design.png")
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    expect(journal.steps.at(-1)).toBe("evaluate:restoreDesignAudit");
   });
 
   it("reports a seek that failed rather than writing nothing", async () => {

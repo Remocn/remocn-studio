@@ -9,7 +9,10 @@ import type {
   PipelineStatus,
 } from "@/shared/pipeline";
 import { pipelineBrief } from "../claude/conventions";
+import type { DesignResult } from "../preview/design";
 import {
+  DESIGN_CHECK,
+  DESIGN_SERVER,
   LIBRARY_SERVER,
   LIST_ASSETS,
   PIPELINE_SERVER,
@@ -32,8 +35,13 @@ export interface PipelineCalls {
   readonly start: () => Promise<readonly PipelineStage[]>;
 }
 
+export interface DesignCalls {
+  readonly check: (frames: readonly number[]) => Promise<DesignResult>;
+}
+
 export interface TurnTools {
   readonly cwd: string;
+  readonly design: DesignCalls;
   readonly library: LibraryCalls;
   readonly pipeline: PipelineCalls;
 }
@@ -75,12 +83,23 @@ function run(
   if (server === PIPELINE_SERVER && tool === START_PIPELINE) {
     return staged(tools.pipeline.start());
   }
+  if (server === DESIGN_SERVER && tool === DESIGN_CHECK) {
+    return designCheck(args, tools.design);
+  }
   return staged(
     tools.pipeline.setStage(
       args.stage as PipelineStageId,
       args.status as PipelineStatus
     )
   );
+}
+
+async function designCheck(
+  args: Record<string, unknown>,
+  design: DesignCalls
+): Promise<string> {
+  const result = await design.check(args.frames as number[]);
+  return JSON.stringify(result, null, 2);
 }
 
 async function listAssets(library: LibraryCalls): Promise<string> {

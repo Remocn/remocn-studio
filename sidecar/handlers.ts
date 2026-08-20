@@ -45,6 +45,7 @@ import {
 import { remotionRootOf } from "./preview/project";
 import {
   clipFrom,
+  designFrom,
   exportFrom,
   previewEvents,
   stillFrom,
@@ -53,7 +54,7 @@ import {
 import { installDependencies } from "./scaffold/install";
 import { expandTemplate, type ScaffoldError } from "./scaffold/template";
 import { makeGateway } from "./tools/gateway";
-import { LIBRARY_SERVER, PIPELINE_SERVER } from "./tools/specs";
+import { DESIGN_SERVER, LIBRARY_SERVER, PIPELINE_SERVER } from "./tools/specs";
 
 const TOKENS = [
   "Streaming",
@@ -236,6 +237,15 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
         gateway
           .serving(turnId, {
             cwd: project.path,
+            design: {
+              check: (frames) =>
+                Effect.runPromise(
+                  designFrom(params.projectId, {
+                    composition: "Main",
+                    frames,
+                  })
+                ),
+            },
             library: librarian(params),
             pipeline: {
               setStage: (stage, status) =>
@@ -259,6 +269,7 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
                 onMode: switcher.bind,
                 record: recorder.event,
                 tools: {
+                  [DESIGN_SERVER]: gateway.transport(DESIGN_SERVER, turnId),
                   [LIBRARY_SERVER]: gateway.transport(LIBRARY_SERVER, turnId),
                   [PIPELINE_SERVER]: gateway.transport(PIPELINE_SERVER, turnId),
                 },

@@ -50,7 +50,10 @@ describe("review", () => {
     ).toEqual({ kind: "allow" });
   });
 
-  it("lets the studio's own tools through, library and pipeline alike", async () => {
+  it("lets every studio tool through", async () => {
+    expect(
+      await verdict("mcp__remocn-design__design_check", { frames: [30, 90] })
+    ).toEqual({ kind: "allow" });
     expect(
       await verdict("mcp__remocn-library__save_asset", { name: "Neon" })
     ).toEqual({ kind: "allow" });

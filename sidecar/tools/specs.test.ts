@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { review } from "@/sidecar/claude/permission";
 import { pipelineBrief, STUDIO_CONVENTIONS } from "../claude/conventions";
 import {
+  DESIGN_CHECK,
+  DESIGN_SERVER,
   LIBRARY_SERVER,
   PIPELINE_SERVER,
   SET_PIPELINE_STAGE,
@@ -28,6 +30,9 @@ describe("tool specs", () => {
 
   it("names the same tools the system prompt tells the agent to call", () => {
     expect(STUDIO_CONVENTIONS).toContain(
+      `mcp__${DESIGN_SERVER}__${DESIGN_CHECK}`
+    );
+    expect(STUDIO_CONVENTIONS).toContain(
       `mcp__${PIPELINE_SERVER}__${START_PIPELINE}`
     );
     expect(STUDIO_CONVENTIONS).toContain(
@@ -38,7 +43,11 @@ describe("tool specs", () => {
     );
   });
 
-  it("carries the two servers the conventions and the gate were written for", () => {
-    expect([...TOOL_SERVERS].sort()).toEqual([LIBRARY_SERVER, PIPELINE_SERVER]);
+  it("carries the three servers the conventions and gate were written for", () => {
+    expect([...TOOL_SERVERS].sort()).toEqual([
+      DESIGN_SERVER,
+      LIBRARY_SERVER,
+      PIPELINE_SERVER,
+    ]);
   });
 });

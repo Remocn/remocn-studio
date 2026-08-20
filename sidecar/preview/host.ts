@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { Effect, Exit, FiberMap, Ref, Stream } from "effect";
@@ -14,6 +14,7 @@ import {
 } from "@/shared/ipc";
 import { libraryRoot } from "../library/store";
 import { untilGone, untilOrphaned, untilSignalled } from "../lifecycle";
+import { finishDesignResult } from "./design";
 import { clipMedia, exporterOf, exportMedia } from "./export";
 import { withoutWebFonts } from "./grab";
 import {
@@ -32,6 +33,7 @@ import {
 } from "./project";
 import {
   type ClipCommand,
+  type DesignCommand,
   decodeHostCommand,
   type ExportCommand,
   type HostReply,
@@ -48,6 +50,7 @@ import {
   makeCompositionCache,
   type Renderer,
   readyBrowser,
+  slug,
   stillFile,
   warmComposition,
 } from "./still";
@@ -407,7 +410,102 @@ function obey(booted: Booted, line: string): Effect.Effect<void> {
     return begin(booted, command);
   }
 
+  if (command.type === "design") {
+    return inspectDesign(booted, command);
+  }
+
   return answer(booted, command);
+}
+
+function inspectDesign(
+  booted: Booted,
+  command: DesignCommand
+): Effect.Effect<void> {
+  return Effect.gen(function* () {
+    const sampleFrames = [...new Set(command.frames)]
+      .map((frame) => Math.max(0, Math.trunc(frame)))
+      .sort((left, right) => left - right);
+
+    if (sampleFrames.length < 2 || sampleFrames.length > 9) {
+      return yield* Effect.fail(
+        new PreviewError({
+          message: "design_check needs between 2 and 9 distinct frames",
+        })
+      );
+    }
+
+    const tools = yield* toolsFor(booted.root);
+    const session = yield* warmed(
+      booted,
+      command.composition,
+      tools,
+      () => undefined
+    );
+
+    if (session === null) {
+      return yield* Effect.fail(
+        new PreviewError({
+          message:
+            "this Remotion build can render stills but does not expose the warm page needed for design_check",
+        })
+      );
+    }
+
+    const folder = yield* freshDesignFolder(booted.dir);
+    const audits = yield* Effect.forEach(sampleFrames, (frame) => {
+      const output = path.join(
+        folder,
+        `${slug(command.composition)}-frame-${frame}.png`
+      );
+      return session
+        .audit(frame, output)
+        .pipe(Effect.map((audit) => ({ audit, frame, output })));
+    });
+
+    const result = finishDesignResult({
+      audits,
+      composition: command.composition,
+      height: session.height,
+      snapshots: audits.map(({ frame, output }) => ({ frame, path: output })),
+      width: session.width,
+    });
+
+    yield* log(
+      `design check of ${command.composition} found ${result.findings.length} issue(s) across ${sampleFrames.length} frames`
+    );
+    return yield* write({ id: command.id, result, type: "design-done" });
+  }).pipe(
+    Effect.catch((error) =>
+      Effect.andThen(
+        log(`design check failed: ${error.message}`),
+        write({
+          id: command.id,
+          message: error.message,
+          type: "design-failed",
+        })
+      )
+    )
+  );
+}
+
+function freshDesignFolder(dir: string): Effect.Effect<string, PreviewError> {
+  return Effect.tryPromise({
+    catch: (cause) => new PreviewError({ message: String(cause) }),
+    try: async () => {
+      await mkdir(dir, { recursive: true });
+      const stale = await readdir(dir);
+      await Promise.all(
+        stale
+          .filter((name) => name.startsWith("design-"))
+          .map((name) =>
+            rm(path.join(dir, name), { force: true, recursive: true })
+          )
+      );
+      const folder = path.join(dir, `design-${randomBytes(4).toString("hex")}`);
+      await mkdir(folder, { recursive: true });
+      return folder;
+    },
+  });
 }
 
 // One encoder at a time, whatever it is encoding: a clip asked for while an

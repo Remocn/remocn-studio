@@ -30,6 +30,13 @@ background, midground and foreground, then keep two to five decorative elements
 visibly present with one shared slow motion; static decoration or opacity below about
 12% does not count.
 
+Before you call a scene or video finished, call
+\`mcp__remocn-design__design_check\` with two or three settled key frames from
+\`Main\`. Inspect the returned snapshots, then fix every mechanical finding or
+say explicitly why it is intentional. A clean check covers contrast, readable
+text layers and a visibly advancing sampled timeline; it does not replace your
+own design review of the snapshots.
+
 A component you write new must be tunable by someone who does not read code.
 Everything a person might want to change — texts, colors, durations, amplitudes
 — is a typed prop, with its default written inline where the prop is declared,
