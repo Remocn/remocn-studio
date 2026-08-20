@@ -7,6 +7,7 @@ import { PLUGIN_DIR_ENV } from "@/shared/ipc";
 import {
   installedIn,
   LESSONS_SKILL,
+  MOTION_SKILL,
   pluginsFor,
   SHIPPED,
   VENDORED,
@@ -67,9 +68,11 @@ describe("the vendored plugin", () => {
     expect(names).toEqual([...SHIPPED]);
   });
 
-  it("keeps our own skill out of the vendored list, so a sync cannot delete it", () => {
-    expect(VENDORED).not.toContain(LESSONS_SKILL);
-    expect(SHIPPED).toContain(LESSONS_SKILL);
+  it("keeps our own skills out of the vendored list, so a sync cannot delete them", () => {
+    for (const skill of [LESSONS_SKILL, MOTION_SKILL]) {
+      expect(VENDORED).not.toContain(skill);
+      expect(SHIPPED).toContain(skill);
+    }
   });
 
   it("holds real files, never symlinks into a store that is not shipped", async () => {
