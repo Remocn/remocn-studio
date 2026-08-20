@@ -3,7 +3,11 @@
 import { Effect, Fiber } from "effect";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { causeMessage } from "@/lib/error-message";
-import { answerPermission, promptAgent } from "@/lib/studio/agent";
+import {
+  answerPermission,
+  answerSourceAsset,
+  promptAgent,
+} from "@/lib/studio/agent";
 import { loadTranscript } from "@/lib/studio/history";
 import type { PermissionAction } from "@/lib/studio/permission";
 import { loadPipeline } from "@/lib/studio/pipeline";
@@ -25,6 +29,7 @@ import type {
   PromptMedia,
   PromptResult,
   SessionMode,
+  SourceAssetAction,
 } from "@/shared/ipc";
 import type { PromptAsset } from "@/shared/library";
 import type { AgentProvider } from "@/shared/providers";
@@ -45,6 +50,12 @@ export interface StartTurn {
 }
 
 export interface Turns {
+  answerSourceTurn: (
+    historyId: string,
+    sourceId: string,
+    action: SourceAssetAction,
+    file: string | null
+  ) => Promise<boolean>;
   answerTurn: (
     historyId: string,
     permissionId: string,
@@ -295,6 +306,22 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
             }));
             return;
           }
+          if (event.type === "asset_source") {
+            update(historyId, (current) => ({
+              ...current,
+              sources: [
+                ...current.sources,
+                {
+                  askedAt: Date.now(),
+                  attempt: event.attempt,
+                  id: event.id,
+                  name: event.name,
+                  source: event.source,
+                },
+              ],
+            }));
+            return;
+          }
           update(historyId, (current) => ({
             ...current,
             entries: fold(current.entries, event),
@@ -315,6 +342,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
                 ...(head === null ? current : dropQueued(current, head.id)),
                 isRunning: false,
                 permissions: [],
+                sources: [],
                 startedAt: null,
                 unread: away,
               };
@@ -406,6 +434,36 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
     [stopTurn, update]
   );
 
+  const answerSourceTurn = useCallback(
+    async (
+      historyId: string,
+      sourceId: string,
+      action: SourceAssetAction,
+      file: string | null
+    ): Promise<boolean> => {
+      try {
+        const result = await Effect.runPromise(
+          answerSourceAsset({ action, file, id: sourceId })
+        );
+        if (result.matched) {
+          update(historyId, (turn) => ({
+            ...turn,
+            error: null,
+            sources: turn.sources.filter((pending) => pending.id !== sourceId),
+          }));
+        }
+        return result.matched;
+      } catch (failure) {
+        update(historyId, (turn) => ({
+          ...turn,
+          error: failure instanceof Error ? failure.message : String(failure),
+        }));
+        throw failure;
+      }
+    },
+    [update]
+  );
+
   const hasRunningTurns = useMemo(
     () => [...turns.values()].some((turn) => turn.isRunning),
     [turns]
@@ -413,6 +471,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
 
   return useMemo(
     () => ({
+      answerSourceTurn,
       answerTurn,
       hasRunningTurns,
       loadTurn,
@@ -425,6 +484,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       turns,
     }),
     [
+      answerSourceTurn,
       answerTurn,
       hasRunningTurns,
       loadTurn,

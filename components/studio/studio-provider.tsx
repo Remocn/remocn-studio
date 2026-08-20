@@ -117,7 +117,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     composer,
     isMissing: opened?.missing ?? false,
     isShown: panes.isPreviewShown,
-    isWaiting: turn.permission !== null,
+    isWaiting: turn.permission !== null || turn.source !== null,
     openedProjectId: opened?.id ?? null,
     preview,
     previewProjectId,
@@ -135,7 +135,8 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       opened !== null &&
       !opened.missing &&
       !environment.isBlocking &&
-      turn.permission === null,
+      turn.permission === null &&
+      turn.source === null,
     paneView: panes.paneView,
     save: library.save,
     showPane,

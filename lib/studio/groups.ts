@@ -150,7 +150,9 @@ function rowOf(
   turn: TurnState | undefined
 ): SessionRow {
   const state = turn ?? IDLE_TURN;
-  const [ask] = state.permissions;
+  const [permission] = state.permissions;
+  const [source] = state.sources;
+  const askedAt = permission?.askedAt ?? source?.askedAt ?? null;
   const status = statusOf(state);
   // The plan is only worth deriving while the turn runs: a settled row is one
   // quiet line, and walking a finished session's entries on every minute tick
@@ -158,14 +160,14 @@ function rowOf(
   const tasks = status === "running" ? currentTasks(state.entries) : [];
 
   return {
-    askedAt: ask?.askedAt ?? null,
+    askedAt,
     error: state.error,
     progress: taskProgress(tasks),
     session,
     startedAt: state.startedAt,
     status,
     task: activeForm(tasks),
-    tool: ask?.name ?? null,
+    tool: permission?.name ?? (source === undefined ? null : source.name),
     unread: state.unread,
   };
 }

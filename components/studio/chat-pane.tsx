@@ -36,6 +36,7 @@ import type { StudioSettings } from "@/lib/studio/settings";
 import { currentTasks } from "@/lib/studio/tasks";
 import type { HistorySession, Project } from "@/shared/ipc";
 import { AssetOfferCard } from "./asset-offer-card";
+import { AssetSourceCard } from "./asset-source-card";
 import { Composer } from "./composer";
 import { DockStack } from "./dock";
 import { EnvironmentChecklist } from "./environment-checklist";
@@ -266,6 +267,18 @@ function Conversation({
 
           <AssetOfferCard offer={offer} />
 
+          {turn.source === null ? null : (
+            <div className="mb-2 shrink-0 px-4 pt-1">
+              <div className="mx-auto w-full max-w-2xl">
+                <AssetSourceCard
+                  key={turn.source.id}
+                  onAnswer={turn.answerSource}
+                  source={turn.source}
+                />
+              </div>
+            </div>
+          )}
+
           {turn.permission === null ? null : (
             <div className="mb-2 shrink-0 px-4 pt-1">
               <div className="mx-auto w-full max-w-2xl">
@@ -300,7 +313,7 @@ function Conversation({
             cwd={cwd}
             disabled={!hasProject || missing || environment.isBlocking}
             isRunning={turn.isRunning}
-            isWaiting={turn.permission !== null}
+            isWaiting={turn.permission !== null || turn.source !== null}
             mode={turn.mode}
             onModeChange={turn.onModeChange}
             onProviderChange={turn.onProviderChange}

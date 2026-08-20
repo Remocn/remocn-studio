@@ -33,6 +33,7 @@ export const LIST_ASSETS = "list_assets";
 export const SAVE_ASSET = "save_asset";
 export const START_PIPELINE = "start_video_pipeline";
 export const SET_PIPELINE_STAGE = "set_pipeline_stage";
+export const REQUEST_SOURCE_ASSET = "request_source_asset";
 export const DESIGN_CHECK = "design_check";
 
 // The specs are declarative so the stdio child can register them with any
@@ -101,6 +102,27 @@ export const TOOL_SPECS: Record<ToolServer, readonly ToolSpec[]> = {
         "Start the six-stage video production pipeline for this session: analysis, brand, script, motion, build, review. Call it once, when the person asks to create a video (or rework one from the ground up) and no pipeline is active yet. It answers with the instructions for the first stage — follow them.",
       name: START_PIPELINE,
       shape: {},
+    },
+    {
+      description:
+        "Ask the person how to supply an identity asset after you tried and failed to recover the original from its authoritative source. Use this only after checking direct downloads, page image sources and source sets, and linked SVGs. The answer gives you a real project-relative path or says the ask was cancelled; drawing, tracing or restyling the asset is never the fallback.",
+      name: REQUEST_SOURCE_ASSET,
+      shape: {
+        attempt: z
+          .string()
+          .min(1)
+          .describe(
+            "What you checked on the source and why none of it yielded a usable original."
+          ),
+        name: z
+          .string()
+          .min(1)
+          .describe("The human name of the required identity asset."),
+        source: z
+          .string()
+          .url()
+          .describe("The authoritative HTTP(S) page or file URL."),
+      },
     },
     {
       description:

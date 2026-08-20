@@ -12,6 +12,8 @@ import type {
   PermissionParams,
   PromptParams,
   PromptResult,
+  SourceAssetAnswer,
+  SourceAssetParams,
 } from "@/shared/ipc";
 
 export function promptAgent(
@@ -37,6 +39,15 @@ export function answerPermission(
     const id = yield* newRequestId;
 
     return yield* requestSidecar({ id, method: "agent.permission", params });
+  });
+}
+
+export function answerSourceAsset(
+  params: SourceAssetParams
+): Effect.Effect<SourceAssetAnswer, SidecarError> {
+  return Effect.gen(function* () {
+    const id = yield* newRequestId;
+    return yield* requestSidecar({ id, method: "agent.source", params });
   });
 }
 

@@ -29,6 +29,7 @@ function tools(): TurnTools {
       save: () => Promise.reject(new Error("unused")),
     },
     pipeline: {
+      requestSource: () => Promise.reject(new Error("unused")),
       setStage: () => Promise.reject(new Error("unused")),
       start: () => Promise.resolve([{ stage: "analysis", status: "active" }]),
     },

@@ -47,6 +47,11 @@ type Pending =
       fail: (message: string) => void;
       kind: "design";
       succeed: (result: DesignResult) => void;
+    }
+  | {
+      fail: (message: string) => void;
+      kind: "source";
+      succeed: (path: string) => void;
     };
 
 type ExportPending = Extract<Pending, { kind: "export" }>;
@@ -69,6 +74,11 @@ export interface StillRequest {
 export interface DesignRequest {
   composition: string;
   frames: readonly number[];
+}
+
+export interface SourceRequest {
+  output: string;
+  url: string;
 }
 
 export function previewEvents(
@@ -125,6 +135,21 @@ export function designFrom(
       fail: (message) => settle(Effect.fail(failed(message))),
       kind: "design",
       succeed: (result) => settle(Effect.succeed(result)),
+    })
+  );
+}
+
+export function sourceFrom(
+  projectId: string,
+  request: SourceRequest
+): Effect.Effect<string, PreviewError> {
+  return ask<string>(
+    projectId,
+    (id) => ({ ...request, id, type: "source" }),
+    (settle) => ({
+      fail: (message) => settle(Effect.fail(failed(message))),
+      kind: "source",
+      succeed: (captured) => settle(Effect.succeed(captured)),
     })
   );
 }
@@ -287,7 +312,8 @@ function deliver(reply: HostReply, pending: Map<string, Pending>): void {
     reply.type === "still-failed" ||
     reply.type === "export-failed" ||
     reply.type === "clip-failed" ||
-    reply.type === "design-failed"
+    reply.type === "design-failed" ||
+    reply.type === "source-failed"
   ) {
     waiting.fail(reply.message);
     return;
@@ -303,6 +329,13 @@ function deliver(reply: HostReply, pending: Map<string, Pending>): void {
   if (waiting.kind === "design") {
     if (reply.type === "design-done") {
       waiting.succeed(reply.result);
+    }
+    return;
+  }
+
+  if (waiting.kind === "source") {
+    if (reply.type === "source-done") {
+      waiting.succeed(reply.path);
     }
     return;
   }

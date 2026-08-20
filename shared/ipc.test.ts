@@ -107,6 +107,20 @@ describe("the mode on the wire", () => {
   });
 });
 
+describe("source asset answers", () => {
+  it("carries an uploaded file chosen for a pending source ask", () => {
+    const params = codecsFor("agent.source").params({
+      action: "uploaded",
+      file: "/Users/me/logo.svg",
+      id: "source-1",
+    });
+
+    expect(Exit.isSuccess(params) && params.value.file).toBe(
+      "/Users/me/logo.svg"
+    );
+  });
+});
+
 describe("the element selections on the wire", () => {
   const SELECTION = {
     column: 7,

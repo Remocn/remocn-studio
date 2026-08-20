@@ -7,6 +7,7 @@ import {
   DESIGN_SERVER,
   LIBRARY_SERVER,
   PIPELINE_SERVER,
+  REQUEST_SOURCE_ASSET,
   SET_PIPELINE_STAGE,
   START_PIPELINE,
   TOOL_SERVERS,
@@ -40,6 +41,9 @@ describe("tool specs", () => {
     );
     expect(pipelineBrief([{ stage: "analysis", status: "active" }])).toContain(
       `mcp__${PIPELINE_SERVER}__${SET_PIPELINE_STAGE}`
+    );
+    expect(pipelineBrief([{ stage: "brand", status: "active" }])).toContain(
+      `mcp__${PIPELINE_SERVER}__${REQUEST_SOURCE_ASSET}`
     );
   });
 

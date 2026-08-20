@@ -25,6 +25,14 @@ export interface PendingPermission {
   reason: PermissionReason;
 }
 
+export interface PendingSourceAsset {
+  askedAt: number;
+  attempt: string;
+  id: string;
+  name: string;
+  source: string;
+}
+
 export interface QueuedMessage {
   assets: readonly PromptAsset[];
   attachments: readonly PromptAttachment[];
@@ -49,6 +57,7 @@ export interface TurnState {
   provider: AgentProvider;
   queue: readonly QueuedMessage[];
   sdkSessionId: string | null;
+  sources: readonly PendingSourceAsset[];
   stages: readonly PipelineStage[];
   startedAt: number | null;
   unread: boolean;
@@ -65,6 +74,7 @@ export const IDLE_TURN: TurnState = {
   provider: DEFAULT_AGENT_PROVIDER,
   queue: [],
   sdkSessionId: null,
+  sources: [],
   stages: [],
   startedAt: null,
   unread: false,
@@ -83,7 +93,7 @@ export function nextQueued(
   turn: TurnState,
   hasFailed: boolean
 ): QueuedMessage | null {
-  if (hasFailed || turn.permissions.length > 0) {
+  if (hasFailed || turn.permissions.length > 0 || turn.sources.length > 0) {
     return null;
   }
   return turn.queue[0] ?? null;
@@ -116,7 +126,7 @@ export function statusOf(turn: TurnState | undefined): SessionStatus {
   if (turn === undefined) {
     return "idle";
   }
-  if (turn.permissions.length > 0) {
+  if (turn.permissions.length > 0 || turn.sources.length > 0) {
     return "waiting";
   }
   if (turn.isRunning) {
