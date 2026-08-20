@@ -1,5 +1,88 @@
 # remocn-studio
 
+## 0.5.0
+
+### Minor Changes
+
+- 18a165d: Drag video, audio and pictures from Finder straight into the composer.
+
+  The message field is now a drop target beside the library. What lands in it is
+  sorted by kind rather than by where you let go: a picture joins the attachments
+  with an `[Image #N]` written at the caret, exactly as pasting one does, and a
+  video or a sound joins the media list, which carries no reference — the sentence
+  you write is what points at it. A mixed drop splits across both.
+
+  There is still one drag subscription in the app. `useFileDrops` owns it and asks
+  `zoneAt` which of the zones a drop landed in, so the composer and the library
+  cannot both claim the same file, and a drop that missed both is ignored without
+  a word — the left pane goes back to whatever it was showing before the drag
+  passed over it.
+
+  A locked composer is not a target at all: waiting on a permission card, a folder
+  that is gone, or a failing environment check takes the field out of the hit test,
+  so the ring never lights on a message that could not hold the file. Anything that
+  is not media is refused out loud, in the same sentence the library uses, now
+  saying which of the two it did not go into.
+
+- 6e82941: Write the next message while the turn is still running, and let it queue.
+
+  Send during a run no longer clears the field and drops what you wrote on the
+  floor — the message joins a queue on that session and the button says so, in
+  words: **Queue**, beside Stop rather than instead of it. When the turn settles
+  cleanly the head of the queue goes out as an ordinary turn, in the mode the
+  session ended in, so a plan approved mid-turn carries.
+
+  The queue is the session's, not the screen's: a background session dispatches
+  its own queue while you are looking somewhere else, exactly as its turns already
+  run there. Three things deliberately hold it where it is — a turn you stopped by
+  hand, a turn that failed, and a permission card still unanswered — because
+  sending a prepared message over an error, or over a question you have not
+  answered yet, is not what anybody meant.
+
+  The queue is a drawer on top of the composer, beside the plan and sharing its
+  chrome: one line whatever is in it — the message that goes out next, and how many
+  wait — opening upwards into the whole list. Each row carries an × to forget it
+  and a click to put it back in the composer for editing: the text, its
+  attachments, its elements and its assets together, since the `[Image #N]`
+  invariant is positional and cannot be split. Editing needs an empty composer, and
+  the row says so rather than overwriting a draft.
+
+  The queue lives in the webview and does not survive a relaunch; nothing in the
+  sidecar or the IPC contract changed, because every queued message becomes an
+  ordinary `claude.prompt` when its turn comes.
+
+- 762d4e6: Point at a file with `@`, anywhere on the machine.
+
+  Typing `@` in the composer opens a list of the project's files, filtered as you
+  keep typing and matched on the file name as well as the path. Enter or a click
+  writes the file into the message as a path in backticks, and the sentence around
+  it is what says what to do with it. Escape leaves the `@` as the plain text it
+  was.
+
+  Each row leads with the mark of what the file is — the React logo on a `.tsx`,
+  TypeScript, JSON, Markdown, CSS, and a plain glyph by category for pictures,
+  video, sound, fonts and archives.
+
+  The arrows walk the list and the list follows them, so the highlighted row is
+  always the one you can see — including after typing narrows the list and moves
+  the row you were on.
+
+  A query that starts with `/` or `~` browses the filesystem instead: the list
+  becomes that folder's contents, Enter on a folder drills into it and keeps the
+  list open, and Enter on a file writes its absolute path. A file outside the
+  project is read through the ordinary Allow/Deny card, because the permission
+  gate auto-allows only what is inside the opened folder.
+
+  A tagged file wears a chip where the message is drawn — in the composer as you
+  write it and in the bubble after it is sent — so a path reads as a thing you
+  pointed at rather than as punctuation in the middle of a sentence. A backticked
+  span that is not a path, `Main` among them, is left as the text around it.
+
+  A tagged file is plain text, not a fourth kind of reference beside
+  `[Image #N]`, `[Element #N]` and `[Asset #N]` — a path is the whole payload, so
+  nothing is spliced into the turn, the transcript and its SQLite rows are
+  untouched, and a reopened session renders exactly what was sent.
+
 ## 0.4.0
 
 ### Minor Changes
