@@ -1036,20 +1036,36 @@ carries three vendored skills — `remocn`, `remotion-best-practices` and
   the vendored three (it is also the collision check `pluginsFor` runs against a project's own
   `.claude/skills`) and `SHIPPED` is what the plugin actually carries; a test pins that the
   folder list equals `SHIPPED` and that every skill names itself after its folder.
-- **The whole document lives in `SKILL.md`, not split across reference pages.** A skill's own
-  body is injected by the harness, but a page it points at is fetched with the `Read` tool —
-  and the plugin dir is outside the opened folder, so every such read would raise an
-  Allow/Deny card mid-turn. One self-contained file is what makes the knowledge free to use.
-  Read out of the CLI binary: plugin skills are discovered by scanning `skills/` for
-  `SKILL.md` (no `plugin.json` entry needed, which is why the vendored three work with none),
-  and one is skipped when it *"exceeds N byte limit"* — the limits in the binary are 128 KB
-  and up, against 44 KB here.
+- **`video-lessons` lives in one `SKILL.md`; the vendored `remotion-best-practices` is a
+  router.** A skill's own body is injected by the harness, but a page it points at —
+  upstream's `remotion-markup/REFERENCE.md` and its siblings — is fetched with the `Read`
+  tool, and the plugin dir is outside the opened folder. That is why the gate in
+  `sidecar/claude/permission.ts` auto-allows the read-only tools (`Read`, `Glob`, `Grep`,
+  `NotebookRead`) on paths inside `REMOCN_STUDIO_PLUGIN_DIR`: we ship the plugin ourselves,
+  so reading it is safe, while a write there — or a symlink leading out of it — still asks.
+  Without that rule every router hop raised an Allow/Deny card mid-turn, which is why
+  `video-lessons` is still written as one self-contained file. Read out of the CLI binary:
+  plugin skills are discovered by scanning `skills/` for `SKILL.md` (no `plugin.json` entry
+  needed, which is why the vendored three work with none), and one is skipped when it
+  *"exceeds N byte limit"* — the limits in the binary are 128 KB and up, against 44 KB here.
 - **The mandate to read it is a system-prompt line, and it is conditional.** `conventionsFor`
   appends it only when `pluginsFor` actually returned the plugin, because a project that
   installed its own copy of a vendored skill gets the plugin dropped *wholesale* — ordering a
   turn to invoke `remocn-studio:video-lessons` when nothing loaded it would be an instruction
   to fail. `LESSONS_SKILL` lives in `knowledge.ts` with the rest of the inventory and the
   prompt reads it from there, so the name in the sentence and the folder on disk cannot drift.
+  `remocn-studio:remotion-interactivity` is mandated the same conditional way
+  (`INTERACTIVITY_SKILL`), so agent-written markup keeps inline styles, inline
+  `interpolate()` and `scale`/`rotate`/`translate` the studio can one day edit.
+- **AI-written components must be tunable without code.** `STUDIO_CONVENTIONS` requires every
+  *new* component to expose its knobs as typed props with inline defaults, a Zod schema
+  beside the component (`zColor()` for colors), and an `InteractivitySchema` for a custom
+  effect's parameters — the foundation the props panel (REM-6) will read instead of guessing
+  by fiber. Edits to existing components are deliberately exempt: nothing is rewritten around
+  a schema unless the person asks. The convention degrades in words on an old Remotion rather
+  than failing the turn, and `templates/remotion` ships `zod` + `@remotion/zod-types` so the
+  first schema needs no `bun add` card. (`Interactive`/`InteractivitySchema` are exported at
+  least since 4.0.481, the template's pin — measured against the published package.)
 - **`"../agent": "agent"` maps the whole folder** in `tauri.conf.json`, so a new skill needs no
   resource entry — unlike `preview/`, which is listed file by file.
 
@@ -1066,6 +1082,8 @@ carries three vendored skills — `remocn`, `remotion-best-practices` and
   temp directory — never in the repo, whose "project" the CLI would resolve on its own — and
   copies with `dereference`. `skills:check` refetches and compares a sha256 per file, so
   upstream drift and a local edit fail the same way; `treeOf` rejects a symlink outright.
+  The two sources are fetched **one after the other**: two `bunx skills` running in parallel
+  raced in the shared bun cache and one of them flaked with exit 1.
 - **The vendored tree is excluded from every tool that would rewrite it.** `agent/skills` is
   force-ignored in `biome.jsonc` and `agent` is excluded in `tsconfig.json` — formatting it
   would make `skills:check` report drift forever, and the skills ship `.tsx` samples that

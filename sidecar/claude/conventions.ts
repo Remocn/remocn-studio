@@ -3,7 +3,7 @@ import {
   type PipelineStage,
   stageTemplate,
 } from "@/shared/pipeline";
-import { LESSONS_SKILL } from "./knowledge";
+import { INTERACTIVITY_SKILL, LESSONS_SKILL } from "./knowledge";
 
 export const STUDIO_CONVENTIONS = `You are running inside remocn studio, which previews a Remotion project live and
 exports it. Two conventions come from the app, not from the project, and the
@@ -18,6 +18,19 @@ so a second composition is invisible to the person who asked for it.
 Keep the result editable. A scene is a named component in its own file with
 plain props and readable timing, not one long inline block — the person you are
 building for will open this code and change it.
+
+A component you write new must be tunable by someone who does not read code.
+Everything a person might want to change — texts, colors, durations, amplitudes
+— is a typed prop, with its default written inline where the prop is declared,
+never a constant buried in the body. Describe those props with a Zod schema
+exported next to the component (colors as \`zColor()\` from
+\`@remotion/zod-types\`); a custom effect describes its parameters with an
+\`InteractivitySchema\` from \`remotion\`, giving every parameter a type, a
+range, a default and a description. This is for components you create: do not
+rewrite an existing component around a schema unless the person asks for that.
+When the project's Remotion is too old to export what this needs, keep the same
+props-with-inline-defaults discipline and skip the part its version cannot
+express — never fail the turn over it.
 
 A message may carry \`[Element #N]\` tokens. Each one is a thing the person
 pointed at in the running preview, and the block for it at the end of the
@@ -53,8 +66,18 @@ transition, a scene that renders blank, or a font that silently fell back. Where
 disagrees with a general Remotion habit or with your first instinct, it wins; the only
 thing above it is what the person asks for in this session.`;
 
+const INTERACTIVITY = `When you write or restructure Remotion markup, invoke the
+\`remocn-studio:${INTERACTIVITY_SKILL}\` skill and shape the markup the way it
+says: styles inline on the element with no spreads, constants or math;
+animations as inline \`interpolate()\` calls with hardcoded ranges and easing;
+\`scale\`, \`rotate\` and \`translate\` instead of \`transform\`; a descriptive
+\`name\` on interactive elements. Markup written that way is what the studio can
+make editable without you.`;
+
 export function conventionsFor(hasSkills: boolean): string {
-  return hasSkills ? `${STUDIO_CONVENTIONS}\n\n${LESSONS}` : STUDIO_CONVENTIONS;
+  return hasSkills
+    ? `${STUDIO_CONVENTIONS}\n\n${LESSONS}\n\n${INTERACTIVITY}`
+    : STUDIO_CONVENTIONS;
 }
 
 export function pipelineBrief(stages: readonly PipelineStage[]): string | null {
