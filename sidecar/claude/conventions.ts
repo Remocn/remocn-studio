@@ -3,7 +3,7 @@ import {
   type PipelineStage,
   stageTemplate,
 } from "@/shared/pipeline";
-import { INTERACTIVITY_SKILL, LESSONS_SKILL } from "./knowledge";
+import { INTERACTIVITY_SKILL, LESSONS_SKILL, MOTION_SKILL } from "./knowledge";
 
 export const STUDIO_CONVENTIONS = `You are running inside remocn studio, which previews a Remotion project live and
 exports it. Two conventions come from the app, not from the project, and the
@@ -66,6 +66,14 @@ transition, a scene that renders blank, or a font that silently fell back. Where
 disagrees with a general Remotion habit or with your first instinct, it wins; the only
 thing above it is what the person asks for in this session.`;
 
+const MOTION = `Before you design any scene — its layout, its palette, its choreography —
+invoke the \`remocn-studio:${MOTION_SKILL}\` skill and compose to it. It is the studio's
+motion-design bar: video-scale type and opacity, layered frames with ambient decoration,
+edge-anchored framing, choreographed entrances in \`interpolate\`/\`spring\` terms. Without
+it the result comes out web-shaped: small text, an empty centered layout, motion that
+reads as static. It sets the design defaults; where \`remocn-studio:${LESSONS_SKILL}\`
+contradicts it, the lessons win.`;
+
 const INTERACTIVITY = `When you write or restructure Remotion markup, invoke the
 \`remocn-studio:${INTERACTIVITY_SKILL}\` skill and shape the markup the way it
 says: styles inline on the element with no spreads, constants or math;
@@ -76,7 +84,7 @@ make editable without you.`;
 
 export function conventionsFor(hasSkills: boolean): string {
   return hasSkills
-    ? `${STUDIO_CONVENTIONS}\n\n${LESSONS}\n\n${INTERACTIVITY}`
+    ? `${STUDIO_CONVENTIONS}\n\n${LESSONS}\n\n${MOTION}\n\n${INTERACTIVITY}`
     : STUDIO_CONVENTIONS;
 }
 
