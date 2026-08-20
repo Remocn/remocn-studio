@@ -14,6 +14,7 @@ import {
   type Still,
   type StillEvent,
 } from "@/shared/ipc";
+import type { DesignResult } from "./design";
 import { PREVIEW_OUT_ENV, PREVIEW_PARENT_ENV } from "./host";
 import { PreviewError } from "./project";
 import { decodeHostReply, type HostCommand, type HostReply } from "./protocol";
@@ -41,6 +42,11 @@ type Pending =
       fail: (message: string) => void;
       kind: "clip";
       succeed: (path: string) => void;
+    }
+  | {
+      fail: (message: string) => void;
+      kind: "design";
+      succeed: (result: DesignResult) => void;
     };
 
 type ExportPending = Extract<Pending, { kind: "export" }>;
@@ -58,6 +64,11 @@ const hosts = new Map<string, Host>();
 export interface StillRequest {
   composition: string;
   frame: number;
+}
+
+export interface DesignRequest {
+  composition: string;
+  frames: readonly number[];
 }
 
 export function previewEvents(
@@ -100,6 +111,21 @@ export function stillFrom(
         ? Effect.fail(failed("the preview host answered without a frame"))
         : Effect.succeed(still)
     )
+  );
+}
+
+export function designFrom(
+  projectId: string,
+  request: DesignRequest
+): Effect.Effect<DesignResult, PreviewError> {
+  return ask<DesignResult>(
+    projectId,
+    (id) => ({ ...request, frames: [...request.frames], id, type: "design" }),
+    (settle) => ({
+      fail: (message) => settle(Effect.fail(failed(message))),
+      kind: "design",
+      succeed: (result) => settle(Effect.succeed(result)),
+    })
   );
 }
 
@@ -260,7 +286,8 @@ function deliver(reply: HostReply, pending: Map<string, Pending>): void {
   if (
     reply.type === "still-failed" ||
     reply.type === "export-failed" ||
-    reply.type === "clip-failed"
+    reply.type === "clip-failed" ||
+    reply.type === "design-failed"
   ) {
     waiting.fail(reply.message);
     return;
@@ -269,6 +296,13 @@ function deliver(reply: HostReply, pending: Map<string, Pending>): void {
   if (waiting.kind === "clip") {
     if (reply.type === "clip-done") {
       waiting.succeed(reply.path);
+    }
+    return;
+  }
+
+  if (waiting.kind === "design") {
+    if (reply.type === "design-done") {
+      waiting.succeed(reply.result);
     }
     return;
   }

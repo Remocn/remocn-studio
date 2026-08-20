@@ -13,9 +13,9 @@ semantic decoration. Explicit motion intent belongs to REM-294.
 ## Tool contract
 
 Add a provider-neutral `remocn-design` MCP server with one `design_check` tool.
-The agent supplies a composition and two to nine distinct, non-negative frame
-numbers. The current turn already owns the project id, so it is captured by the
-sidecar handler rather than exposed to the model.
+The agent supplies two to nine distinct, non-negative frame numbers. The
+composition is the studio's fixed `Main`, and the current turn already owns the
+project id, so neither is exposed to the model.
 
 The answer is agent-readable JSON containing:
 
@@ -101,10 +101,10 @@ At each requested frame, fingerprint every visible DOM element in document
 order using its rectangle and effective opacity. Fold an 8x8 pixel hash of
 visible canvas and video elements into the fingerprint when readable.
 
-When at least two distinct requested frames produce the same complete
-fingerprint, return a global `timeline_static` warning. Its wording says that
-the sampled timeline did not visibly advance and asks the agent to inspect the
-snapshots; it does not call any element dead or require continuous motion.
+When all requested distinct frames produce the same complete fingerprint,
+return a global `timeline_static` warning. Its wording says that the sampled
+timeline did not visibly advance and asks the agent to inspect the snapshots;
+it does not call any element dead or require continuous motion.
 
 Selector-scoped expectations such as `changes_between`, `visible_at`, and
 `stays_in_frame` are intentionally deferred to REM-294 so `video/motion.md`
@@ -133,4 +133,3 @@ session.
   that `design_check` reports the coordinates and 4.5:1 requirement; fix the
   colour and verify the finding disappears.
 - Run typecheck, focused tests, the sidecar build, and the repository check.
-

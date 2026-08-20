@@ -28,6 +28,9 @@ function asset(shape: Partial<Asset> = {}): Asset {
 function tools(shape: Partial<TurnTools> = {}): TurnTools {
   return {
     cwd: CWD,
+    design: {
+      check: () => Promise.reject(new Error("no design check in this test")),
+    },
     library: {
       list: () => Promise.resolve([]),
       save: () => Promise.reject(new Error("no save in this test")),
@@ -120,6 +123,34 @@ describe("executeTool", () => {
     expect(answer.isError).toBe(false);
     expect(answer.text).toContain(JSON.stringify(stages));
     expect(answer.text).toContain("**Analysis**");
+  });
+
+  it("returns the design report as agent-readable JSON", async () => {
+    const answer = await executeTool(
+      "remocn-design",
+      "design_check",
+      { frames: [30, 90] },
+      tools({
+        design: {
+          check: (frames) =>
+            Promise.resolve({
+              composition: "Main",
+              findings: [],
+              frames: [...frames],
+              height: 1080,
+              snapshots: [],
+              summary: { errors: 0, info: 0, warnings: 0 },
+              width: 1920,
+            }),
+        },
+      })
+    );
+
+    expect(answer.isError).toBe(false);
+    expect(JSON.parse(answer.text)).toMatchObject({
+      composition: "Main",
+      frames: [30, 90],
+    });
   });
 
   it("refuses arguments the tool's own schema rejects", async () => {

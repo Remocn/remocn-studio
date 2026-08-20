@@ -49,6 +49,8 @@ describe("conventionsFor", () => {
     for (const text of [conventionsFor(true), conventionsFor(false)]) {
       expect(text).toContain("exactly one composition");
       expect(text).toContain("[Element #N]");
+      expect(text).toContain("mcp__remocn-design__design_check");
+      expect(text).toContain("fix every mechanical finding");
     }
   });
 
