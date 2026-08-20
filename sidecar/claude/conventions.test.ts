@@ -52,6 +52,20 @@ describe("conventionsFor", () => {
     }
   });
 
+  it("keeps the motion-design baseline even without bundled skills", () => {
+    for (const text of [conventionsFor(true), conventionsFor(false)]) {
+      const compact = text.replaceAll("\n", " ");
+
+      expect(compact).toContain("Unless the project's brand");
+      expect(compact).toContain("gradient text");
+      expect(compact).toContain("headings at least 64px");
+      expect(compact).toContain("body at least 28px");
+      expect(compact).toContain("background, midground and foreground");
+      expect(compact).toContain("two to five decorative elements");
+      expect(compact).toContain("shared slow motion");
+    }
+  });
+
   it("requires a parameter schema with or without the plugin", () => {
     for (const text of [conventionsFor(true), conventionsFor(false)]) {
       expect(text).toContain("Zod schema");

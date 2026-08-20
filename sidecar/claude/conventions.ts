@@ -6,7 +6,7 @@ import {
 import { INTERACTIVITY_SKILL, LESSONS_SKILL, MOTION_SKILL } from "./knowledge";
 
 export const STUDIO_CONVENTIONS = `You are running inside remocn studio, which previews a Remotion project live and
-exports it. Two conventions come from the app, not from the project, and the
+exports it. These conventions come from the app, not from the project, and the
 bundled skills do not know about them.
 
 A project has exactly one composition, with the id \`Main\`. Never register a
@@ -18,6 +18,17 @@ so a second composition is invisible to the person who asked for it.
 Keep the result editable. A scene is a named component in its own file with
 plain props and readable timing, not one long inline block — the person you are
 building for will open this code and change it.
+
+Unless the project's brand or the person says otherwise, set the visual concept
+before layout: declare background, foreground and accent colors plus display and
+body typefaces. Prefer tinted neutrals and content-specific color; do not default
+to pure black or white, gradient text, cyan on dark, purple-to-blue gradients or
+neon. Use video-scale type: headings at least 64px at weight 700–900 and body at
+least 28px at weight 300–400. Build an asymmetric hierarchy instead of an
+equal-weight centered layout or a uniform grid of cards. Give every frame a
+background, midground and foreground, then keep two to five decorative elements
+visibly present with one shared slow motion; static decoration or opacity below about
+12% does not count.
 
 A component you write new must be tunable by someone who does not read code.
 Everything a person might want to change — texts, colors, durations, amplitudes
