@@ -10,13 +10,13 @@
       "source": "remotion-dev/skills",
       "sourceType": "github",
       "skillPath": "skills/remotion-best-practices/SKILL.md",
-      "computedHash": "f84046b70735b35a947912e5a7f794eb53b8b7661ef65e5178331baca698860d"
+      "computedHash": "45908362524ab32078e4d4d9b19062dab1d646808b0e10655bb7f401eb2c93ee"
     },
     "remotion-interactivity": {
       "source": "remotion-dev/skills",
       "sourceType": "github",
       "skillPath": "skills/remotion-interactivity/SKILL.md",
-      "computedHash": "62f360b45f9cac618b3d9058c52ed73c5410ea03a0b801185331061c2e2d9154"
+      "computedHash": "bdd792f579e3ef9af7aaf6734cb11d4c702242ac4f62395f5344d44afa4740fa"
     }
   },
   "version": 1

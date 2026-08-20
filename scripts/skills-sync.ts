@@ -155,9 +155,11 @@ async function vendor(
 async function main(): Promise<void> {
   const checking = process.argv.includes("--check");
 
-  const fetched = await Promise.all(
-    SOURCES.map((source) => fetchSkills(source.repo, source.skills))
-  );
+  const fetched: Awaited<ReturnType<typeof fetchSkills>>[] = [];
+  for (const source of SOURCES) {
+    // biome-ignore lint/performance/noAwaitInLoops: two parallel `bunx skills` race in bun's shared cache and one flakes with exit 1
+    fetched.push(await fetchSkills(source.repo, source.skills));
+  }
 
   const handled = await Promise.all(
     SOURCES.flatMap((source, index) =>

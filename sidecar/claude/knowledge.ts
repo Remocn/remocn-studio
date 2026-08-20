@@ -3,10 +3,12 @@ import { join } from "node:path";
 import type { Options } from "@anthropic-ai/claude-agent-sdk";
 import { PLUGIN_DIR_ENV } from "@/shared/ipc";
 
+export const INTERACTIVITY_SKILL = "remotion-interactivity";
+
 export const VENDORED = [
   "remocn",
   "remotion-best-practices",
-  "remotion-interactivity",
+  INTERACTIVITY_SKILL,
 ] as const;
 
 export const LESSONS_SKILL = "video-lessons";

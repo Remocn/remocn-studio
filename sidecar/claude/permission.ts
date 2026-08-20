@@ -1,7 +1,7 @@
 import { realpath } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { Effect } from "effect";
-import type { PermissionReason } from "@/shared/ipc";
+import { type PermissionReason, PLUGIN_DIR_ENV } from "@/shared/ipc";
 
 export type PermissionVerdict =
   | { readonly kind: "allow" }
@@ -21,6 +21,8 @@ const PATH_FIELDS: Record<string, readonly string[]> = {
   Read: ["file_path"],
   Write: ["file_path"],
 };
+
+const READING_TOOLS = new Set(["Glob", "Grep", "NotebookRead", "Read"]);
 
 const FREE_TOOLS = new Set([
   "TaskCreate",
@@ -66,7 +68,9 @@ export function review(
 
   const targets = fields.flatMap((field) => text(input, field) ?? []);
 
-  return Effect.promise(() => escapee(cwd, targets)).pipe(
+  return Effect.promise(() =>
+    escapee(cwd, readRootsFor(toolName), targets)
+  ).pipe(
     Effect.map((escaped) =>
       escaped === null ? ALLOW : ask("outside", toolName, escaped)
     )
@@ -85,22 +89,38 @@ function ask(
   return { kind: "ask", reason, signature: signatureOf(toolName, detail) };
 }
 
+function readRootsFor(toolName: string): readonly string[] {
+  if (!READING_TOOLS.has(toolName)) {
+    return [];
+  }
+
+  const dir = process.env[PLUGIN_DIR_ENV];
+  return dir === undefined || dir === "" ? [] : [dir];
+}
+
 async function escapee(
   cwd: string,
+  extraRoots: readonly string[],
   targets: readonly string[]
 ): Promise<string | null> {
   if (targets.length === 0) {
     return null;
   }
 
-  const [root, ...resolved] = await Promise.all([
+  const resolved = await Promise.all([
     real(resolve(cwd)),
+    ...extraRoots.map((root) => real(resolve(root))),
     ...targets.map((target) =>
       real(isAbsolute(target) ? target : resolve(cwd, target))
     ),
   ]);
 
-  return resolved.find((target) => !inside(root, target)) ?? null;
+  const roots = resolved.slice(0, 1 + extraRoots.length);
+  return (
+    resolved
+      .slice(1 + extraRoots.length)
+      .find((target) => !roots.some((root) => inside(root, target))) ?? null
+  );
 }
 
 async function real(target: string): Promise<string> {

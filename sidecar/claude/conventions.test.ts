@@ -3,9 +3,10 @@ import {
   conventionsFor,
   STUDIO_CONVENTIONS,
 } from "@/sidecar/claude/conventions";
-import { LESSONS_SKILL } from "@/sidecar/claude/knowledge";
+import { INTERACTIVITY_SKILL, LESSONS_SKILL } from "@/sidecar/claude/knowledge";
 
 const NAMED = `remocn-studio:${LESSONS_SKILL}`;
+const MARKUP = `remocn-studio:${INTERACTIVITY_SKILL}`;
 
 describe("conventionsFor", () => {
   it("orders the lessons skill by the name the plugin ships it under", () => {
@@ -16,18 +17,32 @@ describe("conventionsFor", () => {
     expect(conventionsFor(true)).toContain("it wins");
   });
 
+  it("orders the interactivity skill by the name the plugin ships it under", () => {
+    expect(conventionsFor(true)).toContain(MARKUP);
+  });
+
   it("never orders a skill that is not loaded", () => {
     const alone = conventionsFor(false);
 
     expect(alone).toBe(STUDIO_CONVENTIONS);
     expect(alone).not.toContain(NAMED);
     expect(alone).not.toContain(LESSONS_SKILL);
+    expect(alone).not.toContain(MARKUP);
   });
 
   it("keeps the app's own conventions either way", () => {
     for (const text of [conventionsFor(true), conventionsFor(false)]) {
       expect(text).toContain("exactly one composition");
       expect(text).toContain("[Element #N]");
+    }
+  });
+
+  it("requires a parameter schema with or without the plugin", () => {
+    for (const text of [conventionsFor(true), conventionsFor(false)]) {
+      expect(text).toContain("Zod schema");
+      expect(text).toContain("zColor()");
+      expect(text).toContain("InteractivitySchema");
+      expect(text).toContain("unless the person asks");
     }
   });
 });
