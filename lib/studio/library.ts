@@ -152,6 +152,7 @@ export function draftFromAttachment(
     files: [attachment.path],
     name: attachment.name,
     preview: still.path.length === 0 ? null : still.path,
+    role: null,
     type,
   };
 }

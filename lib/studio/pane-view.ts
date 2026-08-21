@@ -1,4 +1,5 @@
 import type { Asset } from "@/shared/library";
+import { MOTION_ROLES, type MotionRole, ROLE_LABELS } from "@/shared/motion";
 
 export const PANE_VIEWS = ["projects", "assets", "components"] as const;
 
@@ -31,4 +32,52 @@ export function filterAssets(
     return assets;
   }
   return assets.filter((asset) => asset.name.toLowerCase().includes(needle));
+}
+
+export const CATEGORY_ORDER = [
+  "Typography",
+  "Transitions",
+  "Shaders",
+  "Filters",
+  "Effects",
+] as const;
+
+export const SAVED_LABEL = "Saved";
+
+export interface ComponentGroup {
+  readonly assets: readonly Asset[];
+  readonly label: string;
+}
+
+function categoryRank(asset: Asset): number {
+  const found = CATEGORY_ORDER.indexOf(
+    asset.category as (typeof CATEGORY_ORDER)[number]
+  );
+  return found === -1 ? CATEGORY_ORDER.length : found;
+}
+
+function byCategory(assets: readonly Asset[]): readonly Asset[] {
+  return [...assets].sort(
+    (one, other) => categoryRank(one) - categoryRank(other)
+  );
+}
+
+function inRole(assets: readonly Asset[], role: MotionRole): readonly Asset[] {
+  return assets.filter((asset) => asset.role === role);
+}
+
+export function componentGroups(
+  saved: readonly Asset[],
+  bundled: readonly Asset[]
+): readonly ComponentGroup[] {
+  const unsorted = saved.filter((asset) => asset.role === null);
+
+  const groups: ComponentGroup[] = MOTION_ROLES.map((role) => ({
+    assets: [...inRole(saved, role), ...byCategory(inRole(bundled, role))],
+    label: ROLE_LABELS[role],
+  }));
+
+  return [{ assets: unsorted, label: SAVED_LABEL }, ...groups].filter(
+    (group) => group.assets.length > 0
+  );
 }

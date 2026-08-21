@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ASSET_TYPES, type AssetType } from "@/shared/library";
+import { MOTION_ROLES, type MotionRole } from "@/shared/motion";
 import {
   PIPELINE_STAGE_IDS,
   PIPELINE_STATUSES,
@@ -89,6 +90,12 @@ export const TOOL_SPECS: Record<ToolServer, readonly ToolSpec[]> = {
             "Every file the asset needs, as paths inside this project. Relative paths resolve against the project folder."
           ),
         name: z.string().min(1).describe("A short human name for the asset."),
+        role: z
+          .enum(MOTION_ROLES as unknown as [MotionRole])
+          .optional()
+          .describe(
+            "When in the life of the thing it is attached to this behaviour runs: entry, emphasis, exit, scene or transition. Media has no role; leave it out when nothing fits."
+          ),
         type: z
           .enum(ASSET_TYPES as unknown as [AssetType])
           .optional()

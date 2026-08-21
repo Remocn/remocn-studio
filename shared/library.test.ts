@@ -22,6 +22,7 @@ const ASSET: Asset = {
   path: "/library/assets/neon-title",
   preview: "/library/assets/neon-title/preview.png",
   proxied: false,
+  role: null,
   slug: "neon-title",
   type: "component",
 };

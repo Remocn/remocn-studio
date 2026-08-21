@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  ELEMENT_ROLES,
+  MOTION_DICTIONARY,
+  MOTION_ROLES,
+} from "@/shared/motion";
+import {
   BUNDLE_NAME,
   INTERACTIVITY_SKILL,
   LESSONS_SKILL,
@@ -95,5 +100,40 @@ describe("conventionsFor", () => {
       expect(text).toContain("InteractivitySchema");
       expect(text).toContain("unless the person asks");
     }
+  });
+});
+
+describe("the movement taxonomy", () => {
+  it("reaches a turn whether or not the bundled skills loaded", () => {
+    for (const text of [conventionsFor(true), conventionsFor(false)]) {
+      for (const role of MOTION_ROLES) {
+        expect(text).toContain(`\`${role}\``);
+      }
+    }
+  });
+
+  it("spells out the dictionary, so the words are the same on both sides", () => {
+    const text = STUDIO_CONVENTIONS;
+
+    for (const role of ELEMENT_ROLES) {
+      for (const name of MOTION_DICTIONARY[role]) {
+        expect(text).toContain(name);
+      }
+    }
+  });
+
+  it("says which props a role expects and that an exit mirrors its entry", () => {
+    expect(STUDIO_CONVENTIONS).toContain("durationInFrames, delay, stagger");
+    expect(STUDIO_CONVENTIONS).toContain("intensity, repeat, delay");
+    expect(STUDIO_CONVENTIONS).toContain("exit mirrors the entry");
+  });
+
+  it("sends an invented behaviour to the library with its role", () => {
+    expect(STUDIO_CONVENTIONS).toContain("mcp__remocn-library__save_asset");
+  });
+
+  it("leaves the recipes to the skill that carries them", () => {
+    expect(conventionsFor(true)).toContain("the movement dictionary");
+    expect(conventionsFor(false)).not.toContain("the movement dictionary");
   });
 });

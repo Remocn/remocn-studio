@@ -5,6 +5,8 @@ import { Effect, Exit, Schema } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import { REMOCN_DIR_ENV } from "@/shared/ipc";
 import { type Asset, BUNDLED_PREFIX } from "@/shared/library";
+import type { MotionRole } from "@/shared/motion";
+import { bundledRoleOf } from "./roles";
 import { LibraryError } from "./store";
 
 const REGISTRY = "registry";
@@ -118,6 +120,7 @@ function assetOf(
     path,
     preview: existsSync(poster) ? poster : null,
     proxied: false,
+    role: bundledRoleOf(name),
     slug: `${BUNDLED_PREFIX}${name}`,
     type: "component",
   };
@@ -126,6 +129,7 @@ function assetOf(
 export interface BundledPlan {
   readonly dependencies: readonly string[];
   readonly files: readonly { from: string; target: string }[];
+  readonly role: MotionRole | null;
   readonly title: string;
 }
 
@@ -192,7 +196,12 @@ export function bundledPlan(
         }
       }
 
-      return { dependencies: [...dependencies], files, title: first.title };
+      return {
+        dependencies: [...dependencies],
+        files,
+        role: bundledRoleOf(first.name),
+        title: first.title,
+      };
     },
   });
 }

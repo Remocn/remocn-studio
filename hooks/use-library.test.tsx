@@ -36,6 +36,7 @@ function asset(shape: Partial<Asset> = {}): Asset {
     path: "/library/assets/intro",
     preview: null,
     proxied: true,
+    role: null,
     slug: "intro",
     type: "video",
     ...shape,

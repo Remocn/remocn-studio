@@ -241,7 +241,94 @@ length** (video-lessons): give each its own range.
 </Interactive.Div>
 ```
 
-## 7. Images are never flat
+## 7. The movement dictionary
+
+Every movement has a **role**: when in the life of the thing it is attached to it runs.
+The studio speaks these five words everywhere — the conventions, the Components pane,
+and the props a component exposes — so name movement with them rather than describing
+it fresh each time.
+
+| Role         | Answers                        | Runs                                            |
+| ------------ | ------------------------------ | ----------------------------------------------- |
+| `entry`      | how it arrives                 | at the start of the element's life              |
+| `emphasis`   | how it draws the eye           | in the middle, while it is on screen            |
+| `exit`       | how it leaves                  | at the end                                      |
+| `scene`      | what holds the frame           | the whole scene — backdrops, filters, overlays  |
+| `transition` | how one scene becomes the next | across the cut                                  |
+
+The rule that settles the hard cases: a behaviour that **replaces content in place** is
+emphasis — the element was there before and is there after. A behaviour that brings
+content **out of nothing** is entry, and so is a number that counts to the value it
+lands on. Components the person inserts from the studio's own set arrive already
+classified this way, in the `[Asset #N]` block at the end of their message.
+
+### Entry — 12–18 frames, decelerating
+
+The default entrance is 12–18 frames (0.4–0.6s at 30fps) on `Easing.out(...)`, offset
+3–9 frames from the start of the scene. Opacity and transform get their own ranges,
+never one shared curve.
+
+| Name          | What it is                                            | Recipe                                                                                 |
+| ------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `fade-in`     | opacity alone, when the thing must not move            | `opacity: interpolate(frame, [6, 16], [0, 1], clamped)`                                   |
+| `rise-in`     | comes up from below as it fades — panels, cards, media | `translate: interpolate(frame, [6, 22], ['0px 28px', '0px 0px'], easeOutCubic)`            |
+| `slide-in`    | travels in from an edge — **the text entrance**        | `translate: interpolate(frame, [6, 22], ['-64px 0px', '0px 0px'], easeOutCubic)`           |
+| `blur-in`     | resolves out of blur as it fades                       | a `filter: blur(Npx)` template string over `interpolate(frame, [6, 20], [12, 0], clamped)` |
+| `scale-in`    | lands from just under or over 1                        | `scale: spring({frame: frame - 6, fps, config: {damping: 200}, ...})`                     |
+| `mask-reveal` | wiped in behind a window that does not move            | a fixed `overflow: hidden` box; the content translates inside it                          |
+| `type-on`     | characters appear on a stepped clock                   | `text.slice(0, Math.floor((frame - 6) / 2))` — no per-glyph transforms                    |
+| `draw-on`     | a stroke draws itself — a rule, an underline, a path   | `scale: interpolate(...)` on a `transformOrigin: 'left center'` bar, or `strokeDashoffset` |
+| `count-in`    | a number rolls to the value it lands on                | `Math.round(interpolate(frame, [6, 30], [0, 1240], clamped))`, `tabular-nums`              |
+| `decode-in`   | scrambled characters resolve into the real ones        | per-character: settled when `frame > start + index * 2`, random glyph before              |
+
+Stagger, at 30fps: **1 frame per character** (0.04s), 2–3 per word, 4–6 per line — and
+the whole sequence still fits in about 15 frames however many items enter. Past that,
+cut the per-item step rather than the count.
+
+**Text is the exception that keeps coming back**: a text entrance travels on X or not at
+all, because a Y translate snaps glyph baselines and the line jitters (`video-lessons`
+§2). So text uses `slide-in`, `fade-in`, `blur-in`, `type-on` or `mask-reveal`;
+`rise-in` is for panels, cards and images.
+
+### Emphasis — earned, once per scene
+
+Emphasis is spent on the one thing that matters. Two emphasised elements in a frame
+means neither is emphasised.
+
+| Name       | What it is                                                | Recipe                                                                    |
+| ---------- | --------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `highlight` | a ground or a color change on the phrase itself           | a marker block scaling from `transformOrigin: 'left'`, text color crossing |
+| `mark`     | a hand-drawn annotation around it — circle, arrow, rule    | a stroke drawn on its own curve, landing after the phrase has settled      |
+| `shimmer`  | light sweeps across the surface once                       | a moving `linear-gradient` under `background-clip: text`                   |
+| `glitch`   | a short corruption burst, 4–8 frames, then clean           | two offset copies on a frame threshold, not a continuous jitter            |
+| `swap`     | the content is replaced in place                           | old and new share the box; opacity crosses, an X slide carries the change  |
+| `burst`    | particles fired at one moment — confetti, sparks           | seeded so every render is identical; fired on a frame, never looping       |
+
+No breathing or pulsing on UI: `video-lessons` §1 bans it. Ambient motion belongs to
+decoration (§2 here), not to the element you are emphasising.
+
+### Exit — the entry, mirrored
+
+An exit is the entry it answers, reversed: the same props, `Easing.in(...)` instead of
+`Easing.out(...)`, and about two thirds of the frames — what arrives in 12 leaves in 7.
+`fade-out`, `blur-out`, `slide-out`, `scale-out` mirror their entries one for one. An
+element still on screen when the scene ends needs no exit; the transition is its exit.
+
+### The props a role expects
+
+A behaviour the dictionary does not have is still a behaviour of a role, and its props
+say which one it is — this is what lets the studio put knobs on it later:
+
+- **entry / exit** — `direction`, `durationInFrames`, `delay`, `stagger`, `easing`.
+- **emphasis** — `intensity`, `repeat`, `delay`.
+- **scene** — `speed`, `intensity`.
+- **transition** — `direction`, `durationInFrames`, `easing`.
+
+Every one of them is a typed prop with its default inline, described by the component's
+Zod schema. A behaviour worth keeping is one the person can save to the library with
+its role, and the dictionary grows by exactly that.
+
+## 8. Images are never flat
 
 A raw rectangular image dropped into a frame reads as a placeholder. Every image gets a
 motion treatment:
@@ -254,7 +341,7 @@ motion treatment:
 - **Clipped scroll reveal** — a fixed window the image travels through: the mask stays
   still, the content moves.
 
-## 8. Transitions carry meaning
+## 9. Transitions carry meaning
 
 - **Crossfade** says "this continues".
 - **Hard cut** says "wake up" — disruption, a register shift.
@@ -263,7 +350,7 @@ motion treatment:
 Crossfading everything is the tell of an unchoreographed film. Spend hard cuts on the
 moments that turn.
 
-## 9. The brand spec is brand, not layout
+## 10. The brand spec is brand, not layout
 
 A design spec says what the brand **looks like** — it does not say how to compose a
 video frame.
@@ -274,7 +361,7 @@ video frame.
   weights, component treatments. Brand colors at web-UI intensity are invisible on
   video; the color is sacred, the application is yours.
 
-## 10. Anti-patterns: the AI tells
+## 11. Anti-patterns: the AI tells
 
 Each of these is the first thing a model reaches for. Using one is only acceptable as a
 deliberate, argued choice for this specific content — never as a default:
