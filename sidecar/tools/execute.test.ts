@@ -216,14 +216,16 @@ describe("executeTool", () => {
   });
 
   it("returns the design report as agent-readable JSON", async () => {
+    const asked: unknown[] = [];
     const answer = await executeTool(
       "remocn-design",
       "design_check",
       { frames: [30, 90] },
       tools({
         design: {
-          check: (frames) =>
-            Promise.resolve({
+          check: ({ frames, motion }) => {
+            asked.push(motion);
+            return Promise.resolve({
               composition: "Main",
               findings: [],
               frames: [...frames],
@@ -231,7 +233,8 @@ describe("executeTool", () => {
               snapshots: [],
               summary: { errors: 0, info: 0, warnings: 0 },
               width: 1920,
-            }),
+            });
+          },
         },
       })
     );
@@ -241,6 +244,94 @@ describe("executeTool", () => {
       composition: "Main",
       frames: [30, 90],
     });
+    expect(asked).toEqual([[]]);
+  });
+
+  it("passes typed motion assertions through to the design check", async () => {
+    const asked: unknown[] = [];
+    const answer = await executeTool(
+      "remocn-design",
+      "design_check",
+      {
+        frames: [30, 90],
+        motion: [
+          {
+            from: 30,
+            kind: "changes_between",
+            selector: "[data-design-id='orb']",
+            to: 90,
+          },
+          {
+            frame: 60,
+            kind: "visible_at",
+            selector: "[data-design-id='headline']",
+          },
+          { kind: "stays_in_frame", selector: ".ticker" },
+        ],
+      },
+      tools({
+        design: {
+          check: ({ motion }) => {
+            asked.push(motion);
+            return Promise.resolve({
+              composition: "Main",
+              findings: [],
+              frames: [30, 60, 90],
+              height: 1080,
+              snapshots: [],
+              summary: { errors: 0, info: 0, warnings: 0 },
+              width: 1920,
+            });
+          },
+        },
+      })
+    );
+
+    expect(answer.isError).toBe(false);
+    expect(asked[0]).toEqual([
+      {
+        from: 30,
+        kind: "changes_between",
+        selector: "[data-design-id='orb']",
+        to: 90,
+      },
+      {
+        frame: 60,
+        kind: "visible_at",
+        selector: "[data-design-id='headline']",
+      },
+      { kind: "stays_in_frame", selector: ".ticker" },
+    ]);
+  });
+
+  it("refuses a motion assertion of an unknown kind", async () => {
+    const answer = await executeTool(
+      "remocn-design",
+      "design_check",
+      {
+        frames: [30, 90],
+        motion: [{ kind: "keeps_moving", selector: ".orb" }],
+      },
+      tools()
+    );
+
+    expect(answer.isError).toBe(true);
+  });
+
+  it("refuses a changes_between assertion comparing a frame to itself", async () => {
+    const answer = await executeTool(
+      "remocn-design",
+      "design_check",
+      {
+        frames: [30, 90],
+        motion: [
+          { from: 30, kind: "changes_between", selector: ".orb", to: 30 },
+        ],
+      },
+      tools()
+    );
+
+    expect(answer.isError).toBe(true);
   });
 
   it("refuses arguments the tool's own schema rejects", async () => {

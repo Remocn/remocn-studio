@@ -37,6 +37,13 @@ export const SET_PIPELINE_STAGE = "set_pipeline_stage";
 export const REQUEST_SOURCE_ASSET = "request_source_asset";
 export const DESIGN_CHECK = "design_check";
 
+const MOTION_SELECTOR = z
+  .string()
+  .min(1)
+  .describe(
+    "A CSS selector naming the element; prefer the stable [data-design-id='…'] the scene authored."
+  );
+
 // The specs are declarative so the stdio child can register them with any
 // MCP transport while the execution stays in the sidecar, where the stores
 // and the turn's stream live. The wording is the contract with the agent —
@@ -45,7 +52,7 @@ export const TOOL_SPECS: Record<ToolServer, readonly ToolSpec[]> = {
   [DESIGN_SERVER]: [
     {
       description:
-        "Mechanically review 2–9 key frames of Main before calling a scene finished. It renders temporary snapshots and reports measurable WCAG contrast, clipped/occluded/out-of-frame text, and a timeline that did not visibly advance. Fix every finding or explain why it is intentional; inspect the returned snapshot paths for design judgement the checks cannot make.",
+        "Mechanically review 2–9 key frames of Main before calling a scene finished. It renders temporary snapshots and reports measurable WCAG contrast, clipped/occluded/out-of-frame text, and a timeline that did not visibly advance. Pass the movements video/motion.md promises as motion assertions so the check verifies the declared motion instead of guessing; a selector that matches nothing or several elements is its own finding, never a silent pass. Fix every finding or explain why it is intentional; inspect the returned snapshot paths for design judgement the checks cannot make.",
       name: DESIGN_CHECK,
       shape: {
         frames: z
@@ -57,6 +64,35 @@ export const TOOL_SPECS: Record<ToolServer, readonly ToolSpec[]> = {
           })
           .describe(
             "Two to nine distinct key frames from Main, normally the settled hero moments and one motion-separated pair."
+          ),
+        motion: z
+          .array(
+            z.discriminatedUnion("kind", [
+              z
+                .object({
+                  from: z.number().int().min(0),
+                  kind: z.literal("changes_between"),
+                  selector: MOTION_SELECTOR,
+                  to: z.number().int().min(0),
+                })
+                .refine((row) => row.from !== row.to, {
+                  message: "from and to must be different frames",
+                }),
+              z.object({
+                frame: z.number().int().min(0),
+                kind: z.literal("visible_at"),
+                selector: MOTION_SELECTOR,
+              }),
+              z.object({
+                kind: z.literal("stays_in_frame"),
+                selector: MOTION_SELECTOR,
+              }),
+            ])
+          )
+          .max(12)
+          .optional()
+          .describe(
+            "Explicit expectations from video/motion.md: changes_between says the element or its content visibly changed between two frames, visible_at says it is visible by a frame, stays_in_frame says it never leaves the canvas on the checked frames."
           ),
       },
     },

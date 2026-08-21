@@ -10,11 +10,53 @@ describe("preview design protocol", () => {
         composition: "Main",
         frames: [30, 90],
         id: "request-1",
+        motion: [],
         type: "design",
       })
     );
 
     expect(Exit.isSuccess(decoded)).toBe(true);
+  });
+
+  it("decodes each motion assertion kind on the design command", () => {
+    const decoded = decodeHostCommand(
+      JSON.stringify({
+        composition: "Main",
+        frames: [30, 90],
+        id: "request-1",
+        motion: [
+          {
+            from: 30,
+            kind: "changes_between",
+            selector: "[data-design-id='orb']",
+            to: 90,
+          },
+          {
+            frame: 60,
+            kind: "visible_at",
+            selector: "[data-design-id='headline']",
+          },
+          { kind: "stays_in_frame", selector: ".ticker" },
+        ],
+        type: "design",
+      })
+    );
+
+    expect(Exit.isSuccess(decoded)).toBe(true);
+  });
+
+  it("refuses a motion assertion the union does not know", () => {
+    const decoded = decodeHostCommand(
+      JSON.stringify({
+        composition: "Main",
+        frames: [30, 90],
+        id: "request-1",
+        motion: [{ kind: "keeps_moving", selector: ".orb" }],
+        type: "design",
+      })
+    );
+
+    expect(Exit.isSuccess(decoded)).toBe(false);
   });
 
   it("decodes an agent-readable design result", () => {
