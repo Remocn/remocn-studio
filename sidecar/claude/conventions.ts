@@ -1,4 +1,11 @@
 import {
+  ELEMENT_ROLES,
+  MOTION_DICTIONARY,
+  MOTION_ROLES,
+  ROLE_HINTS,
+  ROLE_PARAMETERS,
+} from "@/shared/motion";
+import {
   activeStage,
   type PipelineStage,
   stageTemplate,
@@ -10,6 +17,31 @@ import {
   MOTION_SKILL,
   SHIPPED,
 } from "../agent/knowledge";
+
+const roleList = MOTION_ROLES.map(
+  (role) => `\`${role}\` (${ROLE_HINTS[role]})`
+).join(", ");
+
+const dictionary = ELEMENT_ROLES.map(
+  (role) => `${role}: ${MOTION_DICTIONARY[role].join(", ")}`
+).join("; ");
+
+const knobs = (["entry", "emphasis"] as const)
+  .map((role) => `an ${role} takes ${ROLE_PARAMETERS[role].join(", ")}`)
+  .join(", ");
+
+export const MOTION_TAXONOMY = `Movement here has a role, which says when in the life of the thing it is
+attached to it runs: ${roleList}.
+Every element you animate gets an entry, and an exit unless it is still on screen
+when the scene ends; emphasis is optional and is spent on the one thing that
+matters. Name the movement from the studio's dictionary rather than describing it
+fresh every time — ${dictionary}.
+The props a behaviour exposes follow its role: ${knobs}, and an
+exit mirrors the entry it answers — the same props, an accelerating easing, fewer
+frames. When nothing in the dictionary fits, write the behaviour as its own named
+component with those props typed the way the next paragraph asks, and give its
+role when it is saved with \`mcp__remocn-library__save_asset\`: that is how the
+dictionary grows.`;
 
 export const STUDIO_CONVENTIONS = `You are running inside remocn studio, which previews a Remotion project live and
 exports it. These conventions come from the app, not from the project, and the
@@ -42,6 +74,8 @@ Before you call a scene or video finished, call
 say explicitly why it is intentional. A clean check covers contrast, readable
 text layers and a visibly advancing sampled timeline; it does not replace your
 own design review of the snapshots.
+
+${MOTION_TAXONOMY}
 
 A component you write new must be tunable by someone who does not read code.
 Everything a person might want to change — texts, colors, durations, amplitudes
@@ -100,7 +134,8 @@ it wins; the only thing above it is what the person asks for in this session.`;
 const MOTION = `Before you design any scene — its layout, its palette, its choreography —
 invoke the bundled \`${MOTION_SKILL}\` skill and compose to it. It is the studio's
 motion-design bar: video-scale type and opacity, layered frames with ambient decoration,
-edge-anchored framing, choreographed entrances in \`interpolate\`/\`spring\` terms. Without
+edge-anchored framing, choreographed entrances in \`interpolate\`/\`spring\` terms. It also
+carries the recipe and the starting numbers behind every name in the movement dictionary. Without
 it the result comes out web-shaped: small text, an empty centered layout, motion that
 reads as static. It sets the design defaults; where the bundled \`${LESSONS_SKILL}\`
 skill contradicts it, the lessons win.`;

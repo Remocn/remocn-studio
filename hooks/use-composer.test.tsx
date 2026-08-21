@@ -41,6 +41,7 @@ function asset(slug: string, name: string): Asset {
     path: `/library/assets/${slug}`,
     preview: null,
     proxied: false,
+    role: null,
     slug,
     type: "component",
   };

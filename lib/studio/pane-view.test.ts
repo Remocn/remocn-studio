@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  componentGroups,
   filterAssets,
   isPaneView,
   slideDirection,
 } from "@/lib/studio/pane-view";
 import type { Asset } from "@/shared/library";
+import type { MotionRole } from "@/shared/motion";
 
-function asset(name: string): Asset {
+function asset(name: string, shape: Partial<Asset> = {}): Asset {
   return {
     category: null,
     clip: null,
@@ -19,9 +21,19 @@ function asset(name: string): Asset {
     path: "/library/assets/x",
     preview: null,
     proxied: false,
+    role: null,
     slug: name.toLowerCase(),
     type: "component",
+    ...shape,
   };
+}
+
+function bundled(
+  name: string,
+  role: MotionRole,
+  category: string | null
+): Asset {
+  return asset(name, { category, role, slug: `remocn/${name.toLowerCase()}` });
 }
 
 describe("isPaneView", () => {
@@ -66,5 +78,64 @@ describe("filterAssets", () => {
 
   it("returns nothing when nothing matches", () => {
     expect(filterAssets(assets, "shader")).toEqual([]);
+  });
+});
+
+describe("componentGroups", () => {
+  it("groups by role, in the order a life runs", () => {
+    const groups = componentGroups(
+      [],
+      [
+        bundled("Whip Pan", "transition", "Transitions"),
+        bundled("Soft Blur In", "entry", "Typography"),
+        bundled("Shimmer Sweep", "emphasis", "Typography"),
+      ]
+    );
+
+    expect(groups.map((group) => group.label)).toEqual([
+      "Entry",
+      "Emphasis",
+      "Transition",
+    ]);
+  });
+
+  it("orders a role's tiles by category, so Scene reads shaders before filters", () => {
+    const [scene] = componentGroups(
+      [],
+      [
+        bundled("VHS Filter", "scene", "Filters"),
+        bundled("Shader Water", "scene", "Shaders"),
+      ]
+    );
+
+    expect(scene?.assets.map((found) => found.name)).toEqual([
+      "Shader Water",
+      "VHS Filter",
+    ]);
+  });
+
+  it("puts the person's own behaviours ahead of the shipped ones in their role", () => {
+    const [entry] = componentGroups(
+      [asset("My Reveal", { role: "entry" })],
+      [bundled("Soft Blur In", "entry", "Typography")]
+    );
+
+    expect(entry?.assets.map((found) => found.name)).toEqual([
+      "My Reveal",
+      "Soft Blur In",
+    ]);
+  });
+
+  it("keeps a saved component with no role under Saved, ahead of every role", () => {
+    const groups = componentGroups(
+      [asset("Old Scene")],
+      [bundled("Soft Blur In", "entry", "Typography")]
+    );
+
+    expect(groups.map((group) => group.label)).toEqual(["Saved", "Entry"]);
+  });
+
+  it("renders no heading for a role nothing is in", () => {
+    expect(componentGroups([], [])).toEqual([]);
   });
 });

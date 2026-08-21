@@ -1,4 +1,5 @@
 import { Effect, Schema } from "effect";
+import { MotionRole } from "./motion";
 
 export const ASSET_TYPES = ["img", "video", "audio", "component"] as const;
 
@@ -67,6 +68,9 @@ export const AssetManifest = Schema.Struct({
   proxy: Schema.NullOr(Schema.NonEmptyString).pipe(
     Schema.withDecodingDefault(Effect.succeed(null))
   ),
+  role: Schema.NullOr(MotionRole).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
   type: AssetType,
 });
 
@@ -88,6 +92,7 @@ export const Asset = Schema.Struct({
   path: Schema.NonEmptyString,
   preview: Schema.NullOr(Schema.NonEmptyString),
   proxied: Schema.Boolean,
+  role: Schema.NullOr(MotionRole),
   slug: Schema.NonEmptyString,
   type: AssetType,
 });
@@ -112,6 +117,9 @@ export const AssetDraft = Schema.Struct({
   files: Schema.Array(Schema.NonEmptyString),
   name: Schema.NonEmptyString,
   preview: Schema.NullOr(Schema.NonEmptyString).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
+  role: Schema.NullOr(MotionRole).pipe(
     Schema.withDecodingDefault(Effect.succeed(null))
   ),
   type: AssetType,

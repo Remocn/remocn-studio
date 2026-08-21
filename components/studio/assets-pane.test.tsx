@@ -22,6 +22,7 @@ function asset(shape: Partial<Asset> = {}): Asset {
     path: "/library/assets/neon-title",
     preview: null,
     proxied: false,
+    role: null,
     slug: "neon-title",
     type: "component",
     ...shape,

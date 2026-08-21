@@ -41,6 +41,7 @@ function draft(shape: Partial<AssetDraft> & { files: string[] }): AssetDraft {
     duration: null,
     name: "Thing",
     preview: null,
+    role: null,
     type: "component",
     ...shape,
   };
@@ -219,6 +220,7 @@ describe("mediaBrief", () => {
         missing: [],
         name: "intro.mp4",
         reason: null,
+        role: null,
         skipped: [],
         type: "video",
       },
@@ -235,6 +237,7 @@ describe("assetBrief", () => {
     missing: [],
     name: "Neon Title",
     reason: null,
+    role: null,
     skipped: [],
     type: "component",
     ...shape,
@@ -274,6 +277,26 @@ describe("assetBrief", () => {
     const brief = assetBrief([placement({ skipped: ["src/library/a/A.tsx"] })]);
 
     expect(brief).toContain("already in the project, untouched");
+  });
+
+  it("names the role beside the asset, in the words the conventions use", () => {
+    const brief = assetBrief([
+      placement({ copied: ["src/library/a/A.tsx"], role: "entry" }),
+    ]);
+
+    expect(brief).toContain("[Asset #1] Neon Title (entry)");
+  });
+
+  it("says nothing about a role for media, which has none", () => {
+    const brief = assetBrief([
+      placement({
+        copied: ["public/library/logo.png"],
+        name: "Logo",
+        type: "img",
+      }),
+    ]);
+
+    expect(brief).toContain("[Asset #1] Logo\n");
   });
 
   it("asks for the missing packages by name", () => {
@@ -386,6 +409,12 @@ describe("placeAssets with a bundled component", () => {
     const [placed] = await run(placeAssets(project, [picked]));
 
     expect(placed?.missing).toEqual(["culori"]);
+  });
+
+  it("carries the role the studio classified the shipped component with", async () => {
+    const [placed] = await run(placeAssets(project, [picked]));
+
+    expect(placed?.role).toBe("entry");
   });
 
   it("answers with a sentence for a name that is not bundled", async () => {

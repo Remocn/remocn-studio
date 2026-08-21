@@ -19,6 +19,7 @@ function asset(shape: Partial<Asset> = {}): Asset {
     path: "/library/assets/neon-title",
     preview: null,
     proxied: false,
+    role: null,
     slug: "neon-title",
     type: "component",
     ...shape,
@@ -103,6 +104,62 @@ describe("executeTool", () => {
     expect(answer.text).toBe(
       "Saved Neon Title to the library as neon-title (component), holding 2 files. It is now available in every project."
     );
+  });
+
+  it("carries the role through to the draft it saves", async () => {
+    const drafts: unknown[] = [];
+    await executeTool(
+      "remocn-library",
+      "save_asset",
+      { files: ["src/Reveal.tsx"], name: "Reveal", role: "entry" },
+      tools({
+        library: {
+          list: () => Promise.resolve([]),
+          save: (draft) => {
+            drafts.push(draft);
+            return Promise.resolve(asset({ role: "entry" }));
+          },
+        },
+      })
+    );
+
+    expect(drafts).toMatchObject([{ role: "entry" }]);
+  });
+
+  it("saves media with no role rather than inventing one", async () => {
+    const drafts: unknown[] = [];
+    await executeTool(
+      "remocn-library",
+      "save_asset",
+      { files: ["/abs/intro.mp4"], name: "Intro" },
+      tools({
+        library: {
+          list: () => Promise.resolve([]),
+          save: (draft) => {
+            drafts.push(draft);
+            return Promise.resolve(asset({ type: "video" }));
+          },
+        },
+      })
+    );
+
+    expect(drafts).toMatchObject([{ role: null }]);
+  });
+
+  it("inventories the role of a behaviour, since that is what it is for", async () => {
+    const answer = await executeTool(
+      "remocn-library",
+      "list_assets",
+      {},
+      tools({
+        library: {
+          list: () => Promise.resolve([asset({ role: "entry" })]),
+          save: () => Promise.reject(new Error("unused")),
+        },
+      })
+    );
+
+    expect(answer.text).toContain("Neon Title — component, entry");
   });
 
   it("answers the pipeline tools with the stages and the active brief", async () => {

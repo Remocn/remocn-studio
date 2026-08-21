@@ -25,6 +25,7 @@ import { clipTime } from "@/lib/studio/time";
 import {
   ASSET_TYPE_LABELS,
   type Asset,
+  isBundledSlug,
   playableFileOf,
 } from "@/shared/library";
 import { AssetTypeIcon } from "./asset-type-icon";
@@ -46,7 +47,7 @@ export function AssetGrid({
           asset={asset}
           key={asset.slug}
           onPick={onPick}
-          onRemove={onRemove}
+          onRemove={isBundledSlug(asset.slug) ? undefined : onRemove}
         />
       ))}
     </div>

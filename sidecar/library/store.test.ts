@@ -33,6 +33,7 @@ function draft(shape: Partial<AssetDraft> & { files: string[] }): AssetDraft {
     duration: null,
     name: "Thing",
     preview: null,
+    role: null,
     type: "component",
     ...shape,
   };
@@ -90,6 +91,41 @@ describe("saveAsset", () => {
 
     const listed = await run(listAssets());
     expect(listed.map((asset) => asset.slug)).toEqual(["neon-title"]);
+  });
+
+  it("keeps the role it was saved with, so the pane can file it", async () => {
+    const saved = await run(
+      saveAsset(
+        draft({
+          files: [file("Reveal.tsx", "export const Reveal = () => null;")],
+          name: "Reveal",
+          role: "entry",
+        })
+      )
+    );
+
+    expect(saved.role).toBe("entry");
+    expect(await run(findAsset("reveal")).then((found) => found?.role)).toBe(
+      "entry"
+    );
+  });
+
+  it("reads an asset written before roles existed as having none", async () => {
+    const saved = await run(
+      saveAsset(draft({ files: [file("Old.tsx", "old")], name: "Old" }))
+    );
+
+    const manifest = join(library, "assets", saved.slug, "manifest.json");
+    const stored = JSON.parse(readFileSync(manifest, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    stored.role = undefined;
+    writeFileSync(manifest, JSON.stringify(stored), "utf8");
+
+    const reread = await run(findAsset(saved.slug));
+    expect(reread?.role).toBeNull();
+    expect(reread?.name).toBe("Old");
   });
 
   it("gives a second asset of the same name its own folder", async () => {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { errorMessage } from "@/lib/error-message";
 import type { Asset, AssetDraft } from "@/shared/library";
 import { assetTypeFor } from "@/shared/library";
+import type { MotionRole } from "@/shared/motion";
 import type {
   PipelineStage,
   PipelineStageId,
@@ -140,6 +141,7 @@ async function saveAsset(
     description?: string;
     files: string[];
     name: string;
+    role?: MotionRole;
     type?: AssetDraft["type"];
   };
 
@@ -154,6 +156,7 @@ async function saveAsset(
     files,
     name: named.name,
     preview: null,
+    role: named.role ?? null,
     type: named.type ?? assetTypeFor(files),
   });
 
@@ -170,7 +173,11 @@ async function staged(
 }
 
 function inventory(asset: Asset): string {
-  const lines = [`${asset.name} — ${asset.type}`];
+  const lines = [
+    asset.role === null
+      ? `${asset.name} — ${asset.type}`
+      : `${asset.name} — ${asset.type}, ${asset.role}`,
+  ];
 
   if (asset.description.length > 0) {
     lines.push(asset.description);

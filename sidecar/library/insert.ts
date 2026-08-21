@@ -10,6 +10,7 @@ import {
   isBundledSlug,
   type PromptAsset,
 } from "@/shared/library";
+import type { MotionRole } from "@/shared/motion";
 import { referenceOf } from "@/shared/references";
 import { isInstalled } from "../environment";
 import { remotionRootOf } from "../preview/project";
@@ -24,6 +25,7 @@ export interface Placement {
   readonly missing: readonly string[];
   readonly name: string;
   readonly reason: string | null;
+  readonly role: MotionRole | null;
   readonly skipped: readonly string[];
   readonly type: AssetType;
 }
@@ -53,6 +55,7 @@ export function placeMedia(
           missing: [],
           name: item.name,
           reason: null,
+          role: null,
           skipped: landed.skipped,
           type: item.mediaType.startsWith("video/")
             ? ("video" as const)
@@ -94,7 +97,10 @@ export function assetBrief(placements: readonly Placement[]): string | null {
 }
 
 function describe(placement: Placement, index: number): string {
-  const head = `${referenceOf("asset", index)} ${placement.name}`;
+  const head =
+    placement.role === null
+      ? `${referenceOf("asset", index)} ${placement.name}`
+      : `${referenceOf("asset", index)} ${placement.name} (${placement.role})`;
 
   if (placement.reason !== null) {
     return `${head} ${placement.reason}`;
@@ -150,6 +156,7 @@ function placeBundled(
         name: asset.name,
         reason:
           "is not among the bundled remocn components, so nothing was copied.",
+        role: null,
         skipped: [],
         type: asset.type,
       });
@@ -166,6 +173,7 @@ function placeBundled(
         missing: plan.dependencies.filter((name) => !isInstalled(root, name)),
         name: plan.title,
         reason: null,
+        role: plan.role,
         skipped: landed.skipped,
         type: "component" as const,
       }))
@@ -189,6 +197,7 @@ function place(
         name: asset.name,
         reason:
           "is no longer in the library, so nothing was copied — build it from scratch or ask for it again.",
+        role: null,
         skipped: [],
         type: asset.type,
       });
@@ -209,6 +218,7 @@ function place(
         missing: found.dependencies.filter((name) => !isInstalled(root, name)),
         name: found.name,
         reason: null,
+        role: found.role,
         skipped: landed.skipped,
         type: found.type,
       }))

@@ -1808,6 +1808,54 @@ Remotion component (REM-8). It is a drawer at the foot of the left pane, and its
   `"projects" | "assets"` while the switcher existed; keeping that name after the tabs went would
   have left the setting describing a control that is not there.
 
+### Entry, emphasis, exit
+
+Keyframes are replaced by a vocabulary of named behaviours, and the vocabulary has a
+skeleton: every movement belongs to one moment in the life of the thing it is attached
+to (REM-290). `role: entry | emphasis | exit | scene | transition` is that axis — one
+field, one value — where the pane's categories (Typography, Shaders, Filters…) answer
+*what a component is about* and the role answers *when it runs*.
+
+- **`shared/motion.ts` is the taxonomy, and the prompt is generated from it.** The
+  roles, their one-line hints, the props each role expects and the twenty dictionary
+  names live there; `MOTION_TAXONOMY` in `sidecar/claude/conventions.ts` composes the
+  always-on paragraph out of those values, so the words the agent is given and the
+  words the person reads cannot drift. A test pins that every dictionary name is
+  documented in the `motion-design` skill — names in the convention, recipes in the
+  skill, which is the split #290 proposed.
+- **The roles of the shipped set are ours, not upstream's.** They live in
+  `sidecar/library/roles.ts` rather than in the vendored manifests, because `remocn/`
+  is hash-locked against a pin and `remocn:check` reads any edit there as drift — the
+  classification is editorial judgement, and writing it into that tree would make every
+  future `remocn:sync` a merge. A test fails when `remocn/index.json` ships a component
+  nothing has classified, so a sync that adds components cannot land unclassified ones.
+- **One rule settles the hard cases.** A behaviour that replaces an element's content in
+  place — a value swap, a per-word crossfade, a strikethrough that reveals the new line
+  — is `emphasis`: the element was there before and is there after. A behaviour that
+  brings content out of nothing is `entry`, and so is a number that counts to the value
+  it lands on, because the count is how that value arrives.
+- **`scene` and `transition` are on the same axis, not a second one.** They are the two
+  answers that are about a whole scene rather than one element, and ambiguity resolves
+  outward: transition over scene over the three element roles. A component has one home,
+  because the pane groups by exactly one thing.
+- **The dictionary obeys `video-lessons`.** `pulse` is not in it — §1 bans pulsing — and
+  `rise-in` is documented as panels-and-images only, because a text entrance travels on
+  X or the glyph baselines snap (§2). A dictionary that contradicted the lessons would
+  be a vocabulary for producing the exact failures the lessons record.
+- **The pane groups by role.** Entry, Emphasis, Exit, Scene, Transition with a count
+  each; category survives in the data and orders the tiles *inside* a group, so Scene
+  reads shaders before filters. A saved component sits in its own role beside the
+  shipped ones — the dictionary growing is the point — and the ones saved before roles
+  existed keep a leading *Saved* group. The delete action moved from the grid to the
+  tile (`isBundledSlug`), since one group now holds both kinds.
+- **What the shipped set actually is, measured through `library.bundled`:** 99
+  components, none unclassified — 21 entry, 15 emphasis, 4 exit, 36 scene, 23
+  transition. Exit being that thin is information, and it is visible now.
+- **Nothing without a role behaves differently.** The field is nullable everywhere it is
+  stored, decodes to `null` for a manifest written before it existed, and `save_asset`
+  takes it as an optional argument — media has no role and is not given one. The role
+  travels into the turn on the `[Asset #N]` block as `(entry)` after the name.
+
 ### Video and audio in the composer
 
 A picture and a clip are both media the person hands over, and they are carried by two different
@@ -2044,7 +2092,9 @@ shared/               ipc.ts: the typed contract, and the media types it carries
                       providers.ts: the provider registry, capabilities and the
                       neutral tool verbs; transcript.ts: the one fold;
                       references.ts: the one reader of `[Image #N]`/`[Element #N]`/
-                      `[Asset #N]`; library.ts: the asset manifest format
+                      `[Asset #N]`; library.ts: the asset manifest format;
+                      motion.ts: the movement taxonomy — roles, the props each
+                      expects, and the dictionary of named behaviours
 sidecar/              bun: frame loop, method handlers, SQLite history;
                       files.ts is the project walk and the folder read behind `@`
 sidecar/agent/        the provider-neutral seam: AgentAdapter, the permission
@@ -2066,7 +2116,8 @@ sidecar/grok/         the Grok Build adapter, second rider on the bridge
 sidecar/tools/        the studio's own tools as stdio MCP: specs, execution,
                       the unix-socket gateway and the --tools-host child
 sidecar/history/      driver seam, migrations, project and session stores, recorder
-sidecar/library/      the asset library: the folder store and the copy into a project
+sidecar/library/      the asset library: the folder store and the copy into a project,
+                      and roles.ts — the motion role of every shipped remocn component
 sidecar/scaffold/     what "New project…" expands and installs
 templates/remotion/   that project, vendored here and shipped as a Tauri resource
 agent/                the one skills bundle every provider loads: vendored skills,
