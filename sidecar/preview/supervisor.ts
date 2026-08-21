@@ -14,7 +14,7 @@ import {
   type Still,
   type StillEvent,
 } from "@/shared/ipc";
-import type { DesignResult } from "./design";
+import type { DesignResult, MotionAssertion } from "./design";
 import { PREVIEW_OUT_ENV, PREVIEW_PARENT_ENV } from "./host";
 import { PreviewError } from "./project";
 import { decodeHostReply, type HostCommand, type HostReply } from "./protocol";
@@ -74,6 +74,7 @@ export interface StillRequest {
 export interface DesignRequest {
   composition: string;
   frames: readonly number[];
+  motion: readonly MotionAssertion[];
 }
 
 export interface SourceRequest {
@@ -130,7 +131,13 @@ export function designFrom(
 ): Effect.Effect<DesignResult, PreviewError> {
   return ask<DesignResult>(
     projectId,
-    (id) => ({ ...request, frames: [...request.frames], id, type: "design" }),
+    (id) => ({
+      ...request,
+      frames: [...request.frames],
+      id,
+      motion: [...request.motion],
+      type: "design",
+    }),
     (settle) => ({
       fail: (message) => settle(Effect.fail(failed(message))),
       kind: "design",

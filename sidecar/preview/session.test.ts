@@ -63,6 +63,11 @@ function fakes(
       if (named === "finishDesignContrast") {
         return await Promise.resolve({ value: [] });
       }
+      if (named === "probeMotionTargets") {
+        return await Promise.resolve({
+          value: [{ matches: 0, target: null }],
+        });
+      }
       return await Promise.resolve({ value: null });
     },
     openBrowser: async () => {
@@ -182,13 +187,34 @@ describe("openSession", () => {
 
     const audit = await Effect.runPromise(session.audit(20, "/tmp/design.png"));
 
-    expect(audit).toEqual({ findings: [], fingerprint: "frame-state" });
+    expect(audit).toEqual({
+      findings: [],
+      fingerprint: "frame-state",
+      motion: [],
+    });
     expect(journal.seeks).toEqual([20]);
     expect(journal.taken.map(({ output }) => output)).toEqual([
       null,
       "/tmp/design.png",
     ]);
     expect(journal.steps.slice(-3)).toEqual([
+      "evaluate:prepareDesignAudit",
+      "evaluate:finishDesignContrast",
+      "evaluate:restoreDesignAudit",
+    ]);
+  });
+
+  it("probes motion targets on the untouched frame, before the audit hides text", async () => {
+    const journal = fakes();
+    const session = await Effect.runPromise(open(journal));
+
+    const audit = await Effect.runPromise(
+      session.audit(20, "/tmp/design.png", ["[data-design-id='orb']"])
+    );
+
+    expect(audit.motion).toEqual([{ matches: 0, target: null }]);
+    expect(journal.steps.slice(-4)).toEqual([
+      "evaluate:probeMotionTargets",
       "evaluate:prepareDesignAudit",
       "evaluate:finishDesignContrast",
       "evaluate:restoreDesignAudit",

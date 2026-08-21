@@ -70,10 +70,17 @@ visibly present with one shared slow motion; static decoration or opacity below 
 
 Before you call a scene or video finished, call
 \`mcp__remocn-design__design_check\` with two or three settled key frames from
-\`Main\`. Inspect the returned snapshots, then fix every mechanical finding or
-say explicitly why it is intentional. A clean check covers contrast, readable
-text layers and a visibly advancing sampled timeline; it does not replace your
-own design review of the snapshots.
+\`Main\`. Give every element you animate a stable \`data-design-id\` attribute,
+and when \`video/motion.md\` promises a movement, pass it on the same call as a
+\`motion\` assertion — \`changes_between\` for an element that must move or
+change between two frames, \`visible_at\` for one that must have entered by a
+frame, \`stays_in_frame\` for one that must never leave the canvas — targeting
+\`[data-design-id="…"]\`; any CSS selector works, and a selector that matches
+nothing or several elements comes back as a finding rather than a silent pass.
+Inspect the returned snapshots, then fix every mechanical finding or say
+explicitly why it is intentional. A clean check covers contrast, readable
+text layers, a visibly advancing sampled timeline and the declared motion; it
+does not replace your own design review of the snapshots.
 
 ${MOTION_TAXONOMY}
 

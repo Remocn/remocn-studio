@@ -2,6 +2,11 @@ import { Schema } from "effect";
 
 export const DesignFindingCode = Schema.Literals([
   "contrast_aa_failure",
+  "motion_not_visible",
+  "motion_out_of_frame",
+  "motion_static",
+  "motion_target_ambiguous",
+  "motion_target_missing",
   "text_clipped",
   "text_occluded",
   "text_out_of_frame",
@@ -22,6 +27,38 @@ export const DesignBox = Schema.Struct({
 });
 
 export type DesignBox = (typeof DesignBox)["Type"];
+
+export const MotionAssertion = Schema.Union([
+  Schema.Struct({
+    from: Schema.Int,
+    kind: Schema.Literal("changes_between"),
+    selector: Schema.NonEmptyString,
+    to: Schema.Int,
+  }),
+  Schema.Struct({
+    frame: Schema.Int,
+    kind: Schema.Literal("visible_at"),
+    selector: Schema.NonEmptyString,
+  }),
+  Schema.Struct({
+    kind: Schema.Literal("stays_in_frame"),
+    selector: Schema.NonEmptyString,
+  }),
+]);
+
+export type MotionAssertion = (typeof MotionAssertion)["Type"];
+
+export function motionFrames(assertions: readonly MotionAssertion[]): number[] {
+  return assertions.flatMap((assertion) => {
+    if (assertion.kind === "changes_between") {
+      return [assertion.from, assertion.to];
+    }
+    if (assertion.kind === "visible_at") {
+      return [assertion.frame];
+    }
+    return [];
+  });
+}
 
 export const DesignFinding = Schema.Struct({
   bbox: Schema.NullOr(DesignBox),
@@ -76,9 +113,32 @@ export interface BrowserDesignFinding {
   readonly type: "contrast" | "layer";
 }
 
+export interface MotionTargetState {
+  readonly bbox: DesignBox;
+  readonly designId: string | null;
+  readonly display: boolean;
+  readonly fingerprint: string;
+  readonly inFrame: boolean;
+  readonly opacity: number;
+  readonly pixels: string | null;
+  readonly sized: boolean;
+  readonly visible: boolean;
+}
+
+export interface MotionProbe {
+  readonly matches: number;
+  readonly target: MotionTargetState | null;
+}
+
+export interface MotionSample {
+  readonly frame: number;
+  readonly probes: readonly MotionProbe[];
+}
+
 export interface FrameDesignAudit {
   readonly findings: readonly BrowserDesignFinding[];
   readonly fingerprint: string;
+  readonly motion: readonly MotionProbe[];
 }
 
 export interface PreparedDesignAudit {
@@ -162,6 +222,7 @@ export function requiredContrastRatio(
 }
 
 export function finishDesignResult(input: {
+  readonly assertions: readonly MotionAssertion[];
   readonly audits: readonly { frame: number; audit: FrameDesignAudit }[];
   readonly composition: string;
   readonly height: number;
@@ -174,6 +235,17 @@ export function finishDesignResult(input: {
   const collected = collapseFindings(
     input.audits.flatMap(({ audit }) => audit.findings)
   ).map(toFinding);
+  collected.push(
+    ...motionFindings({
+      assertions: input.assertions,
+      height: input.height,
+      samples: input.audits.map(({ audit, frame }) => ({
+        frame,
+        probes: audit.motion,
+      })),
+      width: input.width,
+    })
+  );
   const fingerprints = input.audits.map(({ audit }) => audit.fingerprint);
 
   if (
@@ -210,6 +282,248 @@ export function finishDesignResult(input: {
     },
     width: input.width,
   };
+}
+
+const OVERFLOW_TOLERANCE = 2;
+
+export function motionFindings(input: {
+  readonly assertions: readonly MotionAssertion[];
+  readonly height: number;
+  readonly samples: readonly MotionSample[];
+  readonly width: number;
+}): DesignFinding[] {
+  return input.assertions.flatMap((assertion, index) => {
+    const relevant = relevantFrames(assertion, input.samples);
+    const probes = relevant.map((frame) => ({
+      frame,
+      probe: input.samples.find((sample) => sample.frame === frame)?.probes[
+        index
+      ] ?? { matches: 0, target: null },
+    }));
+
+    const ambiguous = probes.filter(({ probe }) => probe.matches > 1);
+    if (ambiguous.length > 0) {
+      const most = Math.max(...ambiguous.map(({ probe }) => probe.matches));
+      return [
+        motionFinding(assertion, {
+          code: "motion_target_ambiguous",
+          expected: `Exactly one element matching ${assertion.selector}.`,
+          fix: 'Give the element you mean a unique data-design-id and target [data-design-id="…"] instead.',
+          frames: ambiguous.map(({ frame }) => frame),
+          message: `The motion selector matched ${most} elements, so the check could not pick a target.`,
+          observed: `${assertion.selector} matched up to ${most} elements on the checked frames.`,
+          severity: "warning",
+        }),
+      ];
+    }
+
+    const missing = probes.filter(({ probe }) => probe.matches === 0);
+    const missingEverywhere = missing.length === probes.length;
+    if (
+      (assertion.kind === "stays_in_frame" && missingEverywhere) ||
+      (assertion.kind !== "stays_in_frame" && missing.length > 0)
+    ) {
+      return [
+        motionFinding(assertion, {
+          code: "motion_target_missing",
+          expected: `An element matching ${assertion.selector} on frame(s) ${relevant.join(", ")}.`,
+          fix: "Check the selector against the rendered scene, or mount the element by the declared frame; authored scenes should carry a stable data-design-id.",
+          frames: missing.map(({ frame }) => frame),
+          message:
+            "The motion selector matched nothing, so the declared movement could not be verified.",
+          observed: `${assertion.selector} matched no element on frame(s) ${missing.map(({ frame }) => frame).join(", ")}.`,
+          severity: "error",
+        }),
+      ];
+    }
+
+    if (assertion.kind === "changes_between") {
+      return changesBetween(assertion, probes);
+    }
+    if (assertion.kind === "visible_at") {
+      return visibleAt(assertion, probes);
+    }
+    return staysInFrame(assertion, probes, input.width, input.height);
+  });
+}
+
+function relevantFrames(
+  assertion: MotionAssertion,
+  samples: readonly MotionSample[]
+): number[] {
+  if (assertion.kind === "changes_between") {
+    return [assertion.from, assertion.to];
+  }
+  if (assertion.kind === "visible_at") {
+    return [assertion.frame];
+  }
+  return samples.map(({ frame }) => frame);
+}
+
+function motionFinding(
+  assertion: MotionAssertion,
+  shape: {
+    readonly bbox?: DesignBox | null;
+    readonly code: DesignFindingCode;
+    readonly expected: string;
+    readonly fix: string;
+    readonly frames: readonly number[];
+    readonly message: string;
+    readonly observed: string;
+    readonly severity: DesignSeverity;
+    readonly target?: MotionTargetState | null;
+  }
+): DesignFinding {
+  const designId = shape.target?.designId ?? null;
+  return {
+    bbox: shape.bbox ?? shape.target?.bbox ?? null,
+    code: shape.code,
+    expected: shape.expected,
+    fix: shape.fix,
+    frames: [...new Set(shape.frames)].sort((left, right) => left - right),
+    message: shape.message,
+    observed:
+      designId === null
+        ? shape.observed
+        : `${shape.observed} The element carries data-design-id="${designId}".`,
+    selector: assertion.selector,
+    severity: shape.severity,
+    text: null,
+  };
+}
+
+function changesBetween(
+  assertion: Extract<MotionAssertion, { kind: "changes_between" }>,
+  probes: readonly { frame: number; probe: MotionProbe }[]
+): DesignFinding[] {
+  const first = probes[0]?.probe.target ?? null;
+  const last = probes.at(-1)?.probe.target ?? null;
+  if (first === null || last === null) {
+    return [];
+  }
+
+  const geometryChanged = first.fingerprint !== last.fingerprint;
+  const pixelsChanged =
+    first.pixels !== null &&
+    last.pixels !== null &&
+    first.pixels !== last.pixels;
+  if (geometryChanged || pixelsChanged) {
+    return [];
+  }
+
+  const compared =
+    first.pixels === null
+      ? "geometry and opacity fingerprints"
+      : "geometry, opacity and pixel fingerprints";
+  return [
+    motionFinding(assertion, {
+      code: "motion_static",
+      expected: `A visible change in the element or its content between frames ${assertion.from} and ${assertion.to}.`,
+      fix: "Drive the element's animation from useCurrentFrame() so the sampled frames differ, or drop the assertion and explain the hold if it is intentional.",
+      frames: [assertion.from, assertion.to],
+      message: `The declared change between frames ${assertion.from} and ${assertion.to} did not happen.`,
+      observed: `The element's ${compared} are identical on both frames.`,
+      severity: "error",
+      target: last,
+    }),
+  ];
+}
+
+function visibleAt(
+  assertion: Extract<MotionAssertion, { kind: "visible_at" }>,
+  probes: readonly { frame: number; probe: MotionProbe }[]
+): DesignFinding[] {
+  const target = probes[0]?.probe.target ?? null;
+  if (target === null) {
+    return [];
+  }
+
+  const reasons = [
+    target.display ? null : "display:none somewhere in its chain",
+    target.visible ? null : "visibility:hidden",
+    target.opacity > 0.01 ? null : `an effective opacity of ${target.opacity}`,
+    target.sized ? null : "a zero-sized box",
+    target.inFrame ? null : "a box entirely outside the canvas",
+  ].filter((reason): reason is string => reason !== null);
+  if (reasons.length === 0) {
+    return [];
+  }
+
+  return [
+    motionFinding(assertion, {
+      code: "motion_not_visible",
+      expected: `The element visible by frame ${assertion.frame}: displayed, opacity above 0.01, sized, and intersecting the canvas.`,
+      fix: "Finish the entry by the declared frame or fix the property that hides the element; drop the assertion if it is meant to be gone.",
+      frames: [assertion.frame],
+      message: `The element is not visible on frame ${assertion.frame}.`,
+      observed: `On frame ${assertion.frame} it has ${reasons.join(", ")}.`,
+      severity: "error",
+      target,
+    }),
+  ];
+}
+
+function staysInFrame(
+  assertion: Extract<MotionAssertion, { kind: "stays_in_frame" }>,
+  probes: readonly { frame: number; probe: MotionProbe }[],
+  width: number,
+  height: number
+): DesignFinding[] {
+  const out = probes.flatMap(({ frame, probe }) => {
+    const { target } = probe;
+    if (
+      target === null ||
+      !(target.display && target.visible && target.sized) ||
+      target.opacity <= 0.01
+    ) {
+      return [];
+    }
+
+    const { bbox: box } = target;
+    const edges = [
+      box.x < -OVERFLOW_TOLERANCE
+        ? `${round2(-box.x)}px past the left edge`
+        : null,
+      box.y < -OVERFLOW_TOLERANCE
+        ? `${round2(-box.y)}px past the top edge`
+        : null,
+      box.x + box.width > width + OVERFLOW_TOLERANCE
+        ? `${round2(box.x + box.width - width)}px past the right edge`
+        : null,
+      box.y + box.height > height + OVERFLOW_TOLERANCE
+        ? `${round2(box.y + box.height - height)}px past the bottom edge`
+        : null,
+    ].filter((edge): edge is string => edge !== null);
+    return edges.length === 0 ? [] : [{ edges, frame, target }];
+  });
+  if (out.length === 0) {
+    return [];
+  }
+
+  const worst = out.reduce((left, right) =>
+    right.edges.length > left.edges.length ? right : left
+  );
+  return [
+    motionFinding(assertion, {
+      code: "motion_out_of_frame",
+      expected: `The element fully inside 0,0 to ${width},${height} on every checked frame.`,
+      fix: "Constrain the movement's end position so the element settles inside the canvas, or explain the exit if it is intentional.",
+      frames: out.map(({ frame }) => frame),
+      message: "The element leaves the composition on checked frames.",
+      observed: out
+        .map(
+          ({ edges, frame, target }) =>
+            `Frame ${frame}: box ${target.bbox.x},${target.bbox.y} ${target.bbox.width}×${target.bbox.height} is ${edges.join(" and ")}.`
+        )
+        .join(" "),
+      severity: "error",
+      target: worst.target,
+    }),
+  ];
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function collapseFindings(
@@ -287,6 +601,149 @@ function relativeLuminance(color: Rgba): number {
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value));
+}
+
+// This function is serialized into the Remotion render page, like
+// prepareDesignAudit below: every helper stays inside, because imports and
+// module closures do not cross the browser boundary. It runs before the audit
+// hides text for contrast measurement, so the fingerprints read authored paint.
+export function probeMotionTargets(
+  selectors: readonly string[]
+): MotionProbe[] {
+  const round = (value: number) => Math.round(value * 100) / 100;
+  const hash = (value: string) => {
+    let result = 0;
+    for (let index = 0; index < value.length; index += 1) {
+      result = (result * 31 + value.charCodeAt(index)) % 4_294_967_296;
+    }
+    return String(result);
+  };
+  const sourceSizeOf = (
+    element: HTMLCanvasElement | HTMLImageElement | HTMLVideoElement
+  ) => {
+    if (element instanceof HTMLVideoElement) {
+      return { height: element.videoHeight, width: element.videoWidth };
+    }
+    if (element instanceof HTMLImageElement) {
+      return { height: element.naturalHeight, width: element.naturalWidth };
+    }
+    const rect = element.getBoundingClientRect();
+    return {
+      height: element.height || rect.height,
+      width: element.width || rect.width,
+    };
+  };
+  const mediaHash = (
+    element: HTMLCanvasElement | HTMLImageElement | HTMLVideoElement
+  ) => {
+    try {
+      const source = sourceSizeOf(element);
+      if (!(source.width && source.height)) {
+        return "empty";
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = 8;
+      canvas.height = 8;
+      const context = canvas.getContext("2d");
+      if (context === null) {
+        return "unreadable";
+      }
+      context.drawImage(element, 0, 0, 8, 8);
+      const pixels = context.getImageData(0, 0, 8, 8).data;
+      let result = 0;
+      for (const pixel of pixels) {
+        result = (result * 31 + pixel) % 4_294_967_296;
+      }
+      return String(result);
+    } catch {
+      return "unreadable";
+    }
+  };
+  const chainOf = (element: Element) => {
+    let display = true;
+    let opacity = 1;
+    let current: Element | null = element;
+    while (current !== null && current !== document.documentElement) {
+      const styles = getComputedStyle(current);
+      if (styles.display === "none") {
+        display = false;
+      }
+      opacity *= Number.parseFloat(styles.opacity || "1");
+      current = current.parentElement;
+    }
+    return { display, opacity };
+  };
+  const stateOf = (element: Element): MotionTargetState => {
+    const chain = chainOf(element);
+    const { visibility } = getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    const parts: string[] = [];
+    const media: string[] = [];
+    for (const node of [element, ...element.querySelectorAll("*")].slice(
+      0,
+      200
+    )) {
+      const box = node.getBoundingClientRect();
+      const styles = getComputedStyle(node);
+      parts.push(
+        [
+          round(box.left),
+          round(box.top),
+          round(box.width),
+          round(box.height),
+          styles.opacity,
+          styles.transform,
+          styles.backgroundColor,
+          styles.color,
+          styles.fill,
+          styles.stroke,
+        ].join(",")
+      );
+      if (
+        node instanceof HTMLCanvasElement ||
+        node instanceof HTMLImageElement ||
+        node instanceof HTMLVideoElement
+      ) {
+        media.push(mediaHash(node));
+      }
+    }
+    parts.push(hash(element.textContent ?? ""));
+
+    return {
+      bbox: {
+        height: round(rect.height),
+        width: round(rect.width),
+        x: round(rect.x),
+        y: round(rect.y),
+      },
+      designId: element.getAttribute("data-design-id"),
+      display: chain.display,
+      fingerprint: parts.join("|"),
+      inFrame:
+        rect.right > 0 &&
+        rect.bottom > 0 &&
+        rect.left < window.innerWidth &&
+        rect.top < window.innerHeight,
+      opacity: round(chain.opacity),
+      pixels: media.length > 0 ? media.join("|") : null,
+      sized: rect.width >= 2 && rect.height >= 2,
+      visible: visibility !== "hidden" && visibility !== "collapse",
+    };
+  };
+
+  return selectors.map((selector) => {
+    let found: Element[];
+    try {
+      found = [...document.body.querySelectorAll(selector)];
+    } catch {
+      return { matches: 0, target: null };
+    }
+    const [element] = found;
+    if (found.length !== 1 || element === undefined) {
+      return { matches: found.length, target: null };
+    }
+    return { matches: 1, target: stateOf(element) };
+  });
 }
 
 // This function is serialized into the Remotion render page. Keep its runtime

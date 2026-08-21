@@ -10,7 +10,7 @@ import type {
   PipelineStatus,
 } from "@/shared/pipeline";
 import { pipelineBrief } from "../claude/conventions";
-import type { DesignResult } from "../preview/design";
+import type { DesignResult, MotionAssertion } from "../preview/design";
 import {
   DESIGN_CHECK,
   DESIGN_SERVER,
@@ -43,7 +43,10 @@ export interface PipelineCalls {
 }
 
 export interface DesignCalls {
-  readonly check: (frames: readonly number[]) => Promise<DesignResult>;
+  readonly check: (input: {
+    readonly frames: readonly number[];
+    readonly motion: readonly MotionAssertion[];
+  }) => Promise<DesignResult>;
 }
 
 export interface TurnTools {
@@ -118,7 +121,10 @@ async function designCheck(
   args: Record<string, unknown>,
   design: DesignCalls
 ): Promise<string> {
-  const result = await design.check(args.frames as number[]);
+  const result = await design.check({
+    frames: args.frames as number[],
+    motion: (args.motion as MotionAssertion[] | undefined) ?? [],
+  });
   return JSON.stringify(result, null, 2);
 }
 

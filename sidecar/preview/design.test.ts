@@ -5,6 +5,12 @@ import {
   composite,
   contrastRatio,
   finishDesignResult,
+  type MotionAssertion,
+  type MotionProbe,
+  type MotionSample,
+  type MotionTargetState,
+  motionFindings,
+  motionFrames,
   parseCssColor,
   requiredContrastRatio,
 } from "./design";
@@ -81,15 +87,17 @@ describe("design contrast", () => {
 describe("finishDesignResult", () => {
   it("promotes a held contrast failure and collapses its frames", () => {
     const result = finishDesignResult({
+      assertions: [],
       audits: [
         {
-          audit: { findings: [finding()], fingerprint: "first" },
+          audit: { findings: [finding()], fingerprint: "first", motion: [] },
           frame: 30,
         },
         {
           audit: {
             findings: [finding({ frame: 90 })],
             fingerprint: "second",
+            motion: [],
           },
           frame: 90,
         },
@@ -111,6 +119,7 @@ describe("finishDesignResult", () => {
 
   it("keeps a one-frame layer issue informational", () => {
     const result = finishDesignResult({
+      assertions: [],
       audits: [
         {
           audit: {
@@ -121,10 +130,14 @@ describe("finishDesignResult", () => {
               }),
             ],
             fingerprint: "first",
+            motion: [],
           },
           frame: 30,
         },
-        { audit: { findings: [], fingerprint: "second" }, frame: 90 },
+        {
+          audit: { findings: [], fingerprint: "second", motion: [] },
+          frame: 90,
+        },
       ],
       composition: "Main",
       height: 1080,
@@ -137,9 +150,10 @@ describe("finishDesignResult", () => {
 
   it("warns only when every sampled fingerprint is identical", () => {
     const frozen = finishDesignResult({
+      assertions: [],
       audits: [
-        { audit: { findings: [], fingerprint: "same" }, frame: 30 },
-        { audit: { findings: [], fingerprint: "same" }, frame: 90 },
+        { audit: { findings: [], fingerprint: "same", motion: [] }, frame: 30 },
+        { audit: { findings: [], fingerprint: "same", motion: [] }, frame: 90 },
       ],
       composition: "Main",
       height: 1080,
@@ -147,9 +161,16 @@ describe("finishDesignResult", () => {
       width: 1920,
     });
     const moving = finishDesignResult({
+      assertions: [],
       audits: [
-        { audit: { findings: [], fingerprint: "first" }, frame: 30 },
-        { audit: { findings: [], fingerprint: "second" }, frame: 90 },
+        {
+          audit: { findings: [], fingerprint: "first", motion: [] },
+          frame: 30,
+        },
+        {
+          audit: { findings: [], fingerprint: "second", motion: [] },
+          frame: 90,
+        },
       ],
       composition: "Main",
       height: 1080,
@@ -163,5 +184,231 @@ describe("finishDesignResult", () => {
       severity: "warning",
     });
     expect(moving.findings).toEqual([]);
+  });
+});
+
+describe("motionFindings", () => {
+  const target = (
+    shape: Partial<MotionTargetState> = {}
+  ): MotionTargetState => ({
+    bbox: { height: 100, width: 100, x: 200, y: 200 },
+    designId: null,
+    display: true,
+    fingerprint: "state-a",
+    inFrame: true,
+    opacity: 1,
+    pixels: null,
+    sized: true,
+    visible: true,
+    ...shape,
+  });
+  const one = (shape: Partial<MotionTargetState> = {}): MotionProbe => ({
+    matches: 1,
+    target: target(shape),
+  });
+  const none: MotionProbe = { matches: 0, target: null };
+
+  const evaluate = (
+    assertions: readonly MotionAssertion[],
+    samples: readonly MotionSample[]
+  ) => motionFindings({ assertions, height: 1080, samples, width: 1920 });
+
+  it("collects the frames every assertion needs to sample", () => {
+    expect(
+      motionFrames([
+        { from: 30, kind: "changes_between", selector: ".orb", to: 90 },
+        { frame: 60, kind: "visible_at", selector: ".headline" },
+        { kind: "stays_in_frame", selector: ".ticker" },
+      ])
+    ).toEqual([30, 90, 60]);
+  });
+
+  it("reports a selector that matched nothing instead of passing silently", () => {
+    const findings = evaluate(
+      [{ frame: 60, kind: "visible_at", selector: "[data-design-id='gone']" }],
+      [{ frame: 60, probes: [none] }]
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: "motion_target_missing",
+      frames: [60],
+      selector: "[data-design-id='gone']",
+      severity: "error",
+    });
+  });
+
+  it("reports an ambiguous selector as its own finding", () => {
+    const findings = evaluate(
+      [{ from: 30, kind: "changes_between", selector: ".card", to: 90 }],
+      [
+        { frame: 30, probes: [{ matches: 3, target: null }] },
+        { frame: 90, probes: [{ matches: 3, target: null }] },
+      ]
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: "motion_target_ambiguous",
+      frames: [30, 90],
+      severity: "warning",
+    });
+    expect(findings[0]?.message).toContain("3 elements");
+  });
+
+  it("fails changes_between when geometry and pixels are both identical", () => {
+    const findings = evaluate(
+      [{ from: 30, kind: "changes_between", selector: ".orb", to: 90 }],
+      [
+        { frame: 30, probes: [one({ pixels: "p1" })] },
+        { frame: 90, probes: [one({ pixels: "p1" })] },
+      ]
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      bbox: { height: 100, width: 100, x: 200, y: 200 },
+      code: "motion_static",
+      frames: [30, 90],
+      severity: "error",
+    });
+  });
+
+  it("passes changes_between when only the pixel content changed", () => {
+    const findings = evaluate(
+      [{ from: 30, kind: "changes_between", selector: "canvas", to: 90 }],
+      [
+        { frame: 30, probes: [one({ pixels: "p1" })] },
+        { frame: 90, probes: [one({ pixels: "p2" })] },
+      ]
+    );
+
+    expect(findings).toEqual([]);
+  });
+
+  it("passes changes_between when the geometry fingerprint changed", () => {
+    const findings = evaluate(
+      [{ from: 30, kind: "changes_between", selector: ".orb", to: 90 }],
+      [
+        { frame: 30, probes: [one({ fingerprint: "state-a" })] },
+        { frame: 90, probes: [one({ fingerprint: "state-b" })] },
+      ]
+    );
+
+    expect(findings).toEqual([]);
+  });
+
+  it("names every property that keeps a visible_at element hidden", () => {
+    const findings = evaluate(
+      [{ frame: 60, kind: "visible_at", selector: ".headline" }],
+      [
+        {
+          frame: 60,
+          probes: [one({ designId: "headline", inFrame: false, opacity: 0 })],
+        },
+      ]
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: "motion_not_visible",
+      frames: [60],
+      severity: "error",
+    });
+    expect(findings[0]?.observed).toContain("opacity");
+    expect(findings[0]?.observed).toContain("outside the canvas");
+    expect(findings[0]?.observed).toContain('data-design-id="headline"');
+  });
+
+  it("accepts a visible_at element that is displayed, sized and on canvas", () => {
+    const findings = evaluate(
+      [{ frame: 60, kind: "visible_at", selector: ".headline" }],
+      [{ frame: 60, probes: [one()] }]
+    );
+
+    expect(findings).toEqual([]);
+  });
+
+  it("returns the exit coordinates when an element leaves the canvas", () => {
+    const findings = evaluate(
+      [{ kind: "stays_in_frame", selector: ".ticker" }],
+      [
+        { frame: 30, probes: [one()] },
+        {
+          frame: 90,
+          probes: [one({ bbox: { height: 100, width: 400, x: 1700, y: -30 } })],
+        },
+      ]
+    );
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      code: "motion_out_of_frame",
+      frames: [90],
+      severity: "error",
+    });
+    expect(findings[0]?.observed).toContain("180px past the right edge");
+    expect(findings[0]?.observed).toContain("30px past the top edge");
+  });
+
+  it("lets stays_in_frame skip frames where the element is absent or hidden", () => {
+    const findings = evaluate(
+      [{ kind: "stays_in_frame", selector: ".ticker" }],
+      [
+        { frame: 30, probes: [none] },
+        {
+          frame: 90,
+          probes: [
+            one({
+              bbox: { height: 100, width: 400, x: 1700, y: 0 },
+              opacity: 0,
+            }),
+          ],
+        },
+      ]
+    );
+
+    expect(findings).toEqual([]);
+  });
+
+  it("still reports a stays_in_frame selector that never matched", () => {
+    const findings = evaluate(
+      [{ kind: "stays_in_frame", selector: ".ticker" }],
+      [
+        { frame: 30, probes: [none] },
+        { frame: 90, probes: [none] },
+      ]
+    );
+
+    expect(findings[0]).toMatchObject({ code: "motion_target_missing" });
+  });
+
+  it("feeds motion findings into the summary through finishDesignResult", () => {
+    const result = finishDesignResult({
+      assertions: [
+        { from: 30, kind: "changes_between", selector: ".orb", to: 90 },
+      ],
+      audits: [
+        {
+          audit: { findings: [], fingerprint: "first", motion: [one()] },
+          frame: 30,
+        },
+        {
+          audit: { findings: [], fingerprint: "second", motion: [one()] },
+          frame: 90,
+        },
+      ],
+      composition: "Main",
+      height: 1080,
+      snapshots: [],
+      width: 1920,
+    });
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]).toMatchObject({
+      code: "motion_static",
+      severity: "error",
+    });
+    expect(result.summary.errors).toBe(1);
   });
 });

@@ -3,8 +3,10 @@ import { errorMessage } from "@/lib/error-message";
 import {
   type FrameDesignAudit,
   finishDesignContrast,
+  type MotionProbe,
   type PreparedDesignAudit,
   prepareDesignAudit,
+  probeMotionTargets,
   restoreDesignAudit,
 } from "./design";
 import { type Measured, PreviewError, type RenderOptions } from "./project";
@@ -50,7 +52,8 @@ export interface WarmInternals {
 export interface Session {
   readonly audit: (
     frame: number,
-    output: string
+    output: string,
+    selectors?: readonly string[]
   ) => Effect.Effect<FrameDesignAudit, PreviewError>;
   readonly capture: (
     frame: number,
@@ -181,13 +184,20 @@ export function openSession(
       };
 
       return {
-        audit: (frame: number, output: string) =>
+        audit: (frame: number, output: string, selectors = []) =>
           Effect.tryPromise({
             catch: failed,
             try: async () => {
               let prepared = false;
               try {
                 await seek(frame);
+                const motion =
+                  selectors.length === 0
+                    ? []
+                    : await evaluate<MotionProbe[]>(
+                        probeMotionTargets as (...args: never[]) => unknown,
+                        [selectors]
+                      );
                 prepared = true;
                 const audit = await evaluate<PreparedDesignAudit>(
                   prepareDesignAudit as (...args: never[]) => unknown,
@@ -205,6 +215,7 @@ export function openSession(
                 return {
                   findings: [...audit.findings, ...contrast],
                   fingerprint: audit.fingerprint,
+                  motion,
                 };
               } finally {
                 if (prepared) {

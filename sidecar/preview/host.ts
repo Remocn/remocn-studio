@@ -14,7 +14,7 @@ import {
 } from "@/shared/ipc";
 import { libraryRoot } from "../library/store";
 import { untilGone, untilOrphaned, untilSignalled } from "../lifecycle";
-import { finishDesignResult } from "./design";
+import { finishDesignResult, motionFrames } from "./design";
 import { clipMedia, exporterOf, exportMedia } from "./export";
 import { withoutWebFonts } from "./grab";
 import {
@@ -469,17 +469,27 @@ function inspectDesign(
   command: DesignCommand
 ): Effect.Effect<void> {
   return Effect.gen(function* () {
-    const sampleFrames = [...new Set(command.frames)]
-      .map((frame) => Math.max(0, Math.trunc(frame)))
-      .sort((left, right) => left - right);
+    const keyFrames = [...new Set(command.frames)].map((frame) =>
+      Math.max(0, Math.trunc(frame))
+    );
 
-    if (sampleFrames.length < 2 || sampleFrames.length > 9) {
+    if (keyFrames.length < 2 || keyFrames.length > 9) {
       return yield* Effect.fail(
         new PreviewError({
           message: "design_check needs between 2 and 9 distinct frames",
         })
       );
     }
+
+    const sampleFrames = [
+      ...new Set([
+        ...keyFrames,
+        ...motionFrames(command.motion).map((frame) =>
+          Math.max(0, Math.trunc(frame))
+        ),
+      ]),
+    ].sort((left, right) => left - right);
+    const selectors = command.motion.map(({ selector }) => selector);
 
     const tools = yield* toolsFor(booted.root);
     const session = yield* warmed(
@@ -505,11 +515,12 @@ function inspectDesign(
         `${slug(command.composition)}-frame-${frame}.png`
       );
       return session
-        .audit(frame, output)
+        .audit(frame, output, selectors)
         .pipe(Effect.map((audit) => ({ audit, frame, output })));
     });
 
     const result = finishDesignResult({
+      assertions: command.motion,
       audits,
       composition: command.composition,
       height: session.height,
