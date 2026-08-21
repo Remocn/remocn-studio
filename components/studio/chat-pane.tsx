@@ -300,6 +300,7 @@ function Conversation({
               message you just queued must land where you were typing. */}
           <DockStack>
             <TaskDock
+              isRunning={turn.isRunning}
               settings={settings}
               stages={turn.stages}
               tasks={currentTasks(turn.entries)}

@@ -33,11 +33,26 @@ export function Transcript({
   now: number;
   startedAt: number | null;
 }) {
-  const items = useMemo(() => groupActivity(entries), [entries]);
+  const tasks = useMemo(() => currentTasks(entries), [entries]);
+  const items = useMemo(() => {
+    const grouped = groupActivity(entries);
+
+    // While the current turn owns a plan, the dock is its single live surface.
+    // Keeping the same checklist in the transcript makes an expanded dock look
+    // like two plans are running. Once the turn settles, the dock leaves and
+    // the checklist returns here as conversation history.
+    if (!isRunning || tasks.length === 0) {
+      return grouped;
+    }
+
+    return grouped.filter(
+      (item) => item.kind !== "tasks" || !samePlan(item.tasks, tasks)
+    );
+  }, [entries, isRunning, tasks]);
   const last = entries.at(-1) ?? null;
   const isThinking = isRunning && !isWaiting && last?.kind !== "assistant";
   const lastId = items.at(-1)?.id ?? null;
-  const label = activeForm(currentTasks(entries));
+  const label = activeForm(tasks);
 
   // The pane re-renders every second for the Thinking timer; the transcript
   // rows depend on none of that, so the element array is kept stable across
@@ -157,3 +172,13 @@ function EntryBlock({
 
 const Entry = memo(EntryBlock);
 const Run = memo(ActivityRun);
+
+function samePlan(
+  left: readonly { id: string }[],
+  right: readonly { id: string }[]
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((task, index) => task.id === right[index]?.id)
+  );
+}

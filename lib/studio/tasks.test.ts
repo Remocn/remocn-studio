@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { groupActivity } from "@/lib/studio/runs";
 import {
   activeForm,
+  currentTasks,
   planTasks,
   type TaskRow,
   taskGlyph,
@@ -255,6 +256,46 @@ describe("planTasks", () => {
     ]);
 
     expect(items.map((item) => item.kind)).toEqual(["run"]);
+  });
+});
+
+describe("currentTasks", () => {
+  it("does not revive a completed plan before a later turn uses task tools", () => {
+    const entries: TranscriptEntry[] = [
+      create("c1", "1", "Backend"),
+      update("u1", { status: "completed", taskId: "1" }),
+      {
+        assets: [],
+        attachments: [],
+        elements: [],
+        id: "user-1",
+        kind: "user",
+        media: [],
+        text: "Can you explain the result?",
+      },
+    ];
+
+    expect(currentTasks(entries)).toEqual([]);
+  });
+
+  it("brings a prior plan back when the current turn updates it", () => {
+    const entries: TranscriptEntry[] = [
+      create("c1", "1", "Backend"),
+      {
+        assets: [],
+        attachments: [],
+        elements: [],
+        id: "user-1",
+        kind: "user",
+        media: [],
+        text: "Continue the work",
+      },
+      update("u1", { status: "in_progress", taskId: "1" }),
+    ];
+
+    expect(currentTasks(entries).map((task) => task.status)).toEqual([
+      "in_progress",
+    ]);
   });
 });
 

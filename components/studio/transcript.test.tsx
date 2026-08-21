@@ -387,6 +387,46 @@ describe("Transcript", () => {
     expect(screen.getByText("Create promotions table migration")).toBeVisible();
   });
 
+  it("leaves the current plan to the dock while its turn is running", () => {
+    renderTranscript(
+      [
+        {
+          id: "c1",
+          input: { activeForm: "Building the backend", subject: "Backend" },
+          kind: "activity",
+          name: "TaskCreate",
+          result: "Task #1 created successfully: Backend",
+          state: "done",
+        },
+        {
+          id: "c2",
+          input: { subject: "Frontend" },
+          kind: "activity",
+          name: "TaskCreate",
+          result: "Task #2 created successfully: Frontend",
+          state: "done",
+        },
+        {
+          id: "u1",
+          input: { status: "in_progress", taskId: "1" },
+          kind: "activity",
+          name: "TaskUpdate",
+          result: "Updated task #1 status",
+          state: "done",
+        },
+      ],
+      true
+    );
+
+    expect(
+      screen.queryByRole("button", { name: BACKEND })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: FRONTEND })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Building the backend")).toBeVisible();
+  });
+
   it("says which task is running instead of Thinking", () => {
     renderTranscript(
       [
