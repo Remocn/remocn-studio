@@ -38,6 +38,7 @@ function asset(shape: Partial<Asset> = {}): Asset {
     proxied: true,
     role: null,
     slug: "intro",
+    source: null,
     type: "video",
     ...shape,
   };

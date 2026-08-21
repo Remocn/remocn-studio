@@ -1,9 +1,16 @@
 import { Effect, type Exit, Schema, type SchemaError } from "effect";
-import { Asset, AssetDraft, PromptAsset } from "./library";
+import {
+  Asset,
+  AssetDraft,
+  PromptAsset,
+  StockItem,
+  StockKind,
+  StockPage,
+} from "./library";
 import { PipelineStage, PipelineStageId, PipelineStatus } from "./pipeline";
 import { AgentProvider, DEFAULT_AGENT_PROVIDER, ToolVerb } from "./providers";
 
-export const SIDECAR_PROTOCOL = 21;
+export const SIDECAR_PROTOCOL = 22;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -17,6 +24,7 @@ export const TEMPLATE_DIR_ENV = "REMOCN_STUDIO_TEMPLATE_DIR";
 export const PLUGIN_DIR_ENV = "REMOCN_STUDIO_PLUGIN_DIR";
 export const LIBRARY_DIR_ENV = "REMOCN_STUDIO_LIBRARY_DIR";
 export const REMOCN_DIR_ENV = "REMOCN_STUDIO_REMOCN_DIR";
+export const PEXELS_KEY_ENV = "REMOCN_STUDIO_PEXELS_KEY";
 
 export const CANCELLED = "cancelled";
 
@@ -41,6 +49,10 @@ export const METHOD_NAMES = [
   "library.remove",
   "library.rename",
   "library.save",
+  "library.stockKey",
+  "library.stockSave",
+  "library.stockSearch",
+  "library.stockStatus",
   "pipeline.get",
   "pipeline.set",
   "pipeline.start",
@@ -319,6 +331,25 @@ export const AssetCandidates = Schema.Struct({
 
 export const AssetDismissed = Schema.Struct({ dismissed: Schema.Int });
 
+export const StockQuery = Schema.Struct({
+  kind: StockKind,
+  page: Schema.Int,
+  query: Schema.NonEmptyString,
+});
+
+// A null key forgets the stored one; whether a key is configured is all the
+// webview may learn — the key itself never travels back.
+export const StockKeyChange = Schema.Struct({
+  key: Schema.NullOr(Schema.NonEmptyString),
+});
+
+export const StockConfigured = Schema.Struct({ configured: Schema.Boolean });
+
+export const StockProgress = Schema.Struct({
+  received: Schema.Int,
+  total: Schema.NullOr(Schema.Int),
+});
+
 export const PipelineState = Schema.Struct({
   sessionId: Schema.NonEmptyString,
   stages: Schema.Array(PipelineStage),
@@ -346,6 +377,10 @@ export type AssetPreview = (typeof AssetPreview)["Type"];
 export type AssetProxy = (typeof AssetProxy)["Type"];
 export type AssetCandidates = (typeof AssetCandidates)["Type"];
 export type AssetDismissed = (typeof AssetDismissed)["Type"];
+export type StockQuery = (typeof StockQuery)["Type"];
+export type StockKeyChange = (typeof StockKeyChange)["Type"];
+export type StockConfigured = (typeof StockConfigured)["Type"];
+export type StockProgress = (typeof StockProgress)["Type"];
 export type PromptFrame = (typeof PromptFrame)["Type"];
 export type PipelineState = (typeof PipelineState)["Type"];
 export type PipelineStageChange = (typeof PipelineStageChange)["Type"];
@@ -824,6 +859,26 @@ export const SIDECAR_METHODS = {
   "library.save": {
     params: AssetDraft,
     result: Asset,
+    stream: Schema.Never,
+  },
+  "library.stockKey": {
+    params: StockKeyChange,
+    result: StockConfigured,
+    stream: Schema.Never,
+  },
+  "library.stockSave": {
+    params: StockItem,
+    result: Asset,
+    stream: StockProgress,
+  },
+  "library.stockSearch": {
+    params: StockQuery,
+    result: StockPage,
+    stream: Schema.Never,
+  },
+  "library.stockStatus": {
+    params: Schema.Null,
+    result: StockConfigured,
     stream: Schema.Never,
   },
   "pipeline.get": {

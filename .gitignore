@@ -22,6 +22,10 @@ next-env.d.ts
 # `bun run sidecar:build` output, bundled into the app as a Tauri resource
 sidecar-dist
 
+# The app's own Pexels key, baked into the sidecar bundle at build time
+.env
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

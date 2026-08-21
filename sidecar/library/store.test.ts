@@ -34,6 +34,7 @@ function draft(shape: Partial<AssetDraft> & { files: string[] }): AssetDraft {
     name: "Thing",
     preview: null,
     role: null,
+    source: null,
     type: "component",
     ...shape,
   };

@@ -1,8 +1,11 @@
+import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 import {
   type Asset,
+  AssetManifest,
   assetTypeFor,
   assetTypeOf,
+  assetTypeOfStock,
   needsProxy,
   playableFileOf,
   promptAssetOf,
@@ -24,6 +27,7 @@ const ASSET: Asset = {
   proxied: false,
   role: null,
   slug: "neon-title",
+  source: null,
   type: "component",
 };
 
@@ -141,5 +145,24 @@ describe("promptAssetOf", () => {
       slug: "neon-title",
       type: "component",
     });
+  });
+});
+
+describe("assetTypeOfStock", () => {
+  it("files a photo as an image and a clip as a video", () => {
+    expect(assetTypeOfStock("photo")).toBe("img");
+    expect(assetTypeOfStock("video")).toBe("video");
+  });
+});
+
+describe("AssetManifest", () => {
+  it("reads a manifest written before sources existed", () => {
+    const decoded = Schema.decodeUnknownSync(AssetManifest)({
+      files: ["a.png"],
+      name: "A picture",
+      type: "img",
+    });
+
+    expect(decoded.source).toBeNull();
   });
 });

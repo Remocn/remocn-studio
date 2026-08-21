@@ -43,6 +43,7 @@ function asset(slug: string, name: string): Asset {
     proxied: false,
     role: null,
     slug,
+    source: null,
     type: "component",
   };
 }

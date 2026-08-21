@@ -5,6 +5,7 @@ import {
   CheckIcon,
   CircleArrowUpIcon,
   CopyIcon,
+  ImagesIcon,
   RotateCwIcon,
   SlidersHorizontalIcon,
   SunMoonIcon,
@@ -14,11 +15,13 @@ import { useCallback, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useCopyCommand } from "@/hooks/use-copy-command";
+import { useStockKey } from "@/hooks/use-stock-key";
 import {
   isThemeChoice,
   type ThemeChoice,
@@ -36,7 +39,13 @@ import { ProviderIcon } from "./provider-icon";
 import { useStudio } from "./studio-provider";
 import { UpdatesBody } from "./update-status";
 
-const SECTION_IDS = ["appearance", "behavior", "updates", "accounts"] as const;
+const SECTION_IDS = [
+  "appearance",
+  "behavior",
+  "stock",
+  "updates",
+  "accounts",
+] as const;
 
 type SectionId = (typeof SECTION_IDS)[number];
 
@@ -64,6 +73,12 @@ const SECTIONS: readonly {
     icon: SlidersHorizontalIcon,
     id: "behavior",
     label: "Behavior",
+  },
+  {
+    description: "Searching Pexels from the Assets pane",
+    icon: ImagesIcon,
+    id: "stock",
+    label: "Stock media",
   },
   {
     description: "Keep the studio current",
@@ -108,6 +123,7 @@ export function SettingsDialog() {
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
             {section === "appearance" ? <AppearanceSection /> : null}
             {section === "behavior" ? <BehaviorSection /> : null}
+            {section === "stock" ? <StockSection /> : null}
             {section === "updates" ? <UpdatesSection /> : null}
             {section === "accounts" ? <AccountsSection /> : null}
           </div>
@@ -429,5 +445,54 @@ function AccountStatus({
         </span>
       ) : null}
     </>
+  );
+}
+
+function StockSection() {
+  const stockKey = useStockKey();
+  const canSave = stockKey.value.trim().length > 0;
+
+  return (
+    <section aria-label="Pexels" className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <Label className="text-sm" htmlFor="settings-pexels-key">
+          Pexels API key
+        </Label>
+        <p className="text-muted-foreground text-xs leading-snug">
+          The key is free at pexels.com/api. It is kept in the studio’s own data
+          folder on this machine and never leaves it except to talk to Pexels.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Input
+          className="h-8 flex-1"
+          id="settings-pexels-key"
+          onChange={stockKey.onChange}
+          placeholder={
+            stockKey.isConfigured === true ? "A key is saved" : "Paste your key"
+          }
+          type="password"
+          value={stockKey.value}
+        />
+        <Button
+          disabled={!canSave}
+          onClick={stockKey.onSave}
+          size="sm"
+          variant="outline"
+        >
+          Save
+        </Button>
+        {stockKey.isConfigured === true ? (
+          <Button onClick={stockKey.onForget} size="sm" variant="ghost">
+            Remove
+          </Button>
+        ) : null}
+      </div>
+
+      {stockKey.error === null ? null : (
+        <p className="break-words text-destructive text-xs">{stockKey.error}</p>
+      )}
+    </section>
   );
 }

@@ -220,6 +220,17 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
         command.env(REMOCN_DIR_ENV, remocn);
     }
 
+    // Debug runs the sidecar from the repo, so the repo's .env — the app's
+    // own Pexels key lives there — travels on bun's own flag. The release
+    // bundle has the key baked in by `bun build --env` instead.
+    #[cfg(debug_assertions)]
+    {
+        let dotenv = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.env");
+        if dotenv.exists() {
+            command.arg(format!("--env-file={}", dotenv.display()));
+        }
+    }
+
     command
         .arg(script)
         .env("PATH", child_path(bun))

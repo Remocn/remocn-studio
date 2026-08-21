@@ -36,6 +36,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { stockKindOf, useAssetsScope } from "@/hooks/use-assets-scope";
+
 import { useNow } from "@/hooks/use-now";
 import { usePickAsset } from "@/hooks/use-pick-asset";
 import type { ProjectCommands } from "@/hooks/use-project-menu";
@@ -45,9 +47,11 @@ import { isPaneView, type PaneView } from "@/lib/studio/pane-view";
 import { cn } from "@/lib/utils";
 import { isMediaAsset } from "@/shared/library";
 import { AssetsPane } from "./assets-pane";
+import { AssetsScopeSwitch } from "./assets-scope";
 import { ComponentsPane } from "./components-pane";
 import { LogoWordmark } from "./logo-mark";
 import { ProjectGroup } from "./project-group";
+import { StockPane } from "./stock-pane";
 import { useStudio } from "./studio-provider";
 import { UpdateStatus } from "./update-status";
 
@@ -106,6 +110,8 @@ export function ProjectsPane() {
     [library.assets, library.bundled]
   );
   const onPickAsset = usePickAsset(pickable, composer.pick);
+  const assetsScope = useAssetsScope();
+  const stockKind = stockKindOf(assetsScope.scope);
 
   const media = useMemo(
     () => library.assets.filter((asset) => isMediaAsset(asset.type)),
@@ -146,15 +152,24 @@ export function ProjectsPane() {
     content = (
       <>
         <h2 className="sr-only">Assets</h2>
-        <AssetsPane
-          assets={media}
-          error={library.error}
-          isLoading={library.isLoading}
-          isOver={drops.library.isOver}
-          onPick={onPickAsset}
-          onRemove={library.onRemove}
-          onRetry={library.reload}
-        />
+        <AssetsScopeSwitch scope={assetsScope} />
+        {stockKind === null ? (
+          <AssetsPane
+            assets={media}
+            error={library.error}
+            isLoading={library.isLoading}
+            isOver={drops.library.isOver}
+            onPick={onPickAsset}
+            onRemove={library.onRemove}
+            onRetry={library.reload}
+          />
+        ) : (
+          <StockPane
+            kind={stockKind}
+            onOpenSettings={settingsDialog.open}
+            onSaved={library.refresh}
+          />
+        )}
       </>
     );
   }

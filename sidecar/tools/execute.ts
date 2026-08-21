@@ -163,6 +163,7 @@ async function saveAsset(
     name: named.name,
     preview: null,
     role: named.role ?? null,
+    source: null,
     type: named.type ?? assetTypeFor(files),
   });
 

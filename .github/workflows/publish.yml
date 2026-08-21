@@ -149,6 +149,11 @@ jobs:
           # counterpart here.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # The app's own Pexels key: `sidecar:build` runs inside this step and
+          # bakes it into the sidecar bundle with `bun build --env`. Without the
+          # secret the build still succeeds — the release just ships with stock
+          # search asking for a personal key.
+          REMOCN_STUDIO_PEXELS_KEY: ${{ secrets.REMOCN_STUDIO_PEXELS_KEY }}
         with:
           tagName: v${{ needs.version.outputs.version }}
           releaseName: remocn studio v${{ needs.version.outputs.version }}

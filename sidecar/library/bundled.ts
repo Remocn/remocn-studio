@@ -122,6 +122,7 @@ function assetOf(
     proxied: false,
     role: bundledRoleOf(name),
     slug: `${BUNDLED_PREFIX}${name}`,
+    source: null,
     type: "component",
   };
 }
