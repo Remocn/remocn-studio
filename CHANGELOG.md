@@ -1,5 +1,79 @@
 # remocn-studio
 
+## 0.6.0
+
+### Minor Changes
+
+- 37a6e37: Give Codex, Copilot and Grok the same five bundled skills Claude already had.
+
+  The studio has always shipped its knowledge as one plugin — `remocn`,
+  `remotion-best-practices`, `remotion-interactivity`, `video-lessons`,
+  `motion-design` — and only Claude ever loaded it. The other three got the
+  always-on conventions and nothing else, so the same request produced a different
+  process depending on whose model answered it. Now every provider gets the whole
+  bundle, through its own native skill mechanism, out of the one `agent/skills/`
+  that was always the source of truth. Nothing is copied into your project, no
+  skill body is pasted into a prompt, and progressive disclosure still works: the
+  runtime shows a catalog and the agent opens what it needs.
+
+  Copilot and Grok take the shipped directory as `--plugin-dir` and read the
+  manifest the plugin already carried. Codex needed more: it resolves plugins only
+  from a user config layer, and `--config` overrides land in a layer it
+  deliberately skips — measured against codex-cli 0.148.0, `codex plugin list`
+  with those overrides answers "No marketplace plugins found" and the same tables
+  written into a `config.toml` answer with the plugin. So the studio keeps a Codex
+  home of its own beside its database and mirrors yours into it: every entry is a
+  symlink back, `auth.json` included, so the ChatGPT session and the sessions you
+  can resume are the same ones. Only the config and the plugin store are the
+  studio's, and your `~/.codex/config.toml` is never written to.
+
+  Attach is a value now, not a guess from the provider's name: `{ loaded, source,
+collisions, reason }`. Skill-aware conventions are sent because the attach
+  succeeded, and they name the skills in words no single runtime owns, so the same
+  sentence resolves in four catalogs. A bundle that is missing or incomplete
+  degrades to the studio conventions plus one notice — never a failed turn, and
+  never dressed up as an auth or model failure.
+
+  A project that ships its own copy of a bundled skill no longer switches the
+  whole bundle off. That copy wins by each runtime's own precedence, the collision
+  is logged, and the other four skills still load.
+
+  Measured per turn, against the same prompt: Claude +1215 tokens, Grok +978,
+  Codex +605. Copilot's live run is blocked by an org policy on the account this
+  was built on, so it keeps its Experimental badge until someone can run the
+  matrix against a Copilot login that works.
+
+- 9632171: Movement now has a role: entry, emphasis, exit, scene or transition.
+
+  Keyframes are being replaced here by a vocabulary of named behaviours, and a vocabulary
+  needs a skeleton. This is it — one axis that says _when in the life of the thing it is
+  attached to_ a movement runs, where the Components pane's categories only ever said what
+  a component was about. All 99 bundled remocn components are classified: 21 entry, 15
+  emphasis, 4 exit, 36 scene, 23 transition. Exit being that thin is information, and it
+  is visible now.
+
+  The pane groups by those five words instead of by category, with a count on each
+  heading; category survives in the data and orders the tiles inside a group, so Scene
+  still reads shaders before filters. A component you saved sits in its own role next to
+  the shipped ones — that is the point, the dictionary is meant to grow — and anything
+  saved before roles existed keeps a leading _Saved_ group.
+
+  The agent is told the same vocabulary in every turn: the five roles, the rule that every
+  animated element gets an entry and an exit and that emphasis is spent on the one thing
+  that matters, the twenty dictionary names, and the props each role is expected to expose
+  — so a behaviour it invents arrives with the knobs a props panel can pick up later. The
+  names are in the conventions and the recipes are in the `motion-design` skill, which now
+  carries a Remotion recipe and a starting number per name. `save_asset` takes the role,
+  so a behaviour worth keeping joins the library already classified, and an inserted asset
+  reaches the turn as `[Asset #N] Name (entry)`.
+
+  The dictionary obeys `video-lessons` rather than competing with it: there is no `pulse`
+  in it, because §1 bans pulsing, and `rise-in` is documented as panels-and-images only,
+  because a text entrance travels on X or the glyph baselines snap.
+
+  Nothing without a role behaves differently. The field is nullable wherever it is stored,
+  a manifest written before this reads back as having none, and media is never given one.
+
 ## 0.5.0
 
 ### Minor Changes
