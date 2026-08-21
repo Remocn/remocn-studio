@@ -35,6 +35,12 @@ export const HostCommand = Schema.Union([
   }),
   Schema.Struct({
     id: Schema.NonEmptyString,
+    output: Schema.NonEmptyString,
+    type: Schema.Literal("source"),
+    url: Schema.NonEmptyString,
+  }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
     type: Schema.Literal("cancel"),
   }),
 ]);
@@ -94,6 +100,16 @@ export const HostReply = Schema.Union([
     message: Schema.String,
     type: Schema.Literal("design-failed"),
   }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    path: Schema.NonEmptyString,
+    type: Schema.Literal("source-done"),
+  }),
+  Schema.Struct({
+    id: Schema.NonEmptyString,
+    message: Schema.String,
+    type: Schema.Literal("source-failed"),
+  }),
 ]);
 
 export type HostCommand = (typeof HostCommand)["Type"];
@@ -102,6 +118,7 @@ export type StillCommand = Extract<HostCommand, { type: "still" | "warm" }>;
 export type ExportCommand = Extract<HostCommand, { type: "export" }>;
 export type ClipCommand = Extract<HostCommand, { type: "clip" }>;
 export type DesignCommand = Extract<HostCommand, { type: "design" }>;
+export type SourceCommand = Extract<HostCommand, { type: "source" }>;
 
 export const decodeHostCommand = Schema.decodeExit(
   Schema.fromJsonString(HostCommand)

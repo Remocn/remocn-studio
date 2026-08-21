@@ -16,6 +16,7 @@ import {
   LIBRARY_SERVER,
   LIST_ASSETS,
   PIPELINE_SERVER,
+  REQUEST_SOURCE_ASSET,
   SAVE_ASSET,
   START_PIPELINE,
   TOOL_SPECS,
@@ -28,6 +29,11 @@ export interface LibraryCalls {
 }
 
 export interface PipelineCalls {
+  readonly requestSource: (input: {
+    readonly attempt: string;
+    readonly name: string;
+    readonly source: string;
+  }) => Promise<import("@/shared/ipc").SourceAssetResolution>;
   readonly setStage: (
     stage: PipelineStageId,
     status: PipelineStatus
@@ -83,6 +89,9 @@ function run(
   if (server === PIPELINE_SERVER && tool === START_PIPELINE) {
     return staged(tools.pipeline.start());
   }
+  if (server === PIPELINE_SERVER && tool === REQUEST_SOURCE_ASSET) {
+    return requestSource(args, tools.pipeline);
+  }
   if (server === DESIGN_SERVER && tool === DESIGN_CHECK) {
     return designCheck(args, tools.design);
   }
@@ -92,6 +101,16 @@ function run(
       args.status as PipelineStatus
     )
   );
+}
+
+async function requestSource(
+  args: Record<string, unknown>,
+  pipeline: PipelineCalls
+): Promise<string> {
+  const result = await pipeline.requestSource(
+    args as { attempt: string; name: string; source: string }
+  );
+  return JSON.stringify(result, null, 2);
 }
 
 async function designCheck(

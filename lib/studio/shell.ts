@@ -31,6 +31,23 @@ export function pickPlayable(): Effect.Effect<string[], ShellError> {
   ]);
 }
 
+export function pickSourceAsset(): Effect.Effect<string | null, ShellError> {
+  return Effect.tryPromise({
+    catch: fail,
+    try: () =>
+      open({
+        filters: [
+          {
+            extensions: ["avif", "gif", "jpeg", "jpg", "png", "svg", "webp"],
+            name: "Brand images",
+          },
+        ],
+        multiple: false,
+        title: "Choose the original brand asset",
+      }),
+  });
+}
+
 function picked(
   title: string,
   name: string,

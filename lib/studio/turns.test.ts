@@ -7,6 +7,7 @@ import {
   type QueuedMessage,
   queuedCounts,
   queuedLabel,
+  statusOf,
   type TurnState,
 } from "@/lib/studio/turns";
 import type { PromptAttachment, PromptElement } from "@/shared/ipc";
@@ -95,6 +96,24 @@ describe("the message queue", () => {
     const turn = waiting(enqueue(IDLE_TURN, message("a")));
 
     expect(nextQueued(turn, false)).toBeNull();
+  });
+
+  it("waits for a source asset answer before starting the next message", () => {
+    const turn = {
+      ...enqueue(IDLE_TURN, message("a")),
+      sources: [
+        {
+          askedAt: 0,
+          attempt: "No original was exposed.",
+          id: "source-1",
+          name: "Logo",
+          source: "https://example.com",
+        },
+      ],
+    };
+
+    expect(nextQueued(turn, false)).toBeNull();
+    expect(statusOf(turn)).toBe("waiting");
   });
 
   it("hands out nothing when there is nothing queued", () => {

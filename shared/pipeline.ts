@@ -52,11 +52,11 @@ export const STAGE_TEMPLATES: readonly StageTemplate[] = [
   },
   {
     activeForm: "Collecting the brand",
-    ask: "Ask for the brand: its name, a site or brand book to read, two or three key colors, and the tone the video should carry. Never invent a brand.",
+    ask: "Ask for the brand: its name, an authoritative site or brand book, two or three key colors, and the tone the video should carry.",
     discover:
-      "Check video/brand.md. If it is missing, look for the brand in the project itself: logos, css tokens, a README, a site it mentions.",
+      "Check video/brand.md first, then inspect the project for logos, css tokens, a README, and every authoritative URL it mentions. Work source-first for each identity asset: recover the original file from a direct download, img/srcset or linked SVG and copy it unchanged into video/assets/. Record the source beside the local path in video/brand.md. If the source exposes no usable original after you check those locations, call mcp__remocn-pipeline__request_source_asset; a newly drawn, traced or restyled replacement cannot complete this stage.",
     doneWhen:
-      "video/brand.md names concrete colors, fonts and tone, and every asset it needs sits in video/assets/.",
+      "video/brand.md names concrete colors, fonts and tone, and every required identity asset has both an unchanged local file in video/assets/ and its provenance recorded beside it.",
     goal: "Collect the visual language: palette, fonts, logos and tone.",
     id: "brand",
     outputs: ["video/brand.md", "video/assets/"],

@@ -16,6 +16,11 @@ import { makeAccountCache } from "./agent/account";
 import { makeGate } from "./agent/gate";
 import { makeModeSwitch } from "./agent/mode";
 import { adapterFor } from "./agent/registry";
+import {
+  abandonSourceAssets,
+  answerSourceAsset,
+  requestSourceAsset,
+} from "./agent/source";
 import { pipelineBrief } from "./claude/conventions";
 import { checksFor } from "./environment";
 import { type FilesError, listFolder, projectFiles } from "./files";
@@ -248,6 +253,18 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
             },
             library: librarian(params),
             pipeline: {
+              requestSource: (input) =>
+                Effect.runPromise(
+                  requestSourceAsset(
+                    {
+                      ...input,
+                      projectId: params.projectId,
+                      projectPath: project.path,
+                      turnId,
+                    },
+                    emit
+                  )
+                ),
               setStage: (stage, status) =>
                 moved(store.setStage(params.historyId, stage, status)),
               start: () => moved(store.startPipeline(params.historyId)),
@@ -277,8 +294,14 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
               })
             )
           )
-      );
+      ).pipe(Effect.ensuring(abandonSourceAssets(turnId)));
     }),
+
+  "agent.source": ({ params }) =>
+    answerSourceAsset(params).pipe(
+      Effect.map((matched) => ({ matched })),
+      Effect.mapError((error) => new HandlerError({ message: error.message }))
+    ),
 
   "files.list": ({ params }) =>
     listFolder(params.path).pipe(Effect.mapError(unlisted)),

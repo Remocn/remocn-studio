@@ -38,11 +38,13 @@ import {
   type ExportCommand,
   type HostReply,
   RENDER_BASE,
+  type SourceCommand,
   type StillCommand,
 } from "./protocol";
 import { libraryIndex, proxies } from "./proxies";
 import { serve } from "./server";
 import { openSession, type Session, type WarmInternals } from "./session";
+import { captureSourcePage } from "./source";
 import {
   type CompositionCache,
   captureStill,
@@ -414,7 +416,52 @@ function obey(booted: Booted, line: string): Effect.Effect<void> {
     return inspectDesign(booted, command);
   }
 
+  if (command.type === "source") {
+    return captureSource(booted, command);
+  }
+
   return answer(booted, command);
+}
+
+function captureSource(
+  booted: Booted,
+  command: SourceCommand
+): Effect.Effect<void> {
+  return Effect.gen(function* () {
+    const tools = yield* toolsFor(booted.root);
+    if (tools.internals === null) {
+      return yield* Effect.fail(
+        new PreviewError({
+          message:
+            "this Remotion build does not expose the Chrome internals needed for a source screenshot",
+        })
+      );
+    }
+    const captured = yield* captureSourcePage({
+      internals: tools.internals,
+      options: tools.options,
+      output: command.output,
+      timeoutMs: tools.options.timeoutInMilliseconds ?? DELAY_RENDER_TIMEOUT_MS,
+      url: command.url,
+    });
+    yield* log(`captured source ${command.url} to ${captured}`);
+    return yield* write({
+      id: command.id,
+      path: captured,
+      type: "source-done",
+    });
+  }).pipe(
+    Effect.catch((error) =>
+      Effect.andThen(
+        log(`source capture failed: ${error.message}`),
+        write({
+          id: command.id,
+          message: error.message,
+          type: "source-failed",
+        })
+      )
+    )
+  );
 }
 
 function inspectDesign(

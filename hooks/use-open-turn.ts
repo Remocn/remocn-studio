@@ -6,6 +6,7 @@ import type { PermissionAction } from "@/lib/studio/permission";
 import {
   IDLE_TURN,
   type PendingPermission,
+  type PendingSourceAsset,
   type QueuedMessage,
   type TurnState,
 } from "@/lib/studio/turns";
@@ -19,6 +20,7 @@ import {
   type PromptFrame,
   type PromptMedia,
   type SessionMode,
+  type SourceAssetAction,
   type TranscriptEntry,
 } from "@/shared/ipc";
 import type { PromptAsset } from "@/shared/library";
@@ -42,6 +44,11 @@ export interface OpenTurn {
     action: PermissionAction,
     mode: SessionMode | null
   ) => void;
+  answerSource: (
+    sourceId: string,
+    action: SourceAssetAction,
+    file: string | null
+  ) => Promise<boolean>;
   canPickProvider: boolean;
   context: ContextUsage | null;
   entries: readonly TranscriptEntry[];
@@ -62,6 +69,7 @@ export interface OpenTurn {
     assets?: readonly PromptAsset[],
     media?: readonly PromptMedia[]
   ) => boolean;
+  source: PendingSourceAsset | null;
   stages: readonly PipelineStage[];
   startedAt: number | null;
   stop: () => void;
@@ -79,7 +87,14 @@ export function useOpenTurn({
   turns,
 }: OpenTurnSettings): OpenTurn {
   const openId = session?.id ?? draftId;
-  const { answerTurn, loadTurn, markOpen, sendTurn, stopTurn } = turns;
+  const {
+    answerSourceTurn,
+    answerTurn,
+    loadTurn,
+    markOpen,
+    sendTurn,
+    stopTurn,
+  } = turns;
   const dropQueued = turns.removeQueued;
   const turn: TurnState = turns.turns.get(openId) ?? IDLE_TURN;
 
@@ -147,6 +162,12 @@ export function useOpenTurn({
     [answerTurn, openId]
   );
 
+  const answerSource = useCallback(
+    (sourceId: string, action: SourceAssetAction, file: string | null) =>
+      answerSourceTurn(openId, sourceId, action, file),
+    [answerSourceTurn, openId]
+  );
+
   const onModeChange = useCallback(
     (value: string) => {
       if (isSessionMode(value)) {
@@ -178,6 +199,7 @@ export function useOpenTurn({
   return useMemo(
     () => ({
       answer,
+      answerSource,
       canPickProvider,
       context: turn.context,
       entries: turn.entries,
@@ -192,12 +214,14 @@ export function useOpenTurn({
       queue: turn.queue,
       removeQueued,
       send,
+      source: turn.sources[0] ?? null,
       stages: turn.stages,
       startedAt: turn.startedAt,
       stop,
       turnError: turn.error,
     }),
     [
+      answerSource,
       answer,
       canPickProvider,
       onModeChange,

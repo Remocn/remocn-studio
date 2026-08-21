@@ -3,7 +3,7 @@ import { Asset, AssetDraft, PromptAsset } from "./library";
 import { PipelineStage, PipelineStageId, PipelineStatus } from "./pipeline";
 import { AgentProvider, DEFAULT_AGENT_PROVIDER, ToolVerb } from "./providers";
 
-export const SIDECAR_PROTOCOL = 20;
+export const SIDECAR_PROTOCOL = 21;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -26,6 +26,7 @@ export const METHOD_NAMES = [
   "agent.accounts",
   "agent.permission",
   "agent.prompt",
+  "agent.source",
   "files.list",
   "history.blocks",
   "history.mode",
@@ -516,6 +517,26 @@ export const PermissionParams = Schema.Struct({
 
 export const PermissionAnswer = Schema.Struct({ matched: Schema.Boolean });
 
+export const SourceAssetAction = Schema.Literals([
+  "uploaded",
+  "screenshot",
+  "cancel",
+]);
+
+export const SourceAssetParams = Schema.Struct({
+  action: SourceAssetAction,
+  file: Schema.NullOr(Schema.String),
+  id: Schema.NonEmptyString,
+});
+
+export const SourceAssetAnswer = Schema.Struct({ matched: Schema.Boolean });
+
+export const SourceAssetResolution = Schema.Struct({
+  kind: Schema.Literals(["uploaded", "screenshot", "cancelled"]),
+  path: Schema.NullOr(Schema.NonEmptyString),
+  provenance: Schema.NonEmptyString,
+});
+
 export const AgentEvent = Schema.Union([
   Schema.Struct({
     mode: Schema.NullOr(SessionMode),
@@ -560,6 +581,13 @@ export const AgentEvent = Schema.Union([
     type: Schema.Literal("permission"),
   }),
   Schema.Struct({
+    attempt: Schema.String,
+    id: Schema.NonEmptyString,
+    name: Schema.NonEmptyString,
+    source: Schema.NonEmptyString,
+    type: Schema.Literal("asset_source"),
+  }),
+  Schema.Struct({
     stages: Schema.Array(PipelineStage),
     type: Schema.Literal("pipeline"),
   }),
@@ -577,6 +605,10 @@ export type PermissionReason = (typeof PermissionReason)["Type"];
 export type PermissionDecision = (typeof PermissionDecision)["Type"];
 export type PermissionParams = (typeof PermissionParams)["Type"];
 export type PermissionAnswer = (typeof PermissionAnswer)["Type"];
+export type SourceAssetAction = (typeof SourceAssetAction)["Type"];
+export type SourceAssetParams = (typeof SourceAssetParams)["Type"];
+export type SourceAssetAnswer = (typeof SourceAssetAnswer)["Type"];
+export type SourceAssetResolution = (typeof SourceAssetResolution)["Type"];
 export type ImageMediaType = (typeof ImageMediaType)["Type"];
 export type MediaType = (typeof MediaType)["Type"];
 export type PromptAttachment = (typeof PromptAttachment)["Type"];
@@ -718,6 +750,11 @@ export const SIDECAR_METHODS = {
     params: PromptParams,
     result: PromptResult,
     stream: AgentEvent,
+  },
+  "agent.source": {
+    params: SourceAssetParams,
+    result: SourceAssetAnswer,
+    stream: Schema.Never,
   },
   "files.list": {
     params: DirectoryPath,

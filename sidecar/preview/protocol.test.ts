@@ -39,4 +39,30 @@ describe("preview design protocol", () => {
 
     expect(Exit.isSuccess(decoded)).toBe(true);
   });
+
+  it("decodes source capture commands and replies", () => {
+    expect(
+      Exit.isSuccess(
+        decodeHostCommand(
+          JSON.stringify({
+            id: "request-2",
+            output: "/tmp/source.png",
+            type: "source",
+            url: "https://example.com/brand",
+          })
+        )
+      )
+    ).toBe(true);
+    expect(
+      Exit.isSuccess(
+        decodeHostReply(
+          JSON.stringify({
+            id: "request-2",
+            path: "/tmp/source.png",
+            type: "source-done",
+          })
+        )
+      )
+    ).toBe(true);
+  });
 });

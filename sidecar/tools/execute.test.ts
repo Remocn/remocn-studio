@@ -36,6 +36,8 @@ function tools(shape: Partial<TurnTools> = {}): TurnTools {
       save: () => Promise.reject(new Error("no save in this test")),
     },
     pipeline: {
+      requestSource: () =>
+        Promise.reject(new Error("no source ask in this test")),
       setStage: () => Promise.reject(new Error("no pipeline in this test")),
       start: () => Promise.reject(new Error("no pipeline in this test")),
     },
@@ -114,6 +116,7 @@ describe("executeTool", () => {
       {},
       tools({
         pipeline: {
+          requestSource: () => Promise.reject(new Error("unused")),
           setStage: () => Promise.reject(new Error("unused")),
           start: () => Promise.resolve(stages),
         },
@@ -123,6 +126,36 @@ describe("executeTool", () => {
     expect(answer.isError).toBe(false);
     expect(answer.text).toContain(JSON.stringify(stages));
     expect(answer.text).toContain("**Analysis**");
+  });
+
+  it("returns the person's source asset decision as structured JSON", async () => {
+    const answer = await executeTool(
+      "remocn-pipeline",
+      "request_source_asset",
+      {
+        attempt: "No linked image was usable.",
+        name: "Acme Logo",
+        source: "https://example.com/brand",
+      },
+      tools({
+        pipeline: {
+          requestSource: () =>
+            Promise.resolve({
+              kind: "uploaded",
+              path: "video/assets/acme.svg",
+              provenance: "Original supplied by the person",
+            }),
+          setStage: () => Promise.reject(new Error("unused")),
+          start: () => Promise.reject(new Error("unused")),
+        },
+      })
+    );
+
+    expect(answer.isError).toBe(false);
+    expect(JSON.parse(answer.text)).toMatchObject({
+      kind: "uploaded",
+      path: "video/assets/acme.svg",
+    });
   });
 
   it("returns the design report as agent-readable JSON", async () => {
@@ -185,6 +218,7 @@ describe("executeTool", () => {
       { stage: "analysis", status: "done" },
       tools({
         pipeline: {
+          requestSource: () => Promise.reject(new Error("unused")),
           setStage: () =>
             Promise.reject(new Error("session s-1 has no pipeline")),
           start: () => Promise.reject(new Error("unused")),
