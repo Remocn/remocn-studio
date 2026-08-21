@@ -1,32 +1,51 @@
 import { describe, expect, it } from "vitest";
 import {
-  conventionsFor,
-  STUDIO_CONVENTIONS,
-} from "@/sidecar/claude/conventions";
-import {
+  BUNDLE_NAME,
   INTERACTIVITY_SKILL,
   LESSONS_SKILL,
   MOTION_SKILL,
-} from "@/sidecar/claude/knowledge";
+  SHIPPED,
+} from "@/sidecar/agent/knowledge";
+import {
+  conventionsFor,
+  STUDIO_CONVENTIONS,
+} from "@/sidecar/claude/conventions";
 
-const NAMED = `remocn-studio:${LESSONS_SKILL}`;
-const MARKUP = `remocn-studio:${INTERACTIVITY_SKILL}`;
-const MOTION = `remocn-studio:${MOTION_SKILL}`;
+const NAMED = `\`${LESSONS_SKILL}\``;
+const MARKUP = `\`${INTERACTIVITY_SKILL}\``;
+const MOTION = `\`${MOTION_SKILL}\``;
 
 describe("conventionsFor", () => {
-  it("orders the lessons skill by the name the plugin ships it under", () => {
+  it("orders the lessons skill by the name the bundle ships it under", () => {
     expect(conventionsFor(true)).toContain(NAMED);
+  });
+
+  it("names the bundle and every skill in it, so any runtime's catalog matches", () => {
+    const text = conventionsFor(true);
+
+    expect(text).toContain(`\`${BUNDLE_NAME}\``);
+    for (const skill of SHIPPED) {
+      expect(text).toContain(skill);
+    }
+  });
+
+  it("orders a skill in words no single runtime owns", () => {
+    const text = conventionsFor(true);
+
+    expect(text).not.toContain(`${BUNDLE_NAME}:${LESSONS_SKILL}`);
+    expect(text).not.toContain(`${BUNDLE_NAME}:${MOTION_SKILL}`);
+    expect(text).not.toContain(`${BUNDLE_NAME}:${INTERACTIVITY_SKILL}`);
   });
 
   it("says the lessons outrank a general Remotion habit", () => {
     expect(conventionsFor(true)).toContain("it wins");
   });
 
-  it("orders the interactivity skill by the name the plugin ships it under", () => {
+  it("orders the interactivity skill by the name the bundle ships it under", () => {
     expect(conventionsFor(true)).toContain(MARKUP);
   });
 
-  it("orders the motion-design skill by the name the plugin ships it under", () => {
+  it("orders the motion-design skill by the name the bundle ships it under", () => {
     expect(conventionsFor(true)).toContain(MOTION);
   });
 
@@ -43,6 +62,7 @@ describe("conventionsFor", () => {
     expect(alone).not.toContain(MARKUP);
     expect(alone).not.toContain(MOTION);
     expect(alone).not.toContain(MOTION_SKILL);
+    expect(alone).not.toContain(BUNDLE_NAME);
   });
 
   it("keeps the app's own conventions either way", () => {
