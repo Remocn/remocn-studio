@@ -323,6 +323,7 @@ async function write(draft: AssetDraft, now: number): Promise<Asset> {
     proxied: false,
     proxy: null,
     role: draft.role,
+    source: draft.source,
     type: draft.type,
   };
 
@@ -399,6 +400,7 @@ function assetOf(dir: string, slug: string, manifest: AssetManifest): Asset {
     proxied: manifest.proxied,
     role: manifest.role,
     slug,
+    source: manifest.source,
     type: manifest.type,
   };
 }

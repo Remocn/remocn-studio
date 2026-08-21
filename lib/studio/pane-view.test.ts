@@ -23,6 +23,7 @@ function asset(name: string, shape: Partial<Asset> = {}): Asset {
     proxied: false,
     role: null,
     slug: name.toLowerCase(),
+    source: null,
     type: "component",
     ...shape,
   };

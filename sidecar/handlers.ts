@@ -36,6 +36,13 @@ import {
   placeMedia,
 } from "./library/insert";
 import {
+  type StockError,
+  saveStock,
+  searchStock,
+  setStockKey,
+  stockConfigured,
+} from "./library/stock";
+import {
   attachClip,
   attachPreview,
   attachProxy,
@@ -93,6 +100,9 @@ const unscaffolded = (error: ScaffoldError) =>
   new HandlerError({ message: error.message });
 
 const unlibraried = (error: LibraryError) =>
+  new HandlerError({ message: error.message });
+
+const unstocked = (error: StockError) =>
   new HandlerError({ message: error.message });
 
 const unlisted = (error: FilesError) =>
@@ -366,6 +376,26 @@ export const handlers: Handlers<HistoryStore | ProjectStore> = {
 
   "library.save": ({ params }) =>
     saveAsset(params).pipe(Effect.mapError(unlibraried)),
+
+  "library.stockKey": ({ params }) =>
+    setStockKey(params.key).pipe(
+      Effect.map((configured) => ({ configured })),
+      Effect.mapError(unstocked)
+    ),
+
+  "library.stockSave": ({ emit, params }) =>
+    saveStock(params, (progress) => Effect.runSync(emit(progress))).pipe(
+      Effect.mapError((error) => new HandlerError({ message: error.message }))
+    ),
+
+  "library.stockSearch": ({ params }) =>
+    searchStock(params).pipe(Effect.mapError(unstocked)),
+
+  "library.stockStatus": () =>
+    stockConfigured().pipe(
+      Effect.map((configured) => ({ configured })),
+      Effect.mapError(unstocked)
+    ),
 
   "pipeline.get": ({ params }) =>
     Effect.flatMap(HistoryStore, (store) =>

@@ -45,6 +45,66 @@ const names = Schema.Array(Schema.NonEmptyString).pipe(
   Schema.withDecodingDefault(Effect.succeed([]))
 );
 
+export const STOCK_PROVIDERS = ["pexels"] as const;
+
+export const StockProvider = Schema.Literals(STOCK_PROVIDERS);
+
+export type StockProvider = (typeof StockProvider)["Type"];
+
+export const AssetSource = Schema.Struct({
+  author: Schema.String,
+  authorUrl: Schema.String,
+  id: Schema.NonEmptyString,
+  provider: StockProvider,
+  url: Schema.String,
+});
+
+export type AssetSource = (typeof AssetSource)["Type"];
+
+export const STOCK_KINDS = ["photo", "video"] as const;
+
+export const StockKind = Schema.Literals(STOCK_KINDS);
+
+export type StockKind = (typeof StockKind)["Type"];
+
+export const StockItem = Schema.Struct({
+  author: Schema.String,
+  authorUrl: Schema.String,
+  download: Schema.NonEmptyString,
+  duration: Schema.NullOr(Schema.Finite),
+  height: Schema.Int,
+  id: Schema.NonEmptyString,
+  kind: StockKind,
+  name: Schema.NonEmptyString,
+  thumbnail: Schema.NonEmptyString,
+  url: Schema.String,
+  width: Schema.Int,
+});
+
+export type StockItem = (typeof StockItem)["Type"];
+
+export const StockPage = Schema.Struct({
+  items: Schema.Array(StockItem),
+  nextPage: Schema.NullOr(Schema.Int),
+  total: Schema.Int,
+});
+
+export type StockPage = (typeof StockPage)["Type"];
+
+export function sourceOf(item: StockItem): AssetSource {
+  return {
+    author: item.author,
+    authorUrl: item.authorUrl,
+    id: item.id,
+    provider: "pexels",
+    url: item.url,
+  };
+}
+
+export function assetTypeOfStock(kind: StockKind): AssetType {
+  return kind === "photo" ? "img" : "video";
+}
+
 export const PROXY_HEIGHT = 1080;
 
 export const AssetManifest = Schema.Struct({
@@ -71,6 +131,9 @@ export const AssetManifest = Schema.Struct({
   role: Schema.NullOr(MotionRole).pipe(
     Schema.withDecodingDefault(Effect.succeed(null))
   ),
+  source: Schema.NullOr(AssetSource).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
   type: AssetType,
 });
 
@@ -94,6 +157,7 @@ export const Asset = Schema.Struct({
   proxied: Schema.Boolean,
   role: Schema.NullOr(MotionRole),
   slug: Schema.NonEmptyString,
+  source: Schema.NullOr(AssetSource),
   type: AssetType,
 });
 
@@ -120,6 +184,9 @@ export const AssetDraft = Schema.Struct({
     Schema.withDecodingDefault(Effect.succeed(null))
   ),
   role: Schema.NullOr(MotionRole).pipe(
+    Schema.withDecodingDefault(Effect.succeed(null))
+  ),
+  source: Schema.NullOr(AssetSource).pipe(
     Schema.withDecodingDefault(Effect.succeed(null))
   ),
   type: AssetType,

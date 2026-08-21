@@ -45,6 +45,7 @@ export interface Library {
   error: string | null;
   isLoading: boolean;
   onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
+  refresh: () => void;
   reload: () => void;
   rename: (slug: string, name: string) => Promise<void>;
   save: (attachment: PromptMedia) => Promise<Asset | null>;
@@ -514,6 +515,7 @@ export function useLibrary(
       error,
       isLoading,
       onRemove,
+      refresh,
       reload,
       rename,
       save,
@@ -525,6 +527,7 @@ export function useLibrary(
       error,
       isLoading,
       onRemove,
+      refresh,
       reload,
       rename,
       save,

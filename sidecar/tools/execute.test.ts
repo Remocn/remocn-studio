@@ -21,6 +21,7 @@ function asset(shape: Partial<Asset> = {}): Asset {
     proxied: false,
     role: null,
     slug: "neon-title",
+    source: null,
     type: "component",
     ...shape,
   };
