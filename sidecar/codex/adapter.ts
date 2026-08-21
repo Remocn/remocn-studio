@@ -15,12 +15,18 @@ import type {
 } from "@/shared/ipc";
 import { PROVIDER_INFO } from "@/shared/providers";
 import type { AgentAdapter, TurnServices } from "../agent/adapter";
+import {
+  announce,
+  type KnowledgeBundle,
+  locateBundle,
+} from "../agent/knowledge";
 import { conventionsFor } from "../claude/conventions";
 import { accountCheck, missingRow } from "./account";
 import { findCodex } from "./cli";
 import { inputOf } from "./content";
 import { makeTranslator } from "./events";
 import { failureFromText } from "./failure";
+import { codexHome } from "./home";
 
 class CodexError extends Data.TaggedError("CodexError")<{
   message: string;
@@ -72,9 +78,15 @@ export const codexAdapter: AgentAdapter = {
       const translator = makeTranslator(params.mode);
       const controller = new AbortController();
 
+      const attached = codexHome(locateBundle(services.cwd));
+      yield* announce(attached.knowledge, services);
+
       const codex = new Codex({
         codexPathOverride: executable,
-        config: configOf(services),
+        config: configOf(services, attached.knowledge),
+        ...(attached.home === null
+          ? {}
+          : { env: { ...inherited(), CODEX_HOME: attached.home } }),
       });
 
       const options: ThreadOptions = {
@@ -156,12 +168,25 @@ export const codexAdapter: AgentAdapter = {
     }),
 };
 
+// The SDK replaces the environment outright when `env` is given, so the
+// child would otherwise lose PATH, HOME and the studio's own variables.
+function inherited(): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(process.env).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined
+    )
+  );
+}
+
 // The conventions ride developer_instructions — the config-level equivalent
 // of Claude's systemPrompt append — so nothing is written into the user's
-// project. The remocn skills are not delivered here yet (plugins are Claude
-// Code's mechanism), which is exactly what the Experimental badge says.
-function configOf(services: TurnServices): NonNullable<CodexOptions["config"]> {
-  const conventions = conventionsFor(false);
+// project. The skills themselves arrive through the mirrored home in
+// `home.ts`, and the brief only claims them once that attach succeeded.
+function configOf(
+  services: TurnServices,
+  knowledge: KnowledgeBundle
+): NonNullable<CodexOptions["config"]> {
+  const conventions = conventionsFor(knowledge.loaded);
 
   return {
     developer_instructions:

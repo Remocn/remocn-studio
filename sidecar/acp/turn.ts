@@ -8,6 +8,7 @@ import type {
   SessionMode,
 } from "@/shared/ipc";
 import type { TurnServices } from "../agent/adapter";
+import { announce, type KnowledgeBundle } from "../agent/knowledge";
 import { elementsOf } from "../agent/prompt";
 import { conventionsFor } from "../claude/conventions";
 import { type AcpPeer, spawnAcp } from "./connection";
@@ -24,6 +25,7 @@ export interface AcpTurnConfig {
   readonly command: string;
   readonly images: boolean;
   readonly inBand: (firstChunk: string) => AgentFailure | null;
+  readonly knowledge: KnowledgeBundle;
 }
 
 // ACP mode ids are URIs; the match is by fragment so a version bump that
@@ -53,6 +55,8 @@ export function acpTurn(
     const failure = yield* Ref.make<AgentFailure | null>(null);
     const opened = { sessionId: params.sessionId };
     const translator = makeAcpTranslator();
+
+    yield* announce(config.knowledge, services);
 
     let replaying = params.sessionId !== null;
     let firstChunk = true;
@@ -210,7 +214,7 @@ export function acpTurn(
         ]);
       }
 
-      const conventions = conventionsFor(false);
+      const conventions = conventionsFor(config.knowledge.loaded);
       const briefed =
         services.briefs.pipeline === null
           ? conventions

@@ -1,0 +1,9 @@
+{
+  "name": "remocn-studio",
+  "plugins": [
+    {
+      "name": "remocn-studio",
+      "source": "./"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import type {
 } from "@/shared/ipc";
 import { PROVIDER_INFO } from "@/shared/providers";
 import type { AgentAdapter, TurnServices } from "../agent/adapter";
+import { announce, locateBundle } from "../agent/knowledge";
 import { accountCheck } from "./account";
 import { eventsOf } from "./events";
 import { failureFromText, failureOf } from "./failure";
@@ -23,6 +24,9 @@ export const claudeAdapter: AgentAdapter = {
       const sessionId = yield* Ref.make(params.sessionId);
       const failure = yield* Ref.make<AgentFailure | null>(null);
       const context = yield* Ref.make<ContextUsage | null>(null);
+      const knowledge = locateBundle(services.cwd);
+
+      yield* announce(knowledge, services);
 
       yield* Stream.runForEach(
         messages(params, {
@@ -36,6 +40,7 @@ export const claudeAdapter: AgentAdapter = {
             turnId: services.turnId,
           }),
           cwd: services.cwd,
+          knowledge,
           log: (line) => Effect.runSync(services.log(line)),
           media: services.briefs.media,
           onContext: (usage) => Effect.runSync(Ref.set(context, usage)),

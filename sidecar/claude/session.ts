@@ -9,6 +9,7 @@ import {
 import { Data, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { ContextUsage, PromptParams } from "@/shared/ipc";
+import type { KnowledgeBundle } from "../agent/knowledge";
 import type { ApplyMode } from "../agent/mode";
 import type { StdioTransport } from "../tools/gateway";
 import type { ToolServer } from "../tools/specs";
@@ -30,6 +31,7 @@ export interface TurnCallbacks {
   readonly brief: string | null;
   readonly canUseTool: CanUseTool;
   readonly cwd: string;
+  readonly knowledge: KnowledgeBundle;
   readonly log: (line: string) => void;
   readonly media: string | null;
   readonly onContext: (usage: ContextUsage) => void;
@@ -107,7 +109,8 @@ function open(params: PromptParams, callbacks: TurnCallbacks): Turn {
 }
 
 function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
-  const plugins = pluginsFor(callbacks.cwd);
+  const plugins = pluginsFor(callbacks.knowledge);
+  const conventions = conventionsFor(callbacks.knowledge.loaded);
 
   return {
     canUseTool: callbacks.canUseTool,
@@ -131,8 +134,8 @@ function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
     systemPrompt: {
       append:
         callbacks.brief === null
-          ? conventionsFor(plugins.length > 0)
-          : `${conventionsFor(plugins.length > 0)}\n\n${callbacks.brief}`,
+          ? conventions
+          : `${conventions}\n\n${callbacks.brief}`,
       preset: "claude_code",
       type: "preset",
     },

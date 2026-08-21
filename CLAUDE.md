@@ -375,11 +375,10 @@ classifier, the auth probe).
     logged in, *"Not logged in"* + exit 1 locks the composer for Codex
     sessions.
   - **What Experimental means here**: `context` is per-turn usage, not a
-    window reading, so the meter never shows; `todo_list` does not speak the
-    checklist's `TaskCreate` vocabulary, so no plan dock; and the remocn
-    skills are not delivered (plugins are Claude Code's mechanism) —
-    `developer_instructions` carries only the studio conventions and the
-    pipeline brief.
+    window reading, so the meter never shows, and `todo_list` does not speak
+    the checklist's `TaskCreate` vocabulary, so no plan dock. The bundled
+    skills *are* delivered, through a mirrored `CODEX_HOME` rather than a
+    plugin flag — see *One bundle, four runtimes*.
 - **Copilot is the third adapter, and it rides a bridge the fourth can reuse.**
   `sidecar/acp/` speaks the Agent Client Protocol — JSON-RPC 2.0, newline-
   delimited over the child's stdio, requests in *both* directions — and
@@ -409,8 +408,9 @@ classifier, the auth probe).
     model is ever asked. What the probe cannot see is the org-policy block —
     that state only speaks inside a turn.
   - The studio conventions ride as the leading text block of every prompt
-    (ACP has no system-prompt hook); modes map by URI fragment — `plan` to
-    Plan, `auto`/`acceptEdits` to Agent, never to Autopilot, which is
+    (ACP has no system-prompt hook) and the bundled skills ride as
+    `--plugin-dir`; modes map by URI fragment — `plan` to Plan,
+    `auto`/`acceptEdits` to Agent, never to Autopilot, which is
     Copilot's allow-all and has no story here; `--effort` takes the studio's
     levels verbatim; the spawn adds `--no-remote` (a desktop studio must not
     export sessions to GitHub web behind the person's back) and
@@ -444,9 +444,9 @@ classifier, the auth probe).
   account-measured (`Default`, the one entry that cannot drift, then the two
   gpt-5.6 slugs a ChatGPT login actually accepted; every other slug in the
   CLI source answered 400).
-- Still Claude-shaped, deliberately, until the next phases: the model picker,
-  knowledge delivery (plugins are Claude Code's mechanism), and a handful of
-  user-facing strings that say "Claude".
+- Still Claude-shaped, deliberately, until the next phases: the model picker
+  and a handful of user-facing strings that say "Claude". Knowledge delivery is
+  no longer among them — see *One bundle, four runtimes*.
 
 ### The sidecar
 
@@ -1022,11 +1022,12 @@ produced it.
 ### What the agent knows
 
 What makes this remocn studio and not a generic Claude Code GUI (#225). `agent/` is a real
-Claude Code **plugin** checked in here and mapped into the bundle by `tauri.conf.json`; Rust
-resolves it the way it resolves the template and passes it as `REMOCN_STUDIO_PLUGIN_DIR`, and
-`pluginsFor` in `sidecar/claude/knowledge.ts` turns it into the SDK's `plugins` option. It
-carries three vendored skills — `remocn`, `remotion-best-practices` and
-`remotion-interactivity` — and one of our own, `video-lessons`.
+**plugin** checked in here and mapped into the bundle by `tauri.conf.json`; Rust resolves it
+the way it resolves the template and passes it as `REMOCN_STUDIO_PLUGIN_DIR`. It carries three
+vendored skills — `remocn`, `remotion-best-practices` and `remotion-interactivity` — and two of
+our own, `video-lessons` and `motion-design`. **All four providers load all five** (REM-293),
+each through its own native mechanism, out of the one `agent/skills/` — see *One bundle, four
+runtimes*.
 
 - **`video-lessons` is ours, and it sits *beside* the vendored three rather than inside one.**
   `skills:check` walks each vendored skill and reports any file upstream does not have as
@@ -1049,14 +1050,14 @@ carries three vendored skills — `remocn`, `remotion-best-practices` and
   needed, which is why the vendored three work with none), and one is skipped when it
   *"exceeds N byte limit"* — the limits in the binary are 128 KB and up, against 44 KB here.
 - **The mandate to read it is a system-prompt line, and it is conditional.** `conventionsFor`
-  appends it only when `pluginsFor` actually returned the plugin, because a project that
-  installed its own copy of a vendored skill gets the plugin dropped *wholesale* — ordering a
-  turn to invoke `remocn-studio:video-lessons` when nothing loaded it would be an instruction
-  to fail. `LESSONS_SKILL` lives in `knowledge.ts` with the rest of the inventory and the
-  prompt reads it from there, so the name in the sentence and the folder on disk cannot drift.
-  `remocn-studio:remotion-interactivity` is mandated the same conditional way
-  (`INTERACTIVITY_SKILL`), so agent-written markup keeps inline styles, inline
-  `interpolate()` and `scale`/`rotate`/`translate` the studio can one day edit.
+  appends it only when the attach actually reported `loaded`, because ordering a turn to invoke
+  a skill nothing loaded would be an instruction to fail. `LESSONS_SKILL` lives in
+  `sidecar/agent/knowledge.ts` with the rest of the inventory and the prompt reads it from
+  there, so the name in the sentence and the folder on disk cannot drift; `INTERACTIVITY_SKILL`
+  and `MOTION_SKILL` are mandated the same conditional way, so agent-written markup keeps
+  inline styles, inline `interpolate()` and `scale`/`rotate`/`translate` the studio can one day
+  edit. The wording names the bundle and the bare skill names rather than Claude's
+  `remocn-studio:<name>` spelling: four catalogs, one sentence.
 - **AI-written components must be tunable without code.** `STUDIO_CONVENTIONS` requires every
   *new* component to expose its knobs as typed props with inline defaults, a Zod schema
   beside the component (`zColor()` for colors), and an `InteractivitySchema` for a custom
@@ -1075,7 +1076,9 @@ carries three vendored skills — `remocn`, `remotion-best-practices` and
   loads `~/.claude/settings.json`, `~/.claude/CLAUDE.md` and, on the author's machine, 106
   further commands, so the app would behave differently per user. The plugin route lists 48:
   exactly the three we ship, namespaced `remocn-studio:<name>`. `settingSources` stays
-  `["project"]`, and nothing outside the app is ever written.
+  `["project"]`, and nothing outside the app is ever written. The same rule holds for the other
+  three runtimes: the studio delivers this bundle and only this bundle, and never reaches into
+  `~/.agents`, `~/.copilot` or `~/.grok`. What those CLIs discover for themselves is theirs.
 - **`skills:sync` produces real files, and that is load-bearing.** `~/.claude/skills/*` are
   symlinks into `~/.agents/skills/`, so a plain `cp -R` vendors dangling links and the plugin
   then loads *nothing*, with no error anywhere. The script runs `skills add … --copy` in a
@@ -1088,14 +1091,87 @@ carries three vendored skills — `remocn`, `remotion-best-practices` and
   force-ignored in `biome.jsonc` and `agent` is excluded in `tsconfig.json` — formatting it
   would make `skills:check` report drift forever, and the skills ship `.tsx` samples that
   import `remotion`, which is deliberately not a dependency here.
-- **The vendored copy is the floor, not an override.** A project that installed any of these
-  skills into its own `.claude/skills` gets the plugin dropped entirely rather than shadowed:
-  both copies would otherwise load, since plugin skills are namespaced and cannot collide.
+- **A project's own copy wins the name, and costs nothing else.** A project that installed one
+  of these skills into its own `.claude/skills` used to get the plugin dropped *wholesale* —
+  one collision took the other four with it. `locateBundle` records the collision in
+  `collisions` and attaches anyway: plugin skills are namespaced in every runtime that carries
+  them, so the project's copy takes the bare name by that runtime's own precedence and the rest
+  of the bundle is still there. The collision is logged, not shown; it is not a failure.
 - **The conventions the skills cannot know** live in `sidecar/claude/conventions.ts` and ride
   on `systemPrompt` as `{ preset: "claude_code", append }` — the wire keeps `systemPrompt` and
   `appendSystemPrompt` as separate fields, so this adds to Claude Code's prompt rather than
   replacing it. They are the one-composition invariant (`Main`, scenes inside it via
   `Series`/`TransitionSeries`) and keeping the result editable.
+
+### One bundle, four runtimes
+
+`agent/skills/` is the only copy of the five skills, and Claude, Codex, Copilot and Grok each
+load it their own way (REM-293). The attach is a **value**, not an inference from the provider's
+name: `locateBundle` in `sidecar/agent/knowledge.ts` answers
+`{ loaded, source, path, collisions, reason }`, and an adapter sends skill-aware conventions
+because that says `loaded` — never because of who it is.
+
+- **One manifest already served all four, which is why there are not four.** Measured against
+  the shipped CLIs: Copilot accepts a root `plugin.json` *or* `.claude-plugin/plugin.json`
+  (its scanner warns *"no plugin.json or SKILL.md found"* for anything else); Codex reads
+  `.codex-plugin/`, `.claude-plugin/` or `.cursor-plugin/plugin.json`; `grok plugin validate`
+  accepts ours as it stands. The only file this needed was
+  `agent/.agents/plugins/marketplace.json` — Codex's local-marketplace manifest, deliberately
+  **not** at `.claude-plugin/marketplace.json`, where Claude would read the plugin directory as
+  a marketplace instead.
+- **Copilot and Grok take `--plugin-dir`.** The path is the shipped resource, never the
+  project's `cwd`. Grok's flag belongs to `grok agent`, so it goes *before* the `stdio`
+  subcommand; Copilot's is global and rides beside `--acp`. Two measurements worth keeping:
+  `copilot skill list` does **not** report `--plugin-dir` plugins — read out of its `app.js`,
+  that subcommand calls its skill loader with no external plugins at all — while ACP mode
+  passes them through `resolveDiscoveredConfig` into the same skill sources, so the absence in
+  that listing is a reporting gap and not the runtime.
+- **Codex could not be done with config overrides, and that was measured before it was
+  designed around.** It resolves `[plugins]` and `[marketplaces]` through
+  `effective_user_config`, which merges only `ConfigLayerSource::User` layers — and `--config`
+  lands in `SessionFlags`. Against codex-cli 0.148.0:
+  `codex plugin list -c 'marketplaces…' -c 'plugins…'` answers *"No marketplace plugins found"*,
+  the identical tables written into a `config.toml` answer with the plugin. `@openai/codex-sdk`
+  offers `config` and `env` and nothing else, so `env` is the only lever.
+- **So the studio keeps a Codex home of its own** at `<app data>/codex-home`, built once per
+  sidecar process by `sidecar/codex/home.ts` and handed over as `CODEX_HOME`. Every top-level
+  entry of the user's home is a symlink back into it; only `config.toml` and `plugins/` are
+  ours, and even `plugins/cache/*` symlinks each marketplace the user installed. Four things
+  make that safe, each of them a measurement:
+  - **The login is shared, not copied.** `auth.json` is a symlink, and Codex's `FileAuthStorage`
+    saves with `OpenOptions::open` + truncate rather than a tmp-and-rename — so a refreshed
+    token writes *through* the link into the user's own file. A home with no `auth.json` is not
+    mirrored at all: credentials might be in the keyring, which is keyed by a hash of the home
+    path, and a different home would read as logged out. That case degrades to a reason.
+  - **Sessions survive.** `sessions/` and the sqlite indexes are symlinks, so a thread started
+    before this existed still resumes: verified end to end — a thread created in the real home,
+    resumed through the mirror, remembered its word *and* answered from a bundled skill.
+  - **The user's `config.toml` is never written to.** Ours is generated as their file verbatim
+    plus `[marketplaces.remocn-studio]` and `[plugins."remocn-studio@remocn-studio"]`. A user
+    who registered the bundle themselves keeps their entry untouched — a second table of the
+    same name is a TOML *parse error*, which would fail every Codex turn rather than lose five
+    skills.
+  - **The plugin store is a filesystem convention, so no `codex plugin add` runs.** The bundle
+    is copied to `plugins/cache/remocn-studio/remocn-studio/<version>/`, keyed by the manifest
+    version. A symlink there does **not** work — measured: the skill never loaded — and neither
+    does the marketplace entry alone; the version directory has to be a real copy.
+- **Failure is a notice, never a failed turn, and never an auth failure.** `announce` logs the
+  attach either way and emits one `notice` when a bundle that should have loaded did not. An
+  incomplete bundle is refused by name: `locateBundle` checks a `SKILL.md` for every entry of
+  `SHIPPED` and says which one is missing.
+- **Live matrix, on real logins.** Claude, Codex and Grok each listed all five skills as their
+  own catalog spells them, opened one and quoted it, and followed
+  `remotion-best-practices` to `remotion-markup/REFERENCE.md`. Nothing was written into the
+  project or into any provider's home. **Copilot is the gap**: this account is blocked by an
+  org policy (*"Access denied by policy settings"*), so its delivery is proven only as far as
+  the CLI's own loader — `configLoaderScanPluginDirPaths` + `LoadPluginFeatureForInstalled`
+  resolve `agent/skills` with `tier: "plugin-dir"` — and it keeps its Experimental badge until
+  someone runs the matrix on a login that works.
+- **What it costs, per turn, measured on the same prompt** (bundle attached and skill-aware
+  conventions, against neither): Claude **+1215** tokens, Grok **+978**, Codex **+605**. The
+  catalog itself is cheap — +505, +480 and +68 respectively — because a runtime lists name and
+  description and nothing else; the rest is the conventions block, 2148 characters of it. That
+  ratio is the argument against inlining: the five bodies are 69 KB.
 
 ### The preview
 
@@ -1972,13 +2048,16 @@ shared/               ipc.ts: the typed contract, and the media types it carries
 sidecar/              bun: frame loop, method handlers, SQLite history;
                       files.ts is the project walk and the folder read behind `@`
 sidecar/agent/        the provider-neutral seam: AgentAdapter, the permission
-                      gate's skeleton, the mode switch, account cache, registry
+                      gate's skeleton, the mode switch, account cache, registry,
+                      and knowledge.ts — the one locator/attach contract for the
+                      shipped skills bundle
 sidecar/claude/       the Claude Code adapter: Agent SDK session, event and
                       failure translation, the CanUseTool guard, auth probe,
                       tool-name→verb vocabulary
 sidecar/codex/        the Codex adapter: SDK thread per turn, the item-stream
                       translator, sandbox mapping, `codex login status` probe,
-                      CLI resolution
+                      CLI resolution, and home.ts — the mirrored CODEX_HOME the
+                      bundled skills arrive through
 sidecar/acp/          the Agent Client Protocol bridge: the JSON-RPC peer, the
                       update translator, the permission mapping, prompt blocks
 sidecar/copilot/      the Copilot adapter over that bridge: CLI resolution,
@@ -1990,8 +2069,9 @@ sidecar/history/      driver seam, migrations, project and session stores, recor
 sidecar/library/      the asset library: the folder store and the copy into a project
 sidecar/scaffold/     what "New project…" expands and installs
 templates/remotion/   that project, vendored here and shipped as a Tauri resource
-agent/                the Claude Code plugin we hand the SDK: vendored skills, plus
-                      video-lessons — our own record of what failed on screen
+agent/                the one skills bundle every provider loads: vendored skills,
+                      plus video-lessons and motion-design — our own record of what
+                      failed on screen and the motion bar it has to clear
 scripts/              build-time tooling; skills-sync.ts is the vendoring step
 sidecar/preview/      the --preview-host child: project resolution, webpack watch, server,
                       stills for Snapshot and the mp4 export
