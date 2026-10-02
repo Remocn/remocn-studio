@@ -16,13 +16,21 @@ use crate::ipc::{
 };
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
-const FALLBACK_DIRS: [&str; 5] = [
-    "/opt/homebrew/bin",
-    "/usr/local/bin",
-    "/usr/bin",
-    "/bin",
-    "/usr/sbin",
+// Where a launcher started from a desktop entry finds the agent CLIs, Node
+// and package managers, since it inherits the session's minimal PATH. The
+// sidecar's `USER_BIN_DIRS` must name the same dirs; `sidecar/agent/cli.test.ts`
+// reads this file to hold them together.
+const HOME_BIN_DIRS: [&str; 8] = [
+    ".local/bin",
+    ".bun/bin",
+    ".npm-global/bin",
+    ".volta/bin",
+    ".local/share/mise/shims",
+    ".asdf/shims",
+    ".local/share/pnpm",
+    ".yarn/bin",
 ];
+const SYSTEM_BIN_DIRS: [&str; 3] = ["/usr/local/bin", "/usr/bin", "/bin"];
 
 pub fn resolve_bun() -> Result<PathBuf, String> {
     if let Some(value) = env::var_os(BUN_ENV) {
@@ -257,16 +265,20 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
         .map_err(|err| format!("could not start {}: {err}", bun.display()))
 }
 
-fn search_dirs() -> Vec<PathBuf> {
+pub(crate) fn search_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
 
     if let Some(home) = env::var_os("HOME") {
-        dirs.push(PathBuf::from(home).join(".bun/bin"));
+        let home = PathBuf::from(home);
+        dirs.extend(HOME_BIN_DIRS.iter().map(|dir| home.join(dir)));
+    }
+    if let Some(nvm) = env::var_os("NVM_BIN").filter(|dir| !dir.is_empty()) {
+        dirs.push(PathBuf::from(nvm));
     }
     if let Some(path) = env::var_os("PATH") {
         dirs.extend(env::split_paths(&path));
     }
-    dirs.extend(FALLBACK_DIRS.iter().map(PathBuf::from));
+    dirs.extend(SYSTEM_BIN_DIRS.iter().map(PathBuf::from));
 
     let mut seen = HashSet::new();
     dirs.retain(|dir| seen.insert(dir.clone()));
