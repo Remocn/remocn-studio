@@ -24,8 +24,8 @@ name: publish
 # one of them to kebab-case, and an unknown `with:` key is silently ignored, so
 # v2 names on v1 do nothing at all and say nothing about it. That is how a
 # missing `publish` went unnoticed through a whole release: `version PR`
-# succeeded in 16s, `release-macos` was skipped for want of a tag, and no tag was
-# ever created.
+# succeeded in 16s, the release build was skipped for want of a tag, and no tag
+# was ever created.
 #
 # The app version lives in ONE place: `package.json`. `src-tauri/tauri.conf.json`
 # sets `"version": "../package.json"`, which Tauri resolves at build time, so
@@ -96,27 +96,27 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           git push origin "v$version"
 
-  release-macos:
-    name: macOS ${{ matrix.label }}
+  release-linux:
+    name: Linux ${{ matrix.label }}
     needs: version
     if: needs.version.outputs.released == 'true'
-    runs-on: macos-latest
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
-      # One at a time, deliberately. Both jobs upload to the same release and
-      # `latest.json` holds a key per platform, which tauri-action produces by
-      # reading the existing asset and merging its own entries into it. Run in
-      # parallel, both read the file before either has written, and the loser's
-      # platform is silently dropped — an update that 404s for half the users.
+      # One at a time: both jobs upload to the same release, and two
+      # tauri-action runs creating it at once race on the release itself.
       max-parallel: 1
       matrix:
         include:
-          - target: aarch64-apple-darwin
-            label: Apple silicon
-          - target: x86_64-apple-darwin
-            label: Intel
+          # 22.04 rather than latest: an AppImage runs on any glibc at least as
+          # new as the one it was built against, so the oldest supported runner
+          # is the widest reach.
+          - runner: ubuntu-22.04
+            label: x86_64
+          - runner: ubuntu-22.04-arm
+            label: aarch64
     steps:
       - uses: actions/checkout@v7
 
@@ -124,82 +124,47 @@ jobs:
         with:
           bun-version-file: package.json
 
+      # WebKitGTK and GTK for the window, libdbus for the Secret Service
+      # keyring, patchelf and file for the AppImage, and GStreamer with its
+      # plugins because `bundleMediaFramework` copies them out of the build
+      # host into the AppImage so footage plays in the preview.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libdbus-1-dev libssl-dev patchelf file \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad gstreamer1.0-libav
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
-          key: ${{ matrix.target }}
+          key: ${{ matrix.runner }}
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # notarytool wants the App Store Connect key as a file. tauri-bundler
-      # would also find it on its own under `~/.private_keys/AuthKey_<id>.p8`,
-      # but an explicit path is one fewer convention to remember.
-      - name: Write the App Store Connect key
-        env:
-          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
-        run: |
-          printf '%s\n' "$APPLE_API_KEY_CONTENT" > "$RUNNER_TEMP/AuthKey.p8"
-          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
-
-      # tauri-action runs `beforeBuildCommand` (`bun run build`) itself, producing
-      # the Next static export in `out/` before compiling the Rust binary.
+      # tauri-action runs `beforeBuildCommand` (`bun run tauri:before-build`)
+      # itself: the bun runtime for this runner's triple, the sidecar bundle and
+      # the Next static export in `out/`, before compiling the Rust binary.
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Two signatures, and they are unrelated (REM-413).
-          #
-          # Apple's: the Developer ID certificate as a base64 .p12 plus its
-          # password. tauri-bundler imports it into a throwaway keychain, signs
-          # every binary inside out — the bundled bun first, then the app — with
-          # the hardened runtime and `src-tauri/Entitlements.plist`, then
-          # notarizes and staples the .app before the .dmg and the updater
-          # archive are made from it. `APPLE_SIGNING_IDENTITY` is optional but
-          # makes the build fail loudly if the certificate is not the one we
-          # expect. The three `APPLE_API_*` values are the App Store Connect key
-          # notarytool authenticates with; with any of them missing the CLI
-          # still signs but *silently skips notarization*, and Gatekeeper
-          # refuses the result on first launch.
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          # The updater's own minisign key. `bundle.createUpdaterArtifacts`
-          # makes the CLI produce `.app.tar.gz` and a `.sig` next to it, and it
-          # fails the build outright when the pubkey in tauri.conf.json has no
-          # private counterpart here. The key has no password; the variable
-          # still has to exist, or the CLI prompts for one and dies without a
-          # TTY.
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           # The app's own Pexels key: `sidecar:build` runs inside this step and
           # bakes it into the sidecar bundle with `bun build --env`. Without the
           # secret the build still succeeds — the release just ships with stock
           # search asking for a personal key.
           REMOCN_STUDIO_PEXELS_KEY: ${{ secrets.REMOCN_STUDIO_PEXELS_KEY }}
-          # Crash reporting (REM-268). A DSN is public by design — it can only
-          # write into one project — so it is a secret here for tidiness, not
-          # for safety. Both are baked at build time: the sidecar's by
-          # `bun build --env`, the webview's by Next.
-          #
-          # All four together are what turn the upload on. With any of them
-          # unset — which is every build until the Sentry project exists —
-          # `release:sourcemaps` says so and uploads nothing, and the app
-          # initialises no SDK at all, whatever the person set in Settings. So
-          # a release cut today behaves exactly as it does now.
-          #
-          # The upload runs inside `tauri:before-build`, not as a step of its
-          # own, and it has to: Sentry matches a minified frame by a debug id
-          # written into the built JavaScript, so the inject must be the last
-          # thing that touches those bytes, and `tauri-action` offers no hook
-          # between its `beforeBuildCommand` and the bundling that copies them
-          # into the `.app`.
+          # Crash reporting (REM-268). All four together turn the source-map
+          # upload on; with any unset, `release:sourcemaps` says so and uploads
+          # nothing, and the app initialises no SDK whatever Settings says. The
+          # upload runs inside `tauri:before-build` because the inject must be
+          # the last thing to touch the built JavaScript.
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           REMOCN_STUDIO_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -211,49 +176,13 @@ jobs:
           releaseBody: |
             See CHANGELOG.md for what changed.
 
-            Signed with a Developer ID and notarized by Apple — the app opens
-            without a Gatekeeper prompt on first install, and in-app updates
-            bring the next version the same way.
-          # Published, not a draft: a draft's assets have no reachable download
-          # URL, so the updater could fetch neither `latest.json` nor the
-          # `.app.tar.gz` it points at.
+            Download the AppImage and make it executable, or install the .deb
+            or .rpm with your package manager. The studio does not update
+            itself: a new version is a new download, or a package upgrade.
           releaseDraft: false
           prerelease: false
           # `crash-reports` turns on the core's own half of REM-268 — the panic
           # hook and the supervisor's sidecar-crash note. It is off in
-          # `Cargo.toml` and switched on here rather than by `default`, so a
-          # local `cargo build` still compiles neither `sentry` nor its
-          # transport; the webview and the sidecar carry their own SDKs and
-          # need no flag.
-          #
-          # **This job is the only place any Rust is compiled in CI**, so a
-          # break here is found while cutting a release. `cargo check --features
-          # crash-reports` on a Mac is what stands in for that.
-          #
-          # `--features` takes a *list*, so it goes first and `--target` ends
-          # it: a flag terminates the list, where anything tauri-action might
-          # append after ours would be swallowed as another feature name.
-          args: --features crash-reports --target ${{ matrix.target }}
-          uploadUpdaterJson: true
-
-      # tauri-bundler notarizes and staples the .app, then only *signs* the
-      # .dmg around it, and Gatekeeper evaluates a downloaded disk image on its
-      # own: `spctl -t open` rejected the locally built one as "Unnotarized
-      # Developer ID" (REM-413). So the .dmg goes to Apple a second time — fast,
-      # since everything inside already carries a ticket — gets its own ticket
-      # stapled, and replaces the copy tauri-action has already attached to the
-      # release. `latest.json` never points at the .dmg, so the updater is not
-      # involved.
-      - name: Notarize and staple the .dmg
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-        run: |
-          set -euo pipefail
-          dmg="$(ls src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg)"
-          xcrun notarytool submit "$dmg" --wait \
-            --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER"
-          xcrun stapler staple "$dmg"
-          spctl -a -vv -t open --context context:primary-signature "$dmg"
-          gh release upload "v${{ needs.version.outputs.version }}" "$dmg" --clobber
+          # `Cargo.toml` so a local `cargo build` compiles neither `sentry` nor
+          # its transport. `--features` takes a list, so a flag must end it.
+          args: --features crash-reports --bundles appimage,deb,rpm
