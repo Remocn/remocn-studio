@@ -178,9 +178,9 @@ describe("the settings page", () => {
     expect(screen.getByRole("heading", { name: "Hotkeys" })).toBeVisible();
     const video = within(screen.getByRole("region", { name: "Video" }));
     expect(video.getByText("Export")).toBeVisible();
-    expect(video.getByLabelText("⌘E")).toBeVisible();
-    expect(video.getByLabelText("⇧⌘S")).toBeVisible();
-    expect(video.getByLabelText("⌥⌘↓")).toBeVisible();
+    expect(video.getByLabelText("Ctrl+E")).toBeVisible();
+    expect(video.getByLabelText("Ctrl+Shift+S")).toBeVisible();
+    expect(video.getByLabelText("Ctrl+Alt+↓")).toBeVisible();
     expect(
       screen
         .getByRole("region", { name: "Settings" })
