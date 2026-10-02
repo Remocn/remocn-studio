@@ -98,7 +98,7 @@ describe("useNotificationConsent", () => {
     expect(ipc.written).toContainEqual(["notifications", "enabled"]);
   });
 
-  it("keeps the wish when the OS says no, and opens System Settings", async () => {
+  it("keeps the wish when the OS says no, and opens nothing", async () => {
     shim("default", "denied");
     const { result } = renderHook(() => useNotificationConsent(settings(null)));
     await waitFor(() => expect(result.current.permission).toBe("default"));
@@ -108,7 +108,7 @@ describe("useNotificationConsent", () => {
     await waitFor(() => expect(result.current.permission).toBe("denied"));
     expect(result.current.isEnabled).toBe(true);
     expect(result.current.isOn).toBe(false);
-    await waitFor(() => expect(ipc.opened).toHaveLength(1));
+    expect(ipc.opened).toHaveLength(0);
   });
 
   it("reads a remembered switch as on once the OS agrees", async () => {
@@ -118,7 +118,7 @@ describe("useNotificationConsent", () => {
     await waitFor(() => expect(result.current.isOn).toBe(true));
   });
 
-  it("grants by asking while never asked, and by System Settings once refused", async () => {
+  it("grants by asking, whether never asked or refused before", async () => {
     const asked = shim("default", "granted");
     const first = renderHook(() => useNotificationConsent(settings(true)));
     await waitFor(() =>
@@ -141,8 +141,10 @@ describe("useNotificationConsent", () => {
 
     act(() => second.result.current.grant());
 
-    await waitFor(() => expect(ipc.opened).toHaveLength(1));
-    expect(refused.requestPermission).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(refused.requestPermission).toHaveBeenCalledTimes(1)
+    );
+    expect(ipc.opened).toHaveLength(0);
   });
 
   it("is unavailable without a transport", async () => {

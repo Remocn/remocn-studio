@@ -39,10 +39,7 @@ const CODEX_ROW: EnvironmentCheck = {
   title: "Codex is not logged in",
 };
 
-const REFUSED_WORDING =
-  /Notifications are off for the studio in System Settings/;
-
-const NEVER_ASKED = /macOS has not allowed the studio to notify yet/;
+const NOT_ALLOWED = /Your desktop has not allowed the studio to notify/;
 
 function notificationShim(permission: "default" | "denied" | "granted") {
   return {
@@ -256,7 +253,7 @@ describe("the settings page", () => {
     await waitFor(() => expect(turn).toBeChecked());
   });
 
-  it("offers Grant permission with the refused wording when macOS said no", async () => {
+  it("offers Grant permission when the desktop said no", async () => {
     stubGlobal("Notification", notificationShim("denied"));
     mockStudio(written, [["notifications", "enabled"]]);
     await renderShell();
@@ -264,21 +261,21 @@ describe("the settings page", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
 
-    expect(await screen.findByText(REFUSED_WORDING)).toBeVisible();
+    expect(await screen.findByText(NOT_ALLOWED)).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Grant permission" })
     ).toBeVisible();
     expect(screen.getByRole("switch", { name: "Notify me" })).toBeChecked();
   });
 
-  it("offers Grant permission while macOS has never been asked", async () => {
+  it("offers Grant permission while the desktop has never been asked", async () => {
     stubGlobal("Notification", notificationShim("default"));
     await renderShell();
     await openSettings();
 
     fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
 
-    expect(await screen.findByText(NEVER_ASKED)).toBeVisible();
+    expect(await screen.findByText(NOT_ALLOWED)).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Grant permission" })
     ).toBeVisible();

@@ -599,7 +599,7 @@ function NotificationsSection() {
       >
         <div className="flex flex-col gap-2">
           <Row
-            description="Turn every notification on or off. macOS asks once, the first time this goes on."
+            description="Turn every notification on or off. They are shown by your desktop's notification service."
             htmlFor="settings-notifications"
             title="Notify me"
           >
@@ -620,21 +620,15 @@ function NotificationsSection() {
           {needsPermission ? (
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
               <p className="text-muted-foreground text-xs leading-snug">
-                {permission === "denied"
-                  ? "Notifications are off for the studio in System Settings. Nothing will arrive until they are turned on there."
-                  : "macOS has not allowed the studio to notify yet. Nothing will arrive until it has."}
+                Your desktop has not allowed the studio to notify. Nothing will
+                arrive until notifications are allowed for it in your desktop's
+                own settings.
               </p>
               <Button onClick={notifications.grant} size="sm" variant="outline">
                 Grant permission
               </Button>
             </div>
           ) : null}
-
-          {notifications.trouble === null ? null : (
-            <p className="text-destructive text-xs leading-snug">
-              {notifications.trouble}
-            </p>
-          )}
         </div>
       </Group>
 

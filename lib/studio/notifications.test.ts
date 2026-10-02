@@ -3,8 +3,6 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import { Effect, Exit } from "effect";
 import {
   isGranted,
-  NOTIFICATION_SETTINGS_URL,
-  openNotificationSettings,
   post,
   readPermission,
   requestPermission,
@@ -106,20 +104,5 @@ describe("notifications", () => {
     if (Exit.isFailure(exit)) {
       expect(String(exit.cause)).toContain("NotificationError");
     }
-  });
-
-  it("opens the studio's row in System Settings through the opener", async () => {
-    const opened: string[] = [];
-    mockIPC((cmd, payload) => {
-      if (cmd === "plugin:opener|open_url") {
-        opened.push((payload as { url: string }).url);
-        return null;
-      }
-      throw new Error(`unexpected command: ${cmd}`);
-    });
-
-    await Effect.runPromise(openNotificationSettings);
-
-    expect(opened).toEqual([NOTIFICATION_SETTINGS_URL]);
   });
 });
