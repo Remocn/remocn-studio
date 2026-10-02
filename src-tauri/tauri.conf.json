@@ -39,16 +39,7 @@
     "longDescription": "Remocn Studio is a desktop app for creating videos with your coding agent. Describe a video, direct changes in a live preview, and export an MP4. Every video is a standard Remotion project stored on your device, with source code you can edit and keep.",
     "copyright": "Copyright (c) 2026 Remocn",
     "license": "MIT",
-    "macOS": {
-      "entitlements": "Entitlements.plist",
-      "dmg": {
-        "background": "assets/dmg-background.png",
-        "windowSize": { "width": 720, "height": 460 },
-        "appPosition": { "x": 190, "y": 230 },
-        "applicationFolderPosition": { "x": 530, "y": 230 }
-      }
-    },
-    "targets": "all",
+    "targets": ["appimage", "deb", "rpm"],
     "externalBin": ["binaries/remocn-studio-bun"],
     "resources": {
       "../LICENSE": "LICENSE",
@@ -97,9 +88,25 @@
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
-      "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
+      "deb": {
+        "depends": [
+          "gstreamer1.0-plugins-good",
+          "gstreamer1.0-plugins-bad",
+          "gstreamer1.0-libav"
+        ],
+        "desktopTemplate": "linux/remocn-studio.desktop"
+      },
+      "rpm": {
+        "depends": ["gstreamer1-plugins-good"],
+        "desktopTemplate": "linux/remocn-studio.desktop"
+      }
+    }
   },
   "plugins": {
     "deep-link": {
