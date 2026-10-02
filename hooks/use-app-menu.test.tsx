@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { renderHook, waitFor } from "@testing-library/react";
 import { useAppMenu } from "@/hooks/use-app-menu";
@@ -17,6 +17,17 @@ function command(
     title,
     ...extra,
   };
+}
+
+const LINUX = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15";
+const MAC =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15";
+
+function withAgent(agent: string) {
+  Object.defineProperty(window.navigator, "userAgent", {
+    configurable: true,
+    value: agent,
+  });
 }
 
 interface Menus {
@@ -60,11 +71,34 @@ function registry(run: () => void, enabled = true): readonly Command[] {
   ];
 }
 
+describe("useAppMenu on Linux", () => {
+  afterEach(() => {
+    withAgent(LINUX);
+  });
+
+  it("installs no menu bar and answers that none is up", async () => {
+    withAgent(LINUX);
+    const menus = core();
+    const { result } = renderHook(() => useAppMenu(registry(() => undefined)));
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(menus.installs).toBe(0);
+    expect(menus.handlers.size).toBe(0);
+    expect(result.current).toBe(false);
+  });
+});
+
 describe("useAppMenu", () => {
   let menus: Menus;
 
   beforeEach(() => {
+    withAgent(MAC);
     menus = core();
+  });
+
+  afterEach(() => {
+    withAgent(LINUX);
   });
 
   it("installs once for a registry whose closures change but whose shape does not", async () => {
