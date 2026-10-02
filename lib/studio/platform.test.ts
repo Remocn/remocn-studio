@@ -4,6 +4,7 @@ import {
   modKeyCombo,
   modKeyLabel,
   platformOf,
+  terminalPasteHint,
 } from "./platform";
 
 describe("platformOf", () => {
@@ -50,5 +51,11 @@ describe("labels", () => {
     expect(fileManagerName("mac")).toBe("Finder");
     expect(fileManagerName("windows")).toBe("File Explorer");
     expect(fileManagerName("linux")).toBe("Files");
+  });
+
+  it("tells a Linux terminal to paste with Shift", () => {
+    expect(terminalPasteHint("linux")).toBe("Ctrl+Shift+V, then Enter");
+    expect(terminalPasteHint("mac")).toBe("⌘V, then Enter");
+    expect(terminalPasteHint("windows")).toBe("Ctrl+V, then Enter");
   });
 });
