@@ -5,7 +5,7 @@ import {
   ArrowUpCircleIcon,
   CheckIcon,
   CopyIcon,
-  DownloadIcon,
+  ExternalLinkIcon,
   RotateCwIcon,
   XCircleIcon,
 } from "lucide-react";
@@ -15,7 +15,7 @@ import { useCopyCommand } from "@/hooks/use-copy-command";
 import type { Environment } from "@/hooks/use-environment";
 import { useOnline } from "@/hooks/use-online";
 import { usePresence } from "@/hooks/use-presence";
-import { downloadPercent, troubleHeading } from "@/lib/studio/environment";
+import { NODE_DOWNLOAD_URL, troubleHeading } from "@/lib/studio/environment";
 import { cn } from "@/lib/utils";
 import type { EnvironmentCheck, EnvironmentState } from "@/shared/ipc";
 import { isAgentProvider } from "@/shared/providers";
@@ -97,37 +97,33 @@ export function EnvironmentChecklist({
 
 function NodeFix({ environment }: { environment: Environment }) {
   const online = useOnline();
-  const percent = downloadPercent(environment.download);
 
   if (!online) {
     return (
       <p className="text-muted-foreground text-xs leading-snug">
-        You are offline, so the studio cannot fetch the Node.js installer.
-        Connect and press Recheck.
+        You are offline, so the Node.js download page cannot be reached. Connect
+        and press Recheck.
       </p>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        disabled={environment.isInstallingNode}
-        onClick={environment.installNode}
-        size="xs"
-        variant="outline"
-      >
-        {environment.isInstallingNode ? (
-          <Spinner className="size-3" data-icon="inline-start" />
-        ) : (
-          <DownloadIcon data-icon="inline-start" />
-        )}
-        Install Node.js
-      </Button>
-      {environment.isInstallingNode ? (
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {percent === null ? "Downloading…" : `Downloading… ${percent}%`}
-        </span>
-      ) : null}
+    <div className="flex flex-col gap-1.5">
+      <div>
+        <Button
+          onClick={environment.installNode}
+          size="xs"
+          title={NODE_DOWNLOAD_URL}
+          variant="outline"
+        >
+          <ExternalLinkIcon data-icon="inline-start" />
+          Install Node.js
+        </Button>
+      </div>
+      <p className="text-muted-foreground text-xs leading-snug">
+        Opens the Node.js download page. Your distribution’s package manager, or
+        a version manager such as mise or nvm, installs it too.
+      </p>
     </div>
   );
 }

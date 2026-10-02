@@ -393,7 +393,6 @@ function StudioStateProvider({
       environment.isBlocking ||
       environment.isChecking ||
       environment.isInstalling ||
-      environment.isInstallingNode ||
       environment.isUpgrading ||
       environment.error !== null ||
       newProject.isOpen ||

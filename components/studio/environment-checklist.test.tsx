@@ -1,10 +1,14 @@
-import { describe, expect, it, mock } from "bun:test";
+import { afterEach, describe, expect, it, mock } from "bun:test";
+import { mockIPC } from "@tauri-apps/api/mocks";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { EnvironmentChecklist } from "@/components/studio/environment-checklist";
 import type { Environment } from "@/hooks/use-environment";
 import type { EnvironmentCheck } from "@/shared/ipc";
+import { stubGlobal, unstubAllGlobals } from "@/test/stub-global";
 
 const UPGRADE_BUTTON = /Upgrade Remotion/;
+const PACKAGE_MANAGER = /package manager/;
+const DOWNLOADING = /Downloading/;
 
 const OUTDATED: EnvironmentCheck = {
   detail: "This project declares remotion 4.0.481.",
@@ -24,14 +28,12 @@ function environment(
 ): Environment {
   return {
     checks: troubles,
-    download: null,
     error: null,
     install: mock(),
     installNode: mock(),
     isBlocking: false,
     isChecking: false,
     isInstalling: false,
-    isInstallingNode: false,
     isUpgrading: false,
     output: null,
     recheck: mock(),
@@ -122,5 +124,76 @@ describe("the Upgrade Remotion row", () => {
     expect(
       screen.queryByRole("button", { name: "Upgrade Remotion" })
     ).toBeNull();
+  });
+});
+
+const NO_NODE: EnvironmentCheck = {
+  detail:
+    "This project installs with npm install, and npm is not on this machine.",
+  fix: { type: "node" },
+  id: "manager",
+  state: "failed",
+  title: "Node.js (npm) is not installed",
+};
+
+describe("the Node.js row", () => {
+  it("opens the download page and says a package manager works too", () => {
+    const installNode = mock();
+
+    render(
+      <EnvironmentChecklist
+        environment={environment([NO_NODE], { installNode })}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Install Node.js" }));
+
+    expect(installNode).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(PACKAGE_MANAGER)).toBeDefined();
+    expect(screen.queryByText(DOWNLOADING)).toBeNull();
+  });
+});
+
+const CODEX_SIGNED_OUT: EnvironmentCheck = {
+  detail: "Codex is installed but not logged in.",
+  fix: { step: "signin", type: "provider" },
+  id: "codex",
+  state: "failed",
+  title: "Codex is not logged in",
+};
+
+describe("Open in Terminal", () => {
+  afterEach(() => {
+    unstubAllGlobals();
+  });
+
+  it("copies the command, opens a terminal, and says to paste with Shift", async () => {
+    const opened: string[] = [];
+    const copied: string[] = [];
+    stubGlobal("navigator", {
+      ...navigator,
+      clipboard: {
+        writeText: (text: string) => {
+          copied.push(text);
+          return Promise.resolve();
+        },
+      },
+    });
+    mockIPC((command) => {
+      opened.push(command);
+      return null;
+    });
+
+    render(
+      <EnvironmentChecklist environment={environment([CODEX_SIGNED_OUT])} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open in Terminal" }));
+
+    expect(
+      await screen.findByRole("button", { name: "Ctrl+Shift+V, then Enter" })
+    ).toBeDefined();
+    expect(opened).toEqual(["open_terminal"]);
+    expect(copied).toHaveLength(1);
   });
 });

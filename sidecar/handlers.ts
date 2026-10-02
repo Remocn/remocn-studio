@@ -71,7 +71,6 @@ import {
   saveAsset,
   unofferedFrom,
 } from "./library/store";
-import { installNode } from "./node-installer";
 import { remotionRootOf } from "./preview/project";
 import { removals } from "./preview/removals";
 import {
@@ -679,11 +678,6 @@ export const handlers: Handlers<HistoryStore | ProjectStore | VideoStore> = {
     stockConfigured().pipe(
       Effect.map((configured) => ({ configured })),
       Effect.mapError(unstocked)
-    ),
-
-  "node.install": ({ emit }) =>
-    installNode((event) => emit(event)).pipe(
-      Effect.mapError((error) => new HandlerError({ message: error.message }))
     ),
 
   "pipeline.get": ({ params }) =>
