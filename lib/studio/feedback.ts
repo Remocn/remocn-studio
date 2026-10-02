@@ -39,7 +39,7 @@ function diagnosticLines(diagnostics: FeedbackDiagnostics): string[] {
     lines.push(build);
   }
   if (diagnostics.os !== null) {
-    lines.push(`macOS ${diagnostics.os}`);
+    lines.push(`System: ${diagnostics.os}`);
   }
   if (diagnostics.provider !== null) {
     lines.push(`Agent: ${diagnostics.provider}`);
