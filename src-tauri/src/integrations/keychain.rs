@@ -11,7 +11,7 @@ fn entry(reference: &str) -> Result<Entry, String> {
 }
 
 fn refused(err: KeyringError) -> String {
-    format!("The keychain refused: {err}")
+    format!("The system keyring refused: {err}")
 }
 
 pub fn store(reference: &str, secret: &str) -> Result<(), String> {
