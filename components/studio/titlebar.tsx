@@ -35,8 +35,8 @@ export function Titlebar({
   mood: ShellMood | null;
 }) {
   return (
-    // The window has no title bar of its own, so this band is where macOS
-    // draws its buttons. It is the same height whether or not it carries the
+    // The window has no title bar of its own, so this band is where the
+    // window controls sit. It is the same height whether or not it carries the
     // shader, which is what lets an empty app grow into a busy one without
     // anything below it moving. The inset shell overrides the height: there
     // the band is a backdrop the content card rides over, not a strip.
