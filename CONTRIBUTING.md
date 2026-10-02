@@ -7,36 +7,42 @@ request needs before it can be merged.
 ## Before you start
 
 - **Bugs.** Open an issue with what you did, what you expected and what
-  happened. Include the macOS version, the chip (Apple silicon or Intel), the
-  studio version from Settings, and which agent you use. The sidecar log at
-  `~/Library/Logs/com.remocn.remocn-studio/sidecar.log` often explains the rest.
+  happened. Include the distribution and its version, the desktop or window
+  manager (and X11 or Wayland), whether you run the AppImage, the `.deb` or the
+  `.rpm`, the studio version from Settings, and which agent you use. The
+  sidecar log at `~/.local/share/com.remocn.remocn-studio/logs/sidecar.log`
+  often explains the rest.
   Read it before you attach it, since it can include project paths.
 - **Features and larger changes.** Open an issue first and describe the
   problem you want to solve. The studio has a narrow shape on purpose: no
   timeline, no account and no telemetry. It's cheaper to agree on direction
   before anyone writes code.
 - **Security issues.** Don't open a public issue. Report them privately through
-  [GitHub security advisories](https://github.com/Remocn/remocn-studio/security/advisories/new).
+  [GitHub security advisories](https://github.com/radiumcoders/Remocn-studio-Linux/security/advisories/new).
 
 ## Setting up
 
-You need macOS, [Bun](https://bun.sh) 1.4 (the exact version is pinned in
-`packageManager` in `package.json`), and the
-[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/): a Rust
-toolchain and the Xcode Command Line Tools. To use the studio end to end, you
+You need Linux, [Bun](https://bun.sh) 1.4 (the exact version is pinned in
+`packageManager` in `package.json`), a Rust toolchain, and the
+[Tauri prerequisites for Linux](https://v2.tauri.app/start/prerequisites/#linux)
+plus libdbus and GStreamer — the README lists the packages per distribution.
+To use the studio end to end, you
 also need one of the supported agents installed and signed in. The README
 lists them.
 
 ```sh
-git clone https://github.com/Remocn/remocn-studio.git
-cd remocn-studio
+git clone https://github.com/radiumcoders/Remocn-studio-Linux.git
+cd Remocn-studio-Linux
 bun install
 cp .env.example .env   # optional: a Pexels key turns on stock photos
 bun tauri dev
 ```
 
-In a debug build the Rust core runs the sidecar straight from `sidecar/`, so
-editing sidecar code needs a restart and no build step.
+`bun tauri dev` first fetches the bundled bun and bundles the sidecar
+(`tauri:before-dev`), because the Rust build checks both exist; the first run
+needs network for the bun download. In a debug build the Rust core then runs
+the sidecar straight from `sidecar/`, so editing sidecar code needs a restart
+and no build step.
 
 ## Where things are
 
