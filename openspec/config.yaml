@@ -5,7 +5,9 @@ schema: spec-driven
 # shapes proposals, specs, designs and tasks.
 context: |
   ## What this is
-  Remocn Studio — a local macOS desktop app (Tauri v2) in which a coding agent
+  Remocn Studio for Linux — a fork of Remocn Studio that runs as a local Linux
+  desktop app (Tauri v2 on WebKitGTK, frameless window with its own controls,
+  no menu bar) in which a coding agent
   (Claude Code, Codex, GitHub Copilot or Grok Build — the person's own CLI, signed
   in with their own subscription; no API key, nothing bundled) writes a real
   Remotion project into a folder on disk. The app previews the result live, lets
@@ -26,9 +28,9 @@ context: |
     Radix), lucide icons, Streamdown for assistant markdown, Shiki (own plugin),
     dialkit 2.0 for the properties pane, react-resizable-panels for the layout.
   - Desktop core: Tauri v2 (Rust) — window and splash, Tauri commands, the sidecar
-    supervisor, keychain-held integration secrets, deep links, updater, pasted-image
+    supervisor, integration secrets held in the Secret Service keyring, deep links, pasted-image
     writes, the asset protocol, crash reporting behind a Cargo feature.
-  - Sidecar: one bun process (bun 1.4.x, shipped inside the .app) written in
+  - Sidecar: one bun process (bun 1.4.x, shipped beside the binary as `remocn-studio-bun`) written in
     Effect 4 (effect@4.0.0-beta.101) end to end — SQLite history via bun:sqlite,
     the agent adapters, stdio-MCP tool hosts, the preview host (the project's own
     webpack + @remotion/bundler with our Player entry), stills and the mp4 export
@@ -39,7 +41,7 @@ context: |
   - Tooling: bun (lockfile bun.lock), Biome 2.5.5 via Ultracite (`bun run check`
     / `bun run fix`), `bun run typecheck`, `bun test` + Testing Library + happy-dom
     (three workers, isolated globals), Changesets for versioning, GitHub Actions
-    for the macOS release.
+    for the Linux release (AppImage, .deb, .rpm; no in-app updater).
 
   ## Architecture invariants — plan with them, never against them
   - No SSR features. Anything needing a runtime goes to a Rust command or the
