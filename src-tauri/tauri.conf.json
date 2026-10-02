@@ -4,7 +4,7 @@
   "version": "../package.json",
   "identifier": "com.remocn.remocn-studio",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "bun run tauri:before-dev",
     "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "bun run tauri:before-build",
     "frontendDist": "../out"
@@ -54,7 +54,7 @@
       }
     },
     "targets": "all",
-    "externalBin": ["binaries/bun"],
+    "externalBin": ["binaries/remocn-studio-bun"],
     "createUpdaterArtifacts": true,
     "resources": {
       "../LICENSE": "LICENSE",

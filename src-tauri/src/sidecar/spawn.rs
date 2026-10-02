@@ -50,8 +50,10 @@ pub fn resolve_bun() -> Result<PathBuf, String> {
         })
 }
 
+const SHIPPED_BUN: &str = "remocn-studio-bun";
+
 fn shipped_bun() -> Option<PathBuf> {
-    let beside = env::current_exe().ok()?.parent()?.join("bun");
+    let beside = env::current_exe().ok()?.parent()?.join(SHIPPED_BUN);
 
     beside.is_file().then_some(beside)
 }
