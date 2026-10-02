@@ -22,7 +22,7 @@ const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN ?? null;
 /**
  * The webview cannot ask the operating system where home is, so the scrubber
  * runs on its pattern rule alone. That is enough for the platform this ships
- * on: every macOS home is under `/Users/<name>`.
+ * on: every Linux home is under `/home/<name>`, which the rule rewrites.
  */
 const NO_KNOWN_HOME: string | null = null;
 

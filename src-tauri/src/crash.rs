@@ -67,19 +67,34 @@ pub fn environment_name() -> &'static str {
 }
 
 /// Where `AppHandle::path().app_data_dir()` would answer, worked out without
-/// an app. macOS only, which is what this app is; a platform this does not
-/// know answers `None` and the core then reads no consent at all, which fails
-/// in the direction that sends nothing.
+/// an app: `$XDG_DATA_HOME/<identifier>`, or `~/.local/share/<identifier>`.
+/// A platform this does not know answers `None` and the core then reads no
+/// consent at all, which fails in the direction that sends nothing.
 pub fn data_dir_for(identifier: &str) -> Option<PathBuf> {
-    if !cfg!(target_os = "macos") {
+    if !cfg!(target_os = "linux") {
         return None;
     }
 
-    env::var_os("HOME").map(|home| {
-        PathBuf::from(home)
-            .join("Library/Application Support")
-            .join(identifier)
-    })
+    xdg_data_dir(identifier, |name| env::var_os(name))
+}
+
+/// A relative `$XDG_DATA_HOME` is invalid by the XDG specification and is
+/// ignored, exactly as Tauri's own resolution through `dirs` ignores it.
+fn xdg_data_dir(
+    identifier: &str,
+    var: impl Fn(&str) -> Option<std::ffi::OsString>,
+) -> Option<PathBuf> {
+    let base = var("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .filter(|dir| dir.is_absolute())
+        .or_else(|| {
+            var("HOME")
+                .map(PathBuf::from)
+                .filter(|home| home.is_absolute())
+                .map(|home| home.join(".local/share"))
+        })?;
+
+    Some(base.join(identifier))
 }
 
 #[cfg(feature = "crash-reports")]
@@ -177,3 +192,48 @@ pub fn note_sidecar_crash(reason: &str) {
 
 #[cfg(not(feature = "crash-reports"))]
 pub fn note_sidecar_crash(_reason: &str) {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::OsString;
+
+    fn with(vars: &'static [(&'static str, &'static str)]) -> impl Fn(&str) -> Option<OsString> {
+        move |name| {
+            vars.iter()
+                .find(|(key, _)| *key == name)
+                .map(|(_, value)| OsString::from(value))
+        }
+    }
+
+    const ID: &str = "com.remocn.remocn-studio";
+
+    #[test]
+    fn an_absolute_xdg_data_home_is_used() {
+        let dir = xdg_data_dir(ID, with(&[("XDG_DATA_HOME", "/data"), ("HOME", "/home/a")]));
+        assert_eq!(dir, Some(PathBuf::from("/data/com.remocn.remocn-studio")));
+    }
+
+    #[test]
+    fn a_relative_xdg_data_home_is_ignored() {
+        let dir = xdg_data_dir(ID, with(&[("XDG_DATA_HOME", "data"), ("HOME", "/home/a")]));
+        assert_eq!(
+            dir,
+            Some(PathBuf::from("/home/a/.local/share/com.remocn.remocn-studio"))
+        );
+    }
+
+    #[test]
+    fn only_home_falls_back_to_local_share() {
+        let dir = xdg_data_dir(ID, with(&[("HOME", "/home/a")]));
+        assert_eq!(
+            dir,
+            Some(PathBuf::from("/home/a/.local/share/com.remocn.remocn-studio"))
+        );
+    }
+
+    #[test]
+    fn neither_reads_no_consent() {
+        assert_eq!(xdg_data_dir(ID, with(&[])), None);
+    }
+}
