@@ -611,7 +611,7 @@
   }
 }
 
-/* macOS Reduce Motion. Spinners keep turning — a frozen loader glyph reads as
+/* The system's reduce-motion setting. Spinners keep turning — a frozen loader glyph reads as
    a hang, and rotation in place is status, not motion across the screen. The
    word-by-word reveal is switched off in components/studio/markdown.tsx, which
    also withholds `.code-reveal`; the belt below catches anything it missed. */

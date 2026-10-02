@@ -131,6 +131,8 @@ describe("the settings page", () => {
 
     expect(screen.getByRole("heading", { name: "Appearance" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Dark" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "System" }));
+    expect(await screen.findByText("Follows the system")).toBeVisible();
   });
 
   it("opens on Cmd+comma", async () => {
@@ -150,7 +152,7 @@ describe("the settings page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Updates" }));
     expect(screen.getByRole("heading", { name: "Updates" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Check now" })).toBeVisible();
-    expect(screen.getByText("macOS")).toBeVisible();
+    expect(screen.getByText("System")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Behavior" }));
     expect(

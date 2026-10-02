@@ -3,6 +3,8 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { IntegrationsSection } from "@/components/studio/integrations-section";
 
+const KEYRING_LINE = /Keys stay in your system keyring/;
+
 const ELEVENLABS = {
   authorization: ["api-key"],
   capabilities: ["audio"],
@@ -101,6 +103,7 @@ describe("the services group", () => {
 
     expect(await screen.findByText("Nothing is connected yet")).toBeVisible();
     expect(screen.getByRole("button", { name: ADD })).toBeVisible();
+    expect(screen.getByText(KEYRING_LINE)).toBeVisible();
   });
 
   it("offers nothing to add when this build carries no service", async () => {
