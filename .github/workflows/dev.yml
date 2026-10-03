@@ -64,13 +64,24 @@ jobs:
       - name: Build static export
         run: bun run build
 
-  # The core is compiled on the platform the app targets. `tauri-build` checks
-  # every resource and sidecar exists before it compiles, so the bundled bun
-  # and the sidecar bundle are made first; a debug build points at `devUrl`,
-  # so the static export is not needed here.
+  # The core is compiled on both platforms the app ships for, since each has
+  # code the other never builds. `tauri-build` checks every resource and
+  # sidecar exists before it compiles, so the bundled bun and the sidecar
+  # bundle are made first; a debug build points at `devUrl`, so the static
+  # export is not needed here.
   rust:
-    name: rust core
-    runs-on: ubuntu-22.04
+    name: rust core (${{ matrix.label }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            label: Linux
+            triple: x86_64-unknown-linux-gnu
+          - runner: macos-latest
+            label: macOS
+            triple: aarch64-apple-darwin
     steps:
       - uses: actions/checkout@v7
 
@@ -79,6 +90,7 @@ jobs:
           bun-version-file: package.json
 
       - name: Install system dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -91,6 +103,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
+          key: ${{ matrix.triple }}
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -98,7 +111,7 @@ jobs:
       - name: Bundle the sidecar and fetch the shipped bun
         run: |
           bun run sidecar:build
-          TAURI_ENV_TARGET_TRIPLE=x86_64-unknown-linux-gnu bun run bun:fetch
+          TAURI_ENV_TARGET_TRIPLE=${{ matrix.triple }} bun run bun:fetch
 
       - name: Check
         working-directory: src-tauri
