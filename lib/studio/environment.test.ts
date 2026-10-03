@@ -4,6 +4,7 @@ import { Effect, Exit } from "effect";
 import type { EnvironmentCheck } from "@/shared/ipc";
 import {
   compositionRow,
+  downloadPercent,
   isBlocked,
   merged,
   NODE_DOWNLOAD_URL,
@@ -90,6 +91,27 @@ describe("merged", () => {
     const claude = row({ id: "claude", state: "failed", title: "logged out" });
 
     expect(merged([claude], pick())[0]).toBe(claude);
+  });
+});
+
+describe("downloadPercent", () => {
+  it("is null before a length is known", () => {
+    expect(downloadPercent(null)).toBeNull();
+    expect(
+      downloadPercent({ received: 10, total: null, type: "progress" })
+    ).toBeNull();
+  });
+
+  it("rounds what has arrived against what was declared", () => {
+    expect(
+      downloadPercent({ received: 50, total: 200, type: "progress" })
+    ).toBe(25);
+  });
+
+  it("never claims more than a whole file", () => {
+    expect(
+      downloadPercent({ received: 300, total: 200, type: "progress" })
+    ).toBe(100);
   });
 });
 

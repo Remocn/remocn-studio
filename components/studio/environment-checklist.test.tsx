@@ -5,6 +5,7 @@ import { EnvironmentChecklist } from "@/components/studio/environment-checklist"
 import type { Environment } from "@/hooks/use-environment";
 import type { EnvironmentCheck } from "@/shared/ipc";
 import { stubGlobal, unstubAllGlobals } from "@/test/stub-global";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
 
 const UPGRADE_BUTTON = /Upgrade Remotion/;
 const PACKAGE_MANAGER = /package manager/;
@@ -28,12 +29,14 @@ function environment(
 ): Environment {
   return {
     checks: troubles,
+    download: null,
     error: null,
     install: mock(),
     installNode: mock(),
     isBlocking: false,
     isChecking: false,
     isInstalling: false,
+    isInstallingNode: false,
     isUpgrading: false,
     output: null,
     recheck: mock(),
@@ -137,6 +140,26 @@ const NO_NODE: EnvironmentCheck = {
 };
 
 describe("the Node.js row", () => {
+  afterEach(() => {
+    withAgent(LINUX);
+  });
+
+  it("downloads the installer on macOS and shows how far it has got", async () => {
+    withAgent(MAC);
+
+    render(
+      <EnvironmentChecklist
+        environment={environment([NO_NODE], {
+          download: { received: 50, total: 200, type: "progress" },
+          isInstallingNode: true,
+        })}
+      />
+    );
+
+    expect(await screen.findByText("Downloading… 25%")).toBeDefined();
+    expect(screen.queryByText(PACKAGE_MANAGER)).toBeNull();
+  });
+
   it("opens the download page and says a package manager works too", () => {
     const installNode = mock();
 

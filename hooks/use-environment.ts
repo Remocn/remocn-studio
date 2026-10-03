@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { causeMessage } from "@/lib/error-message";
 import {
   checkEnvironment,
+  installNode,
   installProject,
   isBlocked,
   merged,
@@ -12,20 +13,23 @@ import {
   unresolved,
   upgradeProject,
 } from "@/lib/studio/environment";
+import { currentPlatform } from "@/lib/studio/platform";
 import type { PreviewComposition } from "@/lib/studio/preview";
 import { failedProviders } from "@/lib/studio/setup";
-import type { EnvironmentCheck } from "@/shared/ipc";
+import type { EnvironmentCheck, NodeDownload } from "@/shared/ipc";
 import { type AgentProvider, PROVIDER_INFO } from "@/shared/providers";
 import { useRecheckOnFocus } from "./use-recheck-on-focus";
 
 export interface Environment {
   checks: readonly EnvironmentCheck[];
+  download: NodeDownload | null;
   error: string | null;
   install: () => void;
   installNode: () => void;
   isBlocking: boolean;
   isChecking: boolean;
   isInstalling: boolean;
+  isInstallingNode: boolean;
   isUpgrading: boolean;
   output: string | null;
   recheck: () => void;
@@ -59,7 +63,9 @@ export function useEnvironment(
   const [isChecking, setIsChecking] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
+  const [isInstallingNode, setIsInstallingNode] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [download, setDownload] = useState<NodeDownload | null>(null);
   const running = useRef<Running | null>(null);
 
   const stop = useCallback(() => {
@@ -152,10 +158,45 @@ export function useEnvironment(
   }, [check, isInstalling, projectId]);
 
   const getNode = useCallback(() => {
-    Effect.runPromiseExit(openNodeDownload).then((exit) => {
-      setError(Exit.isFailure(exit) ? causeMessage(exit.cause) : null);
-    });
-  }, []);
+    if (isInstallingNode) {
+      return;
+    }
+
+    // Only macOS has an official installer to download and open; elsewhere
+    // the download page is the way in.
+    if (currentPlatform() !== "mac") {
+      Effect.runPromiseExit(openNodeDownload).then((exit) => {
+        setError(Exit.isFailure(exit) ? causeMessage(exit.cause) : null);
+      });
+      return;
+    }
+
+    setIsInstallingNode(true);
+    setDownload(null);
+
+    Effect.runFork(
+      installNode((event) => {
+        setDownload(event);
+      }).pipe(
+        Effect.onExit((exit) =>
+          Effect.sync(() => {
+            setIsInstallingNode(false);
+            setDownload(null);
+
+            if (Exit.isSuccess(exit)) {
+              setError(null);
+              return;
+            }
+
+            const message = causeMessage(exit.cause);
+            if (message !== null) {
+              setError(message);
+            }
+          })
+        )
+      )
+    );
+  }, [isInstallingNode]);
 
   const shown = useMemo(
     () => merged(checks, pick, PROVIDER_INFO[provider].name),
@@ -202,12 +243,14 @@ export function useEnvironment(
   return useMemo(
     () => ({
       checks: shown,
+      download,
       error,
       install,
       installNode: getNode,
       isBlocking: isBlocked(shown, provider),
       isChecking,
       isInstalling,
+      isInstallingNode,
       isUpgrading,
       output,
       recheck,
@@ -215,11 +258,13 @@ export function useEnvironment(
       upgrade,
     }),
     [
+      download,
       error,
       getNode,
       install,
       isChecking,
       isInstalling,
+      isInstallingNode,
       isUpgrading,
       output,
       provider,

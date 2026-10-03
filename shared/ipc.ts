@@ -40,7 +40,7 @@ import {
 } from "./studio-document";
 import { TemplateDraft } from "./templates";
 
-export const SIDECAR_PROTOCOL = 39;
+export const SIDECAR_PROTOCOL = 38;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -91,6 +91,7 @@ export const METHOD_NAMES = [
   "library.stockSave",
   "library.stockSearch",
   "library.stockStatus",
+  "node.install",
   "pipeline.get",
   "pipeline.set",
   "pipeline.start",
@@ -737,6 +738,17 @@ export const UpgradeParams = Schema.Struct({
 
 export const Upgraded = Schema.Struct({ upgraded: Schema.Boolean });
 
+export const NodeDownload = Schema.Struct({
+  received: Schema.Int,
+  total: Schema.NullOr(Schema.Int),
+  type: Schema.Literal("progress"),
+});
+
+export const NodeInstaller = Schema.Struct({
+  opened: Schema.Boolean,
+  version: Schema.NonEmptyString,
+});
+
 export const ContextUsage = Schema.Struct({
   maxTokens: Schema.Int,
   totalTokens: Schema.Int,
@@ -907,6 +919,8 @@ export type EnvironmentCheckId = (typeof EnvironmentCheckId)["Type"];
 export type EnvironmentState = (typeof EnvironmentState)["Type"];
 export type EnvironmentFix = (typeof EnvironmentFix)["Type"];
 export type EnvironmentCheck = (typeof EnvironmentCheck)["Type"];
+export type NodeDownload = (typeof NodeDownload)["Type"];
+export type NodeInstaller = (typeof NodeInstaller)["Type"];
 export type EnvironmentReport = (typeof EnvironmentReport)["Type"];
 export type EnvironmentParams = (typeof EnvironmentParams)["Type"];
 export type InstallEvent = (typeof InstallEvent)["Type"];
@@ -1328,6 +1342,11 @@ export const SIDECAR_METHODS = {
     params: Schema.Null,
     result: StockConfigured,
     stream: Schema.Never,
+  },
+  "node.install": {
+    params: Schema.Null,
+    result: NodeInstaller,
+    stream: NodeDownload,
   },
   "pipeline.get": {
     params: HistorySessionRef,

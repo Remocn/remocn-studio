@@ -5,6 +5,7 @@ import {
   ArrowUpCircleIcon,
   CheckIcon,
   CopyIcon,
+  DownloadIcon,
   ExternalLinkIcon,
   RotateCwIcon,
   XCircleIcon,
@@ -14,8 +15,13 @@ import { Spinner } from "@/components/ui/spinner";
 import { useCopyCommand } from "@/hooks/use-copy-command";
 import type { Environment } from "@/hooks/use-environment";
 import { useOnline } from "@/hooks/use-online";
+import { usePlatform } from "@/hooks/use-platform";
 import { usePresence } from "@/hooks/use-presence";
-import { NODE_DOWNLOAD_URL, troubleHeading } from "@/lib/studio/environment";
+import {
+  downloadPercent,
+  NODE_DOWNLOAD_URL,
+  troubleHeading,
+} from "@/lib/studio/environment";
 import { cn } from "@/lib/utils";
 import type { EnvironmentCheck, EnvironmentState } from "@/shared/ipc";
 import { isAgentProvider } from "@/shared/providers";
@@ -96,6 +102,56 @@ export function EnvironmentChecklist({
 }
 
 function NodeFix({ environment }: { environment: Environment }) {
+  const platform = usePlatform();
+
+  return platform === "mac" ? (
+    <NodeInstallerFix environment={environment} />
+  ) : (
+    <NodeDownloadFix environment={environment} />
+  );
+}
+
+// macOS: the studio fetches the official .pkg and opens it.
+function NodeInstallerFix({ environment }: { environment: Environment }) {
+  const online = useOnline();
+  const percent = downloadPercent(environment.download);
+
+  if (!online) {
+    return (
+      <p className="text-muted-foreground text-xs leading-snug">
+        You are offline, so the studio cannot fetch the Node.js installer.
+        Connect and press Recheck.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        disabled={environment.isInstallingNode}
+        onClick={environment.installNode}
+        size="xs"
+        variant="outline"
+      >
+        {environment.isInstallingNode ? (
+          <Spinner className="size-3" data-icon="inline-start" />
+        ) : (
+          <DownloadIcon data-icon="inline-start" />
+        )}
+        Install Node.js
+      </Button>
+      {environment.isInstallingNode ? (
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {percent === null ? "Downloading…" : `Downloading… ${percent}%`}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+// Linux: there is no system installer to hand a package to, so the button
+// opens the download page.
+function NodeDownloadFix({ environment }: { environment: Environment }) {
   const online = useOnline();
 
   if (!online) {

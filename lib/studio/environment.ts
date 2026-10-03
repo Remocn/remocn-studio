@@ -13,6 +13,8 @@ import type {
   EnvironmentReport,
   InstallEvent,
   Installed,
+  NodeDownload,
+  NodeInstaller,
   Upgraded,
 } from "@/shared/ipc";
 import type { AgentProvider } from "@/shared/providers";
@@ -68,10 +70,33 @@ export function upgradeProject(
   });
 }
 
+export function installNode(
+  onEvent: (event: NodeDownload) => void
+): Effect.Effect<NodeInstaller, SidecarError> {
+  return Effect.gen(function* () {
+    const id = yield* newRequestId;
+
+    return yield* requestSidecar({
+      id,
+      method: "node.install",
+      onStream: onEvent,
+      params: null,
+    }).pipe(Effect.onInterrupt(() => Effect.ignore(cancelSidecarRequest(id))));
+  });
+}
+
+export function downloadPercent(event: NodeDownload | null): number | null {
+  if (event === null || event.total === null || event.total <= 0) {
+    return null;
+  }
+
+  return Math.min(100, Math.round((event.received / event.total) * 100));
+}
+
 export const NODE_DOWNLOAD_URL = "https://nodejs.org/en/download";
 
-// Linux has no system installer to hand a package to, and the studio does not
-// install Node into anyone's home folder: the official page, or the
+// Off macOS there is no system installer to hand a package to, and the studio
+// does not install Node into anyone's home folder: the official page, or the
 // distribution's own package, is where it comes from.
 export const openNodeDownload: Effect.Effect<void, ShellError> =
   Effect.tryPromise({
