@@ -26,7 +26,11 @@ import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useCopyCommand } from "@/hooks/use-copy-command";
-import type { NotificationConsent } from "@/hooks/use-notification-consent";
+import type {
+  NotificationConsent,
+  PermissionReading,
+} from "@/hooks/use-notification-consent";
+import { usePlatform } from "@/hooks/use-platform";
 import { usePresence } from "@/hooks/use-presence";
 import { useScrolledIntoView } from "@/hooks/use-scrolled-into-view";
 import {
@@ -588,6 +592,7 @@ const EVENT_ROWS: readonly {
 function NotificationsSection() {
   const { notifications } = useStudio();
   const { permission } = notifications;
+  const isMac = usePlatform() === "mac";
   const isUnavailable = permission === "unavailable";
   const needsPermission = permission === "default" || permission === "denied";
 
@@ -599,7 +604,11 @@ function NotificationsSection() {
       >
         <div className="flex flex-col gap-2">
           <Row
-            description="Turn every notification on or off. They are shown by your desktop's notification service."
+            description={
+              isMac
+                ? "Turn every notification on or off. macOS asks once, the first time this goes on."
+                : "Turn every notification on or off. They are shown by your desktop's notification service."
+            }
             htmlFor="settings-notifications"
             title="Notify me"
           >
@@ -620,15 +629,19 @@ function NotificationsSection() {
           {needsPermission ? (
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
               <p className="text-muted-foreground text-xs leading-snug">
-                Your desktop has not allowed the studio to notify. Nothing will
-                arrive until notifications are allowed for it in your desktop's
-                own settings.
+                {notificationPermissionText(isMac, permission)}
               </p>
               <Button onClick={notifications.grant} size="sm" variant="outline">
                 Grant permission
               </Button>
             </div>
           ) : null}
+
+          {notifications.trouble === null ? null : (
+            <p className="text-destructive text-xs leading-snug">
+              {notifications.trouble}
+            </p>
+          )}
         </div>
       </Group>
 
@@ -652,6 +665,18 @@ function NotificationsSection() {
   );
 }
 
+function notificationPermissionText(
+  isMac: boolean,
+  permission: PermissionReading
+): string {
+  if (!isMac) {
+    return "Your desktop has not allowed the studio to notify. Nothing will arrive until notifications are allowed for it in your desktop's own settings.";
+  }
+
+  return permission === "denied"
+    ? "Notifications are off for the studio in System Settings. Nothing will arrive until they are turned on there."
+    : "macOS has not allowed the studio to notify yet. Nothing will arrive until it has.";
+}
 function EventRow({
   consent,
   description,

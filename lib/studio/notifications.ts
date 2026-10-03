@@ -3,6 +3,7 @@ import {
   isPermissionGranted,
   sendNotification,
 } from "@tauri-apps/plugin-notification";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Data, Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
 
@@ -11,6 +12,9 @@ export class NotificationError extends Data.TaggedError("NotificationError")<{
 }> {}
 
 export type Permission = "default" | "denied" | "granted";
+
+export const NOTIFICATION_SETTINGS_URL =
+  "x-apple.systempreferences:com.apple.Notifications-Settings.extension";
 
 const fail = (cause: unknown) =>
   new NotificationError({ message: errorMessage(cause) });
@@ -53,3 +57,9 @@ export function post(
     try: () => sendNotification({ body, title }),
   });
 }
+
+export const openNotificationSettings: Effect.Effect<void, NotificationError> =
+  Effect.tryPromise({
+    catch: fail,
+    try: () => openUrl(NOTIFICATION_SETTINGS_URL),
+  });

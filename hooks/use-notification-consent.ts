@@ -3,12 +3,15 @@
 import { Effect, Exit } from "effect";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRecheckOnFocus } from "@/hooks/use-recheck-on-focus";
+import { causeMessage } from "@/lib/error-message";
 import { NOTIFY_EVENTS, type NotifyEvent } from "@/lib/studio/attention";
 import {
+  openNotificationSettings,
   type Permission,
   readPermission,
   requestPermission,
 } from "@/lib/studio/notifications";
+import { currentPlatform } from "@/lib/studio/platform";
 import {
   type StudioSettings,
   saveNotifications,
@@ -26,6 +29,7 @@ export interface NotificationConsent {
   readonly permission: PermissionReading;
   readonly setEvent: (event: NotifyEvent, enabled: boolean) => void;
   readonly toggle: (enabled: boolean) => void;
+  readonly trouble: string | null;
 }
 
 type EventChoices = Partial<Record<NotifyEvent, boolean>>;
@@ -36,6 +40,7 @@ export function useNotificationConsent(
   const [chosen, setChosen] = useState<boolean | null>(null);
   const [chosenEvents, setChosenEvents] = useState<EventChoices>({});
   const [permission, setPermission] = useState<PermissionReading>("unknown");
+  const [trouble, setTrouble] = useState<string | null>(null);
 
   const isEnabled = chosen ?? settings?.notifications ?? false;
 
@@ -48,17 +53,32 @@ export function useNotificationConsent(
   useEffect(probe, [probe]);
   useRecheckOnFocus(permission !== "unavailable", probe);
 
-  // The desktop's notification service has no per-app settings row to open,
-  // so a refusal can only be asked about again.
+  const openSystemSettings = useCallback(() => {
+    Effect.runPromiseExit(openNotificationSettings).then((exit) => {
+      setTrouble(Exit.isFailure(exit) ? causeMessage(exit.cause) : null);
+    });
+  }, []);
+
+  // macOS keeps a refusal and only System Settings can undo it. A Linux
+  // desktop's notification service has no per-app settings row to open, so
+  // a refusal there can only be asked about again.
   const grant = useCallback(() => {
+    const isMac = currentPlatform() === "mac";
+    if (isMac && permission === "denied") {
+      openSystemSettings();
+      return;
+    }
     Effect.runPromiseExit(requestPermission).then((exit) => {
       if (Exit.isFailure(exit)) {
         setPermission("unavailable");
         return;
       }
       setPermission(exit.value);
+      if (isMac && exit.value === "denied") {
+        openSystemSettings();
+      }
     });
-  }, []);
+  }, [openSystemSettings, permission]);
 
   const toggle = useCallback(
     (enabled: boolean) => {
@@ -100,7 +120,17 @@ export function useNotificationConsent(
       permission,
       setEvent,
       toggle,
+      trouble,
     }),
-    [events, grant, isEnabled, isEventEnabled, permission, setEvent, toggle]
+    [
+      events,
+      grant,
+      isEnabled,
+      isEventEnabled,
+      permission,
+      setEvent,
+      toggle,
+      trouble,
+    ]
   );
 }

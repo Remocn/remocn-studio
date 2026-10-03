@@ -11,6 +11,7 @@ import Page from "@/app/page";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { EnvironmentCheck } from "@/shared/ipc";
 import { stubGlobal, unstubAllGlobals } from "@/test/stub-global";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
 
 const STORE_RID = 7;
 const REMOCN_ACCOUNT = /Remocn account/;
@@ -40,6 +41,11 @@ const CODEX_ROW: EnvironmentCheck = {
 };
 
 const NOT_ALLOWED = /Your desktop has not allowed the studio to notify/;
+
+const REFUSED_ON_MAC =
+  /Notifications are off for the studio in System Settings/;
+
+const NEVER_ASKED_ON_MAC = /macOS has not allowed the studio to notify yet/;
 
 function notificationShim(permission: "default" | "denied" | "granted") {
   return {
@@ -123,6 +129,7 @@ describe("the settings page", () => {
 
   afterEach(() => {
     unstubAllGlobals();
+    withAgent(LINUX);
   });
 
   it("opens from the gear on Appearance", async () => {
@@ -281,6 +288,29 @@ describe("the settings page", () => {
     expect(
       screen.getByRole("button", { name: "Grant permission" })
     ).toBeVisible();
+  });
+
+  it("words a refusal on macOS as System Settings", async () => {
+    withAgent(MAC);
+    stubGlobal("Notification", notificationShim("denied"));
+    mockStudio(written, [["notifications", "enabled"]]);
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+
+    expect(await screen.findByText(REFUSED_ON_MAC)).toBeVisible();
+  });
+
+  it("words a first ask on macOS as macOS's own", async () => {
+    withAgent(MAC);
+    stubGlobal("Notification", notificationShim("default"));
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+
+    expect(await screen.findByText(NEVER_ASKED_ON_MAC)).toBeVisible();
   });
 
   // Opt-in, and the wording that earns the switch is part of what is being
