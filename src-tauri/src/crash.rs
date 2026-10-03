@@ -67,15 +67,24 @@ pub fn environment_name() -> &'static str {
 }
 
 /// Where `AppHandle::path().app_data_dir()` would answer, worked out without
-/// an app: `$XDG_DATA_HOME/<identifier>`, or `~/.local/share/<identifier>`.
+/// an app: `~/Library/Application Support/<identifier>` on macOS, and
+/// `$XDG_DATA_HOME/<identifier>` or `~/.local/share/<identifier>` on Linux.
 /// A platform this does not know answers `None` and the core then reads no
 /// consent at all, which fails in the direction that sends nothing.
 pub fn data_dir_for(identifier: &str) -> Option<PathBuf> {
-    if !cfg!(target_os = "linux") {
-        return None;
+    if cfg!(target_os = "macos") {
+        return env::var_os("HOME").map(|home| {
+            PathBuf::from(home)
+                .join("Library/Application Support")
+                .join(identifier)
+        });
     }
 
-    xdg_data_dir(identifier, |name| env::var_os(name))
+    if cfg!(target_os = "linux") {
+        return xdg_data_dir(identifier, |name| env::var_os(name));
+    }
+
+    None
 }
 
 /// A relative `$XDG_DATA_HOME` is invalid by the XDG specification and is
@@ -219,7 +228,9 @@ mod tests {
         let dir = xdg_data_dir(ID, with(&[("XDG_DATA_HOME", "data"), ("HOME", "/home/a")]));
         assert_eq!(
             dir,
-            Some(PathBuf::from("/home/a/.local/share/com.remocn.remocn-studio"))
+            Some(PathBuf::from(
+                "/home/a/.local/share/com.remocn.remocn-studio"
+            ))
         );
     }
 
@@ -228,7 +239,9 @@ mod tests {
         let dir = xdg_data_dir(ID, with(&[("HOME", "/home/a")]));
         assert_eq!(
             dir,
-            Some(PathBuf::from("/home/a/.local/share/com.remocn.remocn-studio"))
+            Some(PathBuf::from(
+                "/home/a/.local/share/com.remocn.remocn-studio"
+            ))
         );
     }
 
