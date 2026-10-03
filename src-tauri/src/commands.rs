@@ -82,22 +82,40 @@ pub async fn studio_build(app: AppHandle) -> StudioBuild {
 
 static OS_VERSION: OnceLock<String> = OnceLock::new();
 
-const OS_RELEASE: [&str; 2] = ["/etc/os-release", "/usr/lib/os-release"];
-
+/// The operating system and its version, as diagnostics name it: `macOS 15.5`
+/// on a Mac, the os-release name (`Ubuntu 24.04.1 LTS`) on Linux.
 pub(crate) fn os_version() -> String {
     OS_VERSION
-        .get_or_init(|| {
-            OS_RELEASE
-                .iter()
-                .find_map(|path| std::fs::read_to_string(path).ok())
-                .and_then(|text| os_name_in(&text))
-                .unwrap_or_else(|| "unknown".to_string())
-        })
+        .get_or_init(|| read_os_version().unwrap_or_else(|| "unknown".to_string()))
         .clone()
+}
+
+#[cfg(target_os = "macos")]
+fn read_os_version() -> Option<String> {
+    std::process::Command::new("sw_vers")
+        .arg("-productVersion")
+        .output()
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|version| version.trim().to_string())
+        .filter(|version| !version.is_empty())
+        .map(|version| format!("macOS {version}"))
+}
+
+#[cfg(not(target_os = "macos"))]
+const OS_RELEASE: [&str; 2] = ["/etc/os-release", "/usr/lib/os-release"];
+
+#[cfg(not(target_os = "macos"))]
+fn read_os_version() -> Option<String> {
+    OS_RELEASE
+        .iter()
+        .find_map(|path| std::fs::read_to_string(path).ok())
+        .and_then(|text| os_name_in(&text))
 }
 
 /// `PRETTY_NAME`, else `NAME VERSION_ID`, from an os-release file's
 /// shell-style assignments, whose values may be quoted.
+#[cfg_attr(target_os = "macos", allow(dead_code))]
 fn os_name_in(text: &str) -> Option<String> {
     let field = |key: &str| {
         text.lines().find_map(|line| {
