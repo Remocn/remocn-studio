@@ -15,7 +15,7 @@ describe("feedbackMailto", () => {
   it("targets the intake address with an encoded subject", () => {
     const url = feedbackMailto({
       environment: "production",
-      os: "15.5",
+      os: "Ubuntu 24.04.1 LTS",
       provider: "Claude",
       version: "0.4.1",
     });
@@ -30,14 +30,14 @@ describe("feedbackMailto", () => {
     const body = bodyOf(
       feedbackMailto({
         environment: "production",
-        os: "15.5",
+        os: "Ubuntu 24.04.1 LTS",
         provider: "Claude",
         version: "0.4.1",
       })
     );
 
     expect(body).toContain("Remocn Studio 0.4.1 (production)");
-    expect(body).toContain("macOS 15.5");
+    expect(body).toContain("System: Ubuntu 24.04.1 LTS");
     expect(body).toContain("Agent: Claude");
     expect(body).toContain("attach");
   });
@@ -52,7 +52,7 @@ describe("feedbackMailto", () => {
       })
     );
 
-    expect(body).not.toContain("macOS");
+    expect(body).not.toContain("System:");
     expect(body).not.toContain("Agent:");
     expect(body).not.toContain("Remocn Studio (");
   });

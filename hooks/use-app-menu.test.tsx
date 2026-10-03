@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { renderHook, waitFor } from "@testing-library/react";
 import { useAppMenu } from "@/hooks/use-app-menu";
 import { type Command, SHORTCUTS } from "@/lib/studio/command-registry";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
 
 function command(
   id: string,
@@ -60,11 +61,34 @@ function registry(run: () => void, enabled = true): readonly Command[] {
   ];
 }
 
+describe("useAppMenu on Linux", () => {
+  afterEach(() => {
+    withAgent(LINUX);
+  });
+
+  it("installs no menu bar and answers that none is up", async () => {
+    withAgent(LINUX);
+    const menus = core();
+    const { result } = renderHook(() => useAppMenu(registry(() => undefined)));
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(menus.installs).toBe(0);
+    expect(menus.handlers.size).toBe(0);
+    expect(result.current).toBe(false);
+  });
+});
+
 describe("useAppMenu", () => {
   let menus: Menus;
 
   beforeEach(() => {
+    withAgent(MAC);
     menus = core();
+  });
+
+  afterEach(() => {
+    withAgent(LINUX);
   });
 
   it("installs once for a registry whose closures change but whose shape does not", async () => {

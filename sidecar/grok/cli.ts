@@ -1,15 +1,9 @@
 import { homedir } from "node:os";
-import { join } from "node:path";
-import { findExecutable, type LookupHost } from "../agent/cli";
+import { fallbackDirs, findExecutable, type LookupHost } from "../agent/cli";
 
 export const GROK_ENV = "REMOCN_STUDIO_GROK";
 
-const FALLBACK_DIRS = [
-  join(homedir(), ".grok", "bin"),
-  join(homedir(), ".local", "bin"),
-  "/opt/homebrew/bin",
-  "/usr/local/bin",
-];
+const FALLBACK_DIRS = fallbackDirs(homedir(), [".grok/bin"]);
 
 export function findGrok(at?: LookupHost): string | null {
   return findExecutable(

@@ -81,4 +81,10 @@ describe("wordFailure", () => {
     });
     expect(wordFailure(null, FALLBACK).sentence).toBe(FALLBACK);
   });
+
+  it("words a refused permission without naming macOS", () => {
+    expect(
+      wordFailure("EACCES: permission denied, open '/srv/x'", FALLBACK).sentence
+    ).toBe("The system did not allow the studio to use a file there.");
+  });
 });

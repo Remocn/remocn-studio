@@ -65,7 +65,7 @@ pub async fn path_exists(path: String) -> bool {
 
 #[tauri::command]
 pub async fn studio_build(app: AppHandle) -> StudioBuild {
-    let os = tauri::async_runtime::spawn_blocking(macos_version)
+    let os = tauri::async_runtime::spawn_blocking(os_version)
         .await
         .unwrap_or_else(|_| "unknown".to_string());
 
@@ -80,19 +80,78 @@ pub async fn studio_build(app: AppHandle) -> StudioBuild {
     }
 }
 
-static MACOS_VERSION: OnceLock<String> = OnceLock::new();
+static OS_VERSION: OnceLock<String> = OnceLock::new();
 
-pub(crate) fn macos_version() -> String {
-    MACOS_VERSION
-        .get_or_init(|| {
-            std::process::Command::new("sw_vers")
-                .arg("-productVersion")
-                .output()
-                .ok()
-                .and_then(|output| String::from_utf8(output.stdout).ok())
-                .map(|version| version.trim().to_string())
-                .filter(|version| !version.is_empty())
-                .unwrap_or_else(|| "unknown".to_string())
-        })
+/// The operating system and its version, as diagnostics name it: `macOS 15.5`
+/// on a Mac, the os-release name (`Ubuntu 24.04.1 LTS`) on Linux.
+pub(crate) fn os_version() -> String {
+    OS_VERSION
+        .get_or_init(|| read_os_version().unwrap_or_else(|| "unknown".to_string()))
         .clone()
+}
+
+#[cfg(target_os = "macos")]
+fn read_os_version() -> Option<String> {
+    std::process::Command::new("sw_vers")
+        .arg("-productVersion")
+        .output()
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|version| version.trim().to_string())
+        .filter(|version| !version.is_empty())
+        .map(|version| format!("macOS {version}"))
+}
+
+#[cfg(not(target_os = "macos"))]
+const OS_RELEASE: [&str; 2] = ["/etc/os-release", "/usr/lib/os-release"];
+
+#[cfg(not(target_os = "macos"))]
+fn read_os_version() -> Option<String> {
+    OS_RELEASE
+        .iter()
+        .find_map(|path| std::fs::read_to_string(path).ok())
+        .and_then(|text| os_name_in(&text))
+}
+
+/// `PRETTY_NAME`, else `NAME VERSION_ID`, from an os-release file's
+/// shell-style assignments, whose values may be quoted.
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+fn os_name_in(text: &str) -> Option<String> {
+    let field = |key: &str| {
+        text.lines().find_map(|line| {
+            let value = line.trim().strip_prefix(key)?.strip_prefix('=')?;
+            let value = value.trim().trim_matches(|c| c == '"' || c == '\'');
+            (!value.is_empty()).then(|| value.to_string())
+        })
+    };
+
+    field("PRETTY_NAME").or_else(|| {
+        let name = field("NAME")?;
+        Some(match field("VERSION_ID") {
+            Some(version) => format!("{name} {version}"),
+            None => name,
+        })
+    })
+}
+
+#[cfg(test)]
+mod os_tests {
+    use super::os_name_in;
+
+    #[test]
+    fn the_pretty_name_wins() {
+        let text = "NAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nPRETTY_NAME=\"Ubuntu 24.04.1 LTS\"\n";
+        assert_eq!(os_name_in(text).as_deref(), Some("Ubuntu 24.04.1 LTS"));
+    }
+
+    #[test]
+    fn name_and_version_when_there_is_no_pretty_name() {
+        let text = "NAME='Fedora Linux'\nVERSION_ID=41\n";
+        assert_eq!(os_name_in(text).as_deref(), Some("Fedora Linux 41"));
+    }
+
+    #[test]
+    fn nothing_usable_is_none() {
+        assert_eq!(os_name_in("ID=arch\nPRETTY_NAME=\"\"\n"), None);
+    }
 }

@@ -102,6 +102,7 @@
     "smoke:render": "cd test/fixtures/render-smoke && bun install --no-save && cd ../../.. && bun scripts/render-smoke-assets.ts && REMOCN_RENDER_SMOKE=1 bun test --timeout=900000 sidecar/preview/render-smoke.test.ts",
     "start": "next start",
     "tauri": "tauri",
+    "tauri:before-dev": "bun run bun:fetch && bun run sidecar:build && bun run dev",
     "tauri:before-build": "bun run bun:fetch && bun run sidecar:build && bun run build && bun run release:sourcemaps",
     "test": "bun test --parallel=3 --timeout=15000",
     "test:coverage": "bun test --parallel=3 --timeout=15000 --coverage",

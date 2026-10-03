@@ -2,6 +2,8 @@ mod logs;
 mod signal;
 mod spawn;
 
+pub(crate) use spawn::search_dirs;
+
 use std::{
     collections::HashMap,
     sync::{

@@ -19,7 +19,7 @@ const KNOWN: readonly { pattern: RegExp; sentence: string }[] = [
   },
   {
     pattern: /\bE(?:ACCES|PERM)\b|permission denied|operation not permitted/i,
-    sentence: "macOS did not allow the studio to use a file there.",
+    sentence: "The system did not allow the studio to use a file there.",
   },
   {
     pattern: /\bENOSPC\b|no space left on device/i,

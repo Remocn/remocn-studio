@@ -1,4 +1,7 @@
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Effect } from "effect";
+import { errorMessage } from "@/lib/error-message";
+import { ShellError } from "@/lib/studio/shell";
 import {
   cancelSidecarRequest,
   newRequestId,
@@ -89,6 +92,20 @@ export function downloadPercent(event: NodeDownload | null): number | null {
 
   return Math.min(100, Math.round((event.received / event.total) * 100));
 }
+
+export const NODE_DOWNLOAD_URL = "https://nodejs.org/en/download";
+
+// Off macOS there is no system installer to hand a package to, and the studio
+// does not install Node into anyone's home folder: the official page, or the
+// distribution's own package, is where it comes from.
+export const openNodeDownload: Effect.Effect<void, ShellError> =
+  Effect.tryPromise({
+    catch: (cause) =>
+      new ShellError({
+        message: `The Node.js download page did not open (${errorMessage(cause)}). Its address is ${NODE_DOWNLOAD_URL}`,
+      }),
+    try: () => openUrl(NODE_DOWNLOAD_URL),
+  });
 
 export function compositionRow(
   pick: PreviewComposition | null,

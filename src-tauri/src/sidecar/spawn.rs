@@ -16,7 +16,24 @@ use crate::ipc::{
 };
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
-const FALLBACK_DIRS: [&str; 5] = [
+// Where an app started from Finder, the Dock or a desktop entry finds the
+// agent CLIs, Node and package managers, since it inherits the session's
+// minimal PATH. One list serves macOS and Linux; a dir that does not exist is
+// never matched. The sidecar's `USER_BIN_DIRS` and `SYSTEM_BIN_DIRS` must name
+// the same dirs; `sidecar/agent/cli.test.ts` reads this file to hold them
+// together.
+const HOME_BIN_DIRS: [&str; 9] = [
+    ".local/bin",
+    ".bun/bin",
+    ".npm-global/bin",
+    ".volta/bin",
+    ".local/share/mise/shims",
+    ".asdf/shims",
+    ".local/share/pnpm",
+    ".yarn/bin",
+    "Library/pnpm",
+];
+const SYSTEM_BIN_DIRS: [&str; 5] = [
     "/opt/homebrew/bin",
     "/usr/local/bin",
     "/usr/bin",
@@ -50,8 +67,10 @@ pub fn resolve_bun() -> Result<PathBuf, String> {
         })
 }
 
+const SHIPPED_BUN: &str = "remocn-studio-bun";
+
 fn shipped_bun() -> Option<PathBuf> {
-    let beside = env::current_exe().ok()?.parent()?.join("bun");
+    let beside = env::current_exe().ok()?.parent()?.join(SHIPPED_BUN);
 
     beside.is_file().then_some(beside)
 }
@@ -255,16 +274,20 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
         .map_err(|err| format!("could not start {}: {err}", bun.display()))
 }
 
-fn search_dirs() -> Vec<PathBuf> {
+pub(crate) fn search_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
 
     if let Some(home) = env::var_os("HOME") {
-        dirs.push(PathBuf::from(home).join(".bun/bin"));
+        let home = PathBuf::from(home);
+        dirs.extend(HOME_BIN_DIRS.iter().map(|dir| home.join(dir)));
+    }
+    if let Some(nvm) = env::var_os("NVM_BIN").filter(|dir| !dir.is_empty()) {
+        dirs.push(PathBuf::from(nvm));
     }
     if let Some(path) = env::var_os("PATH") {
         dirs.extend(env::split_paths(&path));
     }
-    dirs.extend(FALLBACK_DIRS.iter().map(PathBuf::from));
+    dirs.extend(SYSTEM_BIN_DIRS.iter().map(PathBuf::from));
 
     let mut seen = HashSet::new();
     dirs.retain(|dir| seen.insert(dir.clone()));

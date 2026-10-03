@@ -35,7 +35,6 @@ time = { version = "0.3", features = ["formatting"] }
 tokio = { version = "1", features = ["io-util", "net", "process", "rt", "sync", "time"] }
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-notification = "2"
-keyring = { version = "3", features = ["apple-native"] }
 reqwest = { version = "0.13", features = ["json"] }
 # Off by default, and deliberately: nothing in CI compiles this crate — the
 # Rust is only ever built by the release job — so an unbuildable dependency
@@ -60,7 +59,13 @@ crash-reports = ["dep:sentry"]
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
+# The Secret Service (GNOME Keyring, KWallet) over libdbus. Without a backend
+# feature keyring 3 silently falls back to its in-memory mock store.
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+
 [target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSImage"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData"] }

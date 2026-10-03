@@ -12,6 +12,7 @@ import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useCopyCommand } from "@/hooks/use-copy-command";
 import { useTerminal } from "@/hooks/use-terminal";
+import { terminalPasteHint } from "@/lib/studio/platform";
 import {
   type SetupStage,
   type StageState,
@@ -157,12 +158,12 @@ function StepActions({
       <Button
         onClick={terminal.onOpen}
         size="xs"
-        title="Copies the command and opens an empty Terminal window. Nothing runs until you paste it and press Enter."
+        title="Copies the command and opens an empty window of your terminal. Nothing runs until you paste it and press Enter."
         value={step.command}
         variant="outline"
       >
         <TerminalIcon data-icon="inline-start" />
-        {isOpened ? "⌘V, then Enter" : "Open in Terminal"}
+        {isOpened ? terminalPasteHint() : "Open in Terminal"}
       </Button>
       <Button
         onClick={copy.onCopy}

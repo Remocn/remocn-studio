@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { env } from "node:process";
+import { SYSTEM_BIN_DIRS, userBinDirs } from "./agent/cli";
 
 export const PACKAGE_MANAGERS = ["bun", "pnpm", "yarn", "npm"] as const;
 
@@ -16,21 +17,6 @@ export const LOCKFILES = [
   ["package-lock.json", "npm"],
   ["npm-shrinkwrap.json", "npm"],
 ] as const satisfies readonly (readonly [string, PackageManager])[];
-
-const HOME_DIRS = [
-  ".bun/bin",
-  ".volta/bin",
-  ".yarn/bin",
-  "Library/pnpm",
-  ".local/share/pnpm",
-];
-
-const FALLBACK_DIRS = [
-  "/opt/homebrew/bin",
-  "/usr/local/bin",
-  "/usr/bin",
-  "/bin",
-];
 
 export interface ProjectManager {
   readonly lockfile: string | null;
@@ -117,7 +103,7 @@ export function searchDirs(): readonly string[] {
   const home = env.HOME;
 
   if (home !== undefined) {
-    dirs.push(...HOME_DIRS.map((dir) => path.join(home, dir)));
+    dirs.push(...userBinDirs(home, env));
   }
 
   if (env.PATH !== undefined) {
@@ -126,7 +112,7 @@ export function searchDirs(): readonly string[] {
     );
   }
 
-  dirs.push(...FALLBACK_DIRS);
+  dirs.push(...SYSTEM_BIN_DIRS);
 
   return [...new Set(dirs)];
 }

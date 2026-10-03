@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { useFolderPicker } from "@/hooks/use-folder-picker";
 import { useProjectSettings } from "@/hooks/use-project-settings";
+import { fileManagerName } from "@/lib/studio/platform";
 import { cancelProjectMove, moveProject } from "@/lib/studio/projects";
 import { revealInFinder } from "@/lib/studio/shell";
 import type { Project } from "@/shared/ipc";
@@ -179,7 +180,7 @@ function ProjectForm({ project }: { project: Project }) {
                 type="button"
                 variant="ghost"
               >
-                Show in Finder
+                Show in {fileManagerName()}
               </Button>
               <Button
                 disabled={locationDisabled}

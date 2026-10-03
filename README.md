@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Ship a launch video without opening After Effects.</b><br />
-  A macOS app where your own coding agent makes the video<br />
+  A macOS and Linux app where your own coding agent makes the video<br />
   as a real Remotion project you own, not a file you rent.
 </p>
 
@@ -15,6 +15,13 @@
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Download_for_macOS.svg?logo=apple&size=lg&theme=violet&mode=dark" />
       <img alt="Download for macOS" src="https://shieldcn.dev/badge/Download_for_macOS.svg?logo=apple&size=lg&theme=violet&mode=light" />
+    </picture>
+  </a>
+  &nbsp;
+  <a href="https://github.com/Remocn/remocn-studio/releases/latest">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Download_for_Linux.svg?logo=linux&size=lg&theme=violet&mode=dark" />
+      <img alt="Download for Linux" src="https://shieldcn.dev/badge/Download_for_Linux.svg?logo=linux&size=lg&theme=violet&mode=light" />
     </picture>
   </a>
   &nbsp;
@@ -30,6 +37,7 @@
   <a href="https://github.com/Remocn/remocn-studio/releases"><img alt="Latest release" src="https://shieldcn.dev/github/release/Remocn/remocn-studio.svg?variant=secondary" /></a>
   <a href="https://github.com/Remocn/remocn-studio/actions/workflows/dev.yml"><img alt="CI status" src="https://shieldcn.dev/github/ci/Remocn/remocn-studio.svg?workflow=dev.yml&branch=main&variant=secondary" /></a>
   <a href="#requirements"><img alt="macOS: Apple silicon and Intel" src="https://shieldcn.dev/badge/macOS-Apple_silicon_%C2%B7_Intel.svg?logo=apple&variant=secondary" /></a>
+  <a href="#requirements"><img alt="Linux: x86_64 and aarch64" src="https://shieldcn.dev/badge/Linux-x86__64_%C2%B7_aarch64.svg?logo=linux&variant=secondary" /></a>
   <a href="LICENSE"><img alt="License" src="https://shieldcn.dev/github/license/Remocn/remocn-studio.svg?variant=secondary" /></a>
   <a href="https://github.com/Remocn/remocn-studio/stargazers"><img alt="GitHub stars" src="https://shieldcn.dev/github/stars/Remocn/remocn-studio.svg?variant=secondary" /></a>
   <a href="https://x.com/kapish_dima"><img alt="Follow on X" src="https://shieldcn.dev/x/follow/kapish_dima.svg?variant=secondary" /></a>
@@ -174,7 +182,7 @@ subscription you already pay for.
   <a href="https://grok.com/build"><img alt="Grok Build" src="https://shieldcn.dev/badge/Grok_Build.svg?logo=x&size=default&variant=secondary" /></a>
 </p>
 
-| Agent                                                                  | Sign in on this Mac with                                          |
+| Agent                                                                  | Sign in on this computer with                                     |
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | [Claude Code](https://docs.claude.com/en/docs/claude-code/setup)       | `claude auth login` (signing in to Claude Desktop doesn't count) |
 | [Codex CLI](https://developers.openai.com/codex/cli)                   | `codex login`                                                     |
@@ -182,7 +190,7 @@ subscription you already pay for.
 | [Grok Build](https://grok.com/build)                                   | `grok login`                                                      |
 
 You don't have to memorize these. The studio shows the exact install and
-sign-in commands for each agent and can open a Terminal window for you to paste
+sign-in commands for each agent and can open a terminal window for you to paste
 them into.
 
 ## It's real code, and it's yours
@@ -212,7 +220,7 @@ my-launch/                          an ordinary Remotion project
   without interrupting you. Any shell command, or any path outside the
   project, gets a permission card first. You choose the mode (auto, accept
   edits or plan), and there's no mode that bypasses the cards.
-- **Nothing leaves your Mac without your consent.** There's no telemetry, and
+- **Nothing leaves your computer without your consent.** There's no telemetry, and
   crash reports are opt-in.
 - **Your agent setup stays untouched.** The studio brings its own skills to
   every agent and never writes into `~/.claude`, `~/.codex`, `~/.copilot` or
@@ -222,19 +230,55 @@ my-launch/                          an ordinary Remotion project
 
 ## Requirements
 
-- macOS on Apple silicon or Intel
-- One of [the cast](#the-cast), installed and signed in on this Mac
+- macOS on Apple silicon or Intel, or Linux on x86_64 or aarch64 with glibc
+  2.35 or newer (Ubuntu 22.04, Debian 12, Fedora 36, Arch and anything newer)
+- One of [the cast](#the-cast), installed and signed in on this computer
+- On Linux, a Secret Service keyring (GNOME Keyring or KWallet) if you connect
+  an integration; its key is stored there
 
-The studio's environment checklist checks both, along with the project's
+The studio's environment checklist checks the agent, along with the project's
 Remotion version and dependencies, and offers a fix for anything that's
 missing.
 
+## Installing
+
+Every [release](https://github.com/Remocn/remocn-studio/releases/latest)
+carries the same app for both platforms:
+
+| File        | Install with                                                        |
+| ----------- | ------------------------------------------------------------------- |
+| `.dmg`      | Open it and drag Remocn Studio to Applications (macOS)              |
+| `.AppImage` | `chmod +x Remocn*.AppImage` and run it; footage codecs are inside   |
+| `.deb`      | `sudo apt install ./Remocn*.deb` (Debian, Ubuntu, Mint, Pop!_OS)     |
+| `.rpm`      | `sudo dnf install ./Remocn*.rpm` (Fedora, openSUSE, RHEL)            |
+
+The studio updates itself on both, whichever of these you installed.
+
+On Linux the window draws its own frame — close, minimise and maximise sit at
+the top left where macOS puts its traffic lights — and there is no menu bar:
+every action is in the command palette (`Ctrl+K`).
+
 ## Behind the scenes
 
-Want to build it yourself? You need macOS, [Bun](https://bun.sh) 1.4 (the exact
-version is pinned in `packageManager`), and the
+Want to build it yourself? You need [Bun](https://bun.sh) 1.4 (the exact
+version is pinned in `packageManager`) and the
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/): a Rust
-toolchain and the Xcode Command Line Tools.
+toolchain, plus the Xcode Command Line Tools on macOS. On Linux you also need
+WebKitGTK, libdbus and GStreamer:
+
+```sh
+# Arch
+sudo pacman -S --needed webkit2gtk-4.1 libsoup3 gtk3 librsvg libayatana-appindicator \
+  dbus patchelf unzip gst-plugins-base gst-plugins-good gst-plugins-bad gst-libav
+# Debian / Ubuntu
+sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+  librsvg2-dev libdbus-1-dev libssl-dev patchelf file unzip \
+  gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
+# Fedora
+sudo dnf install webkit2gtk4.1-devel gtk3-devel librsvg2-devel dbus-devel \
+  libappindicator-gtk3-devel openssl-devel patchelf unzip \
+  gstreamer1-plugins-good gstreamer1-plugins-bad-free
+```
 
 ```sh
 git clone https://github.com/Remocn/remocn-studio.git
@@ -251,10 +295,10 @@ bun tauri dev
 | `bun run typecheck`         | `tsc --noEmit`                                                      |
 | `bun run test`              | The test suite: bun test, happy-dom, Testing Library                |
 | `bun run smoke:render`      | Run the real renderer against a fixture project (slow, needs network) |
-| `bun tauri build --no-sign` | A local `.app` you can run but not release                          |
+| `bun tauri build --no-sign` | A local build you can run but not release: the `.app` and `.dmg` on macOS, an AppImage, `.deb` and `.rpm` on Linux |
 
 The studio has three layers. A **Tauri v2** core in Rust owns the window,
-the keychain and the updater. The webview is a **Next.js** static export. A
+the keychain (the Secret Service keyring on Linux) and the updater. The webview is a **Next.js** static export. A
 **bun sidecar** built on Effect runs the agents, the history, the preview host
 and the renderer. The map of the system and the working rules are in
 [`CLAUDE.md`](CLAUDE.md).

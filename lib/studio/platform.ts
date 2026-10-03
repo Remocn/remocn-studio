@@ -42,3 +42,20 @@ export function fileManagerName(
 
   return platform === "windows" ? "File Explorer" : "Files";
 }
+
+// Linux terminals keep Ctrl+V for the shell, so a paste there takes Shift.
+export function terminalPasteHint(
+  platform: Platform = currentPlatform()
+): string {
+  if (platform === "mac") {
+    return "⌘V, then Enter";
+  }
+
+  return platform === "linux"
+    ? "Ctrl+Shift+V, then Enter"
+    : "Ctrl+V, then Enter";
+}
+
+export function keyringName(platform: Platform = currentPlatform()): string {
+  return platform === "mac" ? "this Mac’s keychain" : "your system keyring";
+}

@@ -9,9 +9,11 @@ import {
   installProject,
   isBlocked,
   merged,
+  openNodeDownload,
   unresolved,
   upgradeProject,
 } from "@/lib/studio/environment";
+import { currentPlatform } from "@/lib/studio/platform";
 import type { PreviewComposition } from "@/lib/studio/preview";
 import { failedProviders } from "@/lib/studio/setup";
 import type { EnvironmentCheck, NodeDownload } from "@/shared/ipc";
@@ -157,6 +159,15 @@ export function useEnvironment(
 
   const getNode = useCallback(() => {
     if (isInstallingNode) {
+      return;
+    }
+
+    // Only macOS has an official installer to download and open; elsewhere
+    // the download page is the way in.
+    if (currentPlatform() !== "mac") {
+      Effect.runPromiseExit(openNodeDownload).then((exit) => {
+        setError(Exit.isFailure(exit) ? causeMessage(exit.cause) : null);
+      });
       return;
     }
 
