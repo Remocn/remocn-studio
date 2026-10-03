@@ -10,6 +10,12 @@ fn entry(reference: &str) -> Result<Entry, String> {
     Entry::new(KEYCHAIN_SERVICE, reference).map_err(refused)
 }
 
+#[cfg(target_os = "macos")]
+fn refused(err: KeyringError) -> String {
+    format!("The keychain refused: {err}")
+}
+
+#[cfg(not(target_os = "macos"))]
 fn refused(err: KeyringError) -> String {
     format!("The system keyring refused: {err}")
 }

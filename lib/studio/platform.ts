@@ -55,3 +55,7 @@ export function terminalPasteHint(
     ? "Ctrl+Shift+V, then Enter"
     : "Ctrl+V, then Enter";
 }
+
+export function keyringName(platform: Platform = currentPlatform()): string {
+  return platform === "mac" ? "this Mac’s keychain" : "your system keyring";
+}

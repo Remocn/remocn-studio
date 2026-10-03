@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   fileManagerName,
+  keyringName,
   modKeyCombo,
   modKeyLabel,
   platformOf,
@@ -51,6 +52,11 @@ describe("labels", () => {
     expect(fileManagerName("mac")).toBe("Finder");
     expect(fileManagerName("windows")).toBe("File Explorer");
     expect(fileManagerName("linux")).toBe("Files");
+  });
+
+  it("names the keychain on macOS and the keyring elsewhere", () => {
+    expect(keyringName("mac")).toBe("this Mac’s keychain");
+    expect(keyringName("linux")).toBe("your system keyring");
   });
 
   it("tells a Linux terminal to paste with Shift", () => {
