@@ -1,5 +1,9 @@
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
+#[cfg(not(target_os = "macos"))]
+use std::{
+    path::{Path, PathBuf},
+    process::Stdio,
+};
 
 #[cfg(target_os = "macos")]
 const OPEN_WINDOW: &str = r#"tell application "Terminal" to do script """#;
@@ -27,6 +31,7 @@ pub fn open_terminal() -> Result<(), String> {
 // The desktop's own choice first, then the Debian alternative, then the
 // terminals people actually install, in rough order of how often a Linux
 // developer runs them.
+#[cfg(not(target_os = "macos"))]
 const TERMINALS: [&str; 13] = [
     "xdg-terminal-exec",
     "x-terminal-emulator",
@@ -43,11 +48,13 @@ const TERMINALS: [&str; 13] = [
     "xterm",
 ];
 
+#[cfg(not(target_os = "macos"))]
 const NOT_FOUND: &str = "No terminal was found. Set $TERMINAL to the one you use.";
 
 /// `$TERMINAL` may carry flags (`kitty -1`); only its program is looked up,
 /// and a `$TERMINAL` that names nothing installed falls through to the list
 /// rather than failing, since the list may still have the person's terminal.
+#[cfg(not(target_os = "macos"))]
 fn choose(
     terminal: Option<&str>,
     find: impl Fn(&str) -> Option<PathBuf>,
@@ -61,6 +68,7 @@ fn choose(
         .ok_or_else(|| NOT_FOUND.to_string())
 }
 
+#[cfg(not(target_os = "macos"))]
 fn find_in(dirs: &[PathBuf], name: &str) -> Option<PathBuf> {
     if name.contains('/') {
         let path = PathBuf::from(name);
@@ -83,6 +91,7 @@ pub fn open_terminal() -> Result<(), String> {
     spawn_detached(&program, home.as_deref())
 }
 
+#[cfg(not(target_os = "macos"))]
 fn spawn_detached(program: &Path, cwd: Option<&Path>) -> Result<(), String> {
     let mut command = Command::new(program);
     command
@@ -113,7 +122,7 @@ fn spawn_detached(program: &Path, cwd: Option<&Path>) -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_os = "macos")))]
 mod tests {
     use super::*;
 
@@ -145,7 +154,11 @@ mod tests {
 
     #[test]
     fn the_list_is_tried_in_order() {
-        let chosen = choose(None, installed(&["xterm", "alacritty", "x-terminal-emulator"])).unwrap();
+        let chosen = choose(
+            None,
+            installed(&["xterm", "alacritty", "x-terminal-emulator"]),
+        )
+        .unwrap();
         assert_eq!(chosen, PathBuf::from("/usr/bin/x-terminal-emulator"));
     }
 
