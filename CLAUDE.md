@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A **local Linux desktop app** (Tauri v2 on WebKitGTK) that turns "I want a video" into a real Remotion
+A **local desktop app for macOS and Linux** (Tauri v2: WKWebView on macOS, WebKitGTK on Linux) that turns "I want a video" into a real Remotion
 project: a coding agent — the person's own Claude Code, Codex, GitHub Copilot or Grok Build,
 signed in with their own subscription — writes actual Remotion TSX into a folder on disk, and
 the app previews the result live, lets the person point at an element and tune it, and exports
@@ -22,12 +22,14 @@ an mp4 through the project's own renderer. Original design record and work list:
 [Remocn/remocn#218](https://github.com/Remocn/remocn/issues/218) and its children; tickets are
 Linear REM-nnn.
 
-**This repository is the Linux fork** (`radiumcoders/Remocn-studio-Linux`) of Remocn Studio,
-which upstream builds for macOS only. What differs from upstream — the frameless window and
-its own controls, no menu bar, the Secret Service keyring, AppImage/deb/rpm, no in-app
-updater — is recorded in `openspec/changes/linux-desktop/design.md` (archived under
-`openspec/changes/archive/` once merged). `docs/decisions/` still describes the macOS build
-it came from; read it for the why, never for a platform fact.
+**One codebase, two platforms.** Where Linux differs from macOS — the frameless window and
+its own controls instead of traffic lights, no menu bar, the Secret Service keyring instead of
+the login keychain, AppImage/deb/rpm instead of the `.dmg`, the terminal launcher, the Node.js
+download page instead of the `.pkg` — is recorded in `openspec/changes/linux-desktop/design.md`
+(archived under `openspec/changes/archive/` once merged). Platform code is gated, never
+forked: `#[cfg(target_os = ...)]` in Rust, `process.platform` in the sidecar,
+`currentPlatform()` / `usePlatform()` in the webview. `docs/decisions/` was written for the
+macOS build; read it for the why, and check a platform fact against the code.
 
 **This is not `studio.remocn.dev`.** That one — sketched in the remocn repo's `RENDER_SDK.md`
 §13 — is a hosted, spec-driven web editor built on one generic composition plus a JSON spine.
@@ -69,26 +71,39 @@ The lockfile is `bun.lock`; use bun.
   (fonts are self-hosted at build time).
 - `bun run bun:fetch` — download the bun runtime the app ships into the
   gitignored `src-tauri/binaries/` as `remocn-studio-bun-<triple>`, pinned to
-  `packageManager` in `package.json`: the **baseline** x64 build (the default one
-  needs AVX2 and dies with SIGILL on older CPUs) and aarch64. With
-  `TAURI_ENV_TARGET_TRIPLE` unset it fetches both; the Tauri CLI sets it for
+  `packageManager` in `package.json`: aarch64 and x64 for macOS, and for Linux
+  the **baseline** x64 build (the default one needs AVX2 and dies with SIGILL on
+  older CPUs) and aarch64. With `TAURI_ENV_TARGET_TRIPLE` unset it fetches both
+  architectures for the host's operating system; the Tauri CLI sets it for
   `tauri:before-dev` and `tauri:before-build`, which both run it (with
   `sidecar:build`), so `bun tauri dev` and `bun tauri build` fetch only their own. It is named
-  `remocn-studio-bun`, not `bun`, because a `.deb` installs sidecars into
-  `/usr/bin`. Needs network the first time only. A bare `cargo check` fails at
+  `remocn-studio-bun`, not `bun`, on both platforms, because a `.deb` installs
+  sidecars into `/usr/bin`. Needs network the first time only. A bare `cargo check` fails at
   `tauri-build` until this file and `sidecar-dist/main.js` exist. See
   `docs/decisions/the-sidecar.md`.
 - `bun run sidecar:build` — bundle `sidecar/` into `sidecar-dist/main.js`, which
   ships as a Tauri resource. **Only release builds need this** — in debug the
   core runs `sidecar/index.ts` from the repo, so there is nothing to rebuild.
   `bun tauri build` runs it via `tauri:before-build`.
-- `bun tauri build` — an AppImage, a `.deb` and an `.rpm` under
-  `src-tauri/target/release/bundle/`. Nothing is signed and no signing variable
-  is needed: the updater plugin is out until the fork owns a key, so there are
-  no updater artifacts. `--no-bundle` compiles without packaging;
-  `--bundles appimage` (or `deb`, `rpm`) builds one format. The AppImage carries
-  GStreamer (`bundleMediaFramework`) so footage plays in the preview, which
-  means the build host needs the GStreamer plugins installed too.
+- `bun tauri build` on macOS — the `.app` bundle, unsigned unless the `APPLE_*` variables
+  from `publish.yml` are exported (see REM-413). `--no-bundle` compiles without
+  packaging; `--bundles app` skips the DMG. Since `createUpdaterArtifacts` is on,
+  it now also wants the updater's signing key: export `TAURI_SIGNING_PRIVATE_KEY`
+  (the key text **or a path to the key file** — `build` reads only that variable;
+  `TAURI_SIGNING_PRIVATE_KEY_PATH` is read by `tauri signer sign` alone, and
+  exporting it here ends the build with *A public key has been found, but no
+  private key* after the bundles are already on disk) **and**
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""` — the key has no password, but with the
+  variable unset the CLI prompts for one, and in a non-interactive shell that
+  prompt dies as *Device not configured (os error 6)*, again after the bundles
+  are on disk. Or pass `--no-sign` to skip the `.sig` — a bundle built that way
+  cannot be released, only run. See `docs/decisions/updating-in-place.md`.
+- `bun tauri build` on Linux — an AppImage, a `.deb` and an `.rpm` under
+  `src-tauri/target/release/bundle/`, with the same updater signing variables as
+  macOS (or `--no-sign`) and no Apple ones. `--bundles appimage` (or `deb`,
+  `rpm`) builds one format. The AppImage carries GStreamer
+  (`bundleMediaFramework`) so footage plays in the preview, which means the
+  build host needs the GStreamer plugins installed too.
   **The AppImage does not build on Arch (or any distribution on gdk-pixbuf
   2.44+).** linuxdeploy's bundled `strip` cannot read `.relr.dyn` sections
   (`NO_STRIP=true` gets past that), and then `linuxdeploy-plugin-gtk` fails
@@ -167,11 +182,11 @@ graph, not running tests.
 and `--isolate` arrived in 1.4; under 1.3 every file shared one global and one
 module registry, so a `mock.module` in one suite reached every suite after it
 and settings-page found picker's fixture in its DOM. `packageManager` is one
-version for the tests and for the `remocn-studio-bun` beside the binary, which is why bumping
+version for the tests and for the `remocn-studio-bun` shipped beside the binary, which is why bumping
 it is a release decision and not a test-config one.
 
 **Three workers, one fresh global per file.** `--parallel=3` in the `test`
-script (bun's default is every core, which on the fanless MacBook upstream is
+script (bun's default is every core, which on the fanless MacBook the app is
 developed on is eight processes at full tilt) and it implies `--isolate`, so a
 module mock cannot leak. `test:watch` passes `--isolate` by hand for the same
 reason. **While iterating, run only the files you touched** —
@@ -210,10 +225,10 @@ rather than casting two dozen literals.
 
 **happy-dom is registered with a WebKitGTK user agent.** Its default agent is
 built from `process.platform`, which made the platform the tests saw depend on
-the machine running them; `test/register-dom.ts` pins `X11; Linux x86_64`
-because the app only ever runs in WebKitGTK, so every shortcut renders as
-`Ctrl+…` and the window controls render. A test about the Mac branch sets
-`navigator.userAgent` itself and puts the Linux one back after.
+the machine running them; `test/register-dom.ts` pins `X11; Linux x86_64`, so
+by default every shortcut renders as `Ctrl+…` and the window controls render.
+A test about the macOS branch calls `withAgent(MAC)` from `test/user-agent.ts`
+and puts `LINUX` back in an `afterEach`.
 
 **happy-dom is not a Tauri webview.** There is no `window.__TAURI_INTERNALS__`,
 so any `invoke()` that reaches the real transport throws. Tests touching IPC
@@ -250,13 +265,21 @@ what makes it work on a private package at all.
    empty `.changeset/`, so the *same* workflow takes its publish branch instead:
    `changeset tag` names `v<version>`, the job pushes it, and the action reports
    `published`.
-4. That output — not the tag — releases the Linux build in the same run: x86_64
-   on `ubuntu-22.04` and aarch64 on `ubuntu-22.04-arm`, one after the other,
-   each publishing an AppImage, a `.deb` and an `.rpm` to the GitHub release.
-   22.04 is deliberate — an AppImage runs on any glibc at least as new as the one
-   it was built on. Nothing is signed or notarized, and no `latest.json` is
-   published: the studio does not update itself, it says a new version is a new
-   download or a package upgrade.
+4. That output — not the tag — releases the macOS build (Apple silicon + Intel)
+   in the same run, which publishes the GitHub release with the bundles and
+   `latest.json` attached. Each build is signed with the Developer ID from the
+   `APPLE_*` secrets, notarized and stapled by tauri-bundler (sign inside out →
+   notarize the `.app` → staple → `.dmg` → `.app.tar.gz` for the updater), and
+   a step after tauri-action notarizes the `.dmg` itself, which the bundler
+   only signs. Notarization waits on Apple — minutes normally, 52 for the
+   account's very first submission — so a release is slower than the build.
+   After both macOS jobs, the Linux build follows: x86_64 on `ubuntu-22.04` and
+   aarch64 on `ubuntu-22.04-arm`, one after the other, each adding an AppImage, a
+   `.deb` and an `.rpm` (each with its updater `.sig`) to the same release and
+   its entries to the same `latest.json`. Never in parallel with macOS:
+   tauri-action merges `latest.json` by reading the asset already there, so two
+   writers drop a platform. 22.04 is deliberate — an AppImage runs on any glibc
+   at least as new as the one it was built on.
 
 The version script is named `version:packages`, not `version`, because npm and
 bun treat a `version` script as an `npm version` lifecycle hook, which recurses.
@@ -379,9 +402,9 @@ One seam per line: what it owns, the specs that define it, the records that expl
   components render and decide nothing. Specs `shell/*`, `history/chat-pane`, `composer/*`.
   Records: `the-first-second`, `the-pane-never-hides-what-needs-you`, `settings-is-a-page`,
   `tips-not-a-tour`, `the-title-bars-shader-is-a-preference`.
-- **Rust core** (`src-tauri/`) — the frameless window, Tauri commands, the sidecar
-  supervisor, the integrations' secrets in the Secret Service keyring, deep links, the
-  terminal launcher, pasted-image writes, the asset protocol, panics. Specs `sidecar/supervision`, `shell/quit-and-updates`,
+- **Rust core** (`src-tauri/`) — the window, Tauri commands, the sidecar supervisor, the
+  integrations' secrets in the keychain or the Secret Service keyring, deep links, the
+  updater, the terminal launcher, pasted-image writes, the asset protocol, panics. Specs `sidecar/supervision`, `shell/quit-and-updates`,
   `shell/crash-reporting`, `projects/open-template-link`. Records: `the-sidecar`,
   `updating-in-place`, `crash-reports-with-consent`, `opening-a-link`.
 - **Sidecar** (`sidecar/`) — one bun process, Effect end to end, stdio frames in, stderr as
@@ -456,19 +479,28 @@ One seam per line: what it owns, the specs that define it, the records that expl
 
 - **Sidecar**: anything written to stdout that is not a frame breaks the protocol — use
   `log()`, which goes to stderr and then to
-  `~/.local/share/com.remocn.remocn-studio/logs/sidecar.log` (Tauri's `app_log_dir`,
-  under `$XDG_DATA_HOME` when it is set). Debug runs `sidecar/index.ts` from
+  Tauri's `app_log_dir`: `~/Library/Logs/com.remocn.remocn-studio/sidecar.log` on macOS,
+  `~/.local/share/com.remocn.remocn-studio/logs/sidecar.log` on Linux (under
+  `$XDG_DATA_HOME` when it is set). Debug runs `sidecar/index.ts` from
   the repo (edit and restart, no build step); release runs the bundled `sidecar-dist/main.js`.
   `bun build --env` takes exactly one glob (`REMOCN_STUDIO_*`) and silently drops a second;
   runtime env vars are read by bracket access so the substitution never touches them.
   `--preview-host`, `--tools-host` and `--render-config` re-exec the same bundle.
-- **Notifications** go through the desktop's notification service over D-Bus (mako, dunst,
+- **Notifications in dev on macOS**: `tauri-plugin-notification` signs a development post with
+  `com.apple.Terminal`, whatever terminal launched `bun tauri dev`, so nothing arrives until
+  Terminal is allowed under System Settings › Notifications. A bundle posts under the app's own
+  identifier and needs its own row there. The plugin also answers *granted* for every
+  permission query on desktop, so a refusal in System Settings is invisible to the app.
+- **Notifications on Linux** go through the desktop's notification service over D-Bus (mako, dunst,
   swaync, GNOME Shell, Plasma). A bare window manager with no daemon running shows nothing
   and reports nothing. The plugin answers *granted* for every permission query on desktop,
-  so *Grant permission* never shows in practice; there is no per-app settings row to open.
+  so *Grant permission* never shows in practice; there is no per-app settings row to open,
+  so a refusal is asked about again where macOS opens System Settings.
   The launcher badge goes out over the Unity LauncherEntry protocol and is shown only by
   docks that implement it (Plasma, Dash to Dock, Plank).
-- **The window draws its own frame.** `decorations: false`; `components/studio/window-controls.tsx`
+- **On Linux the window draws its own frame.** `src-tauri/tauri.linux.conf.json` replaces the
+  window with one that has `decorations: false` (macOS keeps the overlay title bar and its
+  traffic lights); `components/studio/window-controls.tsx`
   draws Close, Minimise and Maximise in the top-left slot `--titlebar-inline-inset` keeps
   clear, mounted once in `app/page.tsx` and rendered only for the `linux` platform. Close
   calls `window.close()`, so it reaches the core's `CloseRequested` guard like any other
@@ -482,15 +514,18 @@ One seam per line: what it owns, the specs that define it, the records that expl
   minimal `PATH`. `USER_BIN_DIRS` in `sidecar/agent/cli.ts` (`~/.local/bin`, mise and asdf
   shims, Volta, pnpm, …) is what every CLI lookup falls back to, and `HOME_BIN_DIRS` in
   `src-tauri/src/sidecar/spawn.rs` is the same list for the `PATH` the core hands the
-  sidecar. `sidecar/agent/cli.test.ts` reads `spawn.rs` and fails when they differ — edit
+  sidecar; `SYSTEM_BIN_DIRS` likewise. Both lists serve both platforms (Homebrew and
+  `~/Library/pnpm` sit beside the Linux dirs) — a dir that does not exist is never matched. `sidecar/agent/cli.test.ts` reads `spawn.rs` and fails when they differ — edit
   both.
-- **Open in Terminal** (`src-tauri/src/terminal.rs`) spawns, detached and with no
+- **Open in Terminal** (`src-tauri/src/terminal.rs`) asks Terminal.app through `osascript` on
+  macOS. On Linux it spawns, detached and with no
   arguments, `$TERMINAL`, then `xdg-terminal-exec`, `x-terminal-emulator`, then the first
   of a fixed list of common terminals found on the search dirs.
 - **Rust**: the `crash-reports` Cargo feature is off by default and switched on by the
   release job and checked by `dev.yml`'s `rust` job (`cargo check --features
-  crash-reports`, `cargo test`). The core reads crash consent from
-  `$XDG_DATA_HOME/<identifier>` (or `~/.local/share/<identifier>`) before the app is built.
+  crash-reports`, `cargo test`) on both macOS and Linux. The core reads crash consent from
+  `~/Library/Application Support/<identifier>` on macOS and `$XDG_DATA_HOME/<identifier>` (or
+  `~/.local/share/<identifier>`) on Linux before the app is built.
   `ClientOptions` is `#[non_exhaustive]` — build it by assignment.
 - **Preview entry** (`preview/`): compiled by the *project's* webpack, so it has no access to
   the app's alias — it duplicates the message shapes and `lib/studio/preview.test.ts` is what
@@ -506,9 +541,12 @@ One seam per line: what it owns, the specs that define it, the records that expl
   one hook not to modernise (see *Effect*). Per-project settings live in the project's
   `.remocn/project.json`; export settings under `export:<projectId>`. The `integrations` key
   holds connection **metadata only** — id, provider, name, account label, capabilities and a
-  reference to a keyring entry. Every secret is in the desktop's Secret Service keyring
-  (GNOME Keyring or KWallet; Seahorse shows them) under service `com.remocn.remocn-studio`,
-  user `integration:<connectionId>`, one entry per connection, read and used only by Rust.
+  reference to a keychain entry. Every secret is in the login keychain under
+  `com.remocn.remocn-studio` / `integration:<connectionId>`, one entry per connection, read
+  and used only by Rust. An unsigned debug build therefore raises the system's keychain prompt
+  **once per connection** after each `cargo build`; a signed release asks once. Nothing in the app can suppress it.
+  On Linux every secret is in the desktop's Secret Service keyring instead
+  (GNOME Keyring or KWallet; Seahorse shows them), same service and user, read only by Rust.
   `keyring` is built with `sync-secret-service` + `crypto-rust` on Linux — **without a
   backend feature keyring 3 silently falls back to an in-memory mock store** and every key is
   gone on restart. With no Secret Service running, saving a key fails as *The system keyring

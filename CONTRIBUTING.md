@@ -7,32 +7,34 @@ request needs before it can be merged.
 ## Before you start
 
 - **Bugs.** Open an issue with what you did, what you expected and what
-  happened. Include the distribution and its version, the desktop or window
-  manager (and X11 or Wayland), whether you run the AppImage, the `.deb` or the
-  `.rpm`, the studio version from Settings, and which agent you use. The
-  sidecar log at `~/.local/share/com.remocn.remocn-studio/logs/sidecar.log`
-  often explains the rest.
+  happened. Include the studio version from Settings and which agent you use.
+  On macOS, add the macOS version and the chip (Apple silicon or Intel). On
+  Linux, add the distribution and its version, the desktop or window manager
+  (and X11 or Wayland), and whether you run the AppImage, the `.deb` or the
+  `.rpm`. The sidecar log often explains the rest: it is at
+  `~/Library/Logs/com.remocn.remocn-studio/sidecar.log` on macOS and
+  `~/.local/share/com.remocn.remocn-studio/logs/sidecar.log` on Linux.
   Read it before you attach it, since it can include project paths.
 - **Features and larger changes.** Open an issue first and describe the
   problem you want to solve. The studio has a narrow shape on purpose: no
   timeline, no account and no telemetry. It's cheaper to agree on direction
   before anyone writes code.
 - **Security issues.** Don't open a public issue. Report them privately through
-  [GitHub security advisories](https://github.com/radiumcoders/Remocn-studio-Linux/security/advisories/new).
+  [GitHub security advisories](https://github.com/Remocn/remocn-studio/security/advisories/new).
 
 ## Setting up
 
-You need Linux, [Bun](https://bun.sh) 1.4 (the exact version is pinned in
-`packageManager` in `package.json`), a Rust toolchain, and the
-[Tauri prerequisites for Linux](https://v2.tauri.app/start/prerequisites/#linux)
-plus libdbus and GStreamer — the README lists the packages per distribution.
-To use the studio end to end, you
+You need macOS or Linux, [Bun](https://bun.sh) 1.4 (the exact version is
+pinned in `packageManager` in `package.json`), and the
+[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/): a Rust
+toolchain, plus the Xcode Command Line Tools on macOS, or WebKitGTK, libdbus
+and GStreamer on Linux (the README lists the packages per distribution). To use the studio end to end, you
 also need one of the supported agents installed and signed in. The README
 lists them.
 
 ```sh
-git clone https://github.com/radiumcoders/Remocn-studio-Linux.git
-cd Remocn-studio-Linux
+git clone https://github.com/Remocn/remocn-studio.git
+cd remocn-studio
 bun install
 cp .env.example .env   # optional: a Pexels key turns on stock photos
 bun tauri dev
@@ -43,6 +45,12 @@ bun tauri dev
 needs network for the bun download. In a debug build the Rust core then runs
 the sidecar straight from `sidecar/`, so editing sidecar code needs a restart
 and no build step.
+
+Platform-specific code is gated, never forked: `#[cfg(target_os = ...)]` in the
+Rust core, `process.platform` in the sidecar, and `currentPlatform()` or
+`usePlatform()` from `lib/studio/platform.ts` in the webview. A change that
+touches one platform's branch should say how it was tried on that platform;
+the `rust core` CI job compiles the core on both.
 
 ## Where things are
 

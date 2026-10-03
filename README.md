@@ -2,16 +2,23 @@
   <img width="960" alt="Remocn Studio: one sentence in, a Remotion video out" src="docs/assets/remocn-studio.gif" />
 </p>
 
-<h1 align="center">Remocn Studio for Linux</h1>
+<h1 align="center">Remocn Studio</h1>
 
 <p align="center">
   <b>Ship a launch video without opening After Effects.</b><br />
-  A Linux app where your own coding agent makes the video<br />
+  A macOS and Linux app where your own coding agent makes the video<br />
   as a real Remotion project you own, not a file you rent.
 </p>
 
 <p align="center">
-  <a href="https://github.com/radiumcoders/Remocn-studio-Linux/releases/latest">
+  <a href="https://github.com/Remocn/remocn-studio/releases/latest">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Download_for_macOS.svg?logo=apple&size=lg&theme=violet&mode=dark" />
+      <img alt="Download for macOS" src="https://shieldcn.dev/badge/Download_for_macOS.svg?logo=apple&size=lg&theme=violet&mode=light" />
+    </picture>
+  </a>
+  &nbsp;
+  <a href="https://github.com/Remocn/remocn-studio/releases/latest">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Download_for_Linux.svg?logo=linux&size=lg&theme=violet&mode=dark" />
       <img alt="Download for Linux" src="https://shieldcn.dev/badge/Download_for_Linux.svg?logo=linux&size=lg&theme=violet&mode=light" />
@@ -27,8 +34,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/radiumcoders/Remocn-studio-Linux/releases"><img alt="Latest release" src="https://shieldcn.dev/github/release/radiumcoders/Remocn-studio-Linux.svg?variant=secondary" /></a>
-  <a href="https://github.com/radiumcoders/Remocn-studio-Linux/actions/workflows/dev.yml"><img alt="CI status" src="https://shieldcn.dev/github/ci/radiumcoders/Remocn-studio-Linux.svg?workflow=dev.yml&branch=main&variant=secondary" /></a>
+  <a href="https://github.com/Remocn/remocn-studio/releases"><img alt="Latest release" src="https://shieldcn.dev/github/release/Remocn/remocn-studio.svg?variant=secondary" /></a>
+  <a href="https://github.com/Remocn/remocn-studio/actions/workflows/dev.yml"><img alt="CI status" src="https://shieldcn.dev/github/ci/Remocn/remocn-studio.svg?workflow=dev.yml&branch=main&variant=secondary" /></a>
+  <a href="#requirements"><img alt="macOS: Apple silicon and Intel" src="https://shieldcn.dev/badge/macOS-Apple_silicon_%C2%B7_Intel.svg?logo=apple&variant=secondary" /></a>
   <a href="#requirements"><img alt="Linux: x86_64 and aarch64" src="https://shieldcn.dev/badge/Linux-x86__64_%C2%B7_aarch64.svg?logo=linux&variant=secondary" /></a>
   <a href="LICENSE"><img alt="License" src="https://shieldcn.dev/github/license/Remocn/remocn-studio.svg?variant=secondary" /></a>
   <a href="https://github.com/Remocn/remocn-studio/stargazers"><img alt="GitHub stars" src="https://shieldcn.dev/github/stars/Remocn/remocn-studio.svg?variant=secondary" /></a>
@@ -182,7 +190,7 @@ subscription you already pay for.
 | [Grok Build](https://grok.com/build)                                   | `grok login`                                                      |
 
 You don't have to memorize these. The studio shows the exact install and
-sign-in commands for each agent and can open your terminal for you to paste
+sign-in commands for each agent and can open a terminal window for you to paste
 them into.
 
 ## It's real code, and it's yours
@@ -222,41 +230,41 @@ my-launch/                          an ordinary Remotion project
 
 ## Requirements
 
-- Linux on x86_64 or aarch64 with glibc 2.35 or newer (Ubuntu 22.04, Debian 12,
-  Fedora 36, Arch and anything newer)
-- A Secret Service keyring — GNOME Keyring or KWallet — if you connect an
-  integration; its key is stored there
+- macOS on Apple silicon or Intel, or Linux on x86_64 or aarch64 with glibc
+  2.35 or newer (Ubuntu 22.04, Debian 12, Fedora 36, Arch and anything newer)
 - One of [the cast](#the-cast), installed and signed in on this computer
+- On Linux, a Secret Service keyring (GNOME Keyring or KWallet) if you connect
+  an integration; its key is stored there
+
+The studio's environment checklist checks the agent, along with the project's
+Remotion version and dependencies, and offers a fix for anything that's
+missing.
 
 ## Installing
 
-Every [release](https://github.com/radiumcoders/Remocn-studio-Linux/releases/latest) carries
-three builds of the same app:
+Every [release](https://github.com/Remocn/remocn-studio/releases/latest)
+carries the same app for both platforms:
 
 | File        | Install with                                                        |
 | ----------- | ------------------------------------------------------------------- |
+| `.dmg`      | Open it and drag Remocn Studio to Applications (macOS)              |
 | `.AppImage` | `chmod +x Remocn*.AppImage` and run it; footage codecs are inside   |
 | `.deb`      | `sudo apt install ./Remocn*.deb` (Debian, Ubuntu, Mint, Pop!_OS)     |
 | `.rpm`      | `sudo dnf install ./Remocn*.rpm` (Fedora, openSUSE, RHEL)            |
 
-The studio doesn't update itself. A new version is a new download from the
-releases page, or a package upgrade.
+The studio updates itself on both, whichever of these you installed.
 
-The window draws its own frame — close, minimise and maximise sit at the top
-left — and there is no menu bar: every action is in the command palette
-(`Ctrl+K`). The studio's log is at
-`~/.local/share/com.remocn.remocn-studio/logs/sidecar.log`.
-
-The studio's environment checklist checks both, along with the project's
-Remotion version and dependencies, and offers a fix for anything that's
-missing.
+On Linux the window draws its own frame — close, minimise and maximise sit at
+the top left where macOS puts its traffic lights — and there is no menu bar:
+every action is in the command palette (`Ctrl+K`).
 
 ## Behind the scenes
 
-Want to build it yourself? You need Linux, [Bun](https://bun.sh) 1.4 (the
-exact version is pinned in `packageManager`), a Rust toolchain, and the
-[Tauri prerequisites for Linux](https://v2.tauri.app/start/prerequisites/#linux)
-plus libdbus and GStreamer:
+Want to build it yourself? You need [Bun](https://bun.sh) 1.4 (the exact
+version is pinned in `packageManager`) and the
+[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/): a Rust
+toolchain, plus the Xcode Command Line Tools on macOS. On Linux you also need
+WebKitGTK, libdbus and GStreamer:
 
 ```sh
 # Arch
@@ -273,8 +281,8 @@ sudo dnf install webkit2gtk4.1-devel gtk3-devel librsvg2-devel dbus-devel \
 ```
 
 ```sh
-git clone https://github.com/radiumcoders/Remocn-studio-Linux.git
-cd Remocn-studio-Linux
+git clone https://github.com/Remocn/remocn-studio.git
+cd remocn-studio
 bun install
 cp .env.example .env   # optional: a Pexels key turns on stock photos
 bun tauri dev
@@ -287,11 +295,10 @@ bun tauri dev
 | `bun run typecheck`         | `tsc --noEmit`                                                      |
 | `bun run test`              | The test suite: bun test, happy-dom, Testing Library                |
 | `bun run smoke:render`      | Run the real renderer against a fixture project (slow, needs network) |
-| `bun tauri build`           | An AppImage, a `.deb` and an `.rpm` in `src-tauri/target/release/bundle/` |
-| `bun tauri build --bundles deb,rpm` | The packages alone — the AppImage step fails on Arch and other gdk-pixbuf 2.44+ systems; CI builds it on Ubuntu |
+| `bun tauri build --no-sign` | A local build you can run but not release: the `.app` and `.dmg` on macOS, an AppImage, `.deb` and `.rpm` on Linux |
 
-The studio has three layers. A **Tauri v2** core in Rust owns the window
-and the system keyring. The webview is a **Next.js** static export. A
+The studio has three layers. A **Tauri v2** core in Rust owns the window,
+the keychain (the Secret Service keyring on Linux) and the updater. The webview is a **Next.js** static export. A
 **bun sidecar** built on Effect runs the agents, the history, the preview host
 and the renderer. The map of the system and the working rules are in
 [`CLAUDE.md`](CLAUDE.md).
@@ -309,7 +316,7 @@ behavior, open an OpenSpec change. To ship it, record it with
 measurements and the failed attempts, is in [`docs/decisions`](docs/decisions).
 
 Found a security issue? Please report it privately through
-[GitHub security advisories](https://github.com/radiumcoders/Remocn-studio-Linux/security/advisories/new)
+[GitHub security advisories](https://github.com/Remocn/remocn-studio/security/advisories/new)
 instead of opening an issue.
 
 ## Built with
@@ -336,5 +343,4 @@ instead of opening an issue.
   company license.
 - The motion components come from [remocn](https://remocn.dev)
 
-Remocn Studio is released under the [MIT License](LICENSE). © 2026 Remocn.
-This Linux fork is based on [Remocn/remocn-studio](https://github.com/Remocn/remocn-studio).
+Remocn Studio is released under the [MIT License](LICENSE). © 2026 Remocn

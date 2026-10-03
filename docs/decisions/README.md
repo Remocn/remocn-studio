@@ -7,10 +7,10 @@ specified under [`openspec/specs/`](../../openspec/specs/); a record that disagr
 history, and the fifty disagreements known at the time of the move are in
 [`drift-2026-09-11.md`](drift-2026-09-11.md).
 
-**These records describe the macOS build this Linux fork came from.** Where Linux diverges — the
-frameless window, no menu bar, the Secret Service keyring, the packaging, the updater left off —
-the record is `openspec/changes/linux-desktop/design.md` (under `openspec/changes/archive/` once
-archived); read the files here for the why, never for a platform fact.
+**These records were written for the macOS build.** Where Linux differs — the frameless
+window, no menu bar, the Secret Service keyring, AppImage/deb/rpm — the record is
+`openspec/changes/linux-desktop/design.md` (under `openspec/changes/archive/` once archived);
+on Linux, read the files here for the why and check a platform fact against the code.
 
 When a decision changes, the change's `design.md` is the new record; append to the file here only if
 the reasoning is worth keeping beside the old one.
