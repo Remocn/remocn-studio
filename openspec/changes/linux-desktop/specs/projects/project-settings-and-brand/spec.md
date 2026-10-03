@@ -20,7 +20,7 @@ The studio SHALL show, for the project chosen in Settings, a General group carry
 #### Scenario: The project's folder is missing
 - **WHEN** the chosen project's folder is gone
 - **THEN** the form SHALL say so and offer Locate folder
-- **AND** the name field, the brand editor, Show in Files and Move project SHALL be unavailable
+- **AND** the name field, the brand editor, Show in Finder (Show in Files on Linux) and Move project SHALL be unavailable
 
 #### Scenario: The project is switched under the form
 - **WHEN** settings are read for one project and another project is chosen before the answer arrives

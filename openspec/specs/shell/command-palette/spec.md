@@ -1,7 +1,7 @@
 # shell/command-palette Specification
 
 ## Purpose
-One list of everything the studio can be asked to do, and the two ways of asking — the Ctrl+K palette and the keyboard — that both read it, so a person can reach any action, video or project without the mouse and can learn every shortcut from the palette itself.
+One list of everything the studio can be asked to do, and the ways of asking — the application menu on macOS, the ⌘K (Ctrl+K on Linux) palette and the keyboard — that all read it, so a person can reach any action, video or project without the mouse and can learn every shortcut from the palette itself.
 
 ## Requirements
 

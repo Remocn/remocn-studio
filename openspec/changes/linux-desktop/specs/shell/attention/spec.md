@@ -1,12 +1,12 @@
 ## ADDED Requirements
 
-### Requirement: Notifications are off until asked for, and per event
+### Requirement: On Linux, notifications go through the desktop's notification service
 
-Notifications SHALL be off until the person turns the master switch on in Settings › Notifications, and the studio SHALL ask the operating system for permission only at that moment or when *Grant permission* is pressed, never at launch. Each event SHALL have its own switch, on by default, and an event whose switch is off SHALL post nothing while the others still do. While the master switch is off no notification SHALL be posted. When the operating system reports that the studio may not notify, the section SHALL say so in words and the studio SHALL post nothing.
+On Linux the studio SHALL post notifications through the desktop's notification service over D-Bus, under the same master switch and per-event switches as on macOS. Because that service keeps no per-app settings row, a refusal SHALL be asked about again rather than answered by opening anything, and a desktop with no service running SHALL change nothing else about attention.
 
 #### Scenario: Turning the switch on
 
-- **WHEN** the person turns the master switch on for the first time
+- **WHEN** the person turns the master switch on for the first time on Linux
 - **THEN** notifications are on, and the next event is posted through the desktop's notification service
 
 #### Scenario: No notification service is running
@@ -14,20 +14,10 @@ Notifications SHALL be off until the person turns the master switch on in Settin
 - **WHEN** the desktop runs no notification service, as a bare window manager may not
 - **THEN** posting fails without a message, the row is still marked unread, and nothing else about attention changes
 
-#### Scenario: Off means silent
+#### Scenario: The desktop refused
 
-- **WHEN** the master switch is off and a turn ends while the window is not focused
-- **THEN** no notification is posted and the row is still marked unread
-
-#### Scenario: One event off
-
-- **WHEN** the export switch is off and an export finishes while the window is not focused
-- **THEN** no notification is posted for it, and a turn that ends in the same minute is still posted
-
-#### Scenario: The plugin is unavailable
-
-- **WHEN** the studio runs without the notification transport, such as in a browser
-- **THEN** the master switch is unavailable with the reason worded beside it, and nothing else about attention changes
+- **WHEN** the desktop reports that the studio may not notify and *Grant permission* is pressed
+- **THEN** the studio asks again, and no settings page is opened
 
 ## RENAMED Requirements
 
@@ -57,7 +47,7 @@ A notification SHALL carry the video's name as its title and one worded sentence
 
 ### Requirement: The launcher badge counts what waits on an answer
 
-The studio SHALL publish a badge count with the number of permission cards and source questions waiting across every video, regardless of the window's focus, and SHALL clear it when nothing waits. A desktop whose dock or task manager shows launcher badges SHALL show it on the studio's icon. The badge SHALL count cards, not turns, and SHALL need no consent since it leaves the app.
+The studio SHALL publish a badge count with the number of permission cards and source questions waiting across every video, regardless of the window's focus, and SHALL clear it when nothing waits. On macOS the Dock SHALL show it on the studio's icon; on Linux a dock or task manager that shows launcher badges SHALL. The badge SHALL count cards, not turns, and SHALL need no consent since it leaves the app.
 
 #### Scenario: Two chats are waiting
 
@@ -78,10 +68,3 @@ The studio SHALL publish a badge count with the number of permission cards and s
 
 - **WHEN** the desktop shows no launcher badges
 - **THEN** publishing the count changes nothing visible and reports nothing
-
-## REMOVED Requirements
-
-### Requirement: Notifications are off until asked for, per event, and the OS is asked once
-
-**Reason**: The desktop notification service asks nothing and offers no System Settings row to open.
-**Migration**: Replaced by the added requirement, which keeps the master switch, the per-event switches and the silence while off.

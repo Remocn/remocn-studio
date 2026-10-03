@@ -24,11 +24,11 @@ Reports SHALL carry the error, its stack and the release the build is, and SHALL
 
 ### Requirement: The core reads consent where the studio keeps its data
 
-The core SHALL read the crash-report consent, before the app is built, from the same data directory the studio writes it to: `$XDG_DATA_HOME/com.remocn.remocn-studio`, or `~/.local/share/com.remocn.remocn-studio` when `$XDG_DATA_HOME` is unset or not absolute. When neither location can be worked out, the core SHALL read no consent and SHALL start no reporter.
+The core SHALL read the crash-report consent, before the app is built, from the same data directory the studio writes it to: `~/Library/Application Support/com.remocn.remocn-studio` on macOS, and on Linux `$XDG_DATA_HOME/com.remocn.remocn-studio`, or `~/.local/share/com.remocn.remocn-studio` when `$XDG_DATA_HOME` is unset or not absolute. When neither location can be worked out, the core SHALL read no consent and SHALL start no reporter.
 
 #### Scenario: Consent given on a default desktop
 
-- **WHEN** `$XDG_DATA_HOME` is unset and the person has turned crash reports on
+- **WHEN** on Linux `$XDG_DATA_HOME` is unset and the person has turned crash reports on
 - **THEN** the core finds the consent under `~/.local/share/com.remocn.remocn-studio` and the three conditions decide as usual
 
 #### Scenario: A relative XDG_DATA_HOME

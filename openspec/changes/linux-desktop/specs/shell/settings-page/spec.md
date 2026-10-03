@@ -1,18 +1,33 @@
-## ADDED Requirements
+## RENAMED Requirements
 
-### Requirement: Notifications is a section with one master switch and a switch per event
+- FROM: `### Requirement: Stock media holds a Pexels key on this Mac`
+- TO: `### Requirement: Stock media holds a Pexels key on this computer`
 
-Notifications SHALL offer a master switch that turns every notification on or off, a *Grant permission* button shown only when the operating system reports that the studio may not notify, and one switch per event — a turn that ended, the agent waiting for an answer, an export that finished or failed, the studio's helper stopping — each on until turned off and shown as off while the master switch is off. The master switch and every event switch SHALL be remembered, so turning the master switch back on restores each event's own choice. Notifications SHALL be posted through the desktop's own notification service; see `shell/attention`.
+## MODIFIED Requirements
+
+### Requirement: Notifications is a section with one master switch, a way to permission, and a switch per event
+
+Notifications SHALL offer a master switch that turns every notification on or off, a *Grant permission* button shown whenever the operating system has not allowed the studio to notify, and one switch per event — a turn that ended, the agent waiting for an answer, an export that finished or failed, the studio's helper stopping — each on until turned off and shown as off while the master switch is off. The master switch and every event switch SHALL be remembered, so turning the master switch back on restores each event's own choice. On macOS, *Grant permission* SHALL ask macOS when it has never been asked and SHALL open the studio's row in System Settings when macOS has already refused. On Linux, notifications are posted through the desktop's own notification service, which keeps no per-app row to open, so *Grant permission* SHALL ask again and the line SHALL say notifications must be allowed in the desktop's own settings; see `shell/attention`.
 
 #### Scenario: Turning notifications on for the first time
 
-- **WHEN** the master switch is turned on
-- **THEN** the section reads as on, and the next event is posted through the desktop's notification service
+- **WHEN** the master switch is turned on and macOS has never been asked
+- **THEN** macOS asks whether the studio may notify, and the section reads as on only if the answer is yes
 
 #### Scenario: Permission is missing
 
-- **WHEN** the section opens and the operating system reports that the studio may not notify
-- **THEN** a *Grant permission* button is shown with a line saying nothing will arrive until notifications are allowed for the studio in the desktop's own settings
+- **WHEN** the section opens and macOS has not allowed the studio to notify
+- **THEN** a *Grant permission* button is shown with a line saying why nothing will arrive until it is pressed
+
+#### Scenario: macOS refused
+
+- **WHEN** *Grant permission* is pressed and macOS has already refused
+- **THEN** the studio's row in System Settings opens, and the line says notifications are off there
+
+#### Scenario: The Linux desktop has not allowed it
+
+- **WHEN** the section opens on Linux and the desktop reports that the studio may not notify
+- **THEN** *Grant permission* is shown with a line saying nothing will arrive until notifications are allowed for the studio in the desktop's own settings, and pressing it asks again rather than opening anything
 
 #### Scenario: The master switch goes off
 
@@ -29,35 +44,14 @@ Notifications SHALL offer a master switch that turns every notification on or of
 - **WHEN** the page runs without the Tauri core
 - **THEN** the master switch is unavailable, with the reason worded beside it, and *Grant permission* is not shown
 
-### Requirement: Updates reads as this build and how it is replaced
-
-Updates SHALL show the installed version, whether it is a development or production build, and the operating system it runs on — its name and version as the system itself reports them — with the studio's own sentence about how a new version arrives and an unavailable *Check now* beside it (see `shell/quit-and-updates`). No second card SHALL be drawn.
-
-#### Scenario: A production build
-
-- **WHEN** the person opens Updates in a production build
-- **THEN** the build card names the version, *Production* and the operating system, and says a new version arrives as a new download or through the package manager
-
-#### Scenario: The operating system cannot be read
-
-- **WHEN** the core cannot read the operating system's name
-- **THEN** the row reads a dash rather than failing the section
-
-## RENAMED Requirements
-
-- FROM: `### Requirement: Stock media holds a Pexels key on this Mac`
-- TO: `### Requirement: Stock media holds a Pexels key on this computer`
-
-## MODIFIED Requirements
-
 ### Requirement: Hotkeys lists every shortcut and changes none
 
-Hotkeys SHALL list every keyboard shortcut the studio binds, grouped as Studio, Project, View and Video, each row naming the command and showing its keys as `Ctrl`, `Shift` and `Alt` key caps. The section SHALL be read-only: no shortcut can be changed, cleared or added from it, and the list SHALL be the same table the palette and the keyboard read.
+Hotkeys SHALL list every keyboard shortcut the studio binds, grouped as Studio, Project, View and Video, each row naming the command and showing its keys as key caps in the platform's glyphs — `⌘`, `⇧` and `⌥` on macOS, `Ctrl`, `Shift` and `Alt` on Linux. The section SHALL be read-only: no shortcut can be changed, cleared or added from it, and the list SHALL be the same table the palette and the keyboard read.
 
 #### Scenario: Reading the list
 
 - **WHEN** the person opens Hotkeys
-- **THEN** Export is listed under Video with Ctrl+E, and the next video with Ctrl+Alt+↓
+- **THEN** Export is listed under Video with ⌘E on macOS and Ctrl+E on Linux, and the next video with ⌥⌘↓ or Ctrl+Alt+↓
 
 #### Scenario: Nothing to edit
 
@@ -92,15 +86,3 @@ Feedback SHALL open the person's own mail client with a message addressed to the
 
 - **WHEN** the mail client cannot be opened
 - **THEN** the failure is shown on the page and nothing else happens
-
-## REMOVED Requirements
-
-### Requirement: Updates reads as this build, then the release waiting for it
-
-**Reason**: No release is ever found, so the second card and the newest-release sentence cannot occur.
-**Migration**: Replaced by the added requirement, which shows the build, the operating system and how a new version arrives.
-
-### Requirement: Notifications is a section with one master switch, a way to permission, and a switch per event
-
-**Reason**: There is no macOS permission row to open.
-**Migration**: Replaced by the added requirement, which keeps the master switch, the per-event switches and the transport-less case.

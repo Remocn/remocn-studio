@@ -38,23 +38,24 @@ See `proposal.md` for the why. What was measured on Linux before this was writte
 
 - A `bun tauri dev` and a `bun tauri build` that work on a stock Linux desktop with
   the Tauri prerequisites and libdbus.
-- Every macOS-only mechanism is replaced by a Linux one or removed. No code path
-  reachable on Linux shells out to a macOS binary.
+- Every macOS-only mechanism gets a Linux counterpart behind a platform gate. No code
+  path reachable on Linux shells out to a macOS binary, and no macOS behaviour changes.
+- One codebase and one release for both platforms; nothing is forked.
 - The look of the shell stays the same: the band, the shader, the inset card.
 
 **Non-Goals:**
 
-- Keeping the macOS build green. Existing `cfg(target_os = "macos")` blocks
-  (`app_icon.rs`, the objc dependencies) are left because they compile out, and
-  nothing new gets a macOS branch.
+- Windows. `platform.ts` still knows it, but nothing is built or tested for it.
 - Matching every desktop's conventions for control placement or badge rendering.
 
 ## Decisions
 
 ### 1. Frameless window, controls in the traffic-light slot
 
-`decorations: false` is set in `tauri.conf.json`, and the macOS-only window keys
-(`titleBarStyle`, `hiddenTitle`, `trafficLightPosition`) are removed. The
+`src-tauri/tauri.linux.conf.json` replaces the window with one that has
+`decorations: false`; Tauri merges a platform file over `tauri.conf.json`, whose
+window keeps the macOS keys (`titleBarStyle`, `hiddenTitle`,
+`trafficLightPosition`), so macOS is unchanged. The
 `:root[data-platform="linux"]` override in `app/globals.css` that zeroes
 `--titlebar-block-inset` and `--titlebar-inline-inset` is deleted, so Linux gets
 the band and the insets the layout was built around. Several values in it are
@@ -154,8 +155,9 @@ agree:
 
 The list is `.local/bin`, `.bun/bin`, `.npm-global/bin`, `.volta/bin`,
 `.local/share/mise/shims`, `.asdf/shims`, `.local/share/pnpm` and `.yarn/bin`,
-then `/usr/local/bin`, `/usr/bin` and `/bin`. `$NVM_BIN` is added when it is set.
-`/opt/homebrew/bin` and `Library/pnpm` go.
+`Library/pnpm`, then `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, `/bin` and
+`/usr/sbin`. `$NVM_BIN` is added when it is set. One list serves both platforms: a
+dir that does not exist on this one is never matched.
 
 A launcher started from a `.desktop` file gets the session's minimal `PATH`. These
 dirs are where the agent CLIs and Node actually are, so this is the difference
@@ -186,74 +188,67 @@ was found. Set $TERMINAL to the one you use.*, which the checklist already shows
 under the steps. The hint after pressing becomes *Ctrl+Shift+V, then Enter*,
 because Linux terminals paste with Shift.
 
-### 7. Install Node.js opens a page; `node.install` leaves the contract
+### 7. Install Node.js opens a page on Linux
 
-`sidecar/node-installer.ts`, its test, the `node.install` method, the
-`NodeDownload` event schema and the download-percentage code in
-`lib/studio/environment.ts` are removed. The Node row's button calls
-`openUrl("https://nodejs.org/en/download")` through the opener plugin, which
-`opener:default` already allows for https, from the webview. A failure is a
-`causeMessage` sentence in the checklist's own error line, with the address shown.
-
-**Protocol bump:** removing a method changes the frame set, so `SIDECAR_PROTOCOL`
-in `shared/ipc.ts` and `PROTOCOL` in `src-tauri/src/ipc.rs` both go up by one.
-`shared/protocol.test.ts` holds them together.
+On Linux the Node row's button calls `openUrl("https://nodejs.org/en/download")`
+through the opener plugin, which `opener:default` already allows for https, from the
+webview. A failure is a `causeMessage` sentence in the checklist's own error line,
+with the address shown, and a line under the button names the distribution's package
+manager and version managers. On macOS the row keeps fetching the official `.pkg`
+through `node.install` and opening it. `useEnvironment` and the checklist branch on
+the platform; the `node.install` handler refuses off `darwin`, so the contract and
+`SIDECAR_PROTOCOL` are unchanged.
 
 *Alternative:* download the official `node-*-linux-*.tar.xz` and unpack it. The
 spec forbids installing Node quietly into the home folder, and doing it into
 `/usr/local` needs `pkexec`. Distributions package Node anyway.
 
-### 8. Updates: the plugin goes, the hook keeps its shape
+### 8. Updates: the same updater on both
 
-The following are removed:
+`tauri-plugin-updater` 2.10 installs an AppImage by replacing the file, and a `.deb`
+or `.rpm` through `dpkg -i` or `rpm -U` after asking for administrator rights, picking
+the format from how the running build was bundled. So the plugin, its capability,
+`plugins.updater` and `createUpdaterArtifacts` stay as they are, and the Linux release
+jobs sign their bundles with the same `TAURI_SIGNING_PRIVATE_KEY` and merge their
+entries into the same `latest.json`. `hooks/use-updates.ts` is unchanged.
 
-- `tauri-plugin-updater` from `Cargo.toml` and `lib.rs`;
-- `updater:default` from the capability;
-- `plugins.updater` and `createUpdaterArtifacts` from `tauri.conf.json`.
-
-`bun tauri build` then needs no `TAURI_SIGNING_PRIVATE_KEY`. In `hooks/use-updates.ts`,
-`unavailableOf` answers a sentence for a production build as well (*New versions
-arrive as a new download from the releases page, or through your package
-manager.*), and the launch auto-check is gated on `unavailable === null`. The
-release card, the progress fold and the install path stay in `lib/studio/updates.ts`
-but are unreachable.
-
-Re-enabling is: restore the plugin and its config with a fork-owned key, and
-return `null` again for production. No new `settings.json` key is added.
-
-*Alternative:* delete the whole update UI. It is more churn in the hooks, the
-settings page and their tests for something meant to return.
+*Alternative:* leave the updater off on Linux. Every Linux person would then be told
+to fetch new versions by hand, for no gain: the key and the manifest already exist.
 
 ### 9. Wording, read from the platform helper
 
-Text that names macOS becomes neutral or Linux-specific:
+Text that names macOS becomes neutral where one word serves both, and is read
+from the platform where it cannot:
 
 | Before | After |
 | --- | --- |
 | "Follows macOS" | "Follows the system" |
-| "macOS asks once…" | removed |
-| "this Mac's keychain" | "your system keyring" |
+| "macOS asks once…" | kept on macOS; the desktop's service on Linux |
+| "this Mac's keychain" | `keyringName()`: the same on macOS, "your system keyring" on Linux |
 | "macOS did not allow the studio…" | "The system did not allow the studio…" |
 | the `macOS` fact row | `System` |
-| `macOS ${os}` in feedback | the OS string as read |
+| `macOS ${os}` in feedback | the OS string as read, which the core now prefixes with `macOS` |
 | "Show in Finder" | `Show in ${fileManagerName()}` |
 | the hard-coded `⌘−`, `⌘0`, `⌘+` in `canvas-preview.tsx` | `modKeyCombo` |
 
-The notification permission line drops the System Settings link. The `x-apple`
-URL, `openNotificationSettings` and its opener scope entry are removed, and
-*Grant permission* only re-requests.
+On macOS, *Grant permission* still opens the studio's row in System Settings once
+macOS has refused. On Linux the desktop's notification service has no such row, so
+it only re-requests, and the line names the desktop's own settings.
 
-`commands.rs` replaces `sw_vers` with a reader of `/etc/os-release`, falling back
-to `/usr/lib/os-release`. It answers `PRETTY_NAME`, else `NAME VERSION_ID`, else
-`unknown`. The field stays `os`, so there is no IPC change.
+`commands.rs` keeps `sw_vers` on macOS, now answering `macOS <version>`, and on
+Linux reads `/etc/os-release`, falling back to `/usr/lib/os-release`. It answers
+`PRETTY_NAME`, else `NAME VERSION_ID`, else `unknown`. The field stays `os`, so there
+is no IPC change.
 
 `test/register-dom.ts` registers a WebKitGTK user agent (`X11; Linux x86_64`). The
-nine test files that assert `⌘` assert `Ctrl+…` instead. `platform.test.ts` keeps
-testing all three platforms by argument.
+nine test files that assert `⌘` assert `Ctrl+…` instead, and a test of a macOS
+branch switches with `withAgent(MAC)` from `test/user-agent.ts`. `platform.test.ts`
+keeps testing all three platforms by argument.
 
 ### 10. Consent location
 
-On Linux, `crash::data_dir_for` answers `$XDG_DATA_HOME/<identifier>` when
+On macOS `crash::data_dir_for` keeps answering
+`~/Library/Application Support/<identifier>`. On Linux it answers `$XDG_DATA_HOME/<identifier>` when
 `$XDG_DATA_HOME` is absolute, else `$HOME/.local/share/<identifier>`. This is the
 same directory `app_data_dir` resolves, which is where the webview's store writes
 `settings.json`. Unknown platforms still answer `None`, so they fail toward
@@ -269,22 +264,26 @@ register, so the debug binary never claims the scheme on the developer's machine
 
 ### 12. Packaging and CI
 
-`bundle.targets` is `["appimage", "deb", "rpm"]`, `bundle.macOS` is removed, and
-`Entitlements.plist` and `assets/dmg/` are deleted. Remotion footage in the
-Player plays through WebKitGTK's GStreamer backend, so the bundles carry it:
+`bundle.targets` stays `"all"`, which is the `.app` and `.dmg` on macOS and the
+AppImage, `.deb` and `.rpm` on Linux; `bundle.macOS` is untouched and `bundle.linux`
+is added beside it. Remotion footage in the Player plays through WebKitGTK's
+GStreamer backend, so the Linux bundles carry it:
 
 - AppImage: `appimage.bundleMediaFramework: true`.
 - `.deb` depends on `gstreamer1.0-plugins-good`, `gstreamer1.0-plugins-bad` and
   `gstreamer1.0-libav`.
 - `.rpm` depends on `gstreamer1-plugins-good`.
 
-`publish.yml`'s release job becomes a Linux matrix: `ubuntu-22.04` for x86_64 and
-`ubuntu-22.04-arm` for aarch64. The oldest glibc the AppImage then needs is
-22.04's. It installs `libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev
-patchelf libdbus-1-dev`, runs `tauri-action` with `--bundles appimage,deb,rpm`, and
-drops every `APPLE_*` step and the DMG notarization. `dev.yml` gains a `rust` job
-(`cargo check` and `cargo test`, with the same apt list) now that the platform CI
-runs on is the one the app targets.
+`publish.yml` keeps the macOS jobs as they are and adds a `release-linux` matrix
+after them: `ubuntu-22.04` for x86_64 and `ubuntu-22.04-arm` for aarch64. The oldest
+glibc the AppImage then needs is 22.04's. It installs WebKitGTK, libdbus, patchelf
+and GStreamer, and runs `tauri-action` with `--bundles appimage,deb,rpm`, the updater
+signing key and `uploadUpdaterJson`. It waits for the macOS jobs (`needs`), because
+tauri-action merges `latest.json` by reading the copy already on the release and two
+writers at once drop a platform; `!cancelled()` still releases Linux when a macOS job
+fails. `dev.yml` gains a `rust` job (`cargo check --features crash-reports` and
+`cargo test`) on `ubuntu-22.04` and `macos-latest`, since each platform has code the
+other never compiles.
 
 ## Risks / Trade-offs
 
@@ -302,8 +301,12 @@ runs on is the one the app targets.
 - **[No Secret Service on a bare window manager]**
   → The refusal reaches the connection card as a sentence. Docs name gnome-keyring
   or KWallet as a requirement.
-- **[A deb/rpm user sees "no update check"]**
-  → That is the platform's model anyway; the sentence says so.
+- **[A deb/rpm update asks for administrator rights]** The updater installs the
+  package with `dpkg -i` or `rpm -U`.
+  → The prompt is the platform's own; an AppImage updates without one.
+- **[A change breaks the platform its author did not run]**
+  → The `rust` CI job compiles the core on both; the webview tests cover both
+  branches by switching the user agent.
 - **[The search-dir lists drift between Rust and TS]**
   → The parity test in decision 5.
 - **[Software GL makes Linux exports slower than Mac ones]**
@@ -330,9 +333,9 @@ runs on is the one the app targets.
 ## Migration Plan
 
 There are no users of a Linux build yet, and nothing in history or settings
-changes shape. The protocol bump means a stale `sidecar-dist/main.js` is refused at
-the handshake. Run `bun run sidecar:build` after pulling. Rollback is reverting
-the change; there is no data to convert.
+changes shape on either platform. The sidecar protocol is unchanged. The bundled
+runtime is renamed `remocn-studio-bun` on macOS too, so run `bun run bun:fetch`
+after pulling. Rollback is reverting the change; there is no data to convert.
 
 ## Open Questions
 
