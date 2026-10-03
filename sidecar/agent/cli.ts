@@ -14,6 +14,8 @@ export interface LookupHost {
 
 const host: LookupHost = { env: process.env, exists: existsSync };
 
+// One list for both platforms: a dir that does not exist on this one is
+// simply never matched.
 export const USER_BIN_DIRS = [
   ".local/bin",
   ".bun/bin",
@@ -23,9 +25,16 @@ export const USER_BIN_DIRS = [
   ".asdf/shims",
   ".local/share/pnpm",
   ".yarn/bin",
+  "Library/pnpm",
 ] as const;
 
-export const SYSTEM_BIN_DIRS = ["/usr/local/bin", "/usr/bin", "/bin"] as const;
+export const SYSTEM_BIN_DIRS = [
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+  "/usr/bin",
+  "/bin",
+  "/usr/sbin",
+] as const;
 
 export function userBinDirs(
   home: string,

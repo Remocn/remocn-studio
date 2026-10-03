@@ -68,11 +68,12 @@ describe("fallbackDirs", () => {
     );
   });
 
-  it("names no macOS-only location", () => {
+  it("names Homebrew and pnpm's macOS home alongside the Linux dirs", () => {
     const dirs = fallbackDirs(HOME, [], {});
 
-    expect(dirs.some((dir) => dir.includes("homebrew"))).toBe(false);
-    expect(dirs.some((dir) => dir.includes("Library"))).toBe(false);
+    expect(dirs).toContain("/opt/homebrew/bin");
+    expect(dirs).toContain(`${HOME}/Library/pnpm`);
+    expect(dirs).toContain(`${HOME}/.local/share/pnpm`);
   });
 });
 

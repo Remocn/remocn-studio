@@ -16,11 +16,13 @@ use crate::ipc::{
 };
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
-// Where a launcher started from a desktop entry finds the agent CLIs, Node
-// and package managers, since it inherits the session's minimal PATH. The
-// sidecar's `USER_BIN_DIRS` must name the same dirs; `sidecar/agent/cli.test.ts`
-// reads this file to hold them together.
-const HOME_BIN_DIRS: [&str; 8] = [
+// Where an app started from Finder, the Dock or a desktop entry finds the
+// agent CLIs, Node and package managers, since it inherits the session's
+// minimal PATH. One list serves macOS and Linux; a dir that does not exist is
+// never matched. The sidecar's `USER_BIN_DIRS` and `SYSTEM_BIN_DIRS` must name
+// the same dirs; `sidecar/agent/cli.test.ts` reads this file to hold them
+// together.
+const HOME_BIN_DIRS: [&str; 9] = [
     ".local/bin",
     ".bun/bin",
     ".npm-global/bin",
@@ -29,8 +31,15 @@ const HOME_BIN_DIRS: [&str; 8] = [
     ".asdf/shims",
     ".local/share/pnpm",
     ".yarn/bin",
+    "Library/pnpm",
 ];
-const SYSTEM_BIN_DIRS: [&str; 3] = ["/usr/local/bin", "/usr/bin", "/bin"];
+const SYSTEM_BIN_DIRS: [&str; 5] = [
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/usr/bin",
+    "/bin",
+    "/usr/sbin",
+];
 
 pub fn resolve_bun() -> Result<PathBuf, String> {
     if let Some(value) = env::var_os(BUN_ENV) {
