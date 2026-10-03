@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Remocn Studio DMG background</title>
+    <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+    body {
+      background: color-mix(in srgb, oklch(14.5% 0 0) 97%, white);
+    }
+    #shader {
+      position: absolute;
+      inset: 0;
+      opacity: 0.75;
+      mask-image: radial-gradient(
+        130% 100% at 50% -15%,
+        #000 0%,
+        #000e 40%,
+        #0009 62%,
+        transparent 92%
+      );
+    }
+    .label {
+      position: absolute;
+      top: 314px;
+      height: 26px;
+      background: #fff;
+      border-radius: 13px;
+      transform: translate(-50%, -50%);
+    }
+    #app-label {
+      left: 190px;
+      width: 134px;
+    }
+    #applications-label {
+      left: 530px;
+      width: 114px;
+    }
+    </style>
+  </head>
+  <body>
+    <div aria-hidden="true" id="shader"></div>
+    <div aria-hidden="true" class="label" id="app-label"></div>
+    <div aria-hidden="true" class="label" id="applications-label"></div>
+    <script src="./background.js" type="module"></script>
+  </body>
+</html>
