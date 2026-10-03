@@ -9,6 +9,7 @@
     "opener:allow-reveal-item-in-dir",
     "store:default",
     "dialog:allow-open",
+    "updater:default",
     "deep-link:default",
     "notification:default",
     "core:window:allow-set-progress-bar",

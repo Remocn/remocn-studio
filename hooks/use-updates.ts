@@ -20,10 +20,6 @@ import type { AppEnvironment, StudioBuild } from "@/shared/ipc";
 const CORE_PENDING = "Waiting for the Tauri core";
 const IS_DEVELOPMENT =
   "This is a development build — it updates when you rebuild it";
-// The updater stays off until the fork signs its own releases: upstream's
-// manifest carries no Linux build and its key is not ours to sign with.
-const NOT_CHECKED =
-  "New versions arrive as a new download from the releases page, or through your package manager";
 
 export interface Updates {
   check: () => Promise<void>;
@@ -64,12 +60,8 @@ export function useUpdates(): Updates {
     };
   }, []);
 
-  const unavailable = unavailableOf(build);
-  const isUnavailable = useRef(unavailable !== null);
-  isUnavailable.current = unavailable !== null;
-
   const check = useCallback(async () => {
-    if (busy.current || isUnavailable.current) {
+    if (busy.current) {
       return;
     }
 
@@ -119,13 +111,15 @@ export function useUpdates(): Updates {
     await Effect.runPromiseExit(restartStudio);
   }, []);
 
+  const isProduction = build?.environment === "production";
+
   useEffect(() => {
-    if (unavailable !== null || hasChecked) {
+    if (!isProduction || hasChecked) {
       return;
     }
 
     check().catch(() => undefined);
-  }, [check, hasChecked, unavailable]);
+  }, [check, hasChecked, isProduction]);
 
   return useMemo(
     () => ({
@@ -139,20 +133,10 @@ export function useUpdates(): Updates {
       isInstalling: download !== null,
       os: build?.os ?? null,
       release,
-      unavailable,
+      unavailable: unavailableOf(build),
       version: build?.version ?? null,
     }),
-    [
-      build,
-      check,
-      download,
-      error,
-      hasChecked,
-      install,
-      isChecking,
-      release,
-      unavailable,
-    ]
+    [build, check, download, error, hasChecked, install, isChecking, release]
   );
 }
 
@@ -161,5 +145,5 @@ function unavailableOf(build: StudioBuild | null): string | null {
     return CORE_PENDING;
   }
 
-  return build.environment === "development" ? IS_DEVELOPMENT : NOT_CHECKED;
+  return build.environment === "development" ? IS_DEVELOPMENT : null;
 }
