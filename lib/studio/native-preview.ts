@@ -15,6 +15,7 @@ const MANIFEST_PATH = "/__remocn/native";
 const EVENTS_PATH = "/__remocn/hot";
 const MESSAGE_SOURCE = "remocn-preview";
 const BEHIND_MS = 8000;
+const SOURCE_MAP = /(\/\/# sourceMappingURL=)(\S+)\s*$/;
 
 const COMPILE_FAILED =
   "The canvas preview could not compile. Restart the preview and try again.";
@@ -380,8 +381,9 @@ function evaluate(
   window.addEventListener("error", onError);
   try {
     const mapped = source.replace(
-      /sourceMappingURL=([^\s]+)/g,
-      (_match, value: string) => `sourceMappingURL=${new URL(value, url).href}`
+      SOURCE_MAP,
+      (_match, directive: string, value: string) =>
+        `${directive}${new URL(value, url).href}`
     );
     script.textContent = `${mapped}\n//# sourceURL=${url}\n`;
     document.head.appendChild(script);

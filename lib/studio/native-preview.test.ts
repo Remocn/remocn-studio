@@ -10,6 +10,7 @@ const HOOKS_KEY = "__nativePreviewTestHooks";
 interface Hooks {
   commands: Record<string, unknown[]>;
   disposed: string[];
+  sourceMap?: string;
 }
 
 function hooks(): Hooks {
@@ -261,6 +262,25 @@ describe("runNativePreview", () => {
     expect(hooks().commands.slot1).toEqual([]);
     expect(hooks().commands.slot2).toEqual([pauseCommand()]);
     expect(hooks().disposed).toEqual(["slot1"]);
+  });
+
+  it("resolves only the bundle's own source map line, not the same words inside its code", async () => {
+    const network = setupNetwork();
+    network.scripts.set(
+      "v1.js",
+      `${workingBundle("slot1")}
+window.${HOOKS_KEY}.sourceMap = "//# sourceMappingURL=" + "x.map";
+//# sourceMappingURL=bundle.js.map`
+    );
+    const { states, waitForState } = harness();
+
+    await waitForState((all) => all.length > 0);
+
+    expect(states.at(-1)).toEqual({ phase: "ready", stale: null });
+    expect(hooks().sourceMap).toBe("//# sourceMappingURL=x.map");
+    expect(document.head.querySelector("script")?.textContent).toContain(
+      `//# sourceMappingURL=${BASE}bundle.js.map\n`
+    );
   });
 
   it("re-checking the same generation on an EventSource reconnect does not restage", async () => {

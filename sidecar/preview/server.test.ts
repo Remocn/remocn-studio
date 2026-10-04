@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { Effect, Exit, Scope } from "effect";
 import { JOB_BASE, makeJobRegistry } from "./job";
+import type { NativeBuild } from "./native";
 import { RENDER_BASE } from "./protocol";
 import { serve } from "./server";
 
@@ -30,10 +31,14 @@ interface Answered {
 // happy-dom's `fetch` refuses a cross-origin read, and every request here is
 // one: the page under test is `about:blank`. `node:http` is what the render
 // browser would use anyway.
-function get(port: number, pathname: string): Promise<Answered> {
+function get(
+  port: number,
+  pathname: string,
+  headers: Record<string, string> = {}
+): Promise<Answered> {
   return new Promise((resolve, reject) => {
     const asking = request(
-      { host: "127.0.0.1", path: pathname, port },
+      { headers, host: "127.0.0.1", path: pathname, port },
       (answer) => {
         let body = "";
         answer.setEncoding("utf8");
@@ -53,19 +58,29 @@ function get(port: number, pathname: string): Promise<Answered> {
 
 interface Standing {
   close: () => Promise<void>;
-  get: (pathname: string) => Promise<Answered>;
+  get: (
+    pathname: string,
+    headers?: Record<string, string>
+  ) => Promise<Answered>;
   jobs: ReturnType<typeof makeJobRegistry>;
+  nativeDir: string;
   outDir: string;
   publicDir: string;
 }
 
-async function standing(): Promise<Standing> {
+const NATIVE_BASE = "/native-test";
+
+async function standing(
+  built: () => NativeBuild | null = () => null
+): Promise<Standing> {
   const root = scratch();
   const outDir = path.join(root, "bundle");
+  const nativeDir = path.join(root, "native");
   const publicDir = path.join(root, "public");
   const jobs = makeJobRegistry();
 
   mkdirSync(outDir, { recursive: true });
+  mkdirSync(nativeDir, { recursive: true });
   mkdirSync(publicDir, { recursive: true });
   writeFileSync(path.join(outDir, "bundle.js"), "the live build");
   writeFileSync(path.join(publicDir, "logo.png"), "the live logo");
@@ -76,6 +91,13 @@ async function standing(): Promise<Standing> {
     Effect.provideService(
       serve({
         jobs,
+        native: () => ({
+          base: NATIVE_BASE,
+          directory: nativeDir,
+          prepare: Effect.succeed(1),
+          script: built,
+          start: Effect.void,
+        }),
         outDir,
         preferred: null,
         previewBase: "/preview-test",
@@ -93,8 +115,9 @@ async function standing(): Promise<Standing> {
 
   return {
     close: () => Effect.runPromise(Scope.close(scope, Exit.void)),
-    get: (pathname) => get(server.port, pathname),
+    get: (pathname, headers) => get(server.port, pathname, headers),
     jobs,
+    nativeDir,
     outDir,
     publicDir,
   };
@@ -162,6 +185,51 @@ describe("the preview server", () => {
 
     expect(live.body).toBe("the live logo");
     expect(pinned.body).toBe("the pinned logo");
+
+    await server.close();
+  });
+
+  it("answers the canvas bundle from the copy of its build, not from the file being rewritten", async () => {
+    const server = await standing(() => ({
+      generation: 1,
+      script: new TextEncoder().encode("the whole build"),
+    }));
+
+    writeFileSync(path.join(server.nativeDir, "bundle.js"), "the next bu");
+    writeFileSync(path.join(server.nativeDir, "bundle.js.map"), "its map");
+
+    const script = await server.get(`${NATIVE_BASE}/bundle.js?generation=1`);
+    const map = await server.get(`${NATIVE_BASE}/bundle.js.map`);
+
+    expect(script).toEqual({ body: "the whole build", status: 200 });
+    expect(map.body).toBe("its map");
+
+    await server.close();
+  });
+
+  it("answers a range of the canvas bundle's copy", async () => {
+    const server = await standing(() => ({
+      generation: 1,
+      script: new TextEncoder().encode("the whole build"),
+    }));
+
+    const answered = await server.get(`${NATIVE_BASE}/bundle.js`, {
+      range: "bytes=4-8",
+    });
+
+    expect(answered).toEqual({ body: "whole", status: 206 });
+
+    await server.close();
+  });
+
+  it("has no canvas bundle to answer before a build has compiled", async () => {
+    const server = await standing();
+
+    writeFileSync(path.join(server.nativeDir, "bundle.js"), "a failed build");
+
+    const answered = await server.get(`${NATIVE_BASE}/bundle.js`);
+
+    expect(answered.status).toBe(404);
 
     await server.close();
   });
