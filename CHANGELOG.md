@@ -1,5 +1,14 @@
 # remocn-studio
 
+## 1.0.1
+
+### Patch Changes
+
+- 2674954: Each provider is now told to plan a pipeline stage with the tool its own runtime has — `update_plan` on Codex, `todo_write` on Grok, its own planning tool on Copilot — instead of Claude's TaskCreate, and a stage moved mid-turn points the agent at the video's own documents folder. A missing command-line tool now fails the turn the same way on every provider.
+- 2674954: Copilot and Grok now ask before following a link inside the project that leads out of it, and a plan approved on them keeps the mode it was approved into: the running turn switches to it and the chat's next message starts in it.
+- 396a352: Pressing Restart on the studio's helper no longer files a crash report. A report for a helper that really did stop now says how long it had been running and what it last said about leaving.
+- 701c3d3: The canvas preview no longer fails with a SyntaxError when the project recompiles while the preview is loading the previous version — it always loads one whole build. A project whose code builds a source map comment in a string loads again.
+
 ## 1.0.0
 
 ### Major Changes

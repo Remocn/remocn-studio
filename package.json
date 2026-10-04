@@ -113,6 +113,6 @@
     "motion:contract-proof": "bun scripts/motion-contract-proof.ts",
     "generation:eval": "bun scripts/generation-eval.ts"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true
 }
