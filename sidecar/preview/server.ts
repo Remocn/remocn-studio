@@ -10,7 +10,12 @@ import { errorMessage } from "@/lib/error-message";
 import { etagOf, matches } from "./caching";
 import { renderPage } from "./html";
 import { type JobRegistry, jobPath, type Pinned } from "./job";
-import { NATIVE_MANIFEST, type NativeBundle } from "./native";
+import {
+  NATIVE_MANIFEST,
+  NATIVE_SCRIPT,
+  type NativeBuild,
+  type NativeBundle,
+} from "./native";
 import { PreviewError } from "./project";
 import { RENDER_BASE } from "./protocol";
 import type { Proxies } from "./proxies";
@@ -207,13 +212,12 @@ function handle(
 
   const native = options.native?.();
   if (native && pathname.startsWith(`${native.base}/`)) {
-    sendFile(
-      native.directory,
-      pathname.slice(native.base.length + 1),
-      BUNDLE,
-      request,
-      response
-    );
+    const relative = pathname.slice(native.base.length + 1);
+    if (relative === NATIVE_SCRIPT) {
+      sendScript(native.script(), request, response);
+    } else {
+      sendFile(native.directory, relative, BUNDLE, request, response);
+    }
     return;
   }
 
@@ -383,6 +387,29 @@ function sendPage(body: string, response: ServerResponse): void {
   response.end(body);
 }
 
+// The canvas runtime is answered from the copy taken when webpack finished
+// writing it, never from disk: a rebuild rewrites the file in place, and the
+// pane is told to fetch exactly while the next one may already be under way.
+function sendScript(
+  build: NativeBuild | null,
+  request: IncomingMessage,
+  response: ServerResponse
+): void {
+  if (build === null) {
+    response.writeHead(404).end();
+    return;
+  }
+
+  const { script } = build;
+
+  sendBody(
+    { size: script.byteLength, tag: null, type: MIME[".js"] },
+    request,
+    response,
+    (from, to) => response.end(script.subarray(from, to + 1))
+  );
+}
+
 function sendJson(body: unknown, response: ServerResponse): void {
   response.writeHead(200, {
     "cache-control": "no-store",
@@ -471,9 +498,26 @@ function sendFile(
   }
 
   const { stats, target, type } = found;
-  const { caching } = delivery;
-  const { size } = stats;
-  const tag = caching === FRESH ? null : etagOf(stats);
+  const tag = delivery.caching === FRESH ? null : etagOf(stats);
+
+  sendBody({ size: stats.size, tag, type }, request, response, (from, to) =>
+    createReadStream(target, { end: to, start: from }).pipe(response)
+  );
+}
+
+interface Body {
+  size: number;
+  tag: string | null;
+  type: string;
+}
+
+function sendBody(
+  body: Body,
+  request: IncomingMessage,
+  response: ServerResponse,
+  write: (from: number, to: number) => void
+): void {
+  const { size, tag, type } = body;
   const validity: Record<string, string> =
     tag === null
       ? { "cache-control": FRESH }
@@ -516,5 +560,5 @@ function sendFile(
     return;
   }
 
-  createReadStream(target, { end: to, start: from }).pipe(response);
+  write(from, to);
 }
