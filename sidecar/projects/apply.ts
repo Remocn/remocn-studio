@@ -1,12 +1,27 @@
 import { readFile } from "node:fs/promises";
-import { Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { brandDiff, ProjectBrandApplication } from "@/shared/brand";
+import type { Project } from "@/shared/ipc";
 import {
   type ProjectConfig,
   ProjectSettingsError,
 } from "@/shared/project-config";
-import { readSnapshot, snapshotOf, snapshotPath, writeSnapshot } from "./brand";
-import { atomicJson, contained, serialized, validateBrand } from "./config";
+import { type BrandLifecycle, TurnError } from "../agent/turn-error";
+import {
+  brandBrief,
+  readSnapshot,
+  snapshotOf,
+  snapshotPath,
+  writeSnapshot,
+} from "./brand";
+import {
+  atomicJson,
+  configEffect,
+  contained,
+  getConfig,
+  serialized,
+  validateBrand,
+} from "./config";
 import { writeFontRuntime } from "./font-runtime";
 
 const activeApplications = new Set<string>();
@@ -57,6 +72,43 @@ export async function finishBrandApplication(
     status: success ? "awaiting-review" : "failed",
   });
 }
+const unbranded = (error: { message: string }) =>
+  new TurnError({ message: error.message });
+
+export const projectBrand: BrandLifecycle = {
+  begin: (project: Project, video, params) =>
+    Effect.gen(function* () {
+      const config = yield* configEffect(() => getConfig(project)).pipe(
+        Effect.mapError(unbranded)
+      );
+      if (
+        params.brandRevision !== undefined &&
+        params.brandRevision !== config.revision
+      ) {
+        return yield* Effect.fail(
+          new TurnError({
+            message:
+              "Project brand changed. Reload settings before applying it.",
+          })
+        );
+      }
+      if (params.brandRevision === undefined) {
+        const brief = yield* configEffect(() =>
+          brandBrief(project.path, project.id, video)
+        ).pipe(Effect.mapError(unbranded));
+        return { application: null, brief };
+      }
+      const application = yield* configEffect(() =>
+        prepareBrandApplication(project.path, video, config, params.historyId)
+      ).pipe(Effect.mapError(unbranded));
+      return { application, brief: applicationBrief(application) };
+    }),
+  finish: (project, video, application, success) =>
+    configEffect(() =>
+      finishBrandApplication(project.path, video, application, success)
+    ).pipe(Effect.mapError(unbranded)),
+};
+
 export function confirmBrandApplication(
   root: string,
   slug: string,

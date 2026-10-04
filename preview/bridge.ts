@@ -1,124 +1,14 @@
-export const MESSAGE_SOURCE = "remocn-preview";
-export const COMMAND_SOURCE = "remocn-studio";
-
-export type TuningValue =
-  | boolean
-  | number
-  | string
-  | null
-  | readonly (boolean | number | string | null)[];
-
-export type StatusKind = "computed" | "keyframed" | "static";
-
-/** Remotion's own subscription key, carried whole between the two ends. */
-export interface TuningNodePath {
-  readonly absolutePath: string;
-  readonly effectKeys: readonly (readonly string[])[];
-  readonly nodePath: readonly (number | string)[];
-  readonly sequenceKeys: readonly string[];
-  readonly videoConfigValues: {
-    readonly durationInFrames: number;
-    readonly fps: number;
-    readonly height: number;
-    readonly width: number;
-  } | null;
-}
-
-export interface TuningStatus {
-  readonly kind: StatusKind;
-  readonly status: unknown;
-}
-
-export interface TargetStatuses {
-  readonly nodePath: TuningNodePath | null;
-  readonly props: Readonly<Record<string, TuningStatus>>;
-  readonly targetId: string;
-}
-
-export type PreviewCommand =
-  | {
-      type: "studio.geometry.config";
-      enabled: boolean;
-      generation: string;
-      objectId: string | null;
-      video: string;
-      fields: readonly {
-        id: string;
-        value: number;
-        min: number | null;
-        max: number | null;
-      }[];
-    }
-  | { type: "studio.geometry.result"; requestId: string; error: string | null }
-  | {
-      type: "studio.batch";
-      generation: string;
-      objectId: string;
-      values: Readonly<
-        Record<
-          string,
-          string | number | boolean | readonly [number, number, number, number]
-        >
-      >;
-    }
-  | {
-      type: "studio.text.open";
-      requestId: string;
-      candidate: number;
-      label: string;
-      value: string;
-    }
-  | { type: "studio.text.close"; requestId: string; error: string | null }
-  | { type: "transport.request" }
-  | { type: "transport.toggle" }
-  | { type: "transport.step"; direction: -1 | 1 }
-  | { type: "transport.audio"; muted: boolean; volume: number }
-  | { type: "transport.rate"; rate: number }
-  | { type: "studio.request" }
-  | {
-      type: "studio.draft";
-      generation: string;
-      objectId: string;
-      field: string;
-      value:
-        | string
-        | number
-        | boolean
-        | readonly [number, number, number, number];
-    }
-  | {
-      type: "studio.highlight";
-      objectId: string | null;
-      generation: string;
-      video: string;
-    }
-  | { objectId: string | null; type: "studio.hover" }
-  | { selectors: readonly string[]; token: string; type: "studio.hide" }
-  | { token: string; type: "studio.unhide" }
-  | { armed: boolean; type: "inspect" }
-  | { type: "inspect.clear" }
-  | { armed: boolean; type: "snapshot" }
-  | { frame: number; type: "seek" }
-  | { from: number; type: "replay"; until: number }
-  | { type: "pause" }
-  | { targets: readonly TargetStatuses[]; type: "tuning.statuses" }
-  | { open: boolean; targetId: string | null; type: "highlight" }
-  | {
-      path: string;
-      requestId: string;
-      targetId: string;
-      type: "tune.set";
-      value: TuningValue;
-    }
-  | {
-      paths: readonly string[];
-      requestId: string;
-      targetId: string;
-      type: "tune.reset";
-    };
+import type {
+  CommandType,
+  Consumer,
+  EntrySignal,
+  PreviewCommand,
+  PreviewMessage,
+  Routes,
+} from "./protocol";
 
 interface LocalBridge {
-  emit: (message: Record<string, unknown>) => void;
+  emit: (message: PreviewMessage | EntrySignal) => void;
   subscribe: (receive: (command: PreviewCommand) => void) => () => void;
 }
 let local: LocalBridge | null = null;
@@ -132,42 +22,28 @@ export function configureBridge(bridge: LocalBridge): () => void {
   };
 }
 
-export function post(message: Record<string, unknown>): void {
-  if (local) {
-    const bridge = local;
-    queueMicrotask(() => {
-      if (local === bridge) {
-        bridge.emit({ ...message, source: MESSAGE_SOURCE });
-      }
-    });
-  } else {
-    window.parent.postMessage({ ...message, source: MESSAGE_SOURCE }, "*");
+export function post(message: PreviewMessage | EntrySignal): void {
+  const bridge = local;
+  if (!bridge) {
+    return;
   }
+  queueMicrotask(() => {
+    if (local === bridge) {
+      bridge.emit(message);
+    }
+  });
 }
 
-export function onCommand(
-  handle: (command: PreviewCommand) => void
+export function route<C extends Consumer>(
+  _consumer: C,
+  handlers: Routes<C>
 ): () => void {
-  if (local) {
-    return local.subscribe(handle);
+  if (!local) {
+    throw new Error("The preview bridge is not configured.");
   }
-  const listener = (event: MessageEvent) => {
-    if (event.source !== window.parent || typeof event.data !== "object") {
-      return;
-    }
-
-    const frame = event.data as { source?: unknown; type?: unknown };
-
-    if (frame.source !== COMMAND_SOURCE || typeof frame.type !== "string") {
-      return;
-    }
-
-    handle(event.data as PreviewCommand);
-  };
-
-  window.addEventListener("message", listener);
-
-  return () => {
-    window.removeEventListener("message", listener);
-  };
+  const table: Partial<Record<CommandType, (command: PreviewCommand) => void>> =
+    handlers;
+  return local.subscribe((command) => {
+    table[command.type]?.(command);
+  });
 }

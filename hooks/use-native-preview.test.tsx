@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, mock } from "bun:test";
 import { act, cleanup, render } from "@testing-library/react";
 import { Effect } from "effect";
 import { useMemo, useRef } from "react";
+import { previewControl } from "@/test/preview-channel";
 import { useNativePreview } from "./use-native-preview";
 import type { PreviewControl } from "./use-preview";
 
@@ -27,10 +28,10 @@ mock.module("@/lib/studio/native-preview", () => ({
 const noopAttach = () => () => undefined;
 
 function preview(url: string): PreviewControl {
-  return {
+  return previewControl({
     attachSurface: noopAttach,
     preview: { phase: "ready", url },
-  } as unknown as PreviewControl;
+  }).preview;
 }
 
 function Harness({ url }: { url: string }) {

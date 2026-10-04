@@ -1,10 +1,6 @@
 import type { PlayerRef } from "@remotion/player";
 import { type RefObject, useEffect } from "react";
-import { onCommand, post } from "./bridge";
-import { nativeSurface } from "./surface";
-
-const INTERACTIVE =
-  "input, textarea, select, button, a, [contenteditable]:not([contenteditable='false']), [role='slider'], [role='textbox'], [role='button']";
+import { post, route } from "./bridge";
 
 export function usePlayerTransport(
   player: RefObject<PlayerRef | null>,
@@ -82,41 +78,16 @@ export function usePlayerTransport(
         ref.unmute();
       }
     };
-    const stopCommands = onCommand((command) => {
-      if (command.type === "transport.request") {
-        report();
-      } else if (command.type === "transport.toggle") {
-        toggle();
-      } else if (command.type === "transport.step") {
+    const stopCommands = route("transport", {
+      "transport.audio": setAudio,
+      "transport.request": report,
+      "transport.step": (command) => {
         if (command.direction === -1 || command.direction === 1) {
           step(command.direction);
         }
-      } else if (command.type === "transport.audio") {
-        setAudio(command);
-      }
+      },
+      "transport.toggle": toggle,
     });
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.defaultPrevented ||
-        event.isComposing ||
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.shiftKey ||
-        (event.target instanceof Element && event.target.closest(INTERACTIVE))
-      ) {
-        return;
-      }
-      if (event.key === " ") {
-        event.preventDefault();
-        if (!event.repeat) {
-          toggle();
-        }
-      } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-        event.preventDefault();
-        step(event.key === "ArrowLeft" ? -1 : 1);
-      }
-    };
     const onWaiting = () => {
       buffering = true;
       announce();
@@ -143,9 +114,6 @@ export function usePlayerTransport(
     ref.addEventListener("waiting", onWaiting);
     ref.addEventListener("resume", onResume);
     ref.addEventListener("error", onError);
-    if (!nativeSurface()) {
-      window.addEventListener("keydown", onKeyDown);
-    }
     announce();
 
     return () => {
@@ -155,7 +123,6 @@ export function usePlayerTransport(
       ref.removeEventListener("waiting", onWaiting);
       ref.removeEventListener("resume", onResume);
       ref.removeEventListener("error", onError);
-      window.removeEventListener("keydown", onKeyDown);
     };
   }, [cancelReplay, composition, durationInFrames, player]);
 }

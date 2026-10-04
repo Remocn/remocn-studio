@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { Internals } from "remotion";
-import { onCommand, type PreviewCommand, post } from "./bridge";
+import { post, route } from "./bridge";
 import {
   describe,
   pick,
@@ -29,9 +29,10 @@ import {
 import { InteractivityRuntime } from "./interactivity";
 import { type PlaybackPosition, playbackPositions } from "./playback-position";
 import { usePlaybackRate } from "./playback-rate";
+import type { CommandOf } from "./protocol";
 import { useSceneObserver } from "./scenes-report";
 import { armSnapshot, type Frame } from "./snapshot";
-import { nativeSurface } from "./surface";
+import { currentSurface } from "./surface";
 import { usePlayerTransport } from "./transport";
 import { applyStatuses, clearTuning, tune } from "./tuning-runtime";
 
@@ -71,6 +72,7 @@ export function Preview({ Root }: { readonly Root: React.FC }) {
       onlyRenderComposition={null}
     >
       <Internals.RemotionRootContexts
+        _experimentalKeepAudioContextAlive={false}
         audioEnabled={window.remotion_audioEnabled ?? true}
         audioLatencyHint={window.remotion_audioLatencyHint ?? "playback"}
         frameState={null}
@@ -389,17 +391,18 @@ function usePreviewCommands(
 
   useEffect(
     () =>
-      onCommand((command) => {
-        if (
-          studioCommand(command) ||
-          inspectOrSnapshot(command, player, spot.current, frame.current) ||
-          playbackCommand(command, player, replaying) ||
-          targetCommand(command)
-        ) {
-          return;
-        }
-
-        if (command.type === "seek") {
+      route("player", {
+        highlight: (command) => highlightTarget(command.targetId, command.open),
+        inspect: (command) =>
+          inspect(command.armed, player, spot.current, frame.current),
+        "inspect.clear": () => dismissSelection(false),
+        pause: () => {
+          cancelReplay();
+          player.current?.pause();
+        },
+        replay: (command) =>
+          startReplay(player.current, command.from, command.until, replaying),
+        seek: (command) => {
           cancelReplay();
           player.current?.pause();
           player.current?.seekTo(
@@ -408,83 +411,30 @@ function usePreviewCommands(
               Math.min(playing.current.durationInFrames - 1, command.frame)
             )
           );
-        }
+        },
+        snapshot: (command) =>
+          snapshot(command.armed, player, spot.current, frame.current),
+        "studio.hide": (command) => hide(command.token, command.selectors),
+        "studio.highlight": (command) =>
+          highlightManaged(command.objectId, command.video, command.generation),
+        "studio.hover": (command) => hoverManaged(command.objectId),
+        "studio.unhide": (command) => reveal(command.token),
+        "tune.reset": answerTune,
+        "tune.set": answerTune,
+        "tuning.statuses": (command) => applyStatuses(command.targets),
       }),
     [cancelReplay, player]
   );
 }
 
-function studioCommand(command: PreviewCommand): boolean {
-  if (command.type === "inspect.clear") {
-    dismissSelection(false);
-    return true;
-  }
-  if (command.type === "studio.highlight") {
-    highlightManaged(command.objectId, command.video, command.generation);
-    return true;
-  }
-  if (command.type === "studio.hover") {
-    hoverManaged(command.objectId);
-    return true;
-  }
-  if (command.type === "studio.hide") {
-    hide(command.token, command.selectors);
-    return true;
-  }
-  if (command.type === "studio.unhide") {
-    reveal(command.token);
-    return true;
-  }
-  return (
-    command.type === "studio.draft" ||
-    command.type === "studio.batch" ||
-    command.type === "studio.request"
-  );
-}
-
-function targetCommand(command: PreviewCommand): boolean {
-  if (command.type === "highlight") {
-    highlightTarget(command.targetId, command.open);
-    return true;
-  }
-
-  if (command.type === "tune.set" || command.type === "tune.reset") {
-    const result = tune(command);
-    post({
-      error: result.error,
-      ok: result.ok,
-      requestId: command.requestId,
-      type: "tune.result",
-    });
-    return true;
-  }
-
-  return false;
-}
-
-function playbackCommand(
-  command: PreviewCommand,
-  player: React.RefObject<PlayerRef | null>,
-  replaying: React.RefObject<(() => void) | null>
-): boolean {
-  if (command.type === "pause") {
-    replaying.current?.();
-    replaying.current = null;
-    player.current?.pause();
-    return true;
-  }
-
-  if (command.type === "replay") {
-    startReplay(player.current, command.from, command.until, replaying);
-    return true;
-  }
-
-  if (command.type === "tuning.statuses") {
-    applyStatuses(command.targets);
-    return true;
-  }
-
-  return false;
+function answerTune(command: CommandOf<"tune.set" | "tune.reset">): void {
+  const result = tune(command);
+  post({
+    error: result.error,
+    ok: result.ok,
+    requestId: command.requestId,
+    type: "tune.result",
+  });
 }
 
 function startReplay(
@@ -523,47 +473,46 @@ function startReplay(
   ref.play();
 }
 
-function inspectOrSnapshot(
-  command: PreviewCommand,
+function inspect(
+  armed: boolean,
   player: React.RefObject<PlayerRef | null>,
   spot: Spot,
   frame: Frame
-): boolean {
-  if (command.type === "inspect") {
-    if (command.armed) {
-      armSnapshot(false, frame);
-    }
-    post({
-      paused: player.current !== null && !player.current.isPlaying(),
-      status: armInspect(command.armed, spot),
-      type: "inspect",
-    });
-    return true;
+): void {
+  if (armed) {
+    armSnapshot(false, frame);
   }
+  post({
+    paused: player.current !== null && !player.current.isPlaying(),
+    status: armInspect(armed, spot),
+    type: "inspect",
+  });
+}
 
-  if (command.type === "snapshot") {
-    if (command.armed) {
-      armInspect(false, spot);
-      player.current?.pause();
-    }
-    post({
-      paused: player.current !== null,
-      status: armSnapshot(command.armed, frame),
-      type: "snapshot",
-    });
-    return true;
+function snapshot(
+  armed: boolean,
+  player: React.RefObject<PlayerRef | null>,
+  spot: Spot,
+  frame: Frame
+): void {
+  if (armed) {
+    armInspect(false, spot);
+    player.current?.pause();
   }
-
-  return false;
+  post({
+    paused: player.current !== null,
+    status: armSnapshot(armed, frame),
+    type: "snapshot",
+  });
 }
 
 // Two different signals, deliberately not merged. `asked` is the video the pane
 // opened this runtime for, and a miss is a fact worth reporting; `preferred` is the
 // basename of the opened folder, a guess from #226 whose miss is unremarkable.
 function askedId(): string | null {
-  return nativeSurface()?.composition ?? null;
+  return currentSurface()?.composition ?? null;
 }
 
 function preferredId(): string | null {
-  return nativeSurface()?.preferred ?? null;
+  return currentSurface()?.preferred ?? null;
 }

@@ -4,13 +4,12 @@ import { Effect, Exit, Fiber } from "effect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Composer } from "@/hooks/use-composer";
 import { useNow } from "@/hooks/use-now";
-import { type PreviewControl, useOnPreview } from "@/hooks/use-preview";
+import { type PreviewControl, usePreviewMessage } from "@/hooks/use-preview";
 import { causeMessage } from "@/lib/error-message";
 import { takeSnapshot } from "@/lib/studio/capture";
 import { renderFailure } from "@/lib/studio/failures";
 import {
   type PreviewCapture,
-  type PreviewMessage,
   type PreviewSnapshot,
   snapshotCommand,
   warmComposition,
@@ -91,23 +90,18 @@ export function useSnapshot({
     [capture, projectId]
   );
 
-  const onMessage = useCallback(
-    (message: PreviewMessage) => {
-      if (message.type === "snapshot") {
-        setReported(message);
-        return;
-      }
+  usePreviewMessage(preview, "snapshot", setReported);
 
-      if (message.type === "capture") {
-        take(message).catch(() => undefined);
-      }
+  const onCapture = useCallback(
+    (message: PreviewCapture) => {
+      take(message).catch(() => undefined);
     },
     [take]
   );
+  usePreviewMessage(preview, "capture", onCapture);
 
-  useOnPreview(preview, onMessage);
-
-  const { composition, send } = preview;
+  const { composition } = preview;
+  const { send } = preview.channel;
 
   useEffect(() => {
     setReported(null);

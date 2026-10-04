@@ -1,10 +1,22 @@
 import { describe, expect, it } from "bun:test";
+import { createHash } from "node:crypto";
 import {
   ELEMENT_ROLES,
   MOTION_DICTIONARY,
   MOTION_ROLES,
 } from "@/shared/motion";
-import { PIPELINE_STAGE_IDS, stageTemplate } from "@/shared/pipeline";
+import {
+  PIPELINE_STAGE_IDS,
+  type PipelineStage,
+  stageTemplate,
+} from "@/shared/pipeline";
+import { AGENT_PROVIDERS, PROVIDER_INFO } from "@/shared/providers";
+import {
+  conventionsFor,
+  instructionsFor,
+  STUDIO_CONVENTIONS,
+  stageBrief,
+} from "@/sidecar/agent/instructions";
 import {
   BUNDLE_NAME,
   INTERACTIVITY_SKILL,
@@ -12,11 +24,11 @@ import {
   MOTION_SKILL,
   SHIPPED,
 } from "@/sidecar/agent/knowledge";
-import {
-  conventionsFor,
-  pipelineBrief,
-  STUDIO_CONVENTIONS,
-} from "@/sidecar/claude/conventions";
+
+const pipelineBrief = (
+  stages: readonly PipelineStage[],
+  video: string | null = null
+) => stageBrief(stages, { planningTool: "TaskCreate", video });
 
 const NAMED = `\`${LESSONS_SKILL}\``;
 const MARKUP = `\`${INTERACTIVITY_SKILL}\``;
@@ -392,4 +404,197 @@ it("teaches the v6 provider and what a removed object means", () => {
   expect(text).toContain(
     "Never render it back, clear the flag or reuse its ID"
   );
+});
+
+const sha256 = (text: string) =>
+  createHash("sha256").update(text).digest("hex");
+
+const ANALYSIS: readonly PipelineStage[] = [
+  { stage: "analysis", status: "active" },
+];
+
+const CHOREOGRAPHY: readonly PipelineStage[] = [
+  { stage: "analysis", status: "done" },
+  { stage: "brand", status: "done" },
+  { stage: "script", status: "done" },
+  { stage: "motion", status: "done" },
+  { stage: "build", status: "done" },
+  { stage: "choreography", status: "active" },
+  { stage: "review", status: "pending" },
+];
+
+const NO_BRIEFS = { assets: null, brand: null, media: null };
+
+describe("the words, as they were before the move", () => {
+  it("keeps the conventions with the skills byte for byte", () => {
+    const text = conventionsFor(true, "intro");
+
+    expect(text).toHaveLength(20_583);
+    expect(sha256(text)).toBe(
+      "402c8c9eb3060e39121d7cc523fb8bc69b72e4eb2477abf33399905e5ce70cc4"
+    );
+  });
+
+  it("keeps the conventions alone byte for byte", () => {
+    const text = conventionsFor(false, null);
+
+    expect(text).toHaveLength(18_600);
+    expect(sha256(text)).toBe(
+      "03b8db94e3df0b7c570b950ebce1dbc7255c9f520d7456ef2b8bc76845da6c35"
+    );
+  });
+
+  it("keeps Claude's analysis brief byte for byte", () => {
+    const text = stageBrief(ANALYSIS, {
+      planningTool: PROVIDER_INFO.claude.planningTool,
+      video: "intro",
+    });
+
+    expect(text).toHaveLength(2176);
+    expect(sha256(text ?? "")).toBe(
+      "d7a99ee9b641c1a4aab9881b6310e66cae2b8a9a6f09cf93dabe00740643ebe8"
+    );
+  });
+
+  it("keeps Claude's brief for a later stage byte for byte", () => {
+    const text = stageBrief(CHOREOGRAPHY, {
+      planningTool: PROVIDER_INFO.claude.planningTool,
+      video: "intro",
+    });
+
+    expect(text).toHaveLength(4417);
+    expect(sha256(text ?? "")).toBe(
+      "4d3efb102f4e51b1c7515681236e13b4ac8afe15f1e78b8c5657644e7eece82b"
+    );
+  });
+
+  it("hands Claude the same system text it was given before", () => {
+    const { system } = instructionsFor({
+      briefs: NO_BRIEFS,
+      hasSkills: true,
+      provider: PROVIDER_INFO.claude,
+      stages: ANALYSIS,
+      video: "intro",
+    });
+
+    expect(system).toHaveLength(22_761);
+    expect(sha256(system)).toBe(
+      "8550b8fa7dadf4a39a97b0a26edb5c1a4438782c2c32bbbb5de70f9f9c5202d7"
+    );
+  });
+});
+
+const PLANNED = {
+  claude: "create your task list with TaskCreate from what you find:",
+  codex: "create your task list with update_plan from what you find:",
+  copilot:
+    "lay out your steps from what you find, in your own planning tool if you have one:",
+  grok: "create your task list with todo_write from what you find:",
+} as const;
+
+describe("instructionsFor, across the providers", () => {
+  it("words the planning step for the plan tool each runtime has", () => {
+    for (const provider of AGENT_PROVIDERS) {
+      const { system } = instructionsFor({
+        briefs: NO_BRIEFS,
+        hasSkills: true,
+        provider: PROVIDER_INFO[provider],
+        stages: ANALYSIS,
+        video: "intro",
+      });
+
+      expect(system.replaceAll("\n", " ")).toContain(PLANNED[provider]);
+    }
+  });
+
+  it("never names TaskCreate to a runtime that does not have it", () => {
+    for (const provider of AGENT_PROVIDERS.filter((id) => id !== "claude")) {
+      for (const stage of PIPELINE_STAGE_IDS) {
+        const { system } = instructionsFor({
+          briefs: NO_BRIEFS,
+          hasSkills: true,
+          provider: PROVIDER_INFO[provider],
+          stages: [{ stage, status: "active" }],
+          video: "intro",
+        });
+
+        expect(system).not.toContain("TaskCreate");
+      }
+    }
+  });
+
+  it("names no tool at all for a runtime whose plan tool is not known", () => {
+    const brief =
+      stageBrief(ANALYSIS, { planningTool: null, video: "intro" }) ?? "";
+    const step = brief
+      .replaceAll("\n", " ")
+      .split("in this order, and ")[1]
+      ?.split(":")[0];
+
+    expect(step).toBe(
+      "lay out your steps from what you find, in your own planning tool if you have one"
+    );
+  });
+
+  it("names the video's own docs folder in every stage, for every provider", () => {
+    for (const provider of AGENT_PROVIDERS) {
+      for (const stage of PIPELINE_STAGE_IDS) {
+        const { system } = instructionsFor({
+          briefs: NO_BRIEFS,
+          hasSkills: false,
+          provider: PROVIDER_INFO[provider],
+          stages: [{ stage, status: "active" }],
+          video: "opening-title",
+        });
+
+        expect(system).toContain("src/videos/opening-title/docs/");
+      }
+    }
+  });
+
+  it("carries the conventions alone when no stage is active", () => {
+    const { system } = instructionsFor({
+      briefs: NO_BRIEFS,
+      hasSkills: false,
+      provider: PROVIDER_INFO.codex,
+      stages: [],
+      video: "intro",
+    });
+
+    expect(system).toBe(conventionsFor(false, "intro"));
+  });
+
+  it("joins the assets and the brand into the trailer, and passes the media through", () => {
+    const both = instructionsFor({
+      briefs: { assets: "ASSETS", brand: "BRAND", media: "MEDIA" },
+      hasSkills: false,
+      provider: PROVIDER_INFO.grok,
+      stages: [],
+      video: null,
+    });
+    const brand = instructionsFor({
+      briefs: { assets: null, brand: "BRAND", media: null },
+      hasSkills: false,
+      provider: PROVIDER_INFO.grok,
+      stages: [],
+      video: null,
+    });
+
+    expect(both.trailer).toBe("ASSETS\n\nBRAND");
+    expect(both.media).toBe("MEDIA");
+    expect(brand.trailer).toBe("BRAND");
+    expect(brand.media).toBeNull();
+  });
+
+  it("has no trailer when there are neither assets nor a brand", () => {
+    const { trailer } = instructionsFor({
+      briefs: NO_BRIEFS,
+      hasSkills: false,
+      provider: PROVIDER_INFO.copilot,
+      stages: [],
+      video: null,
+    });
+
+    expect(trailer).toBeNull();
+  });
 });

@@ -5,15 +5,14 @@ import type {
   AgentFailure,
   PromptParams,
   PromptResult,
-  SessionMode,
 } from "@/shared/ipc";
 import type { TurnServices } from "../agent/adapter";
 import { announce, type KnowledgeBundle } from "../agent/knowledge";
 import { elementsOf } from "../agent/prompt";
-import { conventionsFor } from "../claude/conventions";
 import type { AcpPeer } from "./connection";
 import { type AcpBlock, blocksOf } from "./content";
 import { makeAcpTranslator } from "./events";
+import { switchMode, takeModeUpdate } from "./mode";
 import { answerPermission } from "./permission";
 import { acpPool, type Held, type SessionModes } from "./pool";
 
@@ -28,16 +27,6 @@ export interface AcpTurnConfig {
   readonly inBand: (firstChunk: string) => AgentFailure | null;
   readonly knowledge: KnowledgeBundle;
 }
-
-// ACP mode ids are URIs; the match is by fragment so a version bump that
-// moves the prefix cannot silently strand every session in the default
-// mode. acceptEdits maps to plain agent mode — an agent's allow-all mode
-// (autopilot and its cousins) has no story here.
-const MODE_FRAGMENTS: Record<SessionMode, string> = {
-  acceptEdits: "agent",
-  auto: "agent",
-  plan: "plan",
-};
 
 interface OpenedSession {
   modes?: SessionModes;
@@ -71,12 +60,17 @@ export function acpTurn(
     };
 
     const onNotification = (method: string, raw: unknown) => {
-      if (method !== "session/update" || replaying) {
+      if (method !== "session/update") {
         return;
       }
 
       const { update } = raw as { update?: Record<string, unknown> };
       if (update === undefined) {
+        return;
+      }
+
+      takeModeUpdate(held, update);
+      if (update.sessionUpdate === "current_mode_update" || replaying) {
         return;
       }
 
@@ -97,12 +91,7 @@ export function acpTurn(
     const onRequest = (method: string, raw: unknown) => {
       if (method === "session/request_permission") {
         return answerPermission(
-          {
-            cwd: services.cwd,
-            emit: services.emit,
-            gate: services.gate,
-            turnId: services.turnId,
-          },
+          { cwd: services.cwd, permissions: services.permissions },
           raw as never
         );
       }
@@ -123,7 +112,7 @@ export function acpTurn(
       ),
       (checkout, exit) =>
         Effect.andThen(
-          services.gate.abandon(services.turnId),
+          services.permissions.abandon,
           Effect.flatMap(Ref.get(failure), (failed) =>
             giveBack(
               params.historyId,
@@ -167,7 +156,8 @@ export function acpTurn(
       held.modes = session.modes;
       replaying = false;
 
-      if (opened.sessionId === null) {
+      const { sessionId } = opened;
+      if (sessionId === null) {
         throw new Error("The agent opened no session to speak in.");
       }
 
@@ -175,12 +165,20 @@ export function acpTurn(
         {
           mode: params.mode,
           model: "",
-          sessionId: opened.sessionId,
+          sessionId,
           type: "session",
         },
       ]);
 
-      await enterMode(agent, opened.sessionId, session);
+      const log = (line: string) => Effect.runSync(services.log(line));
+      await switchMode(agent, sessionId, params.mode, held, log);
+      Effect.runSync(
+        services.onMode(async (mode) => {
+          if (!(await switchMode(agent, sessionId, mode, held, log))) {
+            throw new Error(`the agent did not enter ${mode}`);
+          }
+        })
+      );
 
       if (!config.images && params.attachments.length > 0) {
         deliver([
@@ -194,7 +192,7 @@ export function acpTurn(
 
       const answered = await agent.request<{ stopReason?: string }>(
         "session/prompt",
-        { prompt: await promptOf(), sessionId: opened.sessionId }
+        { prompt: await promptOf(), sessionId }
       );
 
       if (answered.stopReason === "refusal") {
@@ -203,24 +201,15 @@ export function acpTurn(
     }
 
     async function promptOf(): Promise<AcpBlock[]> {
-      const conventions = conventionsFor(
-        config.knowledge.loaded,
-        services.video
+      const { media, system, trailer } = services.instructions(
+        config.knowledge.loaded
       );
-      const briefed =
-        services.briefs.pipeline === null
-          ? conventions
-          : `${conventions}\n\n${services.briefs.pipeline}`;
-      const trailer =
-        [services.briefs.assets, services.briefs.brand]
-          .filter(Boolean)
-          .join("\n\n") || null;
 
       const blocks = config.images
-        ? await blocksOf(params, trailer, services.briefs.media)
-        : textOnly(params, trailer, services.briefs.media);
+        ? await blocksOf(params, trailer, media)
+        : textOnly(params, trailer, media);
 
-      return [{ text: briefed, type: "text" }, ...blocks];
+      return [{ text: system, type: "text" }, ...blocks];
     }
 
     async function open(agent: AcpPeer): Promise<OpenedSession> {
@@ -259,37 +248,6 @@ export function acpTurn(
       });
       opened.sessionId = params.sessionId;
       return session;
-    }
-
-    async function enterMode(
-      agent: AcpPeer,
-      sessionId: string,
-      session: OpenedSession
-    ): Promise<void> {
-      const wanted = MODE_FRAGMENTS[params.mode];
-      const available = session.modes?.availableModes ?? [];
-      const found = available.find((candidate) =>
-        (candidate.id ?? "").toLowerCase().includes(wanted)
-      );
-
-      if (
-        found?.id === undefined ||
-        found.id === session.modes?.currentModeId
-      ) {
-        return;
-      }
-
-      try {
-        await agent.request("session/set_mode", {
-          modeId: found.id,
-          sessionId,
-        });
-        held.modes = { ...session.modes, currentModeId: found.id };
-      } catch (cause) {
-        Effect.runSync(
-          services.log(`acp: could not enter ${params.mode}: ${String(cause)}`)
-        );
-      }
     }
   }).pipe(Effect.scoped);
 }

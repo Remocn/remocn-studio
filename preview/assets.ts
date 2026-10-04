@@ -1,4 +1,4 @@
-import { nativeSurface, surfaceHref } from "./surface";
+import { surface, surfaceHref } from "./surface";
 
 /**
  * What an `asset` field's value is, on each side of the wire.
@@ -12,11 +12,6 @@ import { nativeSurface, surfaceHref } from "./surface";
  * the only place the two are converted into each other.
  */
 
-// Remotion's own token for "a file in `public/`", which
-// `computeEffectiveSchemaValuesDotNotation` resolves against the static base
-// for exactly the fields it knows to be assets. Setting the resolved URL would
-// work equally well today; the token is what the runtime is written against.
-const FILE_TOKEN = "remotion-file:";
 // The host's own listing route. Spelled here as well as in
 // `sidecar/preview/server.ts` for the reason the bridge's message shape is
 // spelled twice: this file is compiled by the *project's* webpack and has no
@@ -26,14 +21,7 @@ const SCHEME = /^[a-z][a-z\d+\-.]*:/i;
 const IMAGE = /\.(avif|gif|jpe?g|png|svg|webp)$/i;
 
 export function staticBase(): string {
-  const surface = nativeSurface();
-  if (surface) {
-    return surface.assets;
-  }
-  const value = (window as { remotion_staticBase?: unknown })
-    .remotion_staticBase;
-
-  return typeof value === "string" ? value : "";
+  return surface().assets;
 }
 
 /** Where the app can reach the project's static files, origin and all. */
@@ -69,9 +57,7 @@ export function assetValue(name: string): string {
     return name;
   }
 
-  return nativeSurface()
-    ? `${staticBase()}/${encodeSegments(name)}`
-    : `${FILE_TOKEN}${encodeSegments(name)}`;
+  return `${staticBase()}/${encodeSegments(name)}`;
 }
 
 export function isImageName(name: string): boolean {

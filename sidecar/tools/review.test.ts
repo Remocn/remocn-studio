@@ -147,6 +147,7 @@ describe("agent review completion", () => {
         save: () => Promise.reject(new Error("unused")),
       },
       pipeline: {
+        brief: () => "THE PORT'S BRIEF",
         requestSource: () => Promise.reject(new Error("unused")),
         setStage: () => {
           writes += 1;
@@ -163,10 +164,14 @@ describe("agent review completion", () => {
       stage: "review",
       status: "done",
     };
-    expect(
-      (await executeTool("remocn-pipeline", "set_pipeline_stage", args, tools))
-        .isError
-    ).toBe(false);
+    const done = await executeTool(
+      "remocn-pipeline",
+      "set_pipeline_stage",
+      args,
+      tools
+    );
+    expect(done.isError).toBe(false);
+    expect(done.text).toBe("[]\n\nTHE PORT'S BRIEF");
     current = { ...current, stale: true };
     expect(
       (await executeTool("remocn-pipeline", "set_pipeline_stage", args, tools))

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
 import type { Composer } from "@/hooks/use-composer";
-import type { PreviewControl } from "@/hooks/use-preview";
 import { type ToolSettings, useTools } from "@/hooks/use-tools";
+import { previewControl } from "@/test/preview-channel";
 import { stubGlobal, unstubAllGlobals } from "@/test/stub-global";
 
 const PROJECT = "project-1";
@@ -11,20 +11,7 @@ function harness(options: { isDocs?: boolean } = {}) {
   stubGlobal("requestAnimationFrame", () => 1);
   stubGlobal("cancelAnimationFrame", () => undefined);
 
-  const preview = {
-    attachSurface: () => () => undefined,
-    composition: null,
-    focus: () => undefined,
-    frame: 0,
-    hint: null,
-    isServing: true,
-    pick: null,
-    playing: false,
-    preview: { phase: "serving" },
-    restart: () => undefined,
-    send: () => undefined,
-    subscribe: () => () => undefined,
-  } as unknown as PreviewControl;
+  const { preview } = previewControl();
 
   const composer = {
     select: mock(() => "selection-1"),

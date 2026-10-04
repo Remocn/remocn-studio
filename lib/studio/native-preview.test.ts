@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Effect, Fiber } from "effect";
 import { type NativePreviewState, runNativePreview } from "./native-preview";
 import { pauseCommand } from "./preview";
-import { createPreviewSurfaceChannel } from "./preview-surface";
+import { createPreviewChannel } from "./preview-channel";
 
 const BASE = "http://127.0.0.1:51749/";
 const HOOKS_KEY = "__nativePreviewTestHooks";
@@ -83,6 +83,20 @@ function workingBundle(id: string) {
   } };`;
 }
 
+function chattyBundle(id: string) {
+  return `window.__remocnNativeBundle = { mount: (element, env) => {
+    window.${HOOKS_KEY}.commands["${id}"] = [];
+    env.emit({ type: "native.painted" });
+    env.emit({ source: "elsewhere", type: "inspect.ready" });
+    return {
+      dispose: () => { window.${HOOKS_KEY}.disposed.push("${id}"); },
+      position: () => ({ frame: 0, muted: false, playing: false, volume: 1 }),
+      selection: () => null,
+      start: () => undefined,
+    };
+  } };`;
+}
+
 function brokenBundle() {
   return "window.__remocnNativeBundle = { notMount: true };";
 }
@@ -143,7 +157,8 @@ function harness(
   const stage = document.createElement("div");
   const overlays = document.createElement("div");
   const viewport = options.viewport ?? document.createElement("div");
-  const channel = createPreviewSurfaceChannel();
+  const channel = createPreviewChannel();
+  channel.serve(BASE);
   const states: NativePreviewState[] = [];
   const waiters: {
     predicate: (states: readonly NativePreviewState[]) => boolean;
@@ -244,6 +259,23 @@ describe("runNativePreview", () => {
 
     channel.send(pauseCommand());
     expect(hooks().commands.slot1).toEqual([pauseCommand()]);
+  });
+
+  it("stamps every message the runtime emits as the preview's own", async () => {
+    const network = setupNetwork();
+    network.scripts.set("v1.js", chattyBundle("slot1"));
+    const { channel, waitForState } = harness();
+    const received: unknown[] = [];
+    channel.on("inspect.ready", (message) => {
+      received.push(message);
+    });
+
+    await waitForState((all) => all.length > 0);
+
+    expect(received).toContainEqual({
+      source: "remocn-preview",
+      type: "inspect.ready",
+    });
   });
 
   it("swaps to a rebuilt runtime and stops delivering to the disposed one", async () => {

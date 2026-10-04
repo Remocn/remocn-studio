@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Internals } from "remotion";
+import type { MessageOf } from "./protocol";
 
 const MAIN_ID = "Main";
 
@@ -166,7 +167,7 @@ export function describe(
   picked: ReturnType<typeof pick>,
   resolved: Resolution,
   compositions: readonly string[]
-) {
+): MessageOf<"composition"> {
   const total = compositions.length;
 
   if (picked === null) {
@@ -211,8 +212,8 @@ export function describe(
 }
 
 interface AnyComposition {
-  calculateMetadata?: ((input: unknown) => unknown) | null;
-  component: React.FC;
+  calculateMetadata?: ((input: never) => unknown) | null;
+  component: unknown;
   defaultProps?: Record<string, unknown>;
   durationInFrames: number | undefined;
   fps: number | undefined;
@@ -237,8 +238,8 @@ export function pick(
     // pane asked for a video by name, and a silent substitution reads as the
     // wrong video rendering rather than as a video nothing registers.
     return byId === undefined
-      ? { composition: null, id: asked, reason: "missing" }
-      : { composition: byId, id: byId.id, reason: "asked" };
+      ? { composition: null, id: asked, reason: "missing" as const }
+      : { composition: byId, id: byId.id, reason: "asked" as const };
   }
 
   const byFolder =
@@ -247,16 +248,20 @@ export function pick(
       : compositions.find((composition) => composition.id === preferred);
 
   if (byFolder !== undefined) {
-    return { composition: byFolder, id: byFolder.id, reason: "folder" };
+    return {
+      composition: byFolder,
+      id: byFolder.id,
+      reason: "folder" as const,
+    };
   }
 
   const main = compositions.find((composition) => composition.id === MAIN_ID);
 
   if (main !== undefined) {
-    return { composition: main, id: main.id, reason: "main" };
+    return { composition: main, id: main.id, reason: "main" as const };
   }
 
   const [first] = compositions;
 
-  return { composition: first, id: first.id, reason: "first" };
+  return { composition: first, id: first.id, reason: "first" as const };
 }

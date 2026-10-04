@@ -4,21 +4,14 @@ import type {
   EnvironmentCheck,
   PromptParams,
   PromptResult,
-  SessionMode,
 } from "@/shared/ipc";
 import type { ProviderInfo } from "@/shared/providers";
 import type { Ask } from "../tools/execute";
 import type { StdioTransport } from "../tools/gateway";
 import type { ToolServer } from "../tools/specs";
-import type { PermissionGate } from "./gate";
+import type { TurnGate } from "./gate";
+import type { TurnInstructions } from "./instructions";
 import type { ApplyMode } from "./mode";
-
-export interface TurnBriefs {
-  readonly assets: string | null;
-  readonly brand?: string | null;
-  readonly media: string | null;
-  readonly pipeline: string | null;
-}
 
 // Everything a turn needs from the app, in provider-neutral terms: the gate
 // and the mode switch are pure Effect, and the studio's tools arrive as
@@ -27,23 +20,23 @@ export interface TurnBriefs {
 // history write, kept separate because a permission ask rides the stream but
 // must not land in the transcript.
 export interface TurnServices {
-  readonly briefs: TurnBriefs;
   readonly cwd: string;
   readonly emit: (event: AgentEvent) => Effect.Effect<void>;
-  readonly gate: PermissionGate;
   readonly inProcess?: Readonly<Partial<Record<ToolServer, Ask>>>;
+  readonly instructions: (hasSkills: boolean) => TurnInstructions;
   readonly log: (line: string) => Effect.Effect<void>;
-  readonly onApprove: (mode: SessionMode) => Effect.Effect<void>;
   readonly onMode: (apply: ApplyMode) => Effect.Effect<void>;
+  readonly permissions: TurnGate;
   readonly record: (event: AgentEvent) => Effect.Effect<void>;
   // Keyed by server, and a Free turn is served fewer of them: the pipeline
   // is Pro, so its key is simply absent rather than pointing at a refusal.
   readonly tools: Readonly<Partial<Record<ToolServer, StdioTransport>>>;
   readonly turnId: string;
-  // The composition this turn is about, by slug — the folder under src/videos
-  // and the id the preview plays. Null when the row could not be read, which
-  // costs the conventions their one concrete sentence and nothing else.
-  readonly video: string | null;
+}
+
+export interface ToolKeyIds {
+  readonly chat: string;
+  readonly turn: string;
 }
 
 // A turn never fails as an Effect: every way it can go wrong is folded into
@@ -51,8 +44,9 @@ export interface TurnServices {
 // which each adapter turns into whatever its runtime calls a stop.
 export interface AgentAdapter {
   readonly account: (cwd: string) => Effect.Effect<EnvironmentCheck>;
+  readonly forget: (chat: string) => Effect.Effect<void>;
   readonly info: ProviderInfo;
-  readonly persistent?: boolean;
+  readonly toolKey: (ids: ToolKeyIds) => string;
   readonly turn: (
     params: PromptParams,
     services: TurnServices

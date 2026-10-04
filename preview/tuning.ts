@@ -1,6 +1,6 @@
 import { assetName, staticBase } from "./assets";
-import type { StatusKind, TargetStatuses, TuningValue } from "./bridge";
 import { allInFibers, hostOf, nearestInFibers } from "./fiber";
+import type { StatusKind, TargetStatuses, TuningValue } from "./protocol";
 
 type FieldType =
   | "array"
@@ -599,6 +599,12 @@ export function isTuningValue(value: unknown): value is TuningValue {
   );
 }
 
+function isOptionList(
+  variants: NonNullable<SchemaField["variants"]>
+): variants is readonly string[] {
+  return Array.isArray(variants);
+}
+
 function flattenActiveSchema(
   schema: InteractivitySchema,
   values: Readonly<Record<string, unknown>>
@@ -612,13 +618,18 @@ function flattenActiveSchema(
 
     out[path] = field;
 
-    if (field.type !== "enum" || Array.isArray(field.variants)) {
+    const { variants } = field;
+    if (
+      field.type !== "enum" ||
+      variants === undefined ||
+      isOptionList(variants)
+    ) {
       continue;
     }
 
     const selected = defaultedValue(field, values[path]);
     const variant =
-      typeof selected === "string" ? field.variants?.[selected] : undefined;
+      typeof selected === "string" ? variants[selected] : undefined;
 
     if (variant !== undefined && !Array.isArray(variant)) {
       Object.assign(out, flattenActiveSchema(variant, values));

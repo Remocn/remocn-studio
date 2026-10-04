@@ -1,4 +1,4 @@
-import type { PreviewCommand, TargetStatuses, TuningValue } from "./bridge";
+import type { PreviewCommand, TargetStatuses, TuningValue } from "./protocol";
 import type { TuningTarget } from "./tuning";
 
 export interface TuningReply {

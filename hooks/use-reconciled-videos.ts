@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { type PreviewControl, useOnPreview } from "@/hooks/use-preview";
-import type { PreviewMessage } from "@/lib/studio/preview";
+import { type PreviewControl, usePreviewMessage } from "@/hooks/use-preview";
+import type { PreviewComposition } from "@/lib/studio/preview";
 
 // The rows draw the pane instantly and the bundle corrects them seconds later:
 // a composition nobody recorded becomes a video, a video nothing renders is
@@ -16,8 +16,8 @@ export function useReconciledVideos(
   const seen = useRef<string | null>(null);
 
   const listen = useCallback(
-    (message: PreviewMessage) => {
-      if (message.type !== "composition" || projectId === null) {
+    (message: PreviewComposition) => {
+      if (projectId === null) {
         return;
       }
 
@@ -33,5 +33,5 @@ export function useReconciledVideos(
     [projectId, reconcile]
   );
 
-  useOnPreview(preview, listen);
+  usePreviewMessage(preview, "composition", listen);
 }

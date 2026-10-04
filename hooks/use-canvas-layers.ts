@@ -19,14 +19,10 @@ import {
   visibleRows,
   withAncestors,
 } from "@/lib/studio/layers";
-import {
-  PREVIEW_COMMAND_SOURCE,
-  type PreviewMessage,
-  type PreviewScene,
-} from "@/lib/studio/preview";
+import type { PreviewScene } from "@/lib/studio/preview";
 import type { Deletion } from "./use-deletion";
 import type { ManagedObjects } from "./use-managed-objects";
-import { type PreviewControl, useOnPreview } from "./use-preview";
+import { type PreviewControl, usePreviewReport } from "./use-preview";
 
 const CONTROLS =
   "button,input,textarea,select,a,[contenteditable],[data-canvas-chrome]";
@@ -100,7 +96,6 @@ export function useCanvasLayers({
   selection: unknown;
   viewport: RefObject<HTMLElement | null>;
 }) {
-  const [present, setPresent] = useState<ReadonlySet<string> | null>(null);
   const [layersFor, setLayersFor] = useState<unknown>(null);
   const [chosen, setChosen] = useState(true);
   const [peek, setPeek] = useState(false);
@@ -118,7 +113,7 @@ export function useCanvasLayers({
   const rows = useMemo(() => layersOf(objects ?? []), [objects]);
   const selectedId =
     managed?.isOpen === true ? (managed.selected?.id ?? null) : null;
-  const { send } = preview;
+  const { send } = preview.channel;
   const selectObject = managed?.select;
 
   const [overrides, setOverrides] = useState<ReadonlyMap<string, boolean>>(
@@ -138,14 +133,11 @@ export function useCanvasLayers({
     }
   }
 
-  const onMessage = useCallback((message: PreviewMessage) => {
-    if (message.type === "studio.present") {
-      setPresent(new Set(message.ids));
-    } else if (message.type === "rebuilt") {
-      setPresent(null);
-    }
-  }, []);
-  useOnPreview(preview, onMessage);
+  const presence = usePreviewReport(preview, "studio.present", "build");
+  const present = useMemo<ReadonlySet<string> | null>(
+    () => (presence === null ? null : new Set(presence.ids)),
+    [presence]
+  );
 
   const live = useMemo(
     () => (present === null ? null : withAncestors(rows, present)),
@@ -173,8 +165,7 @@ export function useCanvasLayers({
   );
 
   const hover = useCallback(
-    (objectId: string | null) =>
-      send({ objectId, source: PREVIEW_COMMAND_SOURCE, type: "studio.hover" }),
+    (objectId: string | null) => send({ objectId, type: "studio.hover" }),
     [send]
   );
 

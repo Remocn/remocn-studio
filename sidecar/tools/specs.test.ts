@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { Effect } from "effect";
 import { review } from "@/sidecar/claude/permission";
-import { pipelineBrief, STUDIO_CONVENTIONS } from "../claude/conventions";
+import { STUDIO_CONVENTIONS, stageBrief } from "../agent/instructions";
 import {
   DESIGN_CHECK,
   DESIGN_SERVER,
@@ -16,6 +16,9 @@ import {
   TOOL_SERVERS,
   TOOL_SPECS,
 } from "./specs";
+
+const pipelineBrief = (stages: Parameters<typeof stageBrief>[0]) =>
+  stageBrief(stages, { planningTool: "TaskCreate", video: null });
 
 describe("tool specs", () => {
   it("keeps every tool auto-allowed by the permission gate", async () => {

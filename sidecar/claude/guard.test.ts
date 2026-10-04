@@ -18,10 +18,11 @@ describe("permissionGuard", () => {
       gate,
       guard: permissionGuard({
         cwd: process.cwd(),
-        emit: (event) => Effect.sync(() => events.push(event)),
-        gate,
-        onApprove: (mode) => Effect.sync(() => approvals.push(mode)),
-        turnId: TURN,
+        permissions: gate.forTurn({
+          applyMode: (mode) => Effect.sync(() => approvals.push(mode)),
+          emit: (event) => Effect.sync(() => events.push(event)),
+          turnId: TURN,
+        }),
       }),
     };
   }
@@ -95,32 +96,8 @@ describe("permissionGuard", () => {
     );
   });
 
-  it("skips the card for a command already allowed this session", async () => {
-    const { events, gate, guard } = harness();
-    const controller = new AbortController();
-
-    const first = guard(
-      "Bash",
-      { command: "bun install" },
-      asked(controller, 1)
-    );
-
-    await settled();
-    await Effect.runPromise(gate.answer(pendingId(events), "always", null));
-    await first;
-
-    const second = await guard(
-      "Bash",
-      { command: "bun install" },
-      asked(controller, 2)
-    );
-
-    expect(second).toEqual({ behavior: "allow" });
-    expect(events).toHaveLength(1);
-  });
-
   it("denies rather than hangs when the turn is aborted mid-card", async () => {
-    const { guard } = harness();
+    const { events, gate, guard } = harness();
     const controller = new AbortController();
 
     const call = guard("Bash", { command: "sleep 100" }, asked(controller, 1));
@@ -129,6 +106,29 @@ describe("permissionGuard", () => {
     controller.abort();
 
     expect(await call).toMatchObject({ behavior: "deny" });
+    expect(
+      await Effect.runPromise(gate.answer(pendingId(events), "allow", null))
+    ).toBe(false);
+  });
+
+  it("denies a call whose turn was aborted before it was asked, with no card", async () => {
+    const { events, guard } = harness();
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await guard(
+      "Read",
+      { file_path: `${process.cwd()}/package.json` },
+      asked(controller, 1)
+    );
+    expect(result).toMatchObject({ behavior: "deny" });
+
+    expect(
+      await guard("Bash", { command: "bun install" }, asked(controller, 2))
+    ).toMatchObject({ behavior: "deny" });
+
+    await settled();
+    expect(events).toHaveLength(0);
   });
 
   it("raises a plan card and switches the mode the plan was approved into", async () => {

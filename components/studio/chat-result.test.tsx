@@ -1,8 +1,9 @@
 import { expect, it, mock } from "bun:test";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import type { PreviewControl, PreviewListener } from "@/hooks/use-preview";
-import type { PreviewMessage } from "@/lib/studio/preview";
+import type { PreviewComposition } from "@/lib/studio/preview";
+import type { PreviewMessage } from "@/preview/protocol";
 import type { UserEntry } from "@/shared/ipc";
+import { previewControl } from "@/test/preview-channel";
 import { ChatResultLink } from "./chat-result";
 
 const user: UserEntry = {
@@ -27,7 +28,7 @@ const user: UserEntry = {
   media: [],
   text: "Adjust the title",
 };
-const composition = {
+const composition: PreviewComposition = {
   compositionId: "Main",
   compositions: ["Main"],
   metadata: { durationInFrames: 1800, fps: 60, height: 1080, width: 1920 },
@@ -37,7 +38,7 @@ const composition = {
   trouble: null,
   type: "composition",
   unmeasured: false,
-} as const;
+};
 const done = {
   entries: [
     user,
@@ -53,41 +54,23 @@ const done = {
   turnError: null,
 };
 function setup() {
-  let listener: PreviewListener = () => undefined;
-  const send = mock();
   const open = mock();
-  const preview: PreviewControl = {
-    attachSurface: () => () => undefined,
+  const { preview, surface } = previewControl({
     composition: "Main",
-    focus: () => undefined,
-    frameOf: () => 0,
-    hint: null,
-    isServing: true,
-    onFrame: () => () => undefined,
     pick: composition,
-    playing: false,
-    preview: { phase: "ready", url: "http://localhost:1234" },
-    restart: mock(),
-    send,
-    subscribe: (next) => {
-      listener = next;
-      return () => {
-        listener = () => undefined;
-      };
-    },
-  };
+  });
   const view = render(
     <ChatResultLink onOpenPreview={open} preview={preview} turn={done} />
   );
   return {
     ...view,
-    emit: (message: PreviewMessage) => act(() => listener(message)),
+    emit: (message: PreviewMessage) => act(() => surface.emit(message)),
     open,
     preview,
-    send,
+    sent: surface.sent,
   };
 }
-const rebuilt = { source: "remocn-preview", type: "rebuilt" } as const;
+const rebuilt: PreviewMessage = { type: "rebuilt" };
 it("waits for the rebuilt composition, then seeks to the selected time at the new fps", () => {
   const run = setup();
   run.emit(composition);
@@ -97,11 +80,7 @@ it("waits for the rebuilt composition, then seeks to the selected time at the ne
   run.emit(composition);
   fireEvent.click(screen.getByRole("button", { name: "View change" }));
   expect(run.open).toHaveBeenCalledTimes(1);
-  expect(run.send).toHaveBeenCalledWith({
-    frame: 780,
-    source: "remocn-studio",
-    type: "seek",
-  });
+  expect(run.sent).toEqual([{ frame: 780, type: "seek" }]);
 });
 it("hides the result during another rebuild or a composition failure", () => {
   const run = setup();
@@ -145,5 +124,5 @@ it("offers the preview without inventing a target when no element was selected",
   run.emit(rebuilt);
   run.emit(composition);
   fireEvent.click(screen.getByRole("button", { name: "View preview" }));
-  expect(run.send).not.toHaveBeenCalled();
+  expect(run.sent).toEqual([]);
 });

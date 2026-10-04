@@ -1,7 +1,20 @@
-import { describe, expect, it } from "bun:test";
-import { assetBase, assetName, assetValue, isImageName } from "./assets";
+import { beforeEach, describe, expect, it } from "bun:test";
+import { withSurface } from "@/test/surface";
+import {
+  assetBase,
+  assetName,
+  assetValue,
+  isImageName,
+  staticBase,
+} from "./assets";
+
+const BASE = "http://127.0.0.1:4000/static-abc";
 
 describe("an asset value, both ways", () => {
+  beforeEach(() => {
+    withSurface({ assets: BASE });
+  });
+
   // `staticFile("library/logo one.png")` is the base plus the name encoded
   // segment by segment; the pane is given the name back.
   it("reads the name out of what staticFile() produced", () => {
@@ -14,11 +27,10 @@ describe("an asset value, both ways", () => {
     expect(assetName("/other/a.png", "")).toBe("/other/a.png");
   });
 
-  // Remotion resolves its own file token against the static base, for exactly
-  // the fields it knows to be assets — so the name is what crosses back.
-  it("writes a name as Remotion's own file token", () => {
+  it("writes a name against the surface's static base", () => {
+    expect(staticBase()).toBe(BASE);
     expect(assetValue("library/logo one.png")).toBe(
-      "remotion-file:library/logo%20one.png"
+      `${BASE}/library/logo%20one.png`
     );
     expect(assetValue("")).toBe("");
     expect(assetValue("https://example.com/a.png")).toBe(
@@ -28,9 +40,7 @@ describe("an asset value, both ways", () => {
   });
 
   it("is a round trip through the base it came from", () => {
-    const token = assetValue("deep/name.png").replace("remotion-file:", "");
-
-    expect(assetName(`/static-abc/${token}`, "/static-abc")).toBe(
+    expect(assetName(assetValue("deep/name.png"), staticBase())).toBe(
       "deep/name.png"
     );
   });

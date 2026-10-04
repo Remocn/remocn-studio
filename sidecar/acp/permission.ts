@@ -1,9 +1,9 @@
-import { isAbsolute, resolve, sep } from "node:path";
-import { Effect } from "effect";
-import type { AgentEvent, PermissionReason } from "@/shared/ipc";
-import type { GateAnswer, PermissionGate } from "../agent/gate";
-import { signatureOf } from "../claude/permission";
-import type { AcpUpdate } from "./events";
+import { Effect, Exit } from "effect";
+import type { PermissionReason } from "@/shared/ipc";
+import type { AskAnswer, TurnGate } from "../agent/gate";
+import { type PermissionVerdict, signatureOf } from "../agent/verdict";
+import { escapee } from "../contained";
+import { type AcpUpdate, toolText } from "./events";
 
 // The slice of an ACP `session/request_permission` this bridge reads.
 export interface AcpPermissionAsk {
@@ -13,26 +13,30 @@ export interface AcpPermissionAsk {
 
 export interface AcpPermissionOptions {
   readonly cwd: string;
-  readonly emit: (event: AgentEvent) => Effect.Effect<void>;
-  readonly gate: PermissionGate;
-  readonly turnId: string;
+  readonly permissions: TurnGate;
+}
+
+interface AcpOutcome {
+  outcome: { outcome: "selected"; optionId: string } | { outcome: "cancelled" };
 }
 
 // The #223 invariant, spoken in ACP's vocabulary: file work whose every
 // location resolves inside the opened folder runs without a card, execute
 // always asks, and anything else — a location outside the folder, a kind the
 // bridge does not recognise, a call with no locations at all — asks too.
-// ACP carries no symlinks to chase: locations arrive resolved by the agent,
-// so the check is plain path containment.
 export function reviewAcp(
   cwd: string,
   toolCall: AcpUpdate | undefined
-): { reason: PermissionReason; signature: string } | null {
+): Effect.Effect<PermissionVerdict> {
   const kind = toolCall?.kind ?? "";
   const title = toolCall?.title ?? kind;
 
   if (kind === "execute") {
-    return { reason: "bash", signature: signatureOf("execute", title) };
+    return Effect.succeed(ask("bash", "execute", title));
+  }
+
+  if (kind === SWITCH_MODE) {
+    return Effect.succeed(ask("plan", SWITCH_MODE, planOf(toolCall)));
   }
 
   const paths = (toolCall?.locations ?? []).flatMap((location) =>
@@ -40,92 +44,103 @@ export function reviewAcp(
   );
 
   if (FILE_KINDS.has(kind) && paths.length > 0) {
-    const escaped = paths.find((path) => !inside(cwd, path));
-    if (escaped === undefined) {
-      return null;
-    }
-    return { reason: "outside", signature: signatureOf(kind, escaped) };
+    return Effect.promise(() => escapee(cwd, [], paths)).pipe(
+      Effect.map((escaped) =>
+        escaped === null ? ALLOW : ask("outside", kind, escaped)
+      )
+    );
   }
 
-  return { reason: "tool", signature: signatureOf(kind || "tool", title) };
+  return Effect.succeed(ask("tool", kind || "tool", title));
 }
 
 const FILE_KINDS = new Set(["delete", "edit", "move", "read", "search"]);
 
+const SWITCH_MODE = "switch_mode";
+
+const ALLOW: PermissionVerdict = { kind: "allow" };
+
+const CANCELLED: AcpOutcome = { outcome: { outcome: "cancelled" } };
+
 export async function answerPermission(
   options: AcpPermissionOptions,
-  ask: AcpPermissionAsk
-): Promise<{
-  outcome: { outcome: "selected"; optionId: string } | { outcome: "cancelled" };
-}> {
-  const verdict = reviewAcp(options.cwd, ask.toolCall);
-
-  if (verdict === null) {
-    const allow =
-      pickOption(ask, "allow_once") ?? pickOption(ask, "allow_always");
-    return allow === null
-      ? { outcome: { outcome: "cancelled" } }
-      : { outcome: { optionId: allow, outcome: "selected" } };
-  }
-
-  if (
-    verdict.reason !== "outward" &&
-    (await Effect.runPromise(options.gate.remembers(verdict.signature)))
-  ) {
-    const allow =
-      pickOption(ask, "allow_once") ?? pickOption(ask, "allow_always");
-    return allow === null
-      ? { outcome: { outcome: "cancelled" } }
-      : { outcome: { optionId: allow, outcome: "selected" } };
-  }
-
-  const id = crypto.randomUUID();
-  await Effect.runPromise(
-    options.emit({
-      id,
-      input: ask.toolCall?.rawInput ?? {},
-      name: ask.toolCall?.title ?? ask.toolCall?.kind ?? "tool",
-      reason: verdict.reason,
-      type: "permission",
-    })
+  request: AcpPermissionAsk
+): Promise<AcpOutcome> {
+  const { toolCall } = request;
+  const exit = await Effect.runPromiseExit(
+    reviewAcp(options.cwd, toolCall).pipe(
+      Effect.flatMap((verdict) =>
+        allowOption(request, verdict, false) === null
+          ? Effect.succeed(null)
+          : options.permissions
+              .ask({
+                input:
+                  toolCall?.kind === SWITCH_MODE
+                    ? { plan: planOf(toolCall) }
+                    : (toolCall?.rawInput ?? {}),
+                name: toolCall?.title ?? toolCall?.kind ?? "tool",
+                verdict,
+              })
+              .pipe(Effect.map((answer) => chosen(request, verdict, answer)))
+      )
+    )
   );
 
-  const answer: GateAnswer = await Effect.runPromise(
-    options.gate.wait({
-      id,
-      signature: verdict.signature,
-      turnId: options.turnId,
-    })
-  );
-
-  if (answer.decision === "deny") {
-    const reject =
-      pickOption(ask, "reject_once") ?? pickOption(ask, "reject_always");
-    return reject === null
-      ? { outcome: { outcome: "cancelled" } }
-      : { outcome: { optionId: reject, outcome: "selected" } };
+  if (Exit.isFailure(exit) || exit.value === null) {
+    return CANCELLED;
   }
 
-  const chosen =
-    answer.decision === "always"
-      ? (pickOption(ask, "allow_always") ?? pickOption(ask, "allow_once"))
-      : (pickOption(ask, "allow_once") ?? pickOption(ask, "allow_always"));
-
-  return chosen === null
-    ? { outcome: { outcome: "cancelled" } }
-    : { outcome: { optionId: chosen, outcome: "selected" } };
+  return { outcome: { optionId: exit.value, outcome: "selected" } };
 }
 
-function pickOption(ask: AcpPermissionAsk, kind: string): string | null {
-  const found = (ask.options ?? []).find((option) => option.kind === kind);
+function chosen(
+  request: AcpPermissionAsk,
+  verdict: PermissionVerdict,
+  answer: AskAnswer
+): string | null {
+  if (answer.kind === "deny") {
+    return (
+      pickOption(request, "reject_once") ?? pickOption(request, "reject_always")
+    );
+  }
+
+  return allowOption(request, verdict, answer.always);
+}
+
+function allowOption(
+  request: AcpPermissionAsk,
+  verdict: PermissionVerdict,
+  always: boolean
+): string | null {
+  if (verdict.kind === "ask" && verdict.reason === "plan") {
+    return pickOption(request, "allow_once");
+  }
+
+  return always
+    ? (pickOption(request, "allow_always") ?? pickOption(request, "allow_once"))
+    : (pickOption(request, "allow_once") ??
+        pickOption(request, "allow_always"));
+}
+
+function pickOption(request: AcpPermissionAsk, kind: string): string | null {
+  const found = (request.options ?? []).find((option) => option.kind === kind);
   return typeof found?.optionId === "string" ? found.optionId : null;
 }
 
-function inside(cwd: string, path: string): boolean {
-  const root = resolve(cwd);
-  const target = isAbsolute(path) ? resolve(path) : resolve(cwd, path);
-  return (
-    target === root ||
-    target.startsWith(root.endsWith(sep) ? root : `${root}${sep}`)
-  );
+function planOf(toolCall: AcpUpdate | undefined): string {
+  const raw = toolCall?.rawInput as { plan?: unknown } | undefined;
+  if (typeof raw?.plan === "string" && raw.plan.length > 0) {
+    return raw.plan;
+  }
+
+  const content = toolText(toolCall?.content);
+  return content.length > 0 ? content : (toolCall?.title ?? "");
+}
+
+function ask(
+  reason: PermissionReason,
+  kind: string,
+  detail: string
+): PermissionVerdict {
+  return { kind: "ask", reason, signature: signatureOf(kind, detail) };
 }
