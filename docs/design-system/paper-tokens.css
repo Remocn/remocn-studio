@@ -1,95 +1,105 @@
 /* Paper reference snapshot, 2026-10-03. Not imported by application code. */
 :root {
-  --color-studio-light-background: #F8F8F8;
+  --color-studio-light-background: #f8f8f8;
   --color-studio-light-foreground: #282824;
-  --color-studio-light-card: #FFFFFF;
+  --color-studio-light-card: #ffffff;
   --color-studio-light-card-foreground: var(--color-studio-light-foreground);
-  --color-studio-light-popover: #FFFFFF;
+  --color-studio-light-popover: #ffffff;
   --color-studio-light-popover-foreground: var(--color-studio-light-foreground);
-  --color-studio-light-primary: #33332F;
-  --color-studio-light-primary-foreground: #FAFAF6;
+  --color-studio-light-primary: #33332f;
+  --color-studio-light-primary-foreground: #fafaf6;
   --color-studio-light-secondary: rgb(0 0 0 / 4.5%);
-  --color-studio-light-secondary-foreground: var(--color-studio-light-foreground);
+  --color-studio-light-secondary-foreground: var(
+    --color-studio-light-foreground
+  );
   --color-studio-light-muted: rgb(0 0 0 / 4.5%);
-  --color-studio-light-muted-foreground: #6A6A64;
+  --color-studio-light-muted-foreground: #6a6a64;
   --color-studio-light-accent: rgb(0 0 0 / 5.5%);
   --color-studio-light-accent-foreground: var(--color-studio-light-foreground);
   --color-studio-light-border: rgb(0 0 0 / 9%);
   --color-studio-light-input: rgb(0 0 0 / 9%);
-  --color-studio-light-field: #F8F8F8;
+  --color-studio-light-field: #f8f8f8;
   --color-studio-light-ring: #777770;
-  --color-studio-light-sidebar: #F0F0F0;
-  --color-studio-light-sidebar-foreground: #5D5D57;
+  --color-studio-light-sidebar: #f0f0f0;
+  --color-studio-light-sidebar-foreground: #5d5d57;
   --color-studio-light-sidebar-primary: var(--color-studio-light-primary);
-  --color-studio-light-sidebar-primary-foreground: var(--color-studio-light-primary-foreground);
+  --color-studio-light-sidebar-primary-foreground: var(
+    --color-studio-light-primary-foreground
+  );
   --color-studio-light-sidebar-accent: rgb(0 0 0 / 5.5%);
-  --color-studio-light-sidebar-accent-foreground: var(--color-studio-light-foreground);
+  --color-studio-light-sidebar-accent-foreground: var(
+    --color-studio-light-foreground
+  );
   --color-studio-light-sidebar-border: var(--color-studio-light-border);
   --color-studio-light-sidebar-ring: var(--color-studio-light-ring);
-  --color-studio-light-code: #FFFFFF;
+  --color-studio-light-code: #ffffff;
   --color-studio-light-code-foreground: var(--color-studio-light-foreground);
   --color-studio-light-code-highlight: var(--color-studio-light-accent);
   --color-studio-light-code-number: var(--color-studio-light-muted-foreground);
-  --color-studio-light-reference: #3B5799;
+  --color-studio-light-reference: #3b5799;
   --color-studio-light-pane-border: var(--color-studio-light-border);
   --color-studio-light-destructive: oklch(63.7% 0.237 25.3);
   --color-studio-light-destructive-foreground: oklch(50.5% 0.213 27.5);
   --color-studio-light-info: oklch(62.3% 0.214 259.8);
   --color-studio-light-info-foreground: oklch(48.8% 0.243 264.4);
-  --color-studio-light-success: oklch(69.6% 0.170 162.5);
+  --color-studio-light-success: oklch(69.6% 0.17 162.5);
   --color-studio-light-success-foreground: oklch(50.8% 0.118 165.6);
   --color-studio-light-warning: oklch(76.9% 0.188 70.1);
   --color-studio-light-warning-foreground: oklch(55.5% 0.163 49);
   --color-studio-light-chart-1: oklch(64.6% 0.222 41.1);
   --color-studio-light-chart-2: oklch(60% 0.118 184.7);
-  --color-studio-light-chart-3: oklch(39.8% 0.070 227.4);
+  --color-studio-light-chart-3: oklch(39.8% 0.07 227.4);
   --color-studio-light-chart-4: oklch(82.8% 0.189 84.4);
   --color-studio-light-chart-5: oklch(76.9% 0.188 70.1);
   --color-studio-dark-background: #181818;
-  --color-studio-dark-foreground: #F3F3F3;
+  --color-studio-dark-foreground: #f3f3f3;
   --color-studio-dark-card: #222222;
   --color-studio-dark-card-foreground: var(--color-studio-dark-foreground);
-  --color-studio-dark-popover: #2C2C2C;
+  --color-studio-dark-popover: #2c2c2c;
   --color-studio-dark-popover-foreground: var(--color-studio-dark-foreground);
-  --color-studio-dark-primary: #FFFFFF;
+  --color-studio-dark-primary: #ffffff;
   --color-studio-dark-primary-foreground: #181818;
-  --color-studio-dark-secondary: #2C2C2C;
+  --color-studio-dark-secondary: #2c2c2c;
   --color-studio-dark-secondary-foreground: var(--color-studio-dark-foreground);
   --color-studio-dark-muted: #222222;
-  --color-studio-dark-muted-foreground: #AFAFAF;
+  --color-studio-dark-muted-foreground: #afafaf;
   --color-studio-dark-accent: #323232;
   --color-studio-dark-accent-foreground: var(--color-studio-dark-foreground);
   --color-studio-dark-border: rgb(255 255 255 / 8%);
   --color-studio-dark-input: rgb(255 255 255 / 10%);
   --color-studio-dark-field: #333333;
-  --color-studio-dark-ring: #A3A3A3;
+  --color-studio-dark-ring: #a3a3a3;
   --color-studio-dark-sidebar: #181818;
-  --color-studio-dark-sidebar-foreground: #D4D4D4;
+  --color-studio-dark-sidebar-foreground: #d4d4d4;
   --color-studio-dark-sidebar-primary: var(--color-studio-dark-primary);
-  --color-studio-dark-sidebar-primary-foreground: var(--color-studio-dark-primary-foreground);
-  --color-studio-dark-sidebar-accent: #2C2C2C;
-  --color-studio-dark-sidebar-accent-foreground: var(--color-studio-dark-foreground);
+  --color-studio-dark-sidebar-primary-foreground: var(
+    --color-studio-dark-primary-foreground
+  );
+  --color-studio-dark-sidebar-accent: #2c2c2c;
+  --color-studio-dark-sidebar-accent-foreground: var(
+    --color-studio-dark-foreground
+  );
   --color-studio-dark-sidebar-border: var(--color-studio-dark-border);
   --color-studio-dark-sidebar-ring: var(--color-studio-dark-ring);
   --color-studio-dark-code: #222222;
   --color-studio-dark-code-foreground: var(--color-studio-dark-foreground);
   --color-studio-dark-code-highlight: var(--color-studio-dark-accent);
   --color-studio-dark-code-number: var(--color-studio-dark-muted-foreground);
-  --color-studio-dark-reference: #A0B8EF;
+  --color-studio-dark-reference: #a0b8ef;
   --color-studio-dark-pane-border: var(--color-studio-dark-border);
   --color-studio-dark-destructive-foreground: oklch(70.4% 0.191 22.2);
   --color-studio-dark-info: oklch(62.3% 0.214 259.8);
   --color-studio-dark-info-foreground: oklch(70.7% 0.165 254.6);
-  --color-studio-dark-success: oklch(69.6% 0.170 162.5);
+  --color-studio-dark-success: oklch(69.6% 0.17 162.5);
   --color-studio-dark-success-foreground: oklch(76.5% 0.177 163.2);
   --color-studio-dark-warning: oklch(76.9% 0.188 70.1);
   --color-studio-dark-warning-foreground: oklch(82.8% 0.189 84.4);
   --color-studio-dark-chart-1: oklch(48.8% 0.243 264.4);
-  --color-studio-dark-chart-2: oklch(69.6% 0.170 162.5);
+  --color-studio-dark-chart-2: oklch(69.6% 0.17 162.5);
   --color-studio-dark-chart-3: oklch(76.9% 0.188 70.1);
   --color-studio-dark-chart-4: oklch(62.7% 0.265 303.9);
   --color-studio-dark-chart-5: oklch(64.5% 0.246 16.4);
-  --color-studio-dark-destructive: #FB414A;
+  --color-studio-dark-destructive: #fb414a;
   --font-studio-sans: DM Sans;
   --font-studio-cyrillic: Golos Text;
   --font-studio-mono: Geist Mono;
@@ -155,5 +165,3 @@
   --radius-studio-4xl: 13px;
   --radius-studio-full: 9999px;
 }
-
-
