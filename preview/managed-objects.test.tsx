@@ -7,6 +7,10 @@ import {
 import { documentFixture } from "../test/fixtures/studio-document";
 import { managedIdentity, managedRoot } from "./managed-objects";
 
+const v1Document = documentFixture as React.ComponentProps<
+  typeof StudioObjects
+>["document"];
+
 function Heading({ id }: { id: string }) {
   const object = useStudioObject(id);
   return (
@@ -19,7 +23,7 @@ function Heading({ id }: { id: string }) {
 describe("managed runtime", () => {
   it("binds independent repeated roots without introducing layout wrappers", () => {
     const { container } = render(
-      <StudioObjects document={documentFixture}>
+      <StudioObjects document={v1Document}>
         <Heading id="first" />
         <Heading id="third" />
       </StudioObjects>
@@ -47,7 +51,7 @@ describe("managed runtime", () => {
       value: parent,
     });
     const view = render(
-      <StudioObjects document={documentFixture}>
+      <StudioObjects document={v1Document}>
         <Heading id="first" />
         <Heading id="third" />
       </StudioObjects>

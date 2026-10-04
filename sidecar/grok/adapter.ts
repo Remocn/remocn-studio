@@ -1,8 +1,10 @@
 import { Effect } from "effect";
-import type { EffortLevel, PromptParams, PromptResult } from "@/shared/ipc";
+import type { EffortLevel, PromptParams } from "@/shared/ipc";
 import { PROVIDER_INFO } from "@/shared/providers";
+import { acpPool } from "../acp/pool";
 import { acpTurn } from "../acp/turn";
 import type { AgentAdapter, TurnServices } from "../agent/adapter";
+import { missingCli } from "../agent/cli";
 import { type KnowledgeBundle, locateBundle } from "../agent/knowledge";
 import { accountCheck, missingRow } from "./account";
 import { findGrok } from "./cli";
@@ -42,22 +44,17 @@ export function grokArgs(
 export const grokAdapter: AgentAdapter = {
   account: () => accountCheck(),
 
+  forget: (chat) => acpPool.dispose(chat),
+
   info: PROVIDER_INFO.grok,
 
-  persistent: true,
+  toolKey: ({ chat }) => `chat-${chat}`,
 
   turn: (params: PromptParams, services: TurnServices) =>
     Effect.suspend(() => {
       const executable = findGrok();
       if (executable === null) {
-        return Effect.succeed({
-          context: null,
-          failure: {
-            kind: "unknown",
-            message: missingRow().detail ?? "Grok is not installed.",
-          },
-          sessionId: params.sessionId,
-        } satisfies PromptResult);
+        return Effect.succeed(missingCli(missingRow(), params));
       }
 
       const knowledge = locateBundle(services.cwd);

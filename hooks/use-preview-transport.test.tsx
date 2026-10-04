@@ -1,7 +1,12 @@
-import { describe, expect, it, mock } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
-import type { PreviewControl, PreviewListener } from "@/hooks/use-preview";
-import type { PreviewMessage } from "@/lib/studio/preview";
+import type { PreviewControl } from "@/hooks/use-preview";
+import type {
+  PreviewComposition,
+  PreviewMessageOf,
+} from "@/lib/studio/preview";
+import type { PreviewMessage } from "@/preview/protocol";
+import { PREVIEW_URL, previewControl } from "@/test/preview-channel";
 import {
   usePreviewTransport,
   useTransportEdge,
@@ -13,43 +18,67 @@ const SCENES = [
   { duration: 210, from: 90, id: "b", name: "Features" },
 ];
 
+function picked(compositionId: string): PreviewComposition {
+  return {
+    compositionId,
+    compositions: [compositionId],
+    metadata: { durationInFrames: 300, fps: 30, height: 1080, width: 1920 },
+    reason: "asked",
+    source: "remocn-preview",
+    total: 1,
+    trouble: null,
+    type: "composition",
+    unmeasured: false,
+  };
+}
+
 function setup() {
-  const listeners = new Set<PreviewListener>();
-  const send = mock();
-  const preview = (composition: string): PreviewControl =>
+  const harness = previewControl();
+  const preview = (composition: string, url: string): PreviewControl => ({
+    ...harness.preview,
+    composition,
+    pick: picked(composition),
+    preview: { phase: "ready", url },
+  });
+  const emit = (message: PreviewMessage) =>
+    act(() => harness.surface.emit(message));
+  const show = (composition: string) => emit(picked(composition));
+  show("intro");
+  const hook = renderHook(
     ({
       composition,
-      frameOf: () => 0,
-      isServing: true,
-      onFrame: () => () => undefined,
-      pick: { metadata: { durationInFrames: 300, fps: 30 } },
-      playing: false,
-      preview: { phase: "ready", url: "http://localhost:3001" },
-      send,
-      subscribe: (listener: PreviewListener) => {
-        listeners.add(listener);
-        return () => {
-          listeners.delete(listener);
-        };
+      url = PREVIEW_URL,
+    }: {
+      composition: string;
+      url?: string;
+    }) => usePreviewTransport(preview(composition, url), true),
+    {
+      initialProps: { composition: "intro" } as {
+        composition: string;
+        url?: string;
       },
-    }) as unknown as PreviewControl;
-  const hook = renderHook(
-    ({ composition }: { composition: string }) =>
-      usePreviewTransport(preview(composition), true),
-    { initialProps: { composition: "intro" } }
+    }
   );
-  const emit = (message: PreviewMessage) =>
-    act(() => {
-      for (const listener of listeners) {
-        listener(message);
-      }
-    });
   const rates = () =>
-    send.mock.calls
-      .map(([command]) => command)
-      .filter((command) => command.type === "transport.rate")
-      .map((command) => command.rate);
-  return { ...hook, emit, rates, send };
+    harness.surface.sent.flatMap((command) =>
+      command.type === "transport.rate" ? [command.rate] : []
+    );
+  return { ...hook, emit, harness, rates, show };
+}
+
+function stateOf(
+  compositionId: string,
+  volume: number
+): PreviewMessageOf<"transport.state"> {
+  return {
+    buffering: false,
+    compositionId,
+    error: null,
+    muted: false,
+    source: "remocn-preview",
+    type: "transport.state",
+    volume,
+  };
 }
 
 describe("usePreviewTransport scenes", () => {
@@ -64,7 +93,6 @@ describe("usePreviewTransport scenes", () => {
     emit({
       compositionId: "intro",
       scenes: SCENES,
-      source: "remocn-preview",
       type: "scenes",
     });
 
@@ -75,13 +103,13 @@ describe("usePreviewTransport scenes", () => {
   });
 
   it("ignores scenes reported for another video", () => {
-    const { emit, rerender, result } = setup();
+    const { emit, rerender, result, show } = setup();
     emit({
       compositionId: "intro",
       scenes: SCENES,
-      source: "remocn-preview",
       type: "scenes",
     });
+    show("outro");
     rerender({ composition: "outro" });
 
     expect(result.current.scenes).toEqual([]);
@@ -89,24 +117,80 @@ describe("usePreviewTransport scenes", () => {
 });
 
 describe("usePreviewTransport scenes arriving early", () => {
-  it("keeps scenes that arrive before the pane knows the video is open", () => {
-    const { emit, rerender, result } = setup();
+  it("keeps scenes delivered with their video's composition, before the pane re-renders for it", () => {
+    const { harness, rerender, result, show } = setup();
+    show("previous");
     rerender({ composition: "previous" });
-    emit({
-      compositionId: "intro",
-      scenes: SCENES,
-      source: "remocn-preview",
-      type: "scenes",
-    });
-
-    expect(result.current.scenes).toEqual([]);
-
+    act(() =>
+      harness.surface.reveal([
+        picked("intro"),
+        { compositionId: "intro", scenes: SCENES, type: "scenes" },
+      ])
+    );
     rerender({ composition: "intro" });
 
     expect(result.current.scenes.map((scene) => scene.name)).toEqual([
       "Intro",
       "Features",
     ]);
+  });
+
+  it("drops scenes that arrive before their video's composition", () => {
+    const { harness, rerender, result, show } = setup();
+    show("previous");
+    rerender({ composition: "previous" });
+    act(() =>
+      harness.surface.reveal([
+        { compositionId: "intro", scenes: SCENES, type: "scenes" },
+        picked("intro"),
+      ])
+    );
+    rerender({ composition: "intro" });
+
+    expect(result.current.scenes).toEqual([]);
+  });
+});
+
+describe("usePreviewTransport across a video switch", () => {
+  const OUTRO_URL = "http://127.0.0.1:51749/?composition=outro";
+
+  it("never shows the last video's transport as the next one's", () => {
+    const { emit, harness, rerender, result } = setup();
+    emit(stateOf("intro", 0.3));
+
+    expect(result.current.ready).toBe(true);
+    expect(result.current.volume).toBe(30);
+
+    act(() => {
+      harness.preview.channel.serve(OUTRO_URL);
+      harness.surface.reveal([
+        { type: "rebuilt" },
+        { ids: [], type: "studio.present" },
+        {
+          compositionId: null,
+          compositions: [],
+          metadata: null,
+          reason: "asked",
+          total: 0,
+          trouble: null,
+          type: "composition",
+          unmeasured: false,
+        },
+        picked("outro"),
+        stateOf("intro", 0.3),
+        { compositionId: "outro", scenes: SCENES, type: "scenes" },
+      ]);
+    });
+    rerender({ composition: "outro", url: OUTRO_URL });
+
+    expect(result.current.ready).toBe(false);
+    expect(result.current.volume).toBe(100);
+    expect(result.current.scenes).toHaveLength(2);
+
+    emit(stateOf("outro", 0.6));
+
+    expect(result.current.ready).toBe(true);
+    expect(result.current.volume).toBe(60);
   });
 });
 
@@ -154,15 +238,16 @@ describe("usePreviewTransport speed", () => {
     const { emit, rates, result } = setup();
     act(() => result.current.setRate(0.5));
     const before = rates().length;
-    emit({ source: "remocn-preview", type: "rebuilt" });
+    emit({ type: "rebuilt" });
 
     expect(rates().length).toBe(before + 1);
     expect(rates().at(-1)).toBe(0.5);
   });
 
   it("plays another video at 1x", () => {
-    const { rates, rerender, result } = setup();
+    const { rates, rerender, result, show } = setup();
     act(() => result.current.setRate(2));
+    show("outro");
     rerender({ composition: "outro" });
 
     expect(result.current.rate).toBe(1);
@@ -174,22 +259,18 @@ describe("usePreviewTransport playhead", () => {
   it("keeps the transport still while frames play, and the seek bar follows them", () => {
     const clock = { frame: 0 };
     const watchers = new Set<() => void>();
-    const preview = {
+    const { preview } = previewControl({
       composition: "intro",
       frameOf: () => clock.frame,
-      isServing: true,
       onFrame: (listen: () => void) => {
         watchers.add(listen);
         return () => {
           watchers.delete(listen);
         };
       },
-      pick: { metadata: { durationInFrames: 300, fps: 30 } },
+      pick: picked("intro"),
       playing: true,
-      preview: { phase: "ready", url: "http://localhost:3001" },
-      send: mock(),
-      subscribe: () => () => undefined,
-    } as unknown as PreviewControl;
+    });
     let renders = 0;
     const transport = renderHook(() => {
       renders += 1;

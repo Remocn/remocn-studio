@@ -31,6 +31,7 @@ export const ProviderInfo = Schema.Struct({
   experimental: Schema.Boolean,
   id: AgentProvider,
   name: Schema.String,
+  planningTool: Schema.NullOr(Schema.String),
 });
 
 export type ProviderInfo = (typeof ProviderInfo)["Type"];
@@ -52,11 +53,14 @@ export const PROVIDER_INFO: Record<AgentProvider, ProviderInfo> = {
     experimental: false,
     id: "claude",
     name: "Claude",
+    planningTool: "TaskCreate",
   },
   // context is false because Codex reports per-turn token usage, not how full
   // the context window is; planTool is false because its todo_list item does
-  // not speak the TaskCreate vocabulary the checklist parses. Experimental
-  // until a real session has run the whole path from prompt to export.
+  // not speak the TaskCreate vocabulary the checklist parses. Its own plan
+  // tool is update_plan (codex-rs core/src/tools/handlers/plan.rs, present in
+  // the 0.147.0 binary). Experimental until a real session has run the whole
+  // path from prompt to export.
   codex: {
     capabilities: {
       context: false,
@@ -69,12 +73,14 @@ export const PROVIDER_INFO: Record<AgentProvider, ProviderInfo> = {
     experimental: true,
     id: "codex",
     name: "Codex",
+    planningTool: "update_plan",
   },
   // Speaks the Agent Client Protocol, which is why it gets real permission
   // cards where Codex has only the sandbox. Experimental for the same
   // reason Codex is — and the account this was built against is blocked by
   // an org policy, so the model path is verified against the protocol, not
-  // against a live subscription.
+  // against a live subscription. Its plan tool's name could not be read off
+  // the 1.0.90 bundle, so no planningTool is claimed.
   copilot: {
     capabilities: {
       context: false,
@@ -87,10 +93,12 @@ export const PROVIDER_INFO: Record<AgentProvider, ProviderInfo> = {
     experimental: true,
     id: "copilot",
     name: "Copilot",
+    planningTool: null,
   },
   // The second rider on the ACP bridge. Its prompt capabilities say
   // image: false, so attached pictures degrade to a notice rather than a
-  // silent drop.
+  // silent drop. Its plan tool is todo_write, read off the Grok Build 1.0.46
+  // binary's own tool table.
   grok: {
     capabilities: {
       context: false,
@@ -103,6 +111,7 @@ export const PROVIDER_INFO: Record<AgentProvider, ProviderInfo> = {
     experimental: true,
     id: "grok",
     name: "Grok",
+    planningTool: "todo_write",
   },
 };
 

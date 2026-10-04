@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
 import type { MouseEvent } from "react";
-import type { PreviewControl, PreviewListener } from "@/hooks/use-preview";
-import type { PreviewMessage, PreviewScene } from "@/lib/studio/preview";
+import type { PreviewScene } from "@/lib/studio/preview";
+import type { PreviewMessage } from "@/preview/protocol";
 import type { StudioObject } from "@/shared/studio-document";
+import { previewControl } from "@/test/preview-channel";
 import { useCanvasLayers } from "./use-canvas-layers";
 
 function object(
@@ -27,20 +28,10 @@ function setup(
   objects = OBJECTS,
   scenes: readonly PreviewScene[] = []
 ) {
-  const listeners = new Set<PreviewListener>();
-  const send = mock();
+  const { preview, surface } = previewControl();
   const select = mock();
   const seekTo = mock();
   const deletion = { openRowMenu: mock(), remove: mock(), undo: mock() };
-  const preview = {
-    send,
-    subscribe: (listener: PreviewListener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-  } as unknown as PreviewControl;
   const viewport = document.createElement("div");
   viewport.tabIndex = 0;
   document.body.append(viewport);
@@ -81,12 +72,8 @@ function setup(
       },
     }
   );
-  const emit = (message: PreviewMessage) =>
-    act(() => {
-      for (const listener of listeners) {
-        listener(message);
-      }
-    });
+  const emit = (message: PreviewMessage) => act(() => surface.emit(message));
+  const { sent } = surface;
   const press = (init: KeyboardEventInit, target: Element = viewport) => {
     const event = new KeyboardEvent("keydown", {
       bubbles: true,
@@ -97,7 +84,17 @@ function setup(
     target.dispatchEvent(event);
     return event;
   };
-  return { ...hook, deletion, emit, press, seekTo, select, send, viewport };
+  return {
+    ...hook,
+    deletion,
+    emit,
+    press,
+    preview,
+    seekTo,
+    select,
+    sent,
+    viewport,
+  };
 }
 
 afterEach(() => {
@@ -124,43 +121,40 @@ describe("useCanvasLayers", () => {
 
   it("dims what the runtime has not mounted, and forgets it on a rebuild", () => {
     const { emit, result } = setup();
-    emit({ ids: ["title"], source: "remocn-preview", type: "studio.present" });
+    emit({ ids: ["title"], type: "studio.present" });
 
     expect(
       result.current.rows.filter(result.current.isPresent).map((row) => row.id)
     ).toEqual(["title"]);
 
-    emit({ source: "remocn-preview", type: "rebuilt" });
+    emit({ type: "rebuilt" });
 
     expect(result.current.rows.every(result.current.isPresent)).toBe(true);
   });
 
   it("asks the runtime to outline a hovered row and to stop", () => {
-    const { result, send } = setup();
+    const { result, sent } = setup();
     act(() => result.current.hover("card"));
     act(() => result.current.hover(null));
 
-    expect(send.mock.calls.map(([command]) => command.objectId)).toEqual([
-      "card",
-      null,
+    expect(sent).toEqual([
+      { objectId: "card", type: "studio.hover" },
+      { objectId: null, type: "studio.hover" },
     ]);
   });
 
   it("selects a row the way a click on the canvas does", () => {
-    const { result, select, send } = setup();
+    const { result, select, sent } = setup();
     act(() => result.current.select("price"));
 
     expect(select).toHaveBeenCalledWith("price");
-    expect(send).toHaveBeenLastCalledWith(
-      expect.objectContaining({ objectId: null, type: "studio.hover" })
-    );
+    expect(sent.at(-1)).toEqual({ objectId: null, type: "studio.hover" });
   });
 
   it("tabs through the objects on screen in list order", () => {
     const { emit, press, select } = setup("title");
     emit({
       ids: ["title", "card"],
-      source: "remocn-preview",
       type: "studio.present",
     });
 
@@ -191,7 +185,7 @@ describe("useCanvasLayers", () => {
 
   it("leaves Tab alone when nothing is on screen", () => {
     const { emit, press, select } = setup();
-    emit({ ids: [], source: "remocn-preview", type: "studio.present" });
+    emit({ ids: [], type: "studio.present" });
 
     expect(press({}).defaultPrevented).toBe(false);
     expect(select).not.toHaveBeenCalled();
@@ -347,18 +341,41 @@ describe("useCanvasLayers", () => {
 
   it("opens the group on screen and closes the rest", () => {
     const { emit, result } = setup();
-    emit({ ids: ["title"], source: "remocn-preview", type: "studio.present" });
+    emit({ ids: ["title"], type: "studio.present" });
 
     expect(visibleIds(result)).toEqual(["hero", "title", "card"]);
   });
 
+  it("keeps the last video's groups until the next video reports its own", () => {
+    const { emit, preview, result } = setup();
+    emit({ ids: ["title"], type: "studio.present" });
+    act(() =>
+      preview.channel.serve("http://127.0.0.1:51749/?composition=Outro")
+    );
+    emit({
+      compositionId: "Outro",
+      compositions: ["Main", "Outro"],
+      metadata: null,
+      reason: "asked",
+      total: 2,
+      trouble: null,
+      type: "composition",
+      unmeasured: false,
+    });
+
+    expect(visibleIds(result)).toEqual(["hero", "title", "card"]);
+
+    emit({ ids: ["price"], type: "studio.present" });
+
+    expect(visibleIds(result)).toEqual(["hero", "card", "price"]);
+  });
+
   it("keeps a group the person collapsed closed as the playhead moves", () => {
     const { emit, result } = setup();
-    emit({ ids: ["title"], source: "remocn-preview", type: "studio.present" });
+    emit({ ids: ["title"], type: "studio.present" });
     act(() => result.current.onToggle(toggleRow("hero")));
     emit({
       ids: ["title", "price"],
-      source: "remocn-preview",
       type: "studio.present",
     });
 
@@ -367,7 +384,7 @@ describe("useCanvasLayers", () => {
 
   it("opens the groups above an object selected on the canvas", () => {
     const { emit, rerender, result } = setup();
-    emit({ ids: ["title"], source: "remocn-preview", type: "studio.present" });
+    emit({ ids: ["title"], type: "studio.present" });
     act(() => result.current.onToggle(toggleRow("hero")));
 
     expect(visibleIds(result)).not.toContain("title");
@@ -427,7 +444,6 @@ describe("useCanvasLayers", () => {
       const { emit, result, seekTo } = setup(null, SCENED, SCENES);
       emit({
         ids: ["title"],
-        source: "remocn-preview",
         type: "studio.present",
       });
       act(() => result.current.select("clock"));
@@ -439,7 +455,6 @@ describe("useCanvasLayers", () => {
       const { emit, result, seekTo } = setup(null, SCENED, SCENES);
       emit({
         ids: ["title"],
-        source: "remocn-preview",
         type: "studio.present",
       });
       act(() => result.current.select("title"));

@@ -1,13 +1,15 @@
 import { afterEach, describe, expect, it, jest, mock } from "bun:test";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { useEffect } from "react";
 import {
   type PreviewControl,
-  type PreviewListener,
-  useOnPreview,
   usePreview,
+  usePreviewReport,
 } from "@/hooks/use-preview";
+import type { PreviewMessage } from "@/preview/protocol";
 import type { PreviewEvent, SidecarPhase } from "@/shared/ipc";
+import { memorySurface, previewControl } from "@/test/preview-channel";
 
 const FOLDER = "/Users/me/projects/my-video";
 const URL = "http://127.0.0.1:51749";
@@ -22,8 +24,30 @@ function internals(): Internals {
     .__TAURI_INTERNALS__;
 }
 
-function listener(): PreviewListener {
+type Listener = (message: unknown) => void;
+
+const HEARD = [
+  "capture",
+  "composition",
+  "inspect",
+  "rebuilt",
+  "selection",
+] as const;
+
+function listener(): Listener {
   return mock();
+}
+
+function useHeard(preview: PreviewControl, listen: Listener) {
+  const { channel } = preview;
+  useEffect(() => {
+    const stops = HEARD.map((type) => channel.on(type, listen));
+    return () => {
+      for (const stop of stops) {
+        stop();
+      }
+    };
+  }, [channel, listen]);
 }
 
 function mockPreview() {
@@ -57,25 +81,12 @@ function mockPreview() {
 }
 
 function attach(preview: PreviewControl) {
-  let receive: ((message: unknown) => void) | null = null;
+  const surface = memorySurface();
   act(() => {
-    preview.attachSurface({
-      dispose: () => {
-        receive = null;
-      },
-      focus: () => undefined,
-      send: () => undefined,
-      subscribe: (listen) => {
-        receive = listen;
-        return () => {
-          receive = null;
-        };
-      },
-    });
+    preview.attachSurface(surface);
   });
-  const surface = (message: unknown) => receive?.(message);
-  deliver = surface;
-  return (data: unknown) => act(() => surface(data));
+  deliver = surface.post;
+  return (data: unknown) => act(() => surface.post(data));
 }
 
 function post(data: unknown) {
@@ -126,14 +137,14 @@ const SELECTION = {
 };
 
 async function served(
-  listen: PreviewListener = listener(),
+  listen: Listener = listener(),
   composition: string | null = null,
   phase: SidecarPhase | "unknown" = "ready"
 ) {
   const host = mockPreview();
   const rendered = renderHook(() => {
     const preview = usePreview(FOLDER, composition, phase);
-    useOnPreview(preview, listen);
+    useHeard(preview, listen);
     return preview;
   });
 
@@ -427,12 +438,12 @@ describe("usePreview", () => {
     post({
       paused: true,
       source: "remocn-preview",
-      status: "no-grab",
+      status: "no-canvas",
       type: "inspect",
     });
 
     expect(listen).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "no-grab" })
+      expect.objectContaining({ status: "no-canvas" })
     );
   });
 
@@ -451,6 +462,20 @@ describe("usePreview", () => {
     expect(listen).toHaveBeenCalledWith(
       expect.objectContaining({ frame: 42, type: "capture" })
     );
+  });
+
+  it("follows the playhead: the frame it is on and whether it plays", async () => {
+    const { rendered } = await served();
+
+    post({
+      frame: 12,
+      playing: true,
+      source: "remocn-preview",
+      type: "playhead",
+    });
+
+    expect(rendered.result.current.frameOf()).toBe(12);
+    expect(rendered.result.current.playing).toBe(true);
   });
 
   it("keeps the current time when properties trigger a rebuild", async () => {
@@ -493,7 +518,7 @@ describe("usePreview", () => {
     mockPreview();
     renderHook(() => {
       const preview = usePreview(FOLDER, null, "ready");
-      useOnPreview(preview, listen);
+      useHeard(preview, listen);
       return preview;
     });
 
@@ -529,5 +554,88 @@ describe("usePreview", () => {
       url: `${URL}/?composition=closing-scene`,
     });
     expect(host.requests()).toBe(1);
+  });
+});
+
+function transport(compositionId: string): PreviewMessage {
+  return {
+    buffering: false,
+    compositionId,
+    error: null,
+    muted: false,
+    type: "transport.state",
+    volume: 1,
+  };
+}
+
+function shown(compositionId: string): PreviewMessage {
+  return {
+    compositionId,
+    compositions: [compositionId],
+    metadata: null,
+    reason: "asked",
+    total: 1,
+    trouble: null,
+    type: "composition",
+    unmeasured: false,
+  };
+}
+
+describe("usePreviewReport", () => {
+  function reports() {
+    const { preview, surface } = previewControl();
+    const emit = (message: PreviewMessage) => act(() => surface.emit(message));
+    emit(shown("intro"));
+    const rendered = renderHook(() => ({
+      layers: usePreviewReport(preview, "studio.present", "build"),
+      state: usePreviewReport(preview, "transport.state", "video"),
+    }));
+    emit(transport("intro"));
+    emit({ ids: ["title"], type: "studio.present" });
+    return { emit, preview, rendered };
+  }
+
+  it("holds the latest report of its type", () => {
+    const { rendered } = reports();
+
+    expect(rendered.result.current.state).toMatchObject({
+      compositionId: "intro",
+    });
+    expect(rendered.result.current.layers).toMatchObject({ ids: ["title"] });
+  });
+
+  it("keeps a video's report across a rebuild, and drops a build's", () => {
+    const { emit, rendered } = reports();
+
+    emit({ type: "rebuilt" });
+
+    expect(rendered.result.current.state).toMatchObject({
+      compositionId: "intro",
+    });
+    expect(rendered.result.current.layers).toBeNull();
+  });
+
+  it("drops a video's report once another video is on screen, and keeps a build's", () => {
+    const { emit, rendered } = reports();
+
+    emit(shown("outro"));
+
+    expect(rendered.result.current.state).toBeNull();
+    expect(rendered.result.current.layers).toMatchObject({ ids: ["title"] });
+
+    emit(transport("outro"));
+
+    expect(rendered.result.current.state).toMatchObject({
+      compositionId: "outro",
+    });
+  });
+
+  it("drops a video's report once another preview is served, and keeps a build's", () => {
+    const { preview, rendered } = reports();
+
+    act(() => preview.channel.serve("http://127.0.0.1:51749/?composition=x"));
+
+    expect(rendered.result.current.state).toBeNull();
+    expect(rendered.result.current.layers).toMatchObject({ ids: ["title"] });
   });
 });

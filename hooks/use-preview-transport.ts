@@ -8,91 +8,65 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { type PreviewControl, useOnPreview } from "@/hooks/use-preview";
+import {
+  type PreviewControl,
+  usePreviewMessage,
+  usePreviewReport,
+} from "@/hooks/use-preview";
 import {
   PLAYBACK_RATES,
   type PlaybackRate,
-  PREVIEW_COMMAND_SOURCE,
-  type PreviewMessage,
+  type PreviewMessageOf,
   type PreviewScene,
   seekCommand,
 } from "@/lib/studio/preview";
-
-type TransportState = Extract<PreviewMessage, { type: "transport.state" }>;
 
 const INTERACTIVE =
   "input, textarea, select, button, a, [contenteditable]:not([contenteditable='false']), [role='slider'], [role='textbox'], [role='button']";
 
 export function usePreviewTransport(preview: PreviewControl, enabled: boolean) {
   const surface = useRef<HTMLElement>(null);
-  const { composition, frameOf, isServing, onFrame, pick, send } = preview;
+  const { channel, composition, frameOf, isServing, onFrame, pick } = preview;
+  const { send } = channel;
   const url = preview.preview.phase === "ready" ? preview.preview.url : null;
-  const [reported, setReported] = useState<{
-    url: string;
-    state: TransportState;
-  } | null>(null);
+  const state = usePreviewReport(preview, "transport.state", "video");
+  const sceneReport = usePreviewReport(preview, "scenes", "video");
   const [seek, setSeek] = useState<{ url: string; frame: number } | null>(null);
-  const [sceneReport, setSceneReport] = useState<{
-    composition: string;
-    scenes: readonly PreviewScene[];
-    url: string;
-  } | null>(null);
   const [chosenRate, setChosenRate] = useState<{
     composition: string | null;
     rate: PlaybackRate;
   } | null>(null);
   const rate = chosenRate?.composition === composition ? chosenRate.rate : 1;
-  const scenes =
-    sceneReport?.url === url && sceneReport.composition === composition
-      ? sceneReport.scenes
-      : NO_SCENES;
-  const state =
-    reported?.url === url && reported?.state.compositionId === composition
-      ? reported.state
-      : null;
+  const scenes = sceneReport?.scenes ?? NO_SCENES;
   const metadata = pick?.metadata;
   const duration = metadata?.durationInFrames ?? 0;
   const fps = metadata?.fps ?? 30;
   const lastFrame = Math.max(0, duration - 1);
   const ready = enabled && isServing && state !== null && duration > 0;
 
-  const receive = useCallback(
-    (message: PreviewMessage) => {
-      if (
-        message.type === "transport.state" &&
-        message.compositionId === composition &&
-        url
-      ) {
-        setReported({ state: message, url });
-      } else if (message.type === "scenes" && url) {
-        setSceneReport({
-          composition: message.compositionId,
-          scenes: message.scenes,
-          url,
-        });
-      } else if (message.type === "playhead") {
-        setSeek((pending) =>
-          pending?.frame === message.frame ? null : pending
-        );
-      } else if (message.type === "rebuilt") {
-        setSeek(null);
-        send({ source: PREVIEW_COMMAND_SOURCE, type: "transport.request" });
-        send({ rate, source: PREVIEW_COMMAND_SOURCE, type: "transport.rate" });
-      }
-    },
-    [composition, rate, send, url]
+  const onPlayhead = useCallback(
+    (message: PreviewMessageOf<"playhead">) =>
+      setSeek((pending) => (pending?.frame === message.frame ? null : pending)),
+    []
   );
-  useOnPreview(preview, receive);
+  usePreviewMessage(preview, "playhead", onPlayhead);
+
+  const onRebuilt = useCallback(() => {
+    setSeek(null);
+    send({ type: "transport.request" });
+    send({ rate, type: "transport.rate" });
+  }, [rate, send]);
+  usePreviewMessage(preview, "rebuilt", onRebuilt);
 
   useEffect(() => {
     if (url !== null && composition !== null) {
-      send({ source: PREVIEW_COMMAND_SOURCE, type: "transport.request" });
+      send({ type: "transport.request" });
     }
   }, [composition, send, url]);
 
   useEffect(() => {
     if (url !== null && composition !== null) {
-      send({ rate, source: PREVIEW_COMMAND_SOURCE, type: "transport.rate" });
+      send({ rate, type: "transport.rate" });
     }
   }, [composition, rate, send, url]);
 
@@ -122,7 +96,7 @@ export function usePreviewTransport(preview: PreviewControl, enabled: boolean) {
   const toggle = useCallback(() => {
     if (ready) {
       setSeek(null);
-      send({ source: PREVIEW_COMMAND_SOURCE, type: "transport.toggle" });
+      send({ type: "transport.toggle" });
     }
   }, [ready, send]);
 
@@ -130,11 +104,7 @@ export function usePreviewTransport(preview: PreviewControl, enabled: boolean) {
     (direction: -1 | 1) => {
       if (ready) {
         setSeek(null);
-        send({
-          direction,
-          source: PREVIEW_COMMAND_SOURCE,
-          type: "transport.step",
-        });
+        send({ direction, type: "transport.step" });
       }
     },
     [ready, send]
@@ -161,7 +131,6 @@ export function usePreviewTransport(preview: PreviewControl, enabled: boolean) {
     const silent = state.muted || state.volume === 0;
     send({
       muted: !silent,
-      source: PREVIEW_COMMAND_SOURCE,
       type: "transport.audio",
       volume: silent && state.volume === 0 ? 1 : state.volume,
     });
@@ -173,12 +142,7 @@ export function usePreviewTransport(preview: PreviewControl, enabled: boolean) {
         return;
       }
       const volume = Math.max(0, Math.min(1, value / 100));
-      send({
-        muted: volume === 0,
-        source: PREVIEW_COMMAND_SOURCE,
-        type: "transport.audio",
-        volume,
-      });
+      send({ muted: volume === 0, type: "transport.audio", volume });
     },
     [ready, send]
   );

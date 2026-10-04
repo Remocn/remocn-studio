@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   CLAUDE_MODELS,
+  modeChoices,
   modelLabelOf,
   offersAutoMode,
   runningMode,
@@ -52,5 +53,63 @@ describe("modelLabelOf", () => {
     expect(modelLabelOf("claude", "claude-haiku-4-5-20251001")).toBe(
       "Haiku 4.5"
     );
+  });
+});
+
+describe("modeChoices", () => {
+  const HAIKU = "claude-haiku-4-5-20251001";
+
+  it("disables Auto on a Claude model that cannot run it, and says so", () => {
+    const choices = modeChoices("claude", "auto", HAIKU);
+
+    expect(choices.running).toBe("default");
+    expect(choices.hint).toBe("Haiku 4.5 does not offer Auto");
+    expect(choices.items).toEqual([
+      {
+        disabled: true,
+        hint: "Haiku 4.5 does not offer this mode",
+        label: "Auto",
+        value: "auto",
+      },
+      { label: "Accept edits", value: "acceptEdits" },
+      { label: "Plan", value: "plan" },
+    ]);
+  });
+
+  it("runs the other modes as picked on that model, with no hint", () => {
+    const choices = modeChoices("claude", "plan", HAIKU);
+
+    expect(choices.running).toBe("plan");
+    expect(choices.hint).toBeNull();
+    expect(choices.items.find((item) => item.value === "auto")?.disabled).toBe(
+      true
+    );
+  });
+
+  it("offers all three modes on a Claude model that has Auto", () => {
+    const choices = modeChoices("claude", "auto", "claude-opus-5");
+
+    expect(choices.running).toBe("auto");
+    expect(choices.hint).toBeNull();
+    expect(choices.items.map((item) => item.value)).toEqual([
+      "auto",
+      "acceptEdits",
+      "plan",
+    ]);
+    expect(choices.items.some((item) => item.disabled === true)).toBe(false);
+  });
+
+  it("offers every mode on the other providers and runs the one picked", () => {
+    for (const provider of ["codex", "copilot", "grok"] as const) {
+      for (const model of ["", HAIKU]) {
+        const choices = modeChoices(provider, "auto", model);
+
+        expect(choices.running).toBe("auto");
+        expect(choices.hint).toBeNull();
+        expect(choices.items.some((item) => item.disabled === true)).toBe(
+          false
+        );
+      }
+    }
   });
 });

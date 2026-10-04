@@ -1,16 +1,22 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { type TestSurface, withSurface } from "@/test/surface";
 import { hide, reveal, revealAll } from "./hidden";
+
+let surface: TestSurface;
+
+beforeEach(() => {
+  surface = withSurface();
+});
 
 afterEach(() => {
   revealAll();
-  document.body.replaceChildren();
 });
 
 function mount(id: string) {
   const root = document.createElement("h1");
   root.setAttribute("data-studio-object", id);
   root.textContent = id;
-  document.body.append(root);
+  surface.root.append(root);
   return root;
 }
 
@@ -31,6 +37,6 @@ describe("hiding before a deletion is saved", () => {
     expect(getComputedStyle(title).display).not.toBe("none");
     reveal("remove-1");
     expect(getComputedStyle(subtitle).display).not.toBe("none");
-    expect(document.querySelector("style[data-studio-hidden]")).toBeNull();
+    expect(surface.root.querySelector("style[data-studio-hidden]")).toBeNull();
   });
 });

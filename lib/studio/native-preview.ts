@@ -1,6 +1,11 @@
 import { Data, Effect, Queue, Schema, Stream } from "effect";
+import type {
+  EntrySignal,
+  MessageOf,
+  PreviewMessage,
+} from "@/preview/protocol";
 import type { PreviewCommand } from "./preview";
-import type { PreviewSurface } from "./preview-surface";
+import type { PreviewSurface, StampedMessage } from "./preview-channel";
 
 export class NativePreviewError extends Data.TaggedError("NativePreviewError")<{
   readonly message: string;
@@ -15,6 +20,7 @@ const MANIFEST_PATH = "/__remocn/native";
 const EVENTS_PATH = "/__remocn/hot";
 const MESSAGE_SOURCE = "remocn-preview";
 const BEHIND_MS = 8000;
+const SOURCE_MAP = /(\/\/# sourceMappingURL=)(\S+)\s*$/;
 
 const COMPILE_FAILED =
   "The canvas preview could not compile. Restart the preview and try again.";
@@ -79,7 +85,7 @@ interface NativeRuntime {
           }[]
         | null
       >;
-      emit: (message: Record<string, unknown>) => void;
+      emit: (message: PreviewMessage | EntrySignal) => void;
       subscribe: (receive: (command: PreviewCommand) => void) => () => void;
     }
   ) => RuntimeSession;
@@ -380,8 +386,9 @@ function evaluate(
   window.addEventListener("error", onError);
   try {
     const mapped = source.replace(
-      /sourceMappingURL=([^\s]+)/g,
-      (_match, value: string) => `sourceMappingURL=${new URL(value, url).href}`
+      SOURCE_MAP,
+      (_match, directive: string, value: string) =>
+        `${directive}${new URL(value, url).href}`
     );
     script.textContent = `${mapped}\n//# sourceURL=${url}\n`;
     document.head.appendChild(script);
@@ -424,9 +431,9 @@ function mountSlot(
   overlays.style.cssText = "position:absolute;inset:0";
   const script = document.createElement("script");
 
-  const messages = new Set<(message: unknown) => void>();
+  const messages = new Set<(message: StampedMessage) => void>();
   const commands = new Set<(command: PreviewCommand) => void>();
-  const buffered: Record<string, unknown>[] = [];
+  const buffered: StampedMessage[] = [];
   const waiting = new Set<
     (outcome: Effect.Effect<void, NativePreviewError>) => void
   >();
@@ -446,12 +453,12 @@ function mountSlot(
     }
     waiting.clear();
   };
-  const deliver = (message: Record<string, unknown>) => {
+  const deliver = (message: StampedMessage) => {
     for (const receive of [...messages]) {
       receive(message);
     }
   };
-  const emit = (message: Record<string, unknown>) => {
+  const emit = (message: PreviewMessage | EntrySignal) => {
     if (!live) {
       return;
     }
@@ -466,7 +473,7 @@ function mountSlot(
       }
       return;
     }
-    const tagged = { ...message, source: MESSAGE_SOURCE };
+    const tagged: StampedMessage = { ...message, source: MESSAGE_SOURCE };
     if (revealed) {
       deliver(tagged);
     } else {
@@ -517,7 +524,8 @@ function mountSlot(
     },
     document: () => {
       const ready = buffered.findLast(
-        (message) => message.type === "studio.ready"
+        (message): message is MessageOf<"studio.ready"> & StampedMessage =>
+          message.type === "studio.ready"
       );
       return typeof ready?.video === "string"
         ? {

@@ -17,7 +17,6 @@ import type { StdioTransport } from "../tools/gateway";
 import { toolServer } from "../tools/host";
 import { isToolServer, type ToolServer } from "../tools/specs";
 import { contentOf } from "./content";
-import { conventionsFor } from "./conventions";
 import { gateHooks } from "./guard";
 import { pluginsFor } from "./knowledge";
 
@@ -31,8 +30,6 @@ interface Turn {
 }
 
 export interface TurnCallbacks {
-  readonly assets: string | null;
-  readonly brief: string | null;
   readonly canUseTool: CanUseTool;
   readonly cwd: string;
   readonly executable: string;
@@ -43,8 +40,9 @@ export interface TurnCallbacks {
   readonly onContext: (usage: ContextUsage) => void;
   readonly onMode: (apply: ApplyMode) => void;
   readonly onStop: () => void;
+  readonly system: string;
   readonly tools: Readonly<Partial<Record<ToolServer, StdioTransport>>>;
-  readonly video: string | null;
+  readonly trailer: string | null;
 }
 
 export function messages(
@@ -98,7 +96,7 @@ function open(params: PromptParams, callbacks: TurnCallbacks): Turn {
   const prompt = (async function* () {
     yield {
       message: {
-        content: await contentOf(params, callbacks.assets, callbacks.media),
+        content: await contentOf(params, callbacks.trailer, callbacks.media),
         role: "user" as const,
       },
       parent_tool_use_id: null,
@@ -117,10 +115,6 @@ function open(params: PromptParams, callbacks: TurnCallbacks): Turn {
 
 function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
   const plugins = pluginsFor(callbacks.knowledge);
-  const conventions = conventionsFor(
-    callbacks.knowledge.loaded,
-    callbacks.video
-  );
 
   const hooks = gateHooks(params.mode, callbacks.cwd);
 
@@ -136,10 +130,7 @@ function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
     settingSources: ["project"],
     stderr: (data) => callbacks.log(`claude: ${data.trimEnd()}`),
     systemPrompt: {
-      append:
-        callbacks.brief === null
-          ? conventions
-          : `${conventions}\n\n${callbacks.brief}`,
+      append: callbacks.system,
       preset: "claude_code",
       type: "preset",
     },

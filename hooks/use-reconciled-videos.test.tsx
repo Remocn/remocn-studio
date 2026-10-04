@@ -1,8 +1,9 @@
-import { describe, expect, it, mock } from "bun:test";
+import { afterEach, describe, expect, it, jest, mock } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
-import type { PreviewControl, PreviewListener } from "@/hooks/use-preview";
 import { useReconciledVideos } from "@/hooks/use-reconciled-videos";
-import type { PreviewMessage } from "@/lib/studio/preview";
+import { EMPTY_COMPOSITIONS_SETTLE_MS } from "@/lib/studio/preview-channel";
+import type { PreviewMessage } from "@/preview/protocol";
+import { previewControl } from "@/test/preview-channel";
 
 function message(compositions: readonly string[]): PreviewMessage {
   return {
@@ -10,7 +11,6 @@ function message(compositions: readonly string[]): PreviewMessage {
     compositions,
     metadata: null,
     reason: compositions.length === 0 ? "none" : "first",
-    source: "remocn-preview",
     total: compositions.length,
     trouble: null,
     type: "composition",
@@ -19,21 +19,14 @@ function message(compositions: readonly string[]): PreviewMessage {
 }
 
 function previewHarness() {
-  let listener: PreviewListener = () => undefined;
-  const preview = {
-    subscribe: (next: PreviewListener) => {
-      listener = next;
-      return () => {
-        listener = () => undefined;
-      };
-    },
-  } as unknown as PreviewControl;
+  const { preview, surface } = previewControl();
 
-  return {
-    deliver: (next: PreviewMessage) => listener(next),
-    preview,
-  };
+  return { deliver: surface.emit, preview };
 }
+
+afterEach(() => {
+  jest.useRealTimers();
+});
 
 describe("useReconciledVideos", () => {
   it("deduplicates a composition registry that was already reconciled", () => {
@@ -50,12 +43,14 @@ describe("useReconciledVideos", () => {
   });
 
   it("reconciles a stabilized empty composition registry immediately", () => {
+    jest.useFakeTimers();
     const reconcile = mock();
     const host = previewHarness();
 
     renderHook(() => useReconciledVideos(host.preview, "project-1", reconcile));
 
     act(() => host.deliver(message([])));
+    act(() => jest.advanceTimersByTime(EMPTY_COMPOSITIONS_SETTLE_MS));
 
     expect(reconcile).toHaveBeenCalledWith("project-1", []);
   });

@@ -9,11 +9,11 @@ import {
   type ContextAction,
   popupContextMenu,
 } from "@/lib/studio/context-menu";
-import type { PreviewMessage } from "@/lib/studio/preview";
+import type { PreviewMessageOf } from "@/lib/studio/preview";
 import { SCENE_DEFINITION } from "@/shared/studio-document";
 import type { CodeRemoved, Inspection } from "./use-inspect";
 import type { ManagedObjects, Removal } from "./use-managed-objects";
-import { type PreviewControl, useOnPreview } from "./use-preview";
+import { type PreviewControl, usePreviewMessage } from "./use-preview";
 
 const UNDO_WINDOW = "10 seconds";
 
@@ -139,14 +139,14 @@ export function useDeletion({
     return held;
   }, [composition, projectId]);
 
-  const onMessage = useCallback((message: PreviewMessage) => {
-    if (message.type === "studio.present") {
-      setPresent(new Set(message.ids));
-    } else if (message.type === "canvas.menu") {
-      askMenu((count) => count + 1);
-    }
-  }, []);
-  useOnPreview(preview, onMessage);
+  const onPresent = useCallback(
+    (message: PreviewMessageOf<"studio.present">) =>
+      setPresent(new Set(message.ids)),
+    []
+  );
+  usePreviewMessage(preview, "studio.present", onPresent);
+  const onMenu = useCallback(() => askMenu((count) => count + 1), []);
+  usePreviewMessage(preview, "canvas.menu", onMenu);
 
   const targetFor = useCallback(
     (objectId: string) => managedTarget(managed, objectId, present),

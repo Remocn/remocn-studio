@@ -6,7 +6,7 @@ import {
   type SoundOperation,
   soundSummary,
 } from "@/shared/sound-effects";
-import type { PermissionGate } from "../agent/gate";
+import type { TurnGate } from "../agent/gate";
 import type { HandlerInput } from "../host";
 import { importSound } from "../library/sounds";
 import { type LibraryError, listAssets } from "../library/store";
@@ -15,8 +15,7 @@ import { CoreError } from "./core";
 export interface SoundContext {
   ask: HandlerInput<"agent.prompt">["ask"];
   emit: (event: AgentEvent) => Effect.Effect<void>;
-  gate: PermissionGate;
-  turnId: string;
+  permissions: TurnGate;
 }
 
 interface SoundAnswer {
@@ -96,20 +95,11 @@ const DECLINED =
 
 function approval(operation: SoundOperation, context: SoundContext) {
   const { id, request } = operation;
-  return context.gate.wait({
+  return context.permissions.ask({
     id,
-    onReady: () =>
-      context.emit({
-        id,
-        input: { description: soundSummary(operation) },
-        name:
-          request.kind === "music" ? "Generate music" : "Generate sound effect",
-        reason: "outward",
-        type: "permission",
-      }),
-    rememberable: false,
-    signature: `sound:${id}`,
-    turnId: context.turnId,
+    input: { description: soundSummary(operation) },
+    name: request.kind === "music" ? "Generate music" : "Generate sound effect",
+    verdict: { kind: "ask", reason: "outward", signature: `sound:${id}` },
   });
 }
 
@@ -175,7 +165,7 @@ export function generateSounds(
         (operation) => approval(operation, context),
         { concurrency: "unbounded" }
       );
-      const allowed = answers.map((answer) => answer.decision === "allow");
+      const allowed = answers.map((answer) => answer.kind === "allow");
       if (!allowed.some(Boolean)) {
         return yield* Effect.fail(
           new CoreError({

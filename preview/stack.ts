@@ -14,10 +14,10 @@ const ORIGINAL = /studio-original:\/\/(.+?):(\d+):(\d+)\)/;
 /**
  * The JSX call site an `Interactive`'s controls were created at.
  *
- * This is the coordinate the codemod needs and the one React Grab cannot give:
- * grab resolves the *component* a DOM node was rendered by, which for a
- * `withSchema` wrapper is the function inside it. Remotion records the call
- * site itself, against the controls object, and hands it back through
+ * This is the coordinate the codemod needs and the one the component stack
+ * cannot give: that stack resolves the *component* a DOM node was rendered by,
+ * which for a `withSchema` wrapper is the function inside it. Remotion records
+ * the call site itself, against the controls object, and hands it back through
  * `Internals.getStackForControls`.
  */
 export function originOf(

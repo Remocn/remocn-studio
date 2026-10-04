@@ -13,6 +13,7 @@ import {
   type StageTemplate,
   stageTemplate,
 } from "@/shared/pipeline";
+import type { ProviderInfo } from "@/shared/providers";
 import { SCENE_DEFINITION } from "@/shared/studio-document";
 import {
   BUNDLE_NAME,
@@ -20,7 +21,7 @@ import {
   LESSONS_SKILL,
   MOTION_SKILL,
   SHIPPED,
-} from "../agent/knowledge";
+} from "./knowledge";
 
 const roleList = MOTION_ROLES.map(
   (role) => `\`${role}\` (${ROLE_HINTS[role]})`
@@ -309,9 +310,22 @@ ${rows}
 `;
 }
 
-export function pipelineBrief(
+function planningStep(planningTool: string | null): string {
+  return planningTool === null
+    ? `lay out
+your steps from what you find, in your own planning tool if you have one:`
+    : `create
+your task list with ${planningTool} from what you find:`;
+}
+
+export interface StageBriefFor {
+  readonly planningTool: string | null;
+  readonly video: string | null;
+}
+
+export function stageBrief(
   stages: readonly PipelineStage[],
-  video: string | null = null
+  { planningTool, video }: StageBriefFor
 ): string | null {
   const running = activeStage(stages);
   if (running === null) {
@@ -331,8 +345,7 @@ The stage is done when: ${template.doneWhen}
 Write the result to: ${template.outputs.join(", ")} — a file in the project, not
 only a message, so a reopened session loses nothing.
 ${checklistOf(template)}
-Start the stage by finding out what is already known, in this order, and create
-your task list with TaskCreate from what you find:
+Start the stage by finding out what is already known, in this order, and ${planningStep(planningTool)}
 1. ${template.discover}
 2. Whatever you infer from the project is a working assumption: write it down,
    say plainly what you assumed so the person can correct it, and carry on.
@@ -344,4 +357,51 @@ stage stays open for the answer. Otherwise do not wait: the moment the
 done-condition above holds, call \`mcp__remocn-pipeline__set_pipeline_stage\`
 to mark this stage done and the next one active, and keep going in the same
 turn until the whole pipeline is done or you are genuinely blocked.`;
+}
+
+export interface TurnInstructions {
+  readonly media: string | null;
+  readonly system: string;
+  readonly trailer: string | null;
+}
+
+export interface TurnBriefs {
+  readonly assets: string | null;
+  readonly brand: string | null;
+  readonly media: string | null;
+}
+
+export interface InstructionsInput {
+  readonly briefs: TurnBriefs;
+  readonly hasSkills: boolean;
+  readonly provider: ProviderInfo;
+  readonly stages: readonly PipelineStage[];
+  readonly video: string | null;
+}
+
+export function joined(...parts: readonly (string | null)[]): string | null {
+  const present = parts.filter(
+    (part): part is string => part !== null && part.length > 0
+  );
+  return present.length === 0 ? null : present.join("\n\n");
+}
+
+export function instructionsFor({
+  briefs,
+  hasSkills,
+  provider,
+  stages,
+  video,
+}: InstructionsInput): TurnInstructions {
+  const conventions = conventionsFor(hasSkills, video);
+  const brief = stageBrief(stages, {
+    planningTool: provider.planningTool,
+    video,
+  });
+
+  return {
+    media: briefs.media,
+    system: brief === null ? conventions : `${conventions}\n\n${brief}`,
+    trailer: joined(briefs.assets, briefs.brand),
+  };
 }

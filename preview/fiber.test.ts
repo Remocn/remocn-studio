@@ -2,7 +2,15 @@ import { describe, expect, it } from "bun:test";
 import { displayName, type Fiber, fiberOf, nearestInFibers } from "./fiber";
 
 function fiber(overrides: Partial<Fiber>): Fiber {
-  return { memoizedProps: null, return: null, type: null, ...overrides };
+  return {
+    child: null,
+    memoizedProps: null,
+    return: null,
+    sibling: null,
+    stateNode: null,
+    type: null,
+    ...overrides,
+  };
 }
 
 /** A node carrying a fiber chain the way React attaches one. */

@@ -25,18 +25,19 @@ export function configureSurface(value: SurfaceEnvironment): () => void {
   };
 }
 
-export const nativeSurface = () => environment;
-export const contentRoot = (): Document | ShadowRoot =>
-  environment?.root ?? document;
-export const overlayRoot = (): HTMLElement =>
-  environment?.overlays ?? document.body;
-export const styleRoot = (): ShadowRoot | HTMLElement =>
-  environment?.root ?? document.head;
-export const surfaceHref = () => environment?.url ?? window.location.href;
+export const currentSurface = () => environment;
+export function surface(): SurfaceEnvironment {
+  if (!environment) {
+    throw new Error("The preview surface is not configured.");
+  }
+  return environment;
+}
+export const contentRoot = (): ShadowRoot => surface().root;
+export const overlayRoot = (): HTMLElement => surface().overlays;
+export const styleRoot = (): ShadowRoot => surface().root;
+export const surfaceHref = () => surface().url;
 export const focusSurface = () =>
-  environment
-    ? environment.viewport.focus({ preventScroll: true })
-    : window.focus();
+  surface().viewport.focus({ preventScroll: true });
 export const eventElement = (event: Event): Element | null => {
   const target = event.composedPath()[0] ?? event.target;
   return target instanceof Element ? target : null;
@@ -60,16 +61,13 @@ export function parentAcrossRoot(node: Element): HTMLElement | null {
 }
 
 export function elementsAt(x: number, y: number): Element[] {
-  if (!environment) {
-    return document.elementsFromPoint(x, y);
-  }
-  const top = document.elementFromPoint(x, y);
-  if (top !== environment.root.host) {
+  const { root } = surface();
+  if (document.elementFromPoint(x, y) !== root.host) {
     return [];
   }
-  return environment.root
+  return root
     .elementsFromPoint(x, y)
-    .filter((node) => node.getRootNode() === environment?.root);
+    .filter((node) => node.getRootNode() === root);
 }
 
 export function onViewChange(receive: () => void): () => void {
@@ -87,14 +85,19 @@ export function lockCamera(owner: object, locked: boolean): void {
   environment?.viewport.toggleAttribute("data-preview-editing", locks.size > 0);
 }
 
-const wrappers = new Map<EventListener, Map<string, EventListener>>();
+interface Wrapper {
+  target: EventTarget;
+  wrapped: EventListener;
+}
+
+const wrappers = new Map<EventListener, Map<string, Wrapper>>();
 export const surfaceEvents = {
   addEventListener<K extends keyof WindowEventMap>(
     type: K,
     listener: (event: WindowEventMap[K]) => void,
     capture = false
   ): void {
-    const target = environment?.viewport ?? window;
+    const target = surface().viewport;
     const original = listener as EventListener;
     const wrapped: EventListener = (event) => {
       if (isChrome(event) || event.defaultPrevented) {
@@ -102,8 +105,8 @@ export const surfaceEvents = {
       }
       original(event);
     };
-    const entries = wrappers.get(original) ?? new Map<string, EventListener>();
-    entries.set(`${type}:${capture}`, wrapped);
+    const entries = wrappers.get(original) ?? new Map<string, Wrapper>();
+    entries.set(`${type}:${capture}`, { target, wrapped });
     wrappers.set(original, entries);
     target.addEventListener(type, wrapped, capture);
   },
@@ -115,14 +118,8 @@ export const surfaceEvents = {
     const original = listener as EventListener;
     const entries = wrappers.get(original);
     const key = `${type}:${capture}`;
-    const wrapped = entries?.get(key);
-    if (wrapped) {
-      (environment?.viewport ?? window).removeEventListener(
-        type,
-        wrapped,
-        capture
-      );
-    }
+    const entry = entries?.get(key);
+    entry?.target.removeEventListener(type, entry.wrapped, capture);
     entries?.delete(key);
     if (!entries?.size) {
       wrappers.delete(original);

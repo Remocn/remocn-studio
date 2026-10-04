@@ -2,6 +2,7 @@ import { afterEach, expect } from "bun:test";
 import { clearMocks } from "@tauri-apps/api/mocks";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { cleanup, configure } from "@testing-library/react";
+import { disposeSurfaces } from "./surface";
 
 interface Utils {
   stringify: (value: unknown) => string;
@@ -121,4 +122,5 @@ HTMLCanvasElement.prototype.getContext = ((kind: string) =>
 afterEach(() => {
   cleanup();
   clearMocks();
+  disposeSurfaces();
 });

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "bun:test";
+import { type TestSurface, withSurface } from "@/test/surface";
 import {
   climb,
   covers,
@@ -21,9 +22,15 @@ const foreignObjectHoldsHtml = (() => {
   return svg.querySelector("span")?.namespaceURI === HTML_NS;
 })();
 
+let surface: TestSurface;
+
+beforeEach(() => {
+  surface = withSurface();
+});
+
 function mount(html: string): HTMLElement {
-  document.body.innerHTML = `<div id="stage">${html}</div>`;
-  const stage = document.getElementById("stage");
+  surface.root.innerHTML = `<div id="stage">${html}</div>`;
+  const stage = surface.root.getElementById("stage");
   if (stage === null) {
     throw new Error("the stage did not mount");
   }
@@ -31,7 +38,7 @@ function mount(html: string): HTMLElement {
 }
 
 function pick(selector: string): Element {
-  const found = document.querySelector(selector);
+  const found = surface.root.querySelector(selector);
   if (found === null) {
     throw new Error(`nothing matched ${selector}`);
   }
@@ -131,7 +138,7 @@ describe("hasBorder", () => {
 
 describe("isInlineWrapper", () => {
   beforeEach(() => {
-    document.body.innerHTML = "";
+    surface.root.replaceChildren();
   });
 
   it("reads a word in a text split into words", () => {
@@ -179,7 +186,7 @@ describe("isInlineWrapper", () => {
 
 describe("climb", () => {
   beforeEach(() => {
-    document.body.innerHTML = "";
+    surface.root.replaceChildren();
   });
 
   it("takes a word up to the line that holds it", () => {
@@ -249,7 +256,7 @@ describe("svg, which is a picture and not a wrapper", () => {
   const ICON = `<svg id="icon" viewBox="0 0 10 10"><g id="group"><path id="glyph" d="M0 0h10v10z" fill="red" /></g></svg>`;
 
   beforeEach(() => {
-    document.body.innerHTML = "";
+    surface.root.replaceChildren();
   });
 
   it("knows an svg element by its namespace, not its tag case", () => {
@@ -398,10 +405,7 @@ function textAt(element: Element, ...boxes: Box[]): void {
 }
 
 function under(...elements: Element[]): void {
-  Object.defineProperty(document, "elementsFromPoint", {
-    configurable: true,
-    value: () => elements,
-  });
+  surface.pointAt(elements);
 }
 
 function stageFor(html: string): HTMLElement {
@@ -422,7 +426,7 @@ function installRects(): void {
 
 describe("nearText, which reads the words a line is made of", () => {
   beforeEach(() => {
-    document.body.innerHTML = "";
+    surface.root.replaceChildren();
     installRects();
   });
 
@@ -484,7 +488,7 @@ describe("nearText, which reads the words a line is made of", () => {
 
 describe("paints, which refuses what the frame does not show", () => {
   beforeEach(() => {
-    document.body.innerHTML = "";
+    surface.root.replaceChildren();
     installRects();
   });
 
@@ -524,7 +528,7 @@ describe("paints, which refuses what the frame does not show", () => {
 
 describe("pickAt over the shapes the corpus really has", () => {
   beforeEach(() => {
-    document.body.innerHTML = "";
+    surface.root.replaceChildren();
     installRects();
   });
 
@@ -634,8 +638,8 @@ describe("pickAt over the shapes the corpus really has", () => {
     const stage = stageFor(
       `<div id="surface" style="background-color:rgb(9,9,9)"></div><div id="line" style="display:block;font-size:40px"><span id="unrevealed" style="display:inline-block;opacity:0">Change</span><span id="revealed" style="display:inline-block">your</span></div>`
     );
-    const surface = pick("#surface");
-    boxed(surface, { height: 300, left: 0, top: 0, width: 400 });
+    const plate = pick("#surface");
+    boxed(plate, { height: 300, left: 0, top: 0, width: 400 });
     boxed(pick("#line"), { height: 50, left: 100, top: 100, width: 200 });
     textAt(pick("#unrevealed"), {
       height: 50,
@@ -645,11 +649,11 @@ describe("pickAt over the shapes the corpus really has", () => {
     });
     textAt(pick("#revealed"), { height: 50, left: 220, top: 100, width: 80 });
 
-    under(pick("#unrevealed"), pick("#line"), surface, stage);
-    expect(pickAt(120, 120, stage, false)).toBe(surface);
+    under(pick("#unrevealed"), pick("#line"), plate, stage);
+    expect(pickAt(120, 120, stage, false)).toBe(plate);
     expect(pickAt(120, 120, stage, true)).toBe(pick("#unrevealed"));
 
-    under(pick("#revealed"), pick("#line"), surface, stage);
+    under(pick("#revealed"), pick("#line"), plate, stage);
     expect(pickAt(250, 120, stage, false)).toBe(pick("#line"));
     expect(pickAt(250, 120, stage, true)).toBe(pick("#revealed"));
   });

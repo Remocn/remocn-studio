@@ -7,8 +7,8 @@ import {
   IDENTITY_GEOMETRY_POSE,
   poseGeometry,
 } from "../shared/studio-geometry";
-import type { PreviewCommand } from "./bridge";
 import { managedIdentity } from "./managed-objects";
+import type { PreviewCommand } from "./protocol";
 import { parentAcrossRoot } from "./surface";
 
 const DEGREES = /^-?[\d.]+deg$/;

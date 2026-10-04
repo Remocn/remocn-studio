@@ -14,7 +14,7 @@ import {
   transformGeometry,
   unposeGeometry,
 } from "../shared/studio-geometry";
-import { onCommand, post } from "./bridge";
+import { post, route } from "./bridge";
 import {
   type GeometryBetween,
   type GeometryConfig,
@@ -867,8 +867,10 @@ export function createGeometryEditor(
   };
   ghost.addEventListener("click", goToGhost);
 
-  const stopCommands = onCommand((command) => {
-    if (command.type === "studio.geometry.config") {
+  const stopCommands = route("geometry", {
+    replay: cancel,
+    seek: cancel,
+    "studio.geometry.config": (command) => {
       config = command;
       if (
         gesture &&
@@ -880,10 +882,11 @@ export function createGeometryEditor(
         cancel();
       }
       onChange();
-    } else if (
-      command.type === "studio.geometry.result" &&
-      command.requestId === gesture?.requestId
-    ) {
+    },
+    "studio.geometry.result": (command) => {
+      if (gesture === null || command.requestId !== gesture.requestId) {
+        return;
+      }
       if (command.error) {
         reset();
         explain(command.error);
@@ -891,13 +894,9 @@ export function createGeometryEditor(
         gesture.accepted = true;
         settle();
       }
-    } else if (
-      ["seek", "replay", "transport.toggle", "transport.step"].includes(
-        command.type
-      )
-    ) {
-      cancel();
-    }
+    },
+    "transport.step": cancel,
+    "transport.toggle": cancel,
   });
   post({ type: "studio.geometry.request" });
   const observer = new MutationObserver(() => {

@@ -1,4 +1,6 @@
-import { afterEach, describe, expect, it, spyOn } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { waitFor } from "@testing-library/react";
+import { type TestSurface, withSurface } from "@/test/surface";
 import {
   armInspect,
   clearSelection,
@@ -15,44 +17,129 @@ const STAGE: Stage = {
   composition: () => "main",
   fps: () => 30,
   frame: () => 0,
+  video: () => ({ durationInFrames: 90, fps: 30, height: 1080, width: 1920 }),
 };
+
+let surface: TestSurface;
+
+beforeEach(() => {
+  surface = withSurface();
+});
+
+function staged(): HTMLElement {
+  const canvas = document.createElement("div");
+  canvas.className = "__remotion-player";
+  surface.root.append(canvas);
+  return canvas;
+}
 
 describe("armInspect", () => {
   it("forces canvas hit-testing on only while armed", () => {
-    const canvas = document.createElement("div");
-    canvas.className = "__remotion-player";
-    document.body.append(canvas);
+    staged();
 
-    expect(armInspect(true, STAGE)).toBe("no-grab");
+    expect(armInspect(true, STAGE)).toBe("armed");
 
-    const style = document.head.querySelector("style[data-remocn-inspect]");
+    const style = surface.root.querySelector("style[data-remocn-inspect]");
     expect(style?.textContent).toContain("pointer-events: auto !important");
     expect(style?.textContent).toContain(".__remotion-player");
+    expect(
+      document.head.querySelector("style[data-remocn-inspect]")
+    ).toBeNull();
 
     expect(armInspect(false, STAGE)).toBe("disarmed");
-    expect(
-      document.head.querySelector("style[data-remocn-inspect]")
-    ).toBeNull();
-
-    canvas.remove();
+    expect(surface.root.querySelector("style[data-remocn-inspect]")).toBeNull();
   });
 
-  it("reports no-canvas without touching the document", () => {
+  it("reports no-canvas without touching the surface", () => {
     expect(armInspect(true, STAGE)).toBe("no-canvas");
-    expect(
-      document.head.querySelector("style[data-remocn-inspect]")
-    ).toBeNull();
+    expect(surface.root.querySelector("style[data-remocn-inspect]")).toBeNull();
+  });
+});
+
+describe("what a pick reports", () => {
+  function picking(
+    stacks: Map<
+      Element,
+      { fileName: string; functionName: string; lineNumber: number }[]
+    >
+  ) {
+    const asked: Element[] = [];
+    surface.dispose();
+    surface = withSurface({
+      getStack: (element) => {
+        asked.push(element);
+        return Promise.resolve(stacks.get(element) ?? null);
+      },
+    });
+    return asked;
+  }
+
+  function press(target: Element) {
+    surface.pointAt([target]);
+    surface.viewport.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        altKey: true,
+        bubbles: true,
+        button: 0,
+        cancelable: true,
+        clientX: 10,
+        clientY: 10,
+      })
+    );
+  }
+
+  it("reads the stack once and takes its first project frame as the source", async () => {
+    const stacks = new Map();
+    const asked = picking(stacks);
+    const fetched = spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ files: [] })
+    );
+    const canvas = staged();
+    const inside = document.createElement("span");
+    canvas.append(inside);
+    stacks.set(inside, [
+      {
+        fileName: "/project/src/videos/intro/Title.tsx",
+        functionName: "Title",
+        lineNumber: 12,
+      },
+      {
+        fileName: "/project/src/videos/intro/Scene.tsx",
+        functionName: "Scene",
+        lineNumber: 4,
+      },
+      {
+        fileName: "/project/node_modules/remotion/index.js",
+        functionName: "Sequence",
+        lineNumber: 1,
+      },
+    ]);
+    armInspect(true, STAGE);
+
+    press(inside);
+    const selection = await waitFor(() => {
+      const found = surface.sent.find(
+        (message) => message.type === "selection"
+      );
+      expect(found).toBeDefined();
+      return found;
+    });
+    expect(asked).toEqual([inside]);
+    expect(selection?.element).toEqual(
+      expect.objectContaining({
+        component: "Title",
+        file: "/project/src/videos/intro/Title.tsx",
+        line: 12,
+        stack: ["Scene (/project/src/videos/intro/Scene.tsx:4)"],
+      })
+    );
+    fetched.mockRestore();
   });
 });
 
 describe("what a click while armed is allowed to reach", () => {
-  function staged() {
-    for (const stale of document.querySelectorAll(".__remotion-player")) {
-      stale.remove();
-    }
-
-    const canvas = document.createElement("div");
-    canvas.className = "__remotion-player";
+  function stagedWithBar() {
+    const canvas = staged();
     canvas.getBoundingClientRect = () =>
       ({
         bottom: 100,
@@ -66,17 +153,13 @@ describe("what a click while armed is allowed to reach", () => {
     const bar = document.createElement("div");
     const inside = document.createElement("span");
     canvas.append(inside);
-    document.body.append(canvas, bar);
+    surface.root.append(bar);
 
     return { bar, canvas, inside };
   }
 
   function pointAt(topmost: Element | undefined) {
-    Object.defineProperty(document, "elementsFromPoint", {
-      configurable: true,
-      value: () => (topmost === undefined ? [] : [topmost]),
-      writable: true,
-    });
+    surface.pointAt(topmost === undefined ? [] : [topmost]);
   }
 
   function clicked() {
@@ -85,13 +168,13 @@ describe("what a click while armed is allowed to reach", () => {
       cancelable: true,
     });
 
-    window.dispatchEvent(event);
+    surface.viewport.dispatchEvent(event);
 
     return event;
   }
 
   it("hands the transport bar its own clicks back", () => {
-    const { bar } = staged();
+    const { bar } = stagedWithBar();
     pointAt(bar);
     armInspect(true, STAGE);
 
@@ -99,7 +182,7 @@ describe("what a click while armed is allowed to reach", () => {
   });
 
   it("still swallows a click that lands on the frame itself", () => {
-    const { inside } = staged();
+    const { inside } = stagedWithBar();
     pointAt(inside);
     armInspect(true, STAGE);
 
@@ -107,7 +190,7 @@ describe("what a click while armed is allowed to reach", () => {
   });
 
   it("falls back to the canvas rectangle when nothing can be hit-tested", () => {
-    staged();
+    stagedWithBar();
     pointAt(undefined);
     armInspect(true, STAGE);
 
@@ -115,7 +198,7 @@ describe("what a click while armed is allowed to reach", () => {
   });
 
   it("drives the inspect cursor only while it is armed", () => {
-    const { canvas } = staged();
+    const { canvas } = stagedWithBar();
     canvas.style.cursor = "pointer";
 
     armInspect(true, STAGE);
@@ -202,30 +285,28 @@ describe("componentAt", () => {
 // preview document, beside the hover box and for the same reason.
 describe("highlightTarget", () => {
   function armed() {
-    const canvas = document.createElement("div");
-    canvas.className = "__remotion-player";
-    document.body.append(canvas);
+    const canvas = staged();
     armInspect(true, STAGE);
 
     return canvas;
   }
 
   function selectionBox(): HTMLElement | null {
-    return document.body.querySelector<HTMLElement>(
+    return surface.overlays.querySelector<HTMLElement>(
       "div[data-remocn-selection]"
     );
   }
 
   it("draws nothing for a target the selection never carried", () => {
     armed();
-    highlightTarget("nobody");
+    highlightTarget("nobody", true);
 
     expect(selectionBox()?.style.display).toBe("none");
   });
 
   it("clears the box when the pane has nothing open", () => {
     armed();
-    highlightTarget(null);
+    highlightTarget(null, false);
 
     expect(selectionBox()?.style.display).toBe("none");
   });
@@ -233,15 +314,13 @@ describe("highlightTarget", () => {
   it("survives being called with no session at all", () => {
     armInspect(false, STAGE);
 
-    expect(() => highlightTarget("anything")).not.toThrow();
+    expect(() => highlightTarget("anything", true)).not.toThrow();
   });
 });
 
 describe("the selection box", () => {
   function armed() {
-    const canvas = document.createElement("div");
-    canvas.className = "__remotion-player";
-    document.body.append(canvas);
+    const canvas = staged();
     armInspect(true, STAGE);
 
     return canvas;
@@ -249,7 +328,7 @@ describe("the selection box", () => {
 
   function boxes(): HTMLElement[] {
     return [
-      ...document.body.querySelectorAll<HTMLElement>(
+      ...surface.overlays.querySelectorAll<HTMLElement>(
         "div[data-remocn-inspect]"
       ),
     ];
@@ -257,7 +336,7 @@ describe("the selection box", () => {
 
   it("is a pair of its own, beside the hover pair", () => {
     armed();
-    highlightTarget(null);
+    highlightTarget(null, true);
 
     expect(
       boxes().filter((node) => node.hasAttribute("data-remocn-selection"))
@@ -266,19 +345,21 @@ describe("the selection box", () => {
 
   it("stays in the document when the mode is turned off", () => {
     armed();
-    highlightTarget(null);
+    highlightTarget(null, true);
     armInspect(false, STAGE);
 
     expect(
-      document.body.querySelector("div[data-remocn-selection]")
+      surface.overlays.querySelector("div[data-remocn-selection]")
     ).not.toBeNull();
   });
 
   it("carries a pulse rule the browser can turn off for reduced motion", () => {
     armed();
-    highlightTarget(null);
+    highlightTarget(null, true);
 
-    const style = document.querySelector("style[data-remocn-selection]");
+    const style = surface.overlays.querySelector(
+      "style[data-remocn-selection]"
+    );
 
     expect(style?.textContent).toContain("prefers-reduced-motion");
     expect(style?.textContent).toContain("remocn-selection-pulse");
@@ -289,7 +370,7 @@ describe("the selection box", () => {
 
     expect(() => clearSelection()).not.toThrow();
     expect(
-      document.body.querySelector<HTMLElement>("div[data-remocn-selection]")
+      surface.overlays.querySelector<HTMLElement>("div[data-remocn-selection]")
         ?.style.display
     ).toBe("none");
   });
@@ -297,9 +378,7 @@ describe("the selection box", () => {
 
 describe("hovering an object from the list", () => {
   function armed() {
-    const canvas = document.createElement("div");
-    canvas.className = "__remotion-player";
-    document.body.append(canvas);
+    const canvas = staged();
     armInspect(true, STAGE);
 
     return canvas;
@@ -320,7 +399,7 @@ describe("hovering an object from the list", () => {
 
   function hoverBox(): HTMLElement | undefined {
     return [
-      ...document.body.querySelectorAll<HTMLElement>(
+      ...surface.overlays.querySelectorAll<HTMLElement>(
         "div[data-remocn-inspect]"
       ),
     ].find((node) => node.style.zIndex === String(TOP));

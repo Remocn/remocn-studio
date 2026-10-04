@@ -30,20 +30,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { useKeepAttachment } from "@/hooks/use-keep-attachment";
 import { type Sidecar, useSidecar } from "@/hooks/use-sidecar";
 import { SAVE_SCENE_PROMPT } from "@/lib/studio/library";
-import {
-  modelLabelOf,
-  offersAutoMode,
-  runningMode,
-  runningModeLabel,
-} from "@/lib/studio/models";
+import { modeChoices, runningModeLabel } from "@/lib/studio/models";
 import { VERBATIM_INPUT } from "@/lib/studio/text-input";
 import { cn } from "@/lib/utils";
-import {
-  type ContextUsage,
-  SESSION_MODE_LABELS,
-  SESSION_MODES,
-  type SessionMode,
-} from "@/shared/ipc";
+import type { ContextUsage, SessionMode } from "@/shared/ipc";
 import { type AgentProvider, capabilitiesOf } from "@/shared/providers";
 import { AssetRow } from "./asset-row";
 import { ContextMeter } from "./context-meter";
@@ -58,27 +48,6 @@ import { useStudio, useStudioComposer } from "./studio-provider";
 const DEFAULT = "";
 
 const LINE_BOX_TERMINATOR = "\u200b";
-
-const MODES = SESSION_MODES.map((mode) => ({
-  label: SESSION_MODE_LABELS[mode],
-  value: mode,
-}));
-
-// The Mode chip has to report the mode the *turn* will run in, not the one that
-// was picked: Claude Code takes Auto from a model that cannot run it and
-// downgrades to `default` in silence, and a chip reading Auto over a turn that
-// asked about everything is the one thing it must never say. The session keeps
-// the picked mode, so moving back to a model with Auto restores it untouched.
-function modesFor(model: string): readonly ChipItem[] {
-  if (offersAutoMode(model)) {
-    return MODES;
-  }
-
-  const why = `${modelLabelOf("claude", model)} does not offer this mode`;
-  return MODES.map((item) =>
-    item.value === "auto" ? { ...item, disabled: true, hint: why } : item
-  );
-}
 
 // A message carrying values the studio would write cannot go out while a turn
 // is rewriting the same files. There is no queue for it: the button says why,
@@ -157,13 +126,7 @@ function ComposerBlock({
   const held = heldBack(writesBlocked, composer.selections.items);
   const cannotSend = isLocked || held !== null || sidecar.phase === "down";
   const capabilities = capabilitiesOf(provider);
-  const claudeModel = models.claude;
-  const running = provider === "claude" ? runningMode(mode, claudeModel) : mode;
-  const modeItems = provider === "claude" ? modesFor(claudeModel) : MODES;
-  const modeHint =
-    running === mode
-      ? null
-      : `${modelLabelOf("claude", claudeModel)} does not offer ${SESSION_MODE_LABELS[mode]}`;
+  const modes = modeChoices(provider, mode, models[provider]);
 
   const pickModel = useCallback(
     (picked: AgentProvider, value: string) => {
@@ -302,10 +265,10 @@ function ComposerBlock({
                 {capabilities.modes ? (
                   <MenuChip
                     collapse="late"
-                    hint={modeHint}
+                    hint={modes.hint}
                     icon={ShieldIcon}
-                    items={modeItems}
-                    label={runningModeLabel(running)}
+                    items={modes.items}
+                    label={runningModeLabel(modes.running)}
                     onChange={onModeChange}
                     title="Mode"
                     value={mode}

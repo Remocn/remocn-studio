@@ -105,13 +105,15 @@ export function answerSourceAsset(
 }
 
 export function abandonSourceAssets(turnId: string): Effect.Effect<void> {
-  return Effect.forEach(
-    [...pending].filter(([, row]) => row.turnId === turnId),
-    ([id, row]) =>
-      Deferred.succeed(row.deferred, cancelled(row.source)).pipe(
-        Effect.tap(() => Effect.sync(() => pending.delete(id)))
-      ),
-    { discard: true }
+  return Effect.suspend(() =>
+    Effect.forEach(
+      [...pending].filter(([, row]) => row.turnId === turnId),
+      ([id, row]) =>
+        Deferred.succeed(row.deferred, cancelled(row.source)).pipe(
+          Effect.tap(() => Effect.sync(() => pending.delete(id)))
+        ),
+      { discard: true }
+    )
   );
 }
 

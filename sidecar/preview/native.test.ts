@@ -1,4 +1,6 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, beforeEach, describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { Effect, Exit, type Scope } from "effect";
 import type { BuildOutcome } from "./build-state";
@@ -71,6 +73,23 @@ function fakeCompile() {
   };
 }
 
+// What webpack wrote: the fake compiler reports done, and the bundle is read
+// from here exactly as it is from the real output directory.
+const OUT = mkdtempSync(path.join(tmpdir(), "remocn-native-"));
+const SCRIPT = path.join(OUT, "bundle.js");
+
+beforeEach(() => {
+  writeFileSync(SCRIPT, "the first build");
+});
+
+afterAll(() => {
+  rmSync(OUT, { force: true, recursive: true });
+});
+
+function text(script: Uint8Array | undefined): string {
+  return new TextDecoder().decode(script);
+}
+
 const PREVIEW_ENTRY = "/app/resources/preview/entry.tsx";
 const PREVIEW_DIR = path.dirname(PREVIEW_ENTRY);
 const PROJECT_ENTRY = "/project/src/index.ts";
@@ -79,7 +98,7 @@ function baseOptions(overrides: Partial<NativeOptions> = {}): NativeOptions {
   return {
     assets: "http://127.0.0.1:4000/preview",
     base: "/native-abc123",
-    directory: "/out/native",
+    directory: OUT,
     entry: PREVIEW_ENTRY,
     origin: "http://127.0.0.1:4000",
     projectEntry: PROJECT_ENTRY,
@@ -402,6 +421,78 @@ describe("nativeBundle", () => {
     expect(second).toBe(2);
     expect(rebuilds.count).toBe(2);
     expect(outcomes).toEqual([{ ok: true }, { ok: true }]);
+  });
+
+  it("keeps each build as webpack finished writing it, whatever the file holds later", async () => {
+    const { compile, fire } = fakeCompile();
+
+    const [first, later, second] = await run(
+      Effect.gen(function* () {
+        const bundle = yield* nativeBundle(
+          compile,
+          Effect.succeed(baseConfig()),
+          baseOptions()
+        );
+        yield* bundle.prepare;
+        const kept = bundle.script();
+        writeFileSync(SCRIPT, "the second bu");
+        const meanwhile = bundle.script();
+        writeFileSync(SCRIPT, "the second build");
+        fire(true);
+        return [kept, meanwhile, bundle.script()];
+      })
+    );
+
+    expect(first?.generation).toBe(1);
+    expect(text(first?.script)).toBe("the first build");
+    expect(later).toBe(first);
+    expect(second?.generation).toBe(2);
+    expect(text(second?.script)).toBe("the second build");
+  });
+
+  it("keeps the last build that compiled through a failed rebuild", async () => {
+    const { compile, fire } = fakeCompile();
+
+    const [before, after] = await run(
+      Effect.gen(function* () {
+        const bundle = yield* nativeBundle(
+          compile,
+          Effect.succeed(baseConfig()),
+          baseOptions()
+        );
+        yield* bundle.prepare;
+        const kept = bundle.script();
+        fire(false, ["it broke"]);
+        return [kept, bundle.script()];
+      })
+    );
+
+    expect(after).toBe(before);
+    expect(text(after?.script)).toBe("the first build");
+  });
+
+  it("fails prepare when the bundle a compile reported cannot be read", async () => {
+    const { compile } = fakeCompile();
+    const outcomes: BuildOutcome[] = [];
+
+    const exit = await Effect.runPromiseExit(
+      Effect.scoped(
+        Effect.gen(function* () {
+          const bundle = yield* nativeBundle(
+            compile,
+            Effect.succeed(baseConfig()),
+            baseOptions({
+              compiled: (outcome) => outcomes.push(outcome),
+              directory: path.join(OUT, "missing"),
+            })
+          );
+          yield* bundle.prepare;
+        })
+      )
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    expect(outcomes[0]?.ok).toBe(false);
   });
 
   it("fails prepare with the compiler's own message when the first compile fails", async () => {

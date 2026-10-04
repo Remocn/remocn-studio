@@ -116,9 +116,10 @@ export function useCanvasPreview({
     selection,
     viewport: camera.viewport,
   });
+  const pointed = inspect.card === null ? null : inspect.card.rect;
   const rulers = useCanvasRulers({
     camera: camera.view,
-    selection: inspect.card?.rect ?? managed?.selected ?? selection,
+    selection: pointed ?? managed?.selected ?? selection,
     settings,
     video: metadata,
     viewport: camera.viewport,

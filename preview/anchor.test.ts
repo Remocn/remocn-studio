@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
+import { type TestSurface, withSurface } from "@/test/surface";
 import { anchorOf, resolveAnchor } from "./anchor";
 
 const escapedQuotesParse = (() => {
@@ -14,13 +15,15 @@ function canvas(html: string): HTMLElement {
   const container = document.createElement("div");
   container.className = "__remotion-player";
   container.innerHTML = html;
-  document.body.append(container);
+  surface.root.append(container);
 
   return container;
 }
 
-afterEach(() => {
-  document.body.innerHTML = "";
+let surface: TestSurface;
+
+beforeEach(() => {
+  surface = withSurface();
 });
 
 describe("anchorOf", () => {

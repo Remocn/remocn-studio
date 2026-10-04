@@ -2,9 +2,10 @@ import { describe, expect, it, mock } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
 import { Effect } from "effect";
 import type { ContextAction } from "@/lib/studio/context-menu";
-import type { PreviewMessage } from "@/lib/studio/preview";
 import { SidecarError } from "@/lib/studio/sidecar";
+import type { PreviewMessage } from "@/preview/protocol";
 import type { StudioObject } from "@/shared/studio-document";
+import { previewControl } from "@/test/preview-channel";
 import {
   type Notice,
   OFF_SCREEN_REASON,
@@ -16,7 +17,6 @@ import {
 } from "./use-deletion";
 import type { CodeRemoval, CodeRemoved } from "./use-inspect";
 import type { Removal } from "./use-managed-objects";
-import type { PreviewControl, PreviewListener } from "./use-preview";
 
 const heading: StudioObject = {
   definition: "heading",
@@ -45,17 +45,7 @@ interface Setup {
 }
 
 function setup(options: Setup = {}) {
-  const listeners = new Set<PreviewListener>();
-  const preview = {
-    composition: "intro",
-    send: mock(),
-    subscribe: (listener: PreviewListener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-  } as unknown as PreviewControl;
+  const { preview, surface } = previewControl({ composition: "intro" });
   const operation = {
     id: "remove-1",
     kind: "remove",
@@ -111,12 +101,7 @@ function setup(options: Setup = {}) {
       restore,
     })
   );
-  const emit = (message: PreviewMessage) =>
-    act(() => {
-      for (const listener of listeners) {
-        listener(message);
-      }
-    });
+  const emit = (message: PreviewMessage) => act(() => surface.emit(message));
   return {
     ...hook,
     emit,
@@ -147,7 +132,6 @@ describe("what Delete means right now", () => {
     const test = setup();
     test.emit({
       ids: ["opening"],
-      source: "remocn-preview",
       type: "studio.present",
     });
     expect(test.result.current.target?.reason).toBe(OFF_SCREEN_REASON);
@@ -255,7 +239,7 @@ describe("deleting", () => {
 describe("menus", () => {
   it("opens Delete for the object a right-click picked", async () => {
     const test = setup();
-    test.emit({ source: "remocn-preview", type: "canvas.menu" });
+    test.emit({ type: "canvas.menu" });
     expect(test.menus).toHaveLength(1);
     expect(test.menus[0][0]).toMatchObject({ enabled: true, text: "Delete" });
     test.menus[0][0].run();
@@ -265,7 +249,7 @@ describe("menus", () => {
 
   it("opens no menu for a scene", () => {
     const test = setup({ selected: scene });
-    test.emit({ source: "remocn-preview", type: "canvas.menu" });
+    test.emit({ type: "canvas.menu" });
     expect(test.menus).toHaveLength(0);
   });
 
@@ -273,7 +257,6 @@ describe("menus", () => {
     const test = setup();
     test.emit({
       ids: ["opening"],
-      source: "remocn-preview",
       type: "studio.present",
     });
     act(() => test.result.current.openRowMenu("subtitle"));

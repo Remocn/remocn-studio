@@ -7,24 +7,22 @@ import { createInlineTextEditor } from "./inline-text";
 import { managedIdentity, managedRoots } from "./managed-objects";
 import { covers, nearText, OVERLAY_ATTR, pickAt } from "./picker";
 import {
-  absolutise,
   formatFrame,
   projectFrames,
   type SourceSpot,
-  type StackFrame,
   truncateMarkup,
   withoutRuntimeMarks,
 } from "./source";
 import {
   contentRoot,
+  currentSurface,
   elementsAt,
   eventElement,
   focusSurface,
-  nativeSurface,
   onViewChange,
   overlayRoot,
-  type SurfaceEnvironment,
   styleRoot,
+  surface,
   surfaceEvents,
   surfaceHref,
 } from "./surface";
@@ -73,25 +71,7 @@ const WRAPPERS = new Set([
 // the higher-order component `Interactive.withSchema` wraps a component in.
 const INTERNAL = /RefForwardingFunction$|^withInteractivitySchema\(/;
 
-interface GrabSource {
-  columnNumber: number | null;
-  componentName: string | null;
-  filePath: string;
-  lineNumber: number | null;
-}
-
-interface GrabApi {
-  getDisplayName: (element: Element) => string | null;
-  getSource: (element: Element) => Promise<GrabSource | null>;
-  registerPlugin: (plugin: unknown) => void;
-}
-
-interface GrabModule {
-  getStack: (element: Element) => Promise<StackFrame[] | null>;
-  init: (options: Record<string, unknown>) => GrabApi;
-}
-
-export type InspectStatus = "armed" | "disarmed" | "no-canvas" | "no-grab";
+export type InspectStatus = "armed" | "disarmed" | "no-canvas";
 
 export interface Scene {
   durationInFrames: number;
@@ -129,7 +109,6 @@ interface Session {
   readonly stop: () => void;
 }
 
-let api: GrabApi | null = null;
 let session: Session | null = null;
 let hovered: Element | null = null;
 let listHovered: string | null = null;
@@ -170,11 +149,7 @@ export function armInspect(armed: boolean, stage: Stage): InspectStatus {
   }
   restore();
 
-  return nativeSurface() !== null ||
-    contentRoot().querySelector("[data-studio-object]") !== null ||
-    grab() !== null
-    ? "armed"
-    : "no-grab";
+  return "armed";
 }
 
 /**
@@ -296,41 +271,6 @@ export function dismissSelection(notify = true): void {
   }
 }
 
-function grab(): GrabApi | null {
-  if (api !== null) {
-    return api;
-  }
-
-  const module = grabModule();
-  const container = canvas();
-
-  if (module === null || container === null) {
-    return null;
-  }
-
-  api = module.init({
-    activationKey: () => false,
-    activationMode: "toggle",
-    container,
-    enabled: true,
-    maxContextLines: PARENTS,
-    telemetry: false,
-  });
-
-  api.registerPlugin({
-    name: "remocn-studio",
-    theme: {
-      dragBox: { enabled: false },
-      elementLabel: { enabled: false },
-      grabbedBoxes: { enabled: false },
-      selectionBox: { enabled: false },
-      toolbar: { enabled: false },
-    },
-  });
-
-  return api;
-}
-
 function forceHitTesting(): HTMLStyleElement {
   const style = document.createElement("style");
   style.setAttribute(OVERLAY_ATTR, "");
@@ -374,7 +314,7 @@ function start(container: HTMLElement, stage: Stage): Session {
     if (geometry.active()) {
       return;
     }
-    if (nativeSurface()?.viewport.hasAttribute("data-preview-navigation")) {
+    if (currentSurface()?.viewport.hasAttribute("data-preview-navigation")) {
       onLeave();
       return;
     }
@@ -762,17 +702,15 @@ export function nameOf(element: Element): string {
     (controls === null
       ? null
       : nameIn(controls.currentRuntimeValueDotNotation)) ??
-    componentAt(element) ??
-    api?.getDisplayName(element) ??
-    null;
+    componentAt(element);
 
   return label === null ? tag : `${plainName(label)} · ${tag}`;
 }
 
 /**
  * The name of the thing you are pointing at, which is the component you could
- * tune — not the machinery around it. Grab's own display name answers with
- * whatever fiber is nearest, and inside a Remotion tree that is routinely
+ * tune — not the machinery around it. The nearest fiber's display name is
+ * whatever happens to be closest, and inside a Remotion tree that is routinely
  * `RegularSequenceRefForwardingFunction`: true, and useless to read.
  */
 export function componentAt(element: Element): string | null {
@@ -807,19 +745,18 @@ async function report(
     post({ type: "studio.select", ...managed });
     return;
   }
-  const native = nativeSurface();
-  const module = native ? null : grabModule();
-  const found = native ? null : grab();
-  const sourceFor = (node: Element) => sourceOf(node, native, found);
-  const root = rootPath();
+  const { getStack, project: root } = surface();
+  const stackOf = async (node: Element) =>
+    projectFrames(root, await getStack(node).catch(nothing));
   const container = canvas();
   const links = controlsChain(element);
 
-  const [spot, frames, sources] = await Promise.all([
-    sourceFor(element),
-    stackOf(element, native, module),
+  const [stack, sources] = await Promise.all([
+    stackOf(element),
     Promise.all(
-      links.map((link) => (link.node === null ? null : sourceFor(link.node)))
+      links.map(async (link) =>
+        link.node === null ? null : ((await stackOf(link.node)).at(0) ?? null)
+      )
     ),
   ]);
 
@@ -828,10 +765,9 @@ async function report(
   }
 
   chain = chainOf(links, container);
-  const wheres = wheresOf(links, sources, root, container);
+  const wheres = wheresOf(links, sources, container);
 
-  const stack = projectFrames(root, frames);
-  const target = resolved(root, spot) ?? stack.at(0) ?? null;
+  const target = stack.at(0) ?? null;
   const assets = await assetNames();
 
   if (version !== pickVersion || !element.isConnected) {
@@ -843,7 +779,7 @@ async function report(
     assets,
     element: {
       column: target?.column ?? null,
-      component: spot?.componentName ?? target?.name ?? null,
+      component: target?.name ?? null,
       composition,
       file: target?.file ?? null,
       fps,
@@ -865,39 +801,6 @@ async function report(
     video,
     window: windowOf(element),
   });
-}
-
-async function sourceOf(
-  node: Element,
-  native: SurfaceEnvironment | null,
-  found: GrabApi | null
-): Promise<GrabSource | null> {
-  if (!native) {
-    return found === null ? null : found.getSource(node).catch(nothing);
-  }
-  const [source] = projectFrames(
-    native.project,
-    await native.getStack(node).catch(nothing)
-  );
-  return source
-    ? {
-        columnNumber: source.column,
-        componentName: source.name,
-        filePath: source.file,
-        lineNumber: source.line,
-      }
-    : null;
-}
-
-function stackOf(
-  element: Element,
-  native: SurfaceEnvironment | null,
-  module: GrabModule | null
-) {
-  if (native) {
-    return native.getStack(element).catch(nothing);
-  }
-  return module === null ? null : module.getStack(element).catch(nothing);
 }
 
 function chainOf(
@@ -923,14 +826,13 @@ function chainOf(
 
 function wheresOf(
   links: readonly InteractiveLink[],
-  sources: readonly (GrabSource | null)[],
-  root: string,
+  sources: readonly (SourceSpot | null)[],
   container: HTMLElement | null
 ): Map<string, TargetWhere | null> {
   const wheres = new Map<string, TargetWhere | null>();
 
   for (const [at, link] of links.entries()) {
-    const where = whereOf(root, sources[at] ?? null);
+    const where = whereOf(sources[at] ?? null);
 
     if (container !== null && link.node !== null) {
       wheres.set(anchorOf(link.node, container), where);
@@ -982,25 +884,10 @@ function located(
   }));
 }
 
-function whereOf(root: string, spot: GrabSource | null): TargetWhere | null {
-  const found = resolved(root, spot);
-
-  return found === null
+function whereOf(spot: SourceSpot | null): TargetWhere | null {
+  return spot === null
     ? null
-    : { column: found.column, file: found.file, line: found.line };
-}
-
-function resolved(root: string, spot: GrabSource | null): SourceSpot | null {
-  const file = absolutise(root, spot?.filePath);
-
-  return file === null || spot === null
-    ? null
-    : {
-        column: spot.columnNumber,
-        file,
-        line: spot.lineNumber,
-        name: spot.componentName,
-      };
+    : { column: spot.column, file: spot.file, line: spot.line };
 }
 
 function parentsOf(
@@ -1017,9 +904,9 @@ function parentsOf(
 }
 
 function normalise(rect: DOMRect) {
-  const bounds = nativeSurface() ? canvas()?.getBoundingClientRect() : null;
-  const width = bounds?.width || window.innerWidth || 1;
-  const height = bounds?.height || window.innerHeight || 1;
+  const bounds = canvas()?.getBoundingClientRect();
+  const width = bounds?.width || 1;
+  const height = bounds?.height || 1;
 
   return {
     height: rect.height / height,
@@ -1075,21 +962,6 @@ function sequenceTiming(
 function labelOf(props: Record<string, unknown> | null): string | null {
   const name = props?.name;
   return typeof name === "string" && name.length > 0 ? name : null;
-}
-
-function grabModule(): GrabModule | null {
-  return (
-    (globalThis as unknown as { __REACT_GRAB_MODULE__?: GrabModule })
-      .__REACT_GRAB_MODULE__ ?? null
-  );
-}
-
-function rootPath(): string {
-  return (
-    nativeSurface()?.project ??
-    (window as unknown as { remocn_root?: string }).remocn_root ??
-    "/"
-  );
 }
 
 const nothing = () => null;

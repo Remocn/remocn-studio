@@ -63,8 +63,11 @@ function context(
         Effect.asVoid
       );
     },
-    gate,
-    turnId: "turn_1",
+    permissions: gate.forTurn({
+      applyMode: () => Effect.void,
+      emit: (event) => result.emit(event),
+      turnId: "turn_1",
+    }),
   };
   return { calls, cards, result };
 }
@@ -88,10 +91,11 @@ describe("shared paid generation service", () => {
     await Effect.runPromiseExit(
       generateSounds([operation.request], test.result)
     );
+    await Effect.runPromiseExit(
+      generateSounds([operation.request], test.result)
+    );
     expect(test.calls).not.toContain("sounds.commit");
-    expect(
-      await Effect.runPromise(test.result.gate.remembers("sound:sound_test"))
-    ).toBe(false);
+    expect(test.cards).toHaveLength(2);
   });
   it.each([false, true])(
     "never repeats a commit (lost reply: %s)",
@@ -223,8 +227,11 @@ describe("several sounds in one call", () => {
             allRaised.resolve();
           }
         }),
-      gate,
-      turnId: "turn_1",
+      permissions: gate.forTurn({
+        applyMode: () => Effect.void,
+        emit: (event) => result.emit(event),
+        turnId: "turn_1",
+      }),
     };
     return { calls, cards, gate, raised: allRaised.promise, result };
   }
@@ -342,7 +349,7 @@ describe("several sounds in one call", () => {
       generateSounds(requests, test.result)
     );
     await test.raised;
-    await Effect.runPromise(test.gate.abandon("turn_1"));
+    await Effect.runPromise(test.result.permissions.abandon);
 
     expect(Exit.isFailure(await running)).toBe(true);
     expect(test.calls.some((call) => call.startsWith("sounds.commit"))).toBe(

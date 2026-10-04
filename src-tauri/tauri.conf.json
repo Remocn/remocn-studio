@@ -73,6 +73,7 @@
       "../preview/anchor.ts": "preview/anchor.ts",
       "../preview/assets.ts": "preview/assets.ts",
       "../preview/bridge.ts": "preview/bridge.ts",
+      "../preview/protocol.ts": "preview/protocol.ts",
       "../preview/fiber.ts": "preview/fiber.ts",
       "../preview/playback-position.ts": "preview/playback-position.ts",
       "../preview/inspect.ts": "preview/inspect.ts",
