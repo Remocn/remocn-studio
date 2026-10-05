@@ -1,22 +1,27 @@
-import { onCommand, post } from "./bridge";
+import { post, route } from "./bridge";
+import type { PreviewCommand, PreviewMessage } from "./protocol";
 
 const subscriptions = new Map<(event: MessageEvent) => void, () => void>();
 export const managedTransport = {
   addEventListener(_type: "message", receive: (event: MessageEvent) => void) {
     subscriptions.get(receive)?.();
+    const deliver = (command: PreviewCommand) =>
+      receive(
+        new MessageEvent("message", {
+          data: { ...command, source: "remocn-studio" },
+          source: window.parent,
+        })
+      );
     subscriptions.set(
       receive,
-      onCommand((command) =>
-        receive(
-          new MessageEvent("message", {
-            data: { ...command, source: "remocn-studio" },
-            source: window.parent,
-          })
-        )
-      )
+      route("managed", {
+        "studio.batch": deliver,
+        "studio.draft": deliver,
+        "studio.request": deliver,
+      })
     );
   },
-  postMessage(message: Record<string, unknown>, _origin: string) {
+  postMessage(message: PreviewMessage, _origin: string) {
     post(message);
   },
   removeEventListener(

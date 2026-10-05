@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Effect } from "effect";
+import { errorMessage } from "@/lib/error-message";
 import type { BuildOutcome } from "./build-state";
 import { PreviewError, type WebpackConfig } from "./project";
 
 export const NATIVE_MANIFEST = "/__remocn/native";
+export const NATIVE_SCRIPT = "bundle.js";
 
 const STUDIO_OBJECTS_V5_INDEX = /[\\/]studio-objects-v5[\\/]index\.tsx$/;
 
@@ -29,10 +32,17 @@ type Compile = ((config: WebpackConfig) => {
   };
 };
 
+export interface NativeBuild {
+  generation: number;
+  script: Uint8Array;
+}
+
 export interface NativeBundle {
   base: string;
   directory: string;
   prepare: Effect.Effect<number, PreviewError>;
+  /** The last build that compiled, as webpack finished writing it. */
+  script: () => NativeBuild | null;
   start: Effect.Effect<void, PreviewError>;
 }
 
@@ -75,10 +85,22 @@ export function nativeBundle(
     const { directory } = options;
     let watcher: Watch | null = null;
     let generation = 0;
+    let built: NativeBuild | null = null;
     let result: Effect.Effect<number, PreviewError> | null = null;
     const waiting = new Set<
       (value: Effect.Effect<number, PreviewError>) => void
     >();
+
+    const take = (): string | null => {
+      try {
+        const script = readFileSync(path.join(directory, NATIVE_SCRIPT));
+        generation += 1;
+        built = { generation, script };
+        return null;
+      } catch (cause) {
+        return `the compiled bundle could not be read: ${errorMessage(cause)}`;
+      }
+    };
 
     const start = yield* Effect.cached(
       Effect.gen(function* () {
@@ -96,9 +118,8 @@ export function nativeBundle(
               ...(options.plugins ?? []),
             ];
             watcher = compile(configured).watch({}, (error, stats) => {
-              const message = failureOf(error, stats);
+              const message = failureOf(error, stats) ?? take();
               if (message === null) {
-                generation += 1;
                 result = Effect.succeed(generation);
               } else {
                 process.stderr.write(`Canvas preview: ${message}\n`);
@@ -151,6 +172,7 @@ export function nativeBundle(
       base: options.base,
       directory,
       prepare,
+      script: () => built,
       start,
     } satisfies NativeBundle;
   });
@@ -231,7 +253,7 @@ function nativeConfig(
       chunkLoadingGlobal: `remocn_native_${path.basename(options.base).replaceAll("-", "_")}`,
       clean: true,
       crossOriginLoading: "anonymous",
-      filename: "bundle.js",
+      filename: NATIVE_SCRIPT,
       library: { name: "__remocnNativeBundle", type: "window" },
       path: options.directory,
       publicPath: `${options.origin}${options.base}/`,

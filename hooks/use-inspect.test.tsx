@@ -9,7 +9,6 @@ import {
   removalOf,
   useInspect,
 } from "@/hooks/use-inspect";
-import type { PreviewControl } from "@/hooks/use-preview";
 import type { removeCode } from "@/lib/studio/code-removal";
 import type {
   PreviewCommand,
@@ -19,6 +18,7 @@ import type {
 } from "@/lib/studio/preview";
 import { SidecarError } from "@/lib/studio/sidecar";
 import type { PromptElement, StatusResult } from "@/shared/ipc";
+import { previewControl } from "@/test/preview-channel";
 import { stubGlobal, unstubAllGlobals } from "@/test/stub-global";
 
 const NO_STATUS: StatusResult = { targets: [] };
@@ -179,9 +179,7 @@ function harness(
     select?: (element: unknown) => string;
   } = {}
 ) {
-  const sent: PreviewCommand[] = [];
   const toasted = spyOn(toastManager, "add");
-  let listener: ((message: PreviewMessage) => void) | null = null;
   let raf: FrameRequestCallback | null = null;
 
   stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
@@ -192,28 +190,10 @@ function harness(
     raf = null;
   });
 
-  const preview = {
-    attachSurface: () => () => undefined,
-    composition: null,
-    focus: () => undefined,
-    frame: 0,
-    frameOf: () => 0,
-    hint: null,
-    isServing: true,
-    pick: null,
+  const { preview, surface } = previewControl({
     playing: options.playing ?? false,
-    preview: { phase: "serving" },
-    restart: () => undefined,
-    send: (command: PreviewCommand) => {
-      sent.push(command);
-    },
-    subscribe: (listen: (message: PreviewMessage) => void) => {
-      listener = listen;
-      return () => {
-        listener = null;
-      };
-    },
-  } as unknown as PreviewControl;
+  });
+  const { sent } = surface;
 
   const composer = {
     select: options.select ?? mock(() => "selection-1"),
@@ -241,7 +221,7 @@ function harness(
     ...rendered,
     commands: () => [...sent],
     deliver: (message: PreviewMessage) => {
-      act(() => listener?.(message));
+      act(() => surface.emit(message));
     },
     flush: () => {
       act(() => {
@@ -1147,9 +1127,7 @@ describe("time in the pane", () => {
       result.current.replay();
     });
 
-    expect(replays()).toEqual([
-      { from: 30, source: "remocn-studio", type: "replay", until: 60 },
-    ]);
+    expect(replays()).toEqual([{ from: 30, type: "replay", until: 60 }]);
   });
 
   it("says nothing when the element has no timed window", () => {
@@ -1173,7 +1151,6 @@ describe("time in the pane", () => {
 
     expect(commands()).toContainEqual({
       frame: 37,
-      source: "remocn-studio",
       type: "seek",
     });
   });

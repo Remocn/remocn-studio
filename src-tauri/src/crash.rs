@@ -182,25 +182,45 @@ pub fn start(_version: &str) -> Option<Reporter> {
     None
 }
 
+/// What the supervisor knows about a sidecar that left after it had been
+/// serving: its exit status as a sentence, the sidecar's own last lifecycle
+/// line if it wrote one, and how long it had been up.
+pub struct SidecarExit<'a> {
+    pub reason: &'a str,
+    pub said: Option<&'a str>,
+    pub uptime: std::time::Duration,
+}
+
 /// The sidecar died after it had been serving. Reported as a message rather
 /// than an exception: there is no stack to attach — the process that had one
 /// is gone — and the reason line the supervisor already writes into
 /// `sidecar.log` is the whole of what is known.
 ///
 /// It carries no path, because `Session::reason` is built from an exit status
-/// and a signal name. A launch that never became ready is deliberately not
-/// reported: that is a missing bun or a missing script, which the environment
-/// checklist already puts on screen for the person to act on.
+/// and a signal name, and `said` is one of the fixed sentences the supervisor's
+/// `lifecycle_reason` lets through. Both ride as tags beside the message, not
+/// in it, so every exit-0 still groups as one issue. A launch that never
+/// became ready is deliberately not reported: that is a missing bun or a
+/// missing script, which the environment checklist already puts on screen for
+/// the person to act on.
 #[cfg(feature = "crash-reports")]
-pub fn note_sidecar_crash(reason: &str) {
-    sentry::capture_message(
-        &format!("the sidecar stopped unexpectedly: {reason}"),
-        sentry::Level::Error,
+pub fn note_sidecar_crash(exit: &SidecarExit<'_>) {
+    sentry::with_scope(
+        |scope| {
+            scope.set_tag("sidecar.said", exit.said.unwrap_or("nothing"));
+            scope.set_extra("sidecar.uptime_secs", exit.uptime.as_secs().into());
+        },
+        || {
+            sentry::capture_message(
+                &format!("the sidecar stopped unexpectedly: {}", exit.reason),
+                sentry::Level::Error,
+            )
+        },
     );
 }
 
 #[cfg(not(feature = "crash-reports"))]
-pub fn note_sidecar_crash(_reason: &str) {}
+pub fn note_sidecar_crash(_exit: &SidecarExit<'_>) {}
 
 #[cfg(test)]
 mod tests {

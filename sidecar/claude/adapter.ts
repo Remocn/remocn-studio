@@ -7,6 +7,7 @@ import type {
 } from "@/shared/ipc";
 import { PROVIDER_INFO } from "@/shared/providers";
 import type { AgentAdapter, TurnServices } from "../agent/adapter";
+import { missingCli } from "../agent/cli";
 import { announce, locateBundle } from "../agent/knowledge";
 import { accountCheck, missingRow } from "./account";
 import { findClaude } from "./cli";
@@ -18,20 +19,17 @@ import { messages } from "./session";
 export const claudeAdapter: AgentAdapter = {
   account: accountCheck,
 
+  forget: () => Effect.void,
+
   info: PROVIDER_INFO.claude,
+
+  toolKey: ({ turn }) => turn,
 
   turn: (params: PromptParams, services: TurnServices) =>
     Effect.gen(function* () {
       const executable = findClaude();
       if (executable === null) {
-        return {
-          context: null,
-          failure: {
-            kind: "auth",
-            message: missingRow().detail ?? "Claude Code is not installed.",
-          },
-          sessionId: params.sessionId,
-        } satisfies PromptResult;
+        return missingCli(missingRow(), params);
       }
 
       const sessionId = yield* Ref.make(params.sessionId);
@@ -40,32 +38,28 @@ export const claudeAdapter: AgentAdapter = {
       const knowledge = locateBundle(services.cwd);
 
       yield* announce(knowledge, services);
+      const { media, system, trailer } = services.instructions(
+        knowledge.loaded
+      );
 
       yield* Stream.runForEach(
         messages(params, {
-          assets:
-            [services.briefs.assets, services.briefs.brand]
-              .filter(Boolean)
-              .join("\n\n") || null,
-          brief: services.briefs.pipeline,
           canUseTool: permissionGuard({
             cwd: services.cwd,
-            emit: services.emit,
-            gate: services.gate,
-            onApprove: services.onApprove,
-            turnId: services.turnId,
+            permissions: services.permissions,
           }),
           cwd: services.cwd,
           executable,
           inProcess: services.inProcess ?? {},
           knowledge,
           log: (line) => Effect.runSync(services.log(line)),
-          media: services.briefs.media,
+          media,
           onContext: (usage) => Effect.runSync(Ref.set(context, usage)),
           onMode: (apply) => Effect.runSync(services.onMode(apply)),
-          onStop: () => Effect.runSync(services.gate.abandon(services.turnId)),
+          onStop: () => Effect.runSync(services.permissions.abandon),
+          system,
           tools: services.tools,
-          video: services.video,
+          trailer,
         }),
         (message) =>
           Effect.gen(function* () {
@@ -92,7 +86,7 @@ export const claudeAdapter: AgentAdapter = {
             (current) => current ?? failureFromText(error.message)
           )
         ),
-        Effect.onExit(() => services.gate.abandon(services.turnId))
+        Effect.onExit(() => services.permissions.abandon)
       );
 
       return {

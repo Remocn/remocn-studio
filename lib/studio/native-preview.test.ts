@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Effect, Fiber } from "effect";
 import { type NativePreviewState, runNativePreview } from "./native-preview";
 import { pauseCommand } from "./preview";
-import { createPreviewSurfaceChannel } from "./preview-surface";
+import { createPreviewChannel } from "./preview-channel";
 
 const BASE = "http://127.0.0.1:51749/";
 const HOOKS_KEY = "__nativePreviewTestHooks";
@@ -10,6 +10,7 @@ const HOOKS_KEY = "__nativePreviewTestHooks";
 interface Hooks {
   commands: Record<string, unknown[]>;
   disposed: string[];
+  sourceMap?: string;
 }
 
 function hooks(): Hooks {
@@ -82,6 +83,20 @@ function workingBundle(id: string) {
   } };`;
 }
 
+function chattyBundle(id: string) {
+  return `window.__remocnNativeBundle = { mount: (element, env) => {
+    window.${HOOKS_KEY}.commands["${id}"] = [];
+    env.emit({ type: "native.painted" });
+    env.emit({ source: "elsewhere", type: "inspect.ready" });
+    return {
+      dispose: () => { window.${HOOKS_KEY}.disposed.push("${id}"); },
+      position: () => ({ frame: 0, muted: false, playing: false, volume: 1 }),
+      selection: () => null,
+      start: () => undefined,
+    };
+  } };`;
+}
+
 function brokenBundle() {
   return "window.__remocnNativeBundle = { notMount: true };";
 }
@@ -142,7 +157,8 @@ function harness(
   const stage = document.createElement("div");
   const overlays = document.createElement("div");
   const viewport = options.viewport ?? document.createElement("div");
-  const channel = createPreviewSurfaceChannel();
+  const channel = createPreviewChannel();
+  channel.serve(BASE);
   const states: NativePreviewState[] = [];
   const waiters: {
     predicate: (states: readonly NativePreviewState[]) => boolean;
@@ -245,6 +261,23 @@ describe("runNativePreview", () => {
     expect(hooks().commands.slot1).toEqual([pauseCommand()]);
   });
 
+  it("stamps every message the runtime emits as the preview's own", async () => {
+    const network = setupNetwork();
+    network.scripts.set("v1.js", chattyBundle("slot1"));
+    const { channel, waitForState } = harness();
+    const received: unknown[] = [];
+    channel.on("inspect.ready", (message) => {
+      received.push(message);
+    });
+
+    await waitForState((all) => all.length > 0);
+
+    expect(received).toContainEqual({
+      source: "remocn-preview",
+      type: "inspect.ready",
+    });
+  });
+
   it("swaps to a rebuilt runtime and stops delivering to the disposed one", async () => {
     const network = setupNetwork();
     const { channel, readyCount, waitForState } = harness();
@@ -261,6 +294,25 @@ describe("runNativePreview", () => {
     expect(hooks().commands.slot1).toEqual([]);
     expect(hooks().commands.slot2).toEqual([pauseCommand()]);
     expect(hooks().disposed).toEqual(["slot1"]);
+  });
+
+  it("resolves only the bundle's own source map line, not the same words inside its code", async () => {
+    const network = setupNetwork();
+    network.scripts.set(
+      "v1.js",
+      `${workingBundle("slot1")}
+window.${HOOKS_KEY}.sourceMap = "//# sourceMappingURL=" + "x.map";
+//# sourceMappingURL=bundle.js.map`
+    );
+    const { states, waitForState } = harness();
+
+    await waitForState((all) => all.length > 0);
+
+    expect(states.at(-1)).toEqual({ phase: "ready", stale: null });
+    expect(hooks().sourceMap).toBe("//# sourceMappingURL=x.map");
+    expect(document.head.querySelector("script")?.textContent).toContain(
+      `//# sourceMappingURL=${BASE}bundle.js.map\n`
+    );
   });
 
   it("re-checking the same generation on an EventSource reconnect does not restage", async () => {

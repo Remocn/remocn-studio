@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import type { OpenTurn } from "@/hooks/use-open-turn";
 import type { PreviewControl } from "@/hooks/use-preview";
-import { seekCommand } from "@/lib/studio/preview";
+import { useResultReady } from "@/hooks/use-result-ready";
 import { useStudio, useStudioTurn } from "./studio-provider";
 
 /** A server URL alone does not mean the rebuilt composition has mounted. */
@@ -41,60 +41,18 @@ export function ChatResultLink({
   onOpenPreview: () => void;
 }) {
   const request = turn.entries.findLast((entry) => entry.kind === "user");
-  const [loaded, setLoaded] = useState<string | null>(null);
-  const [rebuilt, setRebuilt] = useState<string | null>(null);
-  const requestId = request?.id ?? null;
-
-  useEffect(
-    () =>
-      preview.subscribe((message) => {
-        if (message.type === "rebuilt") {
-          setLoaded(null);
-          setRebuilt(requestId);
-        }
-        if (message.type === "composition") {
-          setLoaded(
-            message.metadata !== null &&
-              message.trouble === null &&
-              message.compositionId === preview.composition
-              ? requestId
-              : null
-          );
-        }
-      }),
-    [preview.subscribe, preview.composition, requestId]
+  const { open, ready, target } = useResultReady(
+    preview,
+    request,
+    onOpenPreview
   );
-
-  const target = request?.elements.find(
-    (element) => element.composition === preview.composition && element.fps > 0
-  );
-  const open = useCallback(() => {
-    onOpenPreview();
-    if (target && preview.pick?.metadata) {
-      preview.send(
-        seekCommand(
-          Math.max(
-            0,
-            Math.min(
-              Math.round(
-                (target.frame / target.fps) * preview.pick.metadata.fps
-              ),
-              preview.pick.metadata.durationInFrames - 1
-            )
-          )
-        )
-      );
-    }
-  }, [onOpenPreview, target, preview]);
 
   if (
-    !requestId ||
+    !ready ||
     turn.isRunning ||
     turn.turnError !== null ||
     turn.permission !== null ||
     turn.source !== null ||
-    rebuilt !== requestId ||
-    loaded !== requestId ||
     preview.preview.phase !== "ready" ||
     turn.entries.at(-1)?.kind !== "assistant"
   ) {

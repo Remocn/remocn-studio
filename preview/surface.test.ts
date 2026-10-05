@@ -1,12 +1,15 @@
 import { describe, expect, it } from "bun:test";
+import { withSurface } from "@/test/surface";
 import {
   configureSurface,
   contentRoot,
+  currentSurface,
+  elementsAt,
   focusSurface,
   lockCamera,
-  nativeSurface,
   overlayRoot,
   styleRoot,
+  surfaceEvents,
   surfaceHref,
 } from "./surface";
 
@@ -30,19 +33,26 @@ function environment() {
 }
 
 describe("configureSurface", () => {
-  it("falls back to the document and window before any surface configures", () => {
-    expect(nativeSurface()).toBeNull();
-    expect(contentRoot()).toBe(document);
-    expect(overlayRoot()).toBe(document.body);
-    expect(styleRoot()).toBe(document.head);
-    expect(surfaceHref()).toBe(window.location.href);
+  it("throws before a surface configures", () => {
+    expect(currentSurface()).toBeNull();
+    expect(() => contentRoot()).toThrow(
+      "The preview surface is not configured."
+    );
+    expect(() => overlayRoot()).toThrow();
+    expect(() => styleRoot()).toThrow();
+    expect(() => surfaceHref()).toThrow();
+    expect(() => focusSurface()).toThrow();
+    expect(() => elementsAt(0, 0)).toThrow();
+    expect(() =>
+      surfaceEvents.addEventListener("pointerdown", () => undefined)
+    ).toThrow();
   });
 
   it("installs the environment so accessors read the native surface", () => {
     const value = environment();
     const dispose = configureSurface(value);
 
-    expect(nativeSurface()).toBe(value);
+    expect(currentSurface()).toBe(value);
     expect(contentRoot()).toBe(value.root);
     expect(overlayRoot()).toBe(value.overlays);
     expect(styleRoot()).toBe(value.root);
@@ -51,7 +61,7 @@ describe("configureSurface", () => {
     dispose();
   });
 
-  it("focuses the surface viewport while configured, the window once torn down", () => {
+  it("focuses the surface viewport while configured, and throws once torn down", () => {
     const value = environment();
     const dispose = configureSurface(value);
     let viewportFocused = false;
@@ -63,14 +73,7 @@ describe("configureSurface", () => {
     expect(viewportFocused).toBe(true);
 
     dispose();
-    let windowFocused = false;
-    const original = window.focus;
-    window.focus = () => {
-      windowFocused = true;
-    };
-    focusSurface();
-    window.focus = original;
-    expect(windowFocused).toBe(true);
+    expect(() => focusSurface()).toThrow();
   });
 
   it("marks the viewport as editing while any lock is held, and clears it once all release", () => {
@@ -101,6 +104,7 @@ describe("configureSurface", () => {
     dispose();
 
     expect(value.viewport.hasAttribute("data-preview-editing")).toBe(false);
+    expect(() => lockCamera({}, false)).not.toThrow();
     // A lock held by the torn-down surface must not resurrect on the next one.
     const next = environment();
     const disposeNext = configureSurface(next);
@@ -119,15 +123,58 @@ describe("configureSurface", () => {
     expect(value.overlays.childElementCount).toBe(0);
   });
 
-  it("returns accessors to their fallback once the surface disconnects", () => {
+  it("throws from the accessors again once the surface disconnects", () => {
     const value = environment();
     const dispose = configureSurface(value);
 
     dispose();
 
-    expect(nativeSurface()).toBeNull();
-    expect(contentRoot()).toBe(document);
-    expect(overlayRoot()).toBe(document.body);
-    expect(surfaceHref()).toBe(window.location.href);
+    expect(currentSurface()).toBeNull();
+    expect(() => contentRoot()).toThrow();
+    expect(() => overlayRoot()).toThrow();
+    expect(() => surfaceHref()).toThrow();
+  });
+});
+
+describe("elementsAt", () => {
+  it("answers nothing when the hit is outside the stage host", () => {
+    const surface = withSurface();
+    const node = document.createElement("div");
+    surface.root.append(node);
+    surface.pointAt([node]);
+    document.elementFromPoint = () => surface.overlays;
+
+    expect(elementsAt(1, 1)).toEqual([]);
+  });
+
+  it("keeps only the nodes that live in the shadow root", () => {
+    const surface = withSurface();
+    const inside = document.createElement("div");
+    surface.root.append(inside);
+    surface.pointAt([inside, surface.host, document.body]);
+
+    expect(elementsAt(1, 1)).toEqual([inside]);
+  });
+});
+
+describe("surfaceEvents", () => {
+  it("removes a listener from the viewport it was added to after the surface stops", () => {
+    const surface = withSurface();
+    const seen: Event[] = [];
+    const listener = (event: Event) => seen.push(event);
+    surfaceEvents.addEventListener("pointerdown", listener);
+    const { viewport } = surface;
+    surface.dispose();
+
+    surfaceEvents.removeEventListener("pointerdown", listener);
+    viewport.dispatchEvent(new Event("pointerdown"));
+
+    expect(seen).toEqual([]);
+  });
+
+  it("removes nothing harmlessly when the listener was never added", () => {
+    expect(() =>
+      surfaceEvents.removeEventListener("pointerdown", () => undefined)
+    ).not.toThrow();
   });
 });

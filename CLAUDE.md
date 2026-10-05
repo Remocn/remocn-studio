@@ -62,7 +62,8 @@ The lockfile is `bun.lock`; use bun.
 - `bun run check` — formatter **and** linter in one pass, read-only. This is what
   CI runs; it fails on violations rather than fixing them.
 - `bun run fix` — apply the fixes `check` reports.
-- `bun run typecheck` — `tsc --noEmit`. Keep this in the loop: Next 16 no longer
+- `bun run typecheck` — `tsc --noEmit`, then `tsc -p tsconfig.preview.json` over
+  `preview/`. Keep this in the loop: Next 16 no longer
   lints on build, and it is the only gate over `components/ui/**`, where the
   linter is deliberately off.
 - `bun run test` — `bun test`, three worker processes, one fresh global per file.
@@ -528,9 +529,15 @@ One seam per line: what it owns, the specs that define it, the records that expl
   `~/.local/share/<identifier>`) on Linux before the app is built.
   `ClientOptions` is `#[non_exhaustive]` — build it by assignment.
 - **Preview entry** (`preview/`): compiled by the *project's* webpack, so it has no access to
-  the app's alias — it duplicates the message shapes and `lib/studio/preview.test.ts` is what
-  keeps the two in step. Excluded from `tsconfig.json`; every file needs its own entry in
-  `tauri.conf.json`'s resources.
+  the app's alias and must never pull `effect`. `preview/protocol.ts` (types only) is the one
+  statement of every command and message; `lib/studio/preview.ts` `import type`s it and proves
+  its decoding Schema equal per message type (`messagesAgree`/`commandsAgree`), so a renamed
+  field is a `typecheck` error, and `preview/protocol.test.ts` runs what the real senders post
+  through that Schema. A preview module takes its commands with `route(consumer, handlers)`,
+  checked against `CommandConsumers`. Excluded from `tsconfig.json` but type-checked by
+  `tsconfig.preview.json` (the second half of `bun run typecheck`, against `remotion` and
+  `@remotion/player` installed as type-only devDependencies at the template's version);
+  every non-test file needs its own entry in `tauri.conf.json`'s resources.
 - **Templates and skills**: `templates/remotion/` and `agent/` are Tauri resources
   (`"../agent": "agent"` maps the whole folder, so a new skill needs no resource entry).
   `agent/skills` is force-ignored by Biome and excluded from `tsconfig.json`; `skills:check`
@@ -567,7 +574,9 @@ components/studio/    app-level components (panes, sidecar status, quit guard)
 hooks/                all behaviour: no logic inline in components
 lib/                  cn helper, error formatting, lib/studio/* clients
 preview/              what the *project's* webpack compiles instead of Studio's UI:
-                      entry.tsx, the two-way bridge, hot reload, grab, source paths,
+                      entry.tsx, surface.ts (the one environment the runtime
+                      reads — a configured shadow-root surface, or an error),
+                      the two-way bridge, hot reload, source paths,
                       the element picker, anchor.ts (the per-instance selector a
                       selection is identified by), stack.ts (the JSX call site
                       Remotion records, which is where a value is written),
@@ -599,9 +608,14 @@ sidecar/              bun: frame loop, method handlers, SQLite history;
                       package-manager.ts is the one reader of a project's lockfile;
                       node-installer.ts fetches and opens the Node LTS installer
 sidecar/agent/        the provider-neutral seam: AgentAdapter, the permission
-                      gate's skeleton, the mode switch, account cache, registry,
-                      and knowledge.ts — the one locator/attach contract for the
-                      shipped skills bundle
+                      gate (gate.ts owns the one ask: remembered approvals, the
+                      card, the wait, the mode), the mode switch, account cache,
+                      registry, turn.ts — `runTurn`, the whole turn behind
+                      `agent.prompt`, with turn-tools.ts serving it —
+                      knowledge.ts — the one locator/attach contract for the
+                      shipped skills bundle — and instructions.ts: the
+                      conventions, the stage brief and the three strings
+                      every adapter places
 sidecar/claude/       the Claude Code adapter: Agent SDK session, event and
                       failure translation, the CanUseTool guard, auth probe,
                       tool-name→verb vocabulary

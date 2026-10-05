@@ -1,11 +1,8 @@
-import { afterEach, describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { type TestSurface, withSurface } from "@/test/surface";
 import type { RegisteredSequence } from "./scenes";
-
-const post = mock();
-mock.module("./bridge", () => ({ post }));
-
-const { useSceneObserver } = await import("./scenes-report");
+import { useSceneObserver } from "./scenes-report";
 
 function sequence(
   id: string,
@@ -27,8 +24,10 @@ function frame() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-afterEach(() => {
-  post.mockReset();
+let surface: TestSurface;
+
+beforeEach(() => {
+  surface = withSurface();
 });
 
 describe("useSceneObserver", () => {
@@ -39,8 +38,8 @@ describe("useSceneObserver", () => {
       result.current([sequence("Intro", 0, 100), sequence("Outro", 100, 200)]);
     });
 
-    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
-    expect(post.mock.calls[0]?.[0]).toMatchObject({
+    await waitFor(() => expect(surface.sent).toHaveLength(1));
+    expect(surface.sent[0]).toMatchObject({
       compositionId: "intro",
       scenes: [{ name: "Intro" }, { name: "Outro" }],
       type: "scenes",
@@ -51,7 +50,7 @@ describe("useSceneObserver", () => {
     const scenes = [sequence("Intro", 0, 100), sequence("Outro", 100, 200)];
     const { result } = renderHook(() => useSceneObserver("intro", 300));
     act(() => result.current(scenes));
-    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(surface.sent).toHaveLength(1));
 
     act(() =>
       result.current([
@@ -62,7 +61,7 @@ describe("useSceneObserver", () => {
     await frame();
     await frame();
 
-    expect(post).toHaveBeenCalledTimes(1);
+    expect(surface.sent).toHaveLength(1);
   });
 
   it("posts again when a rebuild retimes a scene", async () => {
@@ -70,12 +69,12 @@ describe("useSceneObserver", () => {
     act(() =>
       result.current([sequence("Intro", 0, 100), sequence("Outro", 100, 200)])
     );
-    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(surface.sent).toHaveLength(1));
 
     act(() =>
       result.current([sequence("Intro", 0, 120), sequence("Outro", 120, 180)])
     );
 
-    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(surface.sent).toHaveLength(2));
   });
 });

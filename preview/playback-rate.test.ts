@@ -1,20 +1,14 @@
-import { describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
-import type { PreviewCommand } from "./bridge";
+import { type TestSurface, withSurface } from "@/test/surface";
+import { usePlaybackRate } from "./playback-rate";
+import type { PreviewCommand } from "./protocol";
 
-let receive: ((command: PreviewCommand) => void) | null = null;
+let surface: TestSurface;
 
-mock.module("./bridge", () => ({
-  onCommand: (handle: (command: PreviewCommand) => void) => {
-    receive = handle;
-    return () => {
-      receive = null;
-    };
-  },
-  post: mock(),
-}));
-
-const { usePlaybackRate } = await import("./playback-rate");
+beforeEach(() => {
+  surface = withSurface();
+});
 
 describe("usePlaybackRate", () => {
   it("plays at 1x until the pane asks for another speed", () => {
@@ -22,14 +16,15 @@ describe("usePlaybackRate", () => {
 
     expect(result.current).toBe(1);
 
-    act(() => receive?.({ rate: 0.25, type: "transport.rate" }));
+    act(() => surface.send({ rate: 0.25, type: "transport.rate" }));
 
     expect(result.current).toBe(0.25);
   });
 
   it("ignores a speed the panel does not offer", () => {
     const { result } = renderHook(() => usePlaybackRate());
-    act(() => receive?.({ rate: 3, type: "transport.rate" }));
+    const offTheList = { rate: 3, type: "transport.rate" };
+    act(() => surface.send(offTheList as unknown as PreviewCommand));
 
     expect(result.current).toBe(1);
   });

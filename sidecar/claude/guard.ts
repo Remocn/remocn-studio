@@ -5,16 +5,13 @@ import type {
   PermissionResult,
 } from "@anthropic-ai/claude-agent-sdk";
 import { Effect, Exit } from "effect";
-import type { AgentEvent, SessionMode } from "@/shared/ipc";
-import type { PermissionGate } from "../agent/gate";
+import type { SessionMode } from "@/shared/ipc";
+import type { TurnGate } from "../agent/gate";
 import { EXIT_PLAN_TOOL, review } from "./permission";
 
 export interface GuardOptions {
   readonly cwd: string;
-  readonly emit: (event: AgentEvent) => Effect.Effect<void>;
-  readonly gate: PermissionGate;
-  readonly onApprove: (mode: SessionMode) => Effect.Effect<void>;
-  readonly turnId: string;
+  readonly permissions: TurnGate;
 }
 
 const ALLOWED: PermissionResult = { behavior: "allow" };
@@ -25,67 +22,26 @@ export function permissionGuard(options: GuardOptions): CanUseTool {
       return denied(toolName);
     }
 
-    const id = crypto.randomUUID();
-    const abort = () => {
-      Effect.runFork(options.gate.answer(id, "deny", null));
-    };
-
-    signal.addEventListener("abort", abort, { once: true });
-
-    try {
-      const exit = await Effect.runPromiseExit(
-        decide(options, id, toolName, input)
-      );
-      return Exit.isSuccess(exit) ? exit.value : denied(toolName);
-    } finally {
-      signal.removeEventListener("abort", abort);
-    }
+    const exit = await Effect.runPromiseExit(decide(options, toolName, input), {
+      signal,
+    });
+    return Exit.isSuccess(exit) ? exit.value : denied(toolName);
   };
 }
 
 function decide(
   options: GuardOptions,
-  id: string,
   toolName: string,
   input: Record<string, unknown>
 ): Effect.Effect<PermissionResult> {
-  return Effect.gen(function* () {
-    const verdict = yield* review(options.cwd, toolName, input);
-    if (verdict.kind === "allow") {
-      return ALLOWED;
-    }
-
-    if (
-      verdict.reason !== "outward" &&
-      (yield* options.gate.remembers(verdict.signature))
-    ) {
-      return ALLOWED;
-    }
-
-    yield* options.emit({
-      id,
-      input,
-      name: toolName,
-      reason: verdict.reason,
-      type: "permission",
-    });
-
-    const answer = yield* options.gate.wait({
-      id,
-      signature: verdict.signature,
-      turnId: options.turnId,
-    });
-
-    if (answer.decision === "deny") {
-      return denied(toolName);
-    }
-
-    if (answer.mode !== null) {
-      yield* options.onApprove(answer.mode);
-    }
-
-    return ALLOWED;
-  });
+  return review(options.cwd, toolName, input).pipe(
+    Effect.flatMap((verdict) =>
+      options.permissions.ask({ input, name: toolName, verdict })
+    ),
+    Effect.map((answer) =>
+      answer.kind === "allow" ? ALLOWED : denied(toolName)
+    )
+  );
 }
 
 function denied(toolName: string): PermissionResult {

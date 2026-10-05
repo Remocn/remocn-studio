@@ -43,6 +43,11 @@ struct Pending {
 
 struct Session {
     reason: String,
+    /// The last thing the sidecar said about why it was leaving, when it said
+    /// one of the lines in `lifecycle_reason` — never any other stderr line,
+    /// because those carry paths.
+    said: Option<String>,
+    uptime: Duration,
     was_ready: bool,
 }
 
@@ -271,6 +276,10 @@ async fn supervise(inner: Arc<Inner>) {
         inner.publish(SidecarPhase::Starting, None, tries);
 
         let session = run_session(&inner).await;
+        // Read before anything can clear it: `restart` sets it and then
+        // signals the process, so a session that ends with it set ended
+        // because the person asked.
+        let requested = inner.restart_requested.load(Ordering::SeqCst);
         inner.child.store(0, Ordering::SeqCst);
         inner.log.host(&session.reason);
         inner.fail_pending(&session.reason);
@@ -284,9 +293,17 @@ async fn supervise(inner: Arc<Inner>) {
             // The one crash in this app that nothing else can report: the
             // sidecar died after it had been serving, so it was not a bad
             // launch, and whatever killed it took its own reporter with it.
-            // Today this is a line in `sidecar.log` on a machine nobody can
-            // reach — which is the gap #268 exists to close.
-            crash::note_sidecar_crash(&session.reason);
+            // A restart the person asked for is not one: the sidecar answers
+            // that SIGTERM by exiting 0, which is exactly what REM-650 saw.
+            if requested {
+                inner.log.host("restarted on request");
+            } else {
+                crash::note_sidecar_crash(&crash::SidecarExit {
+                    reason: &session.reason,
+                    said: session.said.as_deref(),
+                    uptime: session.uptime,
+                });
+            }
         }
 
         if tries >= MAX_ATTEMPTS {
@@ -413,6 +430,7 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
     let (outbound, inbox) = unbounded_channel::<HostFrame>();
     *inner.outbound() = Some(outbound);
 
+    let started = Instant::now();
     let was_ready = Arc::new(AtomicBool::new(false));
     let writer = tauri::async_runtime::spawn(write_frames(stdin, inbox, Arc::clone(inner)));
     let logger = tauri::async_runtime::spawn(copy_stderr(stderr, Arc::clone(inner)));
@@ -425,9 +443,10 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
     let exit = child.wait().await;
 
     *inner.outbound() = None;
+    let uptime = started.elapsed();
     let _ = reader.await;
     let _ = writer.await;
-    let _ = logger.await;
+    let said = logger.await.ok().flatten();
 
     let reason = match exit {
         Ok(status) => format!("the studio's helper stopped with {}", signal::describe_exit(status)),
@@ -436,6 +455,8 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
 
     Session {
         reason,
+        said,
+        uptime,
         was_ready: was_ready.load(Ordering::SeqCst),
     }
 }
@@ -443,6 +464,8 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
 fn stillborn(reason: String) -> Session {
     Session {
         reason,
+        said: None,
+        uptime: Duration::ZERO,
         was_ready: false,
     }
 }
@@ -540,13 +563,73 @@ async fn write_frames(
     }
 }
 
-async fn copy_stderr(stderr: ChildStderr, inner: Arc<Inner>) {
+/// Copies the sidecar's stderr into the log and answers with the last
+/// lifecycle line it saw — the sidecar's own account of why it left.
+async fn copy_stderr(stderr: ChildStderr, inner: Arc<Inner>) -> Option<String> {
     let mut lines = BufReader::new(stderr).lines();
+    let mut said = None;
     while let Ok(Some(line)) = lines.next_line().await {
+        if let Some(reason) = lifecycle_reason(&line) {
+            said = Some(reason.to_string());
+        }
         inner.log.sidecar(line);
     }
+    said
+}
+
+/// The lines `sidecar/serve.ts` writes as it leaves its race — the input
+/// closing, the core vanishing, a signal — and nothing else, so what reaches a
+/// crash report is one of a handful of known sentences with no path in it.
+fn lifecycle_reason(line: &str) -> Option<&str> {
+    let line = line.trim();
+    let known = line == "the host closed stdin"
+        || matches!(
+            line,
+            "received SIGTERM" | "received SIGINT" | "received SIGHUP"
+        )
+        || line
+            .strip_prefix("host ")
+            .and_then(|rest| rest.strip_suffix(" is gone"))
+            .is_some_and(|pid| !pid.is_empty() && pid.bytes().all(|b| b.is_ascii_digit()));
+    known.then_some(line)
 }
 
 fn backoff(tries: u32) -> Duration {
     Duration::from_millis(400u64 << tries.min(4))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::lifecycle_reason;
+
+    #[test]
+    fn keeps_the_lines_the_sidecar_leaves_with() {
+        assert_eq!(
+            lifecycle_reason("received SIGTERM"),
+            Some("received SIGTERM")
+        );
+        assert_eq!(
+            lifecycle_reason("received SIGHUP\n"),
+            Some("received SIGHUP")
+        );
+        assert_eq!(
+            lifecycle_reason("the host closed stdin"),
+            Some("the host closed stdin")
+        );
+        assert_eq!(
+            lifecycle_reason("host 4242 is gone"),
+            Some("host 4242 is gone")
+        );
+    }
+
+    #[test]
+    fn drops_everything_else() {
+        assert_eq!(lifecycle_reason("listening on stdio, protocol 12"), None);
+        assert_eq!(
+            lifecycle_reason("pruned 1 stale preview output(s): /Users/me/x"),
+            None
+        );
+        assert_eq!(lifecycle_reason("host /Users/me is gone"), None);
+        assert_eq!(lifecycle_reason("received SIGTERM at /Users/me"), None);
+    }
 }

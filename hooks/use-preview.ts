@@ -1,6 +1,6 @@
 "use client";
 
-import { Effect, Exit, Fiber } from "effect";
+import { Effect, Fiber } from "effect";
 import {
   useCallback,
   useEffect,
@@ -11,17 +11,17 @@ import {
 } from "react";
 import { previewFailure, previewRecovery } from "@/lib/studio/failures";
 import {
-  decodePreviewMessage,
-  originOf,
-  type PreviewCommand,
+  type MessageType,
   type PreviewComposition,
-  type PreviewMessage,
+  type PreviewMessageOf,
   startPreview,
 } from "@/lib/studio/preview";
 import {
-  createPreviewSurfaceChannel,
+  createPreviewChannel,
+  type PreviewChannel,
+  type PreviewEpoch,
   type PreviewSurface,
-} from "@/lib/studio/preview-surface";
+} from "@/lib/studio/preview-channel";
 import type { PromptFrame, SidecarPhase } from "@/shared/ipc";
 
 export type Preview =
@@ -30,10 +30,9 @@ export type Preview =
   | { phase: "idle" }
   | { phase: "ready"; url: string };
 
-export type PreviewListener = (message: PreviewMessage) => void;
-
 export interface PreviewControl {
   attachSurface: (surface: PreviewSurface) => () => void;
+  channel: PreviewChannel;
   composition: string | null;
   focus: () => void;
   frameOf: () => number;
@@ -44,12 +43,9 @@ export interface PreviewControl {
   playing: boolean;
   preview: Preview;
   restart: () => void;
-  send: (command: PreviewCommand) => void;
-  subscribe: (listen: PreviewListener) => () => void;
 }
 
 const IDLE: Preview = { phase: "idle" };
-const EMPTY_COMPOSITIONS_SETTLE_MS = 250;
 
 type Running = Fiber.Fiber<unknown, unknown>;
 
@@ -66,8 +62,7 @@ export function usePreview(
   const [pick, setPick] = useState<PreviewComposition | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const running = useRef<Running | null>(null);
-  const surface = useMemo(createPreviewSurfaceChannel, []);
-  const listeners = useRef(new Set<PreviewListener>());
+  const channel = useMemo(createPreviewChannel, []);
   const frame = useRef(0);
   const watchers = useRef(new Set<() => void>());
 
@@ -92,17 +87,8 @@ export function usePreview(
     }
   }, []);
 
-  const origin = preview.phase === "ready" ? originOf(preview.url) : null;
   const url =
     preview.phase === "ready" ? playing(preview.url, compositionId) : null;
-
-  const subscribe = useCallback((listen: PreviewListener) => {
-    listeners.current.add(listen);
-
-    return () => {
-      listeners.current.delete(listen);
-    };
-  }, []);
 
   const stop = useCallback(() => {
     if (running.current !== null) {
@@ -188,78 +174,26 @@ export function usePreview(
     }
   }, [launch, projectId, sidecarPhase, stop]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a new playing url must drop a pending empty-compositions publish and resubscribe
+  useEffect(() => channel.serve(url), [channel, url]);
+
   useEffect(() => {
-    if (origin === null) {
-      return;
-    }
-
-    let pendingEmpty: ReturnType<typeof setTimeout> | null = null;
-
-    const cancelPendingEmpty = () => {
-      if (pendingEmpty !== null) {
-        clearTimeout(pendingEmpty);
-        pendingEmpty = null;
-      }
-    };
-
-    const publish = (message: PreviewMessage) => {
-      if (message.type === "composition") {
-        setPick(message);
-      }
-
-      if (message.type === "playhead") {
+    const stops = [
+      channel.on("composition", setPick),
+      channel.on("playhead", (message) => {
         setIsPlaying(message.playing);
-      }
-
-      const at = frameIn(message);
-      if (at !== null) {
-        setFrame(at);
-      }
-
-      for (const listen of [...listeners.current]) {
-        listen(message);
-      }
-    };
-
-    const onMessage = (data: unknown) => {
-      const decoded = decodePreviewMessage(data);
-      if (Exit.isFailure(decoded)) {
-        return;
-      }
-
-      const message = decoded.value;
-      if (message.type === "composition") {
-        cancelPendingEmpty();
-
-        // Remotion mounts its provider with no compositions before the Root
-        // registers the real list. Publishing that one transient snapshot
-        // makes the chat, player, and sidebar all render an empty-project
-        // error. A populated snapshot wins immediately; a genuinely empty
-        // project still becomes visible after this short settle window.
-        if (message.compositions.length === 0) {
-          pendingEmpty = setTimeout(() => {
-            pendingEmpty = null;
-            publish(message);
-          }, EMPTY_COMPOSITIONS_SETTLE_MS);
-          return;
-        }
-      }
-
-      publish(message);
-    };
-
-    const unsubscribe = surface.subscribe(onMessage);
-
+        setFrame(message.frame);
+      }),
+      channel.on("capture", (message) => setFrame(message.frame)),
+      channel.on("selection", (message) => setFrame(message.element.frame)),
+    ];
     return () => {
-      cancelPendingEmpty();
-      unsubscribe();
+      for (const off of stops) {
+        off();
+      }
     };
-  }, [origin, setFrame, surface, url]);
+  }, [channel, setFrame]);
 
-  useEffect(() => () => surface.disconnect(), [surface]);
-
-  const { send } = surface;
+  useEffect(() => () => channel.disconnect(), [channel]);
 
   const restart = useCallback(() => {
     stop();
@@ -284,9 +218,10 @@ export function usePreview(
 
   return useMemo(
     () => ({
-      attachSurface: surface.attach,
+      attachSurface: channel.attach,
+      channel,
       composition: pick?.compositionId ?? null,
-      focus: surface.focus,
+      focus: channel.focus,
       frameOf,
       hint,
       isServing: preview.phase === "ready",
@@ -295,22 +230,8 @@ export function usePreview(
       playing: isPlaying,
       preview: url === null ? preview : { phase: "ready" as const, url },
       restart,
-      send,
-      subscribe,
     }),
-    [
-      frameOf,
-      hint,
-      isPlaying,
-      onFrame,
-      pick,
-      preview,
-      restart,
-      send,
-      subscribe,
-      surface,
-      url,
-    ]
+    [channel, frameOf, hint, isPlaying, onFrame, pick, preview, restart, url]
   );
 }
 
@@ -348,23 +269,60 @@ export function usePreviewFrame(preview: PreviewFrames): number {
   return useSyncExternalStore(onFrame, frameOf, frameOf);
 }
 
-export function useOnPreview(
-  preview: PreviewControl,
-  listen: PreviewListener
+export function usePreviewMessage<T extends MessageType>(
+  preview: Pick<PreviewControl, "channel">,
+  type: T,
+  handle: (message: PreviewMessageOf<T>) => void
 ): void {
-  const { subscribe } = preview;
+  const { channel } = preview;
 
-  useEffect(() => subscribe(listen), [listen, subscribe]);
+  useEffect(() => channel.on(type, handle), [channel, handle, type]);
 }
 
-function frameIn(message: PreviewMessage): number | null {
-  if (message.type === "selection") {
-    return message.element.frame;
+export function usePreviewEpoch(
+  preview: Pick<PreviewControl, "channel">
+): PreviewEpoch {
+  const { channel } = preview;
+
+  return useSyncExternalStore(channel.onEpoch, channel.epoch, channel.epoch);
+}
+
+export type ReportScope = "build" | "video";
+
+export function usePreviewReport<T extends MessageType>(
+  preview: Pick<PreviewControl, "channel">,
+  type: T,
+  scope: ReportScope
+): PreviewMessageOf<T> | null {
+  const { channel } = preview;
+  const epoch = usePreviewEpoch(preview);
+  const [report, setReport] = useState<{
+    epoch: PreviewEpoch;
+    message: PreviewMessageOf<T>;
+  } | null>(null);
+
+  useEffect(
+    () =>
+      channel.on(type, (message) =>
+        setReport({ epoch: channel.epoch(), message })
+      ),
+    [channel, type]
+  );
+
+  return report !== null && inScope(report.epoch, epoch, scope)
+    ? report.message
+    : null;
+}
+
+function inScope(
+  reported: PreviewEpoch,
+  current: PreviewEpoch,
+  scope: ReportScope
+): boolean {
+  if (scope === "build") {
+    return reported.build === current.build;
   }
-  if (message.type === "capture" || message.type === "playhead") {
-    return message.frame;
-  }
-  return null;
+  return reported.url === current.url && reported.video === current.video;
 }
 
 function hintOf(message: PreviewComposition | null): string | null {

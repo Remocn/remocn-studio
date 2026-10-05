@@ -13,11 +13,11 @@ import type { StagedDocument } from "@/lib/studio/native-preview";
 import {
   hideCommand,
   managedSelector,
-  PREVIEW_COMMAND_SOURCE,
   type PreviewCommand,
-  type PreviewMessage,
+  type PreviewMessageOf,
   unhideCommand,
 } from "@/lib/studio/preview";
+import type { PreviewChannel } from "@/lib/studio/preview-channel";
 import {
   fieldProblem,
   inverseStudioOperation,
@@ -35,7 +35,11 @@ import {
   studioOperationChanges,
 } from "@/shared/studio-document";
 import { GEOMETRY_KEYS, type GeometryBinding } from "@/shared/studio-geometry";
-import { type PreviewControl, useOnPreview } from "./use-preview";
+import {
+  type PreviewControl,
+  usePreviewEpoch,
+  usePreviewMessage,
+} from "./use-preview";
 
 interface Draft {
   attempted: boolean;
@@ -80,13 +84,43 @@ interface Session {
   written: Map<string, number>;
 }
 
-type GeometryBegin = Extract<PreviewMessage, { type: "studio.geometry.begin" }>;
-type GeometryCommit = Extract<
-  PreviewMessage,
-  { type: "studio.geometry.commit" }
->;
-type TextRequest = Extract<PreviewMessage, { type: "studio.text.request" }>;
-type TextCommit = Extract<PreviewMessage, { type: "studio.text.commit" }>;
+type GeometryBegin = PreviewMessageOf<"studio.geometry.begin">;
+type GeometryCommit = PreviewMessageOf<"studio.geometry.commit">;
+type TextRequest = PreviewMessageOf<"studio.text.request">;
+type TextCommit = PreviewMessageOf<"studio.text.commit">;
+
+const LIVE = [
+  "studio.geometry.begin",
+  "studio.geometry.cancel",
+  "studio.geometry.commit",
+  "studio.geometry.request",
+  "studio.text.cancel",
+  "studio.text.commit",
+  "studio.text.request",
+] as const;
+type LiveType = (typeof LIVE)[number];
+type Live = { [K in LiveType]: (message: PreviewMessageOf<K>) => void };
+
+function useLiveMessages(
+  channel: PreviewChannel,
+  live: { readonly current: Live | null },
+  owned: () => boolean
+): void {
+  useEffect(() => {
+    const listen = <K extends LiveType>(type: K) =>
+      channel.on(type, (message) => {
+        if (owned()) {
+          live.current?.[type](message);
+        }
+      });
+    const stops = LIVE.map(listen);
+    return () => {
+      for (const stop of stops) {
+        stop();
+      }
+    };
+  }, [channel, live, owned]);
+}
 
 interface Options {
   armed: boolean;
@@ -113,9 +147,9 @@ export function useManagedObjects({
   const sessions = useRef(new Map<string, Session>());
   const active = useRef<Session | null>(null);
   const commitRef = useRef<(owner: Session | null) => void>(() => undefined);
-  const { send, composition } = preview;
-  const previewUrl =
-    preview.preview.phase === "ready" ? preview.preview.url : null;
+  const { channel, composition } = preview;
+  const { send } = channel;
+  const served = usePreviewEpoch(preview).url;
   const allowed = useRef(enabled);
   allowed.current = enabled;
   const inlineOn = inlineEnabled && enabled;
@@ -127,9 +161,6 @@ export function useManagedObjects({
     owner: Session;
     requestId: string;
   } | null>(null);
-  const inlineMessage = useRef<(message: PreviewMessage) => void>(
-    () => undefined
-  );
   const geometry = useRef<{
     binding: GeometryBinding;
     generation: string;
@@ -138,9 +169,7 @@ export function useManagedObjects({
     requestId: string;
     snapshot: StudioSnapshot;
   } | null>(null);
-  const geometryMessage = useRef<(message: PreviewMessage) => void>(
-    () => undefined
-  );
+  const live = useRef<Live | null>(null);
   const geometryConfigRef = useRef<Extract<
     PreviewCommand,
     { type: "studio.geometry.config" }
@@ -153,7 +182,6 @@ export function useManagedObjects({
       send({
         error: null,
         requestId: editing.requestId,
-        source: "remocn-studio",
         type: "studio.text.close",
       });
       publish();
@@ -166,7 +194,6 @@ export function useManagedObjects({
       send({
         error: "The transform was cancelled.",
         requestId: gesture.requestId,
-        source: "remocn-studio",
         type: "studio.geometry.result",
       });
       publish();
@@ -191,7 +218,6 @@ export function useManagedObjects({
         send({
           generation: owner.generation,
           objectId: operation.objectId,
-          source: "remocn-studio",
           type: "studio.batch",
           values: Object.fromEntries([
             [operation.field, operation.after],
@@ -204,7 +230,6 @@ export function useManagedObjects({
         field: operation.field,
         generation: owner.generation,
         objectId: operation.objectId,
-        source: "remocn-studio",
         type: "studio.draft",
         value: operation.after,
       });
@@ -266,63 +291,77 @@ export function useManagedObjects({
     });
   }, [publish, read, replay]);
 
-  const onMessage = useCallback(
-    (message: PreviewMessage) => {
-      const owner = active.current;
-      if (owner === null || !allowed.current) {
-        return;
-      }
-      if (message.type.startsWith("studio.text.")) {
-        inlineMessage.current(message);
-        return;
-      }
-      if (message.type.startsWith("studio.geometry.")) {
-        geometryMessage.current(message);
-        return;
-      }
-      if (message.type === "studio.ready" && message.video === owner.video) {
-        if (owner.generation !== message.generation) {
-          cancelInline();
-          cancelGeometry();
-        }
-        owner.generation = message.generation;
-        owner.renderedOperation = message.lastOperationId;
-        reload();
-      } else if (
-        message.type === "studio.select" &&
-        message.video === owner.video &&
-        message.generation === owner.generation
-      ) {
-        commitRef.current(owner);
-        owner.dismissed = false;
-        owner.selected = message.objectId;
-        owner.open = true;
-        publish();
-      } else if (message.type === "selection") {
-        commitRef.current(owner);
-        owner.dismissed = true;
-        owner.open = false;
-        publish();
-      }
-    },
-    [cancelGeometry, cancelInline, publish, reload]
+  const owned = useCallback(
+    () => active.current !== null && allowed.current,
+    []
   );
-  useOnPreview(preview, onMessage);
+  useLiveMessages(channel, live, owned);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: an open text edit is cancelled whenever the session, the permissions or the preview url change
+  const onReady = useCallback(
+    (message: PreviewMessageOf<"studio.ready">) => {
+      const owner = active.current;
+      if (owner === null || !allowed.current || message.video !== owner.video) {
+        return;
+      }
+      if (owner.generation !== message.generation) {
+        cancelInline();
+        cancelGeometry();
+      }
+      owner.generation = message.generation;
+      owner.renderedOperation = message.lastOperationId;
+      reload();
+    },
+    [cancelGeometry, cancelInline, reload]
+  );
+  usePreviewMessage(preview, "studio.ready", onReady);
+
+  const onSelect = useCallback(
+    (message: PreviewMessageOf<"studio.select">) => {
+      const owner = active.current;
+      if (
+        owner === null ||
+        !allowed.current ||
+        message.video !== owner.video ||
+        message.generation !== owner.generation
+      ) {
+        return;
+      }
+      commitRef.current(owner);
+      owner.dismissed = false;
+      owner.selected = message.objectId;
+      owner.open = true;
+      publish();
+    },
+    [publish]
+  );
+  usePreviewMessage(preview, "studio.select", onSelect);
+
+  const onSelection = useCallback(() => {
+    const owner = active.current;
+    if (owner === null || !allowed.current) {
+      return;
+    }
+    commitRef.current(owner);
+    owner.dismissed = true;
+    owner.open = false;
+    publish();
+  }, [publish]);
+  usePreviewMessage(preview, "selection", onSelection);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: an open text edit is cancelled whenever the session, the permissions or the served preview change
   useEffect(
     () => cancelInline,
-    [cancelInline, session, enabled, inlineEnabled, previewUrl]
+    [cancelInline, session, enabled, inlineEnabled, served]
   );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a live gesture is cancelled whenever the session, the permissions or the preview url change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a live gesture is cancelled whenever the session, the permissions or the served preview change
   useEffect(
     () => cancelGeometry,
-    [cancelGeometry, session, enabled, inlineEnabled, previewUrl]
+    [cancelGeometry, session, enabled, inlineEnabled, served]
   );
 
   useEffect(() => {
     if (enabled && key !== null && preview.isServing) {
-      send({ source: "remocn-studio", type: "studio.request" });
+      send({ type: "studio.request" });
     }
   }, [enabled, key, preview.isServing, send]);
 
@@ -357,7 +396,6 @@ export function useManagedObjects({
     send({
       generation,
       objectId: isOpen ? (selected?.id ?? null) : null,
-      source: "remocn-studio",
       type: "studio.highlight",
       video,
     });
@@ -382,7 +420,6 @@ export function useManagedObjects({
       fields: geometryFields(session, selected, definition),
       generation,
       objectId: isOpen ? (selected?.id ?? null) : null,
-      source: "remocn-studio" as const,
       type: "studio.geometry.config" as const,
       video,
     };
@@ -554,7 +591,6 @@ export function useManagedObjects({
     send({
       error,
       requestId,
-      source: "remocn-studio",
       type: "studio.geometry.result",
     });
   const beginGeometry = (message: GeometryBegin) => {
@@ -665,33 +701,10 @@ export function useManagedObjects({
     }
     publish();
   };
-  geometryMessage.current = (message) => {
-    if (message.type === "studio.geometry.request") {
-      if (geometryConfigRef.current) {
-        send(geometryConfigRef.current);
-      }
-      return;
-    }
-    if (message.type === "studio.geometry.cancel") {
-      if (geometry.current?.requestId === message.requestId) {
-        geometry.current = null;
-        publish();
-      }
-      return;
-    }
-    if (message.type === "studio.geometry.begin") {
-      beginGeometry(message);
-      return;
-    }
-    if (message.type === "studio.geometry.commit") {
-      commitGeometry(message);
-    }
-  };
   const textReply = (requestId: string, error: string | null) =>
     send({
       error,
       requestId,
-      source: "remocn-studio",
       type: "studio.text.close",
     });
   const requestInline = (message: TextRequest) => {
@@ -763,7 +776,6 @@ export function useManagedObjects({
       candidate: match.candidate,
       label: match.field.label,
       requestId: message.requestId,
-      source: "remocn-studio",
       type: "studio.text.open",
       value,
     });
@@ -810,21 +822,28 @@ export function useManagedObjects({
     textReply(message.requestId, null);
     publish();
   };
-  inlineMessage.current = (message) => {
-    if (message.type === "studio.text.cancel") {
+  live.current = {
+    "studio.geometry.begin": beginGeometry,
+    "studio.geometry.cancel": (message) => {
+      if (geometry.current?.requestId === message.requestId) {
+        geometry.current = null;
+        publish();
+      }
+    },
+    "studio.geometry.commit": commitGeometry,
+    "studio.geometry.request": () => {
+      if (geometryConfigRef.current) {
+        send(geometryConfigRef.current);
+      }
+    },
+    "studio.text.cancel": (message) => {
       if (inline.current?.requestId === message.requestId) {
         inline.current = null;
         publish();
       }
-      return;
-    }
-    if (message.type === "studio.text.request") {
-      requestInline(message);
-      return;
-    }
-    if (message.type === "studio.text.commit") {
-      commitInline(message);
-    }
+    },
+    "studio.text.commit": commitInline,
+    "studio.text.request": requestInline,
   };
   const commit = useCallback(() => commitOwner(active.current), [commitOwner]);
   const acceptsPreview = useCallback((ready: StagedDocument | null) => {
@@ -984,7 +1003,7 @@ export function useManagedObjects({
         owner.selected !== null && hidden.includes(owner.selected);
       send(hideCommand(operation.id, hidden.map(managedSelector)));
       if (wasSelected) {
-        send({ source: PREVIEW_COMMAND_SOURCE, type: "inspect.clear" });
+        send({ type: "inspect.clear" });
         owner.selected = null;
         owner.open = false;
         owner.dismissed = true;

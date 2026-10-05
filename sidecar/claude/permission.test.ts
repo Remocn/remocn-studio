@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { Effect } from "effect";
 import { permissionChoices } from "@/lib/studio/permission";
 import { PLUGIN_DIR_ENV } from "@/shared/ipc";
-import { review, signatureOf } from "@/sidecar/claude/permission";
+import { signatureOf } from "@/sidecar/agent/verdict";
+import { review } from "@/sidecar/claude/permission";
 import { isOutwardTool } from "@/sidecar/tools/specs";
 
 let project = "";

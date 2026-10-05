@@ -9,9 +9,9 @@ import {
 import { Internals } from "remotion";
 import { anchorContainer, anchorOf, resolveAnchor } from "./anchor";
 import { assetValue } from "./assets";
-import type { TargetStatuses, TuningNodePath, TuningValue } from "./bridge";
+import type { TargetStatuses, TuningNodePath, TuningValue } from "./protocol";
 import { originOf } from "./stack";
-import { nativeSurface } from "./surface";
+import { surface } from "./surface";
 import { type TimeWindow, windowOf } from "./timing";
 import {
   controlsChain,
@@ -193,7 +193,7 @@ function mountedControls(entry: TargetEntry): SequenceControls | null {
 
 // Remotion records the JSX call site against the controls object itself, in
 // `development`, off `jsxDEV`'s source argument. It is the only coordinate that
-// names the element whose props are about to be rewritten — grab's resolution
+// names the element whose props are about to be rewritten — the component stack
 // names the component that rendered it, which is a different file.
 function stackOf(controls: SequenceControls): string | null {
   const read = (
@@ -206,11 +206,7 @@ function stackOf(controls: SequenceControls): string | null {
 }
 
 function rootPath(): string {
-  return (
-    nativeSurface()?.project ??
-    (globalThis as unknown as { remocn_root?: string }).remocn_root ??
-    "/"
-  );
+  return surface().project;
 }
 
 function debugging(): boolean {
@@ -450,8 +446,7 @@ export function InteractivityRuntime({
         [path]: {
           frame: frame(),
           // The pane holds an asset as the name of a file in `public/`; the
-          // runtime wants the URL, and resolves Remotion's own file token to
-          // it for exactly the fields it knows to be assets.
+          // runtime wants its URL under the surface's asset base.
           value:
             field.type === "asset" && typeof value === "string"
               ? assetValue(value)
@@ -661,7 +656,7 @@ export function InteractivityRuntime({
   );
 
   const mapping = useMemo(
-    () => ({ overrideIdToNodePathMappings: mappings }),
+    () => ({ overrideIdToNodePathMappings: mappings as never }),
     [mappings]
   );
 

@@ -1,15 +1,8 @@
 import { Effect } from "effect";
 import { type PermissionReason, PLUGIN_DIR_ENV } from "@/shared/ipc";
+import { type PermissionVerdict, signatureOf } from "../agent/verdict";
 import { escapee } from "../contained";
 import { isOutwardTool, TOOL_SERVERS } from "../tools/specs";
-
-export type PermissionVerdict =
-  | { readonly kind: "allow" }
-  | {
-      readonly kind: "ask";
-      readonly reason: PermissionReason;
-      readonly signature: string;
-    };
 
 const PATH_FIELDS: Record<string, readonly string[]> = {
   Edit: ["file_path"],
@@ -80,10 +73,6 @@ export function review(
       escaped === null ? ALLOW : ask("outside", toolName, escaped)
     )
   );
-}
-
-export function signatureOf(toolName: string, detail: string): string {
-  return JSON.stringify([toolName, detail]);
 }
 
 function ask(

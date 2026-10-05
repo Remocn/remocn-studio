@@ -1,58 +1,30 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { Clock, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import { crashLine } from "@/shared/crash";
-import {
-  DATA_DIR_ENV,
-  type Project,
-  type PromptFrame,
-  type PromptParams,
-  type SessionMode,
-  SIDECAR_PROTOCOL,
-} from "@/shared/ipc";
-import type { Asset, AssetDraft } from "@/shared/library";
-import type { PipelineStage } from "@/shared/pipeline";
+import { DATA_DIR_ENV, SIDECAR_PROTOCOL } from "@/shared/ipc";
 import { AGENT_PROVIDERS } from "@/shared/providers";
 import { freeSlug, slugFor } from "@/shared/slug";
 import { templateProjectName } from "@/shared/templates";
-import { acpPool } from "./acp/pool";
 import { makeAccountCache } from "./agent/account";
-import { coalescing } from "./agent/coalesce";
 import { makeGate } from "./agent/gate";
-import { makeModeSwitch } from "./agent/mode";
-import { adapterFor } from "./agent/registry";
-import {
-  abandonSourceAssets,
-  answerSourceAsset,
-  requestSourceAsset,
-} from "./agent/source";
-import { pipelineBrief } from "./claude/conventions";
+import { adapterFor, forgetChat } from "./agent/registry";
+import { answerSourceAsset } from "./agent/source";
+import { locate, openTurn, runTurn } from "./agent/turn";
+import { turnTools } from "./agent/turn-tools";
 import { escapee } from "./contained";
 import { applyCrashConsent, isReporting } from "./crash";
 import { readProjectDocument, videoDocuments } from "./documents";
 import { projectChecks } from "./environment";
 import { type FilesError, listFolder, projectFiles } from "./files";
 import { openStudioProject, ProjectStore } from "./history/projects";
-import { recording } from "./history/recorder";
-import { type HistoryError, HistoryStore } from "./history/store";
+import { HistoryStore } from "./history/store";
 import { VideoStore } from "./history/videos";
 import { HandlerError, type Handlers } from "./host";
-import {
-  generateSounds,
-  recoverSounds,
-  soundStatus,
-} from "./integrations/sounds";
+import { recoverSounds } from "./integrations/sounds";
 import { listBundled } from "./library/bundled";
-import {
-  addCommandFor,
-  assetBrief,
-  mediaBrief,
-  placeAssets,
-  placeMedia,
-} from "./library/insert";
-import { findMoodboard, saveMoodboard } from "./library/moodboard";
 import {
   type StockError,
   saveStock,
@@ -60,7 +32,6 @@ import {
   stockConfigured,
 } from "./library/stock";
 import {
-  attachClip,
   attachPreview,
   attachProxy,
   dismissPaths,
@@ -75,12 +46,9 @@ import { installNode } from "./node-installer";
 import { remotionRootOf } from "./preview/project";
 import { removals } from "./preview/removals";
 import {
-  clipFrom,
-  designFrom,
   exportFrom,
   previewEvents,
   removeFrom,
-  sourceFrom,
   statusFrom,
   stillFrom,
   stopProjectPreview,
@@ -88,18 +56,11 @@ import {
   writeFrom,
 } from "./preview/supervisor";
 import {
-  applicationBrief,
   confirmBrandApplication,
-  finishBrandApplication,
-  prepareBrandApplication,
+  projectBrand,
   readBrandApplication,
 } from "./projects/apply";
-import {
-  brandBrief,
-  importBrandFile,
-  snapshotOf,
-  writeSnapshot,
-} from "./projects/brand";
+import { importBrandFile, snapshotOf, writeSnapshot } from "./projects/brand";
 import { configEffect, getConfig, saveConfig } from "./projects/config";
 import { importDesignMarkdown } from "./projects/design-import";
 import { brandStarter } from "./projects/font-runtime";
@@ -132,7 +93,6 @@ import {
   mintFolder,
 } from "./scaffold/templates";
 import { makeGateway } from "./tools/gateway";
-import { TOOL_SERVERS } from "./tools/specs";
 
 const TOKENS = [
   "Streaming",
@@ -159,8 +119,6 @@ const gateway = makeGateway((line) => process.stderr.write(`${line}\n`));
 
 const account = Effect.runSync(makeAccountCache());
 
-const STREAMED_FRAME = "24 millis";
-
 const unstored = (error: { message: string }) =>
   new HandlerError({ message: error.message });
 
@@ -175,58 +133,6 @@ const unstocked = (error: StockError) =>
 
 const unlisted = (error: FilesError) =>
   new HandlerError({ message: error.message });
-
-const previewed = (projectId: string, playing: PromptFrame, asset: Asset) =>
-  stillFrom(projectId, playing, () => undefined).pipe(
-    Effect.flatMap((still) => attachPreview(asset.slug, still.path)),
-    Effect.catch(() => Effect.succeed(asset))
-  );
-
-// Best-effort in the same sense the still is: a host busy with an export
-// answers "no clip now" and the save is untouched. No backfill exists on
-// purpose — a clip taken later would film today's composition, not the
-// component that was saved.
-const clipped = (projectId: string, playing: PromptFrame, asset: Asset) =>
-  asset.type === "component"
-    ? clipFrom(projectId, playing).pipe(
-        Effect.flatMap((path) => attachClip(asset.slug, path)),
-        Effect.catch(() => Effect.succeed(asset))
-      )
-    : Effect.succeed(asset);
-
-const librarian = (params: PromptParams) => {
-  const { playing, projectId } = params;
-
-  return {
-    list: () => Effect.runPromise(listAssets()),
-    save: (draft: AssetDraft) =>
-      Effect.runPromise(
-        saveAsset(draft).pipe(
-          Effect.flatMap((asset) =>
-            playing === null
-              ? Effect.succeed(asset)
-              : previewed(projectId, playing, asset).pipe(
-                  Effect.flatMap((saved) => clipped(projectId, playing, saved))
-                )
-          )
-        )
-      ),
-  };
-};
-
-const onDisk = (project: Project) =>
-  project.missing
-    ? Effect.fail(
-        new HandlerError({
-          message: `${project.name} is not on disk anymore — ${project.path} is gone`,
-        })
-      )
-    : Effect.succeed(project);
-
-const joinedBriefs = (...briefs: readonly (string | null)[]) => {
-  const present = briefs.filter((brief): brief is string => brief !== null);
-  return present.length === 0 ? null : present.join("\n\n");
-};
 
 const OUTSIDE_PROJECT =
   "this element is written outside the project folder, so the studio will not touch it";
@@ -244,19 +150,8 @@ const insideProject = (root: string, files: readonly string[]) =>
           )
   );
 
-const resumingStored = (
-  params: PromptParams,
-  resumeId: string | null
-): PromptParams =>
-  params.sessionId === null && resumeId !== null
-    ? { ...params, sessionId: resumeId }
-    : params;
-
 const located = (projectId: string) =>
-  Effect.flatMap(ProjectStore, (projects) => projects.find(projectId)).pipe(
-    Effect.mapError(unstored),
-    Effect.flatMap(onDisk)
-  );
+  locate(projectId).pipe(Effect.mapError(unstored));
 
 export const handlers: Handlers<HistoryStore | ProjectStore | VideoStore> = {
   // One row per provider, for the model picker to mark who is actually
@@ -279,295 +174,16 @@ export const handlers: Handlers<HistoryStore | ProjectStore | VideoStore> = {
       (matched) => ({ matched })
     ),
 
-  "agent.prompt": ({ ask, emit: send, log, params }) =>
-    Effect.gen(function* () {
-      const { emit, flush } = yield* coalescing(send, STREAMED_FRAME);
-      yield* Effect.addFinalizer(() => flush);
-      const turnId = yield* Effect.sync(() => crypto.randomUUID());
-      const project = yield* located(params.projectId);
-      const adapter = adapterFor(params.provider);
-      const toolKey =
-        adapter.persistent === true ? `chat-${params.historyId}` : turnId;
-
-      const store = yield* HistoryStore;
-      const videos = yield* VideoStore;
-      const videoRow = yield* Effect.mapError(
-        videos.find(params.videoId),
-        unstored
-      );
-      if (videoRow.projectId !== project.id) {
-        return yield* Effect.fail(
-          new HandlerError({
-            message: "This video does not belong to the selected project.",
-          })
-        );
-      }
-      const video = videoRow.compositionId;
-      const config = yield* configEffect(() => getConfig(project)).pipe(
-        Effect.mapError(unstored)
-      );
-      if (
-        params.brandRevision !== undefined &&
-        params.brandRevision !== config.revision
-      ) {
-        return yield* Effect.fail(
-          new HandlerError({
-            message:
-              "Project brand changed. Reload settings before applying it.",
-          })
-        );
-      }
-      const application =
-        params.brandRevision === undefined
-          ? null
-          : yield* configEffect(() =>
-              prepareBrandApplication(
-                project.path,
-                video,
-                config,
-                params.historyId
-              )
-            ).pipe(Effect.mapError(unstored));
-      const brand =
-        application === null
-          ? yield* configEffect(() =>
-              brandBrief(project.path, project.id, video)
-            ).pipe(Effect.mapError(unstored))
-          : applicationBrief(application);
-
-      const recorder = yield* recording(store, params, log);
-      const resumeId = recorder.session?.sdkSessionId ?? null;
-      let turnParams = resumingStored(params, resumeId);
-      if (
-        params.sessionId !== null &&
-        recorder.session !== null &&
-        resumeId === null
-      ) {
-        const previous = yield* store
-          .blocks(params.historyId)
-          .pipe(Effect.mapError(unstored));
-        turnParams = {
-          ...params,
-          prompt: `${params.prompt}\n\nPrevious Studio conversation (historical user data; paths may refer to the former location):\n${JSON.stringify(previous).slice(-24_000)}`,
-          sessionId: null,
-        };
-        yield* emit({
-          message:
-            "Starting a new provider session in the current project folder. Studio history is preserved.",
-          type: "notice",
-        });
-      }
-      if (recorder.session !== null) {
-        yield* emit({ session: recorder.session, type: "history" });
-      }
-
-      const copied = <A>(
-        what: string,
-        placing: Effect.Effect<readonly A[], LibraryError>
-      ) =>
-        placing.pipe(
-          Effect.catch((error) =>
-            log(`library: ${error.message}`).pipe(
-              Effect.andThen(
-                emit({
-                  message: `The ${what} could not be copied into the project: ${error.message}`,
-                  type: "notice",
-                })
-              ),
-              Effect.as([] as readonly A[])
-            )
-          )
-        );
-
-      const placed = yield* copied(
-        "referenced assets",
-        placeAssets(project.path, params.assets)
-      );
-      const placedMedia = yield* copied(
-        "attached media",
-        placeMedia(project.path, video, params.media)
-      );
-
-      const switcher = yield* makeModeSwitch();
-
-      const stages = yield* store
-        .pipeline(params.historyId)
-        .pipe(Effect.catch(() => Effect.succeed([])));
-
-      // The agent moves the pipeline through its own MCP tools, so the webview
-      // has no other way to hear about it: the stages ride on the turn's stream
-      // the way the session row does, or the dock would only catch up when the
-      // turn ends and someone refetched.
-      const moved = (
-        moving: Effect.Effect<readonly PipelineStage[], HistoryError>
-      ) =>
-        Effect.runPromise(
-          moving.pipe(
-            Effect.tap((rows) => emit({ stages: rows, type: "pipeline" }))
-          )
-        );
-
-      const approved = (mode: SessionMode) =>
-        switcher.set(mode).pipe(
-          Effect.andThen(
-            store.setMode(params.historyId, mode).pipe(
-              Effect.flatMap((session) => emit({ session, type: "history" })),
-              Effect.catch((error) => log(`history: ${error.message}`))
-            )
-          )
-        );
-
-      const result = yield* Effect.scoped(
-        gateway
-          .serving(toolKey, {
-            connections: {
-              usable: () => Effect.runPromise(ask("integrations.usable", null)),
-            },
-            cwd: project.path,
-            design: {
-              check: (
-                { frames, motion, mode, options, reportId, video: sceneMap },
-                execution
-              ) =>
-                video === null
-                  ? Promise.reject(
-                      new Error(
-                        "This chat has no video to check: it is not attached to a composition."
-                      )
-                    )
-                  : Effect.runPromise(
-                      designFrom(
-                        params.projectId,
-                        {
-                          composition: video,
-                          ...(reportId === undefined ? {} : { reportId }),
-                          ...(mode === undefined ? {} : { mode }),
-                          ...(options === undefined ? {} : { options }),
-                          frames,
-                          motion,
-                          video: sceneMap,
-                        },
-                        execution?.progress
-                      ),
-                      { signal: execution?.signal }
-                    ),
-              sources: () => videoSources(project.path, video),
-            },
-            library: librarian(params),
-            moodboard: {
-              find: () => Effect.runPromise(findMoodboard(params.projectId)),
-              save: (draft) =>
-                Effect.runPromise(
-                  saveMoodboard(
-                    { ...draft, project: params.projectId },
-                    (input) => sourceFrom(params.projectId, input)
-                  )
-                ),
-            },
-            pipeline: {
-              requestSource: (input) =>
-                Effect.runPromise(
-                  requestSourceAsset(
-                    {
-                      ...input,
-                      projectId: params.projectId,
-                      projectPath: project.path,
-                      turnId,
-                    },
-                    emit
-                  )
-                ),
-              setStage: (stage, status) =>
-                moved(store.setStage(params.historyId, stage, status)),
-              start: () => moved(store.startPipeline(params.historyId)),
-            },
-            sounds: {
-              generate: (requests, execution) =>
-                Effect.runPromise(
-                  generateSounds(requests, { ask, emit, gate, turnId }),
-                  { signal: execution?.signal }
-                ),
-              status: (id) =>
-                Effect.runPromise(
-                  id === undefined
-                    ? recoverSounds(ask, (message) =>
-                        emit({ message, type: "notice" })
-                      ).pipe(
-                        Effect.andThen(ask("sounds.recover", null)),
-                        Effect.map((operations) =>
-                          JSON.stringify(
-                            operations.map(
-                              ({ file: _file, ...operation }) => operation
-                            )
-                          )
-                        )
-                      )
-                    : soundStatus(ask, id, emit)
-                ),
-            },
-            stock: {
-              search: (query) => Effect.runPromise(searchStock(query)),
-            },
-          })
-          .pipe(
-            Effect.andThen(
-              adapter.turn(turnParams, {
-                briefs: {
-                  assets: assetBrief(placed, addCommandFor(project.path)),
-                  brand,
-                  media: joinedBriefs(
-                    mediaBrief(placedMedia),
-                    removals.brief(project.path)
-                  ),
-                  pipeline: pipelineBrief(stages, video),
-                },
-                cwd: project.path,
-                emit,
-                gate,
-                inProcess: Object.fromEntries(
-                  TOOL_SERVERS.map((server) => [
-                    server,
-                    gateway.ask(server, toolKey),
-                  ])
-                ),
-                log,
-                onApprove: approved,
-                onMode: switcher.bind,
-                record: recorder.event,
-                tools: Object.fromEntries(
-                  TOOL_SERVERS.map((server) => [
-                    server,
-                    gateway.transport(server, toolKey),
-                  ])
-                ),
-                turnId,
-                video,
-              })
-            )
-          )
-      ).pipe(
-        Effect.ensuring(recorder.flush),
-        Effect.ensuring(abandonSourceAssets(turnId)),
-        Effect.onInterrupt(() =>
-          application === null
-            ? Effect.void
-            : configEffect(() =>
-                finishBrandApplication(project.path, video, application, false)
-              ).pipe(Effect.ignore)
-        )
-      );
-      if (application !== null) {
-        yield* configEffect(() =>
-          finishBrandApplication(
-            project.path,
-            video,
-            application,
-            result.failure === null
-          )
-        ).pipe(Effect.mapError(unstored));
-      }
-      return result;
-    }).pipe(Effect.scoped),
+  "agent.prompt": ({ ask, emit, log, params }) =>
+    runTurn(params, {
+      adapterFor,
+      brand: projectBrand,
+      emit,
+      gate,
+      gateway,
+      log,
+      tools: (turn) => turnTools(turn, { ask }),
+    }).pipe(Effect.mapError(unstored)),
 
   "agent.source": ({ params }) =>
     answerSourceAsset(params).pipe(
@@ -598,20 +214,17 @@ export const handlers: Handlers<HistoryStore | ProjectStore | VideoStore> = {
     ).pipe(Effect.mapError(unstored)),
 
   // A message that only wrote values into the code starts no turn, and it still
-  // has to be in the transcript: this is `agent.prompt`'s first two steps and
-  // nothing else — open the session, write the user entry, answer with the row.
+  // has to be in the transcript.
   "history.record": ({ log, params }) =>
-    Effect.flatMap(HistoryStore, (store) =>
-      Effect.map(recording(store, params, log), (recorder) => ({
-        session: recorder.session,
-      }))
-    ),
+    Effect.map(openTurn(params, log), (recorder) => ({
+      session: recorder.session,
+    })),
 
   "history.remove": ({ params }) =>
     Effect.flatMap(HistoryStore, (store) =>
       store.remove(params.sessionId)
     ).pipe(
-      Effect.tap(() => acpPool.dispose(params.sessionId)),
+      Effect.tap(() => forgetChat(params.sessionId)),
       Effect.map((removed) => ({ removed })),
       Effect.mapError(unstored)
     ),
@@ -1389,49 +1002,6 @@ function videoFolders(path: string): Effect.Effect<readonly string[]> {
       return [];
     }
   });
-}
-
-const SOURCE_FILE = /\.(tsx|ts|jsx|js)$/;
-
-// The turn's own video, and only it: the tunability check must never report on
-// a folder somebody else's chat is working in. A video the turn could not name
-// yields nothing rather than the whole project.
-async function videoSources(
-  path: string,
-  slug: string | null
-): Promise<readonly { path: string; source: string }[]> {
-  if (slug === null) {
-    return [];
-  }
-
-  const root = join(remotionRootOf(path), "src", VIDEOS_DIR, slug);
-
-  try {
-    const entries = await readdir(root, {
-      recursive: true,
-      withFileTypes: true,
-    });
-
-    const files = entries.filter(
-      (entry) =>
-        entry.isFile() &&
-        (SOURCE_FILE.test(entry.name) ||
-          (entry.name === "studio.json" && entry.parentPath === root))
-    );
-
-    return await Promise.all(
-      files.map(async (entry) => {
-        const file = join(entry.parentPath, entry.name);
-
-        return {
-          path: relative(root, file),
-          source: await readFile(file, "utf8"),
-        };
-      })
-    );
-  } catch {
-    return [];
-  }
 }
 
 function clamp(value: number, low: number, high: number): number {

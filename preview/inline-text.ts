@@ -1,4 +1,4 @@
-import { onCommand, post } from "./bridge";
+import { post, route } from "./bridge";
 import { managedIdentity, managedRoot } from "./managed-objects";
 import { nearText, OVERLAY_ATTR } from "./picker";
 import {
@@ -321,25 +321,21 @@ export function createInlineTextEditor(
     }
   };
 
-  const stopCommands = onCommand((command) => {
-    if (
-      command.type === "studio.text.open" &&
-      command.requestId === request?.requestId
-    ) {
-      openRequested(request, command);
-    } else if (
-      command.type === "studio.text.close" &&
-      command.requestId === request?.requestId
-    ) {
-      closeRequested(request, command.error);
-    } else if (
-      command.type === "seek" ||
-      command.type === "replay" ||
-      command.type === "transport.toggle" ||
-      command.type === "transport.step"
-    ) {
-      save();
-    }
+  const stopCommands = route("inline-text", {
+    replay: save,
+    seek: save,
+    "studio.text.close": (command) => {
+      if (request !== null && command.requestId === request.requestId) {
+        closeRequested(request, command.error);
+      }
+    },
+    "studio.text.open": (command) => {
+      if (request !== null && command.requestId === request.requestId) {
+        openRequested(request, command);
+      }
+    },
+    "transport.step": save,
+    "transport.toggle": save,
   });
 
   const mutations = new MutationObserver(() => {

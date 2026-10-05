@@ -1,9 +1,8 @@
 import { describe, expect, it, mock } from "bun:test";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { Effect } from "effect";
-import type { PreviewControl, PreviewListener } from "@/hooks/use-preview";
-import type { PreviewMessage } from "@/lib/studio/preview";
 import { SidecarError } from "@/lib/studio/sidecar";
+import type { PreviewMessage } from "@/preview/protocol";
 import {
   applyStudioOperation,
   type StudioSnapshot,
@@ -12,33 +11,14 @@ import {
   documentFixture,
   easingDocumentFixture,
 } from "@/test/fixtures/studio-document";
+import { previewControl } from "@/test/preview-channel";
 import { useManagedObjects } from "./use-managed-objects";
 
 function setup(
   document = documentFixture,
   removal: { fails?: string; held?: Promise<void> } = {}
 ) {
-  const listeners = new Set<PreviewListener>();
-  const preview: PreviewControl = {
-    attachSurface: () => () => undefined,
-    composition: "intro",
-    focus: () => undefined,
-    frameOf: () => 0,
-    hint: null,
-    isServing: true,
-    onFrame: () => () => undefined,
-    pick: null,
-    playing: false,
-    preview: { phase: "ready", url: "http://localhost:3001" },
-    restart: () => undefined,
-    send: mock(),
-    subscribe: (listener) => {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-  };
+  const { preview, surface } = previewControl({ composition: "intro" });
   let saved: StudioSnapshot = {
     document: structuredClone(document),
     revision: "initial",
@@ -85,12 +65,7 @@ function setup(
         },
       })
   );
-  const emit = (message: PreviewMessage) =>
-    act(() => {
-      for (const listener of listeners) {
-        listener(message);
-      }
-    });
+  const emit = (message: PreviewMessage) => act(() => surface.emit(message));
   const hook = renderHook(
     ({ projectId }) =>
       useManagedObjects({
@@ -126,12 +101,12 @@ function setup(
       emit({
         generation: "generation-1",
         lastOperationId: null,
-        source: "remocn-preview",
         type: "studio.ready",
         video: "intro",
       }),
     removeObject,
     saved: () => saved,
+    sent: surface.sent,
     write,
   };
 }
@@ -164,11 +139,10 @@ describe("managed inspector", () => {
     test.ready();
     await waitFor(() => expect(test.result.current.objects).toHaveLength(3));
     act(() => test.result.current.select("third"));
-    test.emit({ source: "remocn-preview", type: "rebuilt" });
+    test.emit({ type: "rebuilt" });
     test.emit({
       generation: "generation-2",
       lastOperationId: null,
-      source: "remocn-preview",
       type: "studio.ready",
       video: "intro",
     });
@@ -176,14 +150,12 @@ describe("managed inspector", () => {
     test.emit({
       generation: "generation-1",
       objectId: "first",
-      source: "remocn-preview",
       type: "studio.select",
       video: "intro",
     });
     test.emit({
       generation: "generation-2",
       objectId: "first",
-      source: "remocn-preview",
       type: "studio.select",
       video: "other",
     });
@@ -320,7 +292,6 @@ describe("managed inspector", () => {
     test.emit({
       generation: "rebuilt",
       lastOperationId: test.saved().document.operations.at(-1)?.id ?? null,
-      source: "remocn-preview",
       type: "studio.ready",
       video: "intro",
     });
@@ -360,11 +331,7 @@ describe("deleting an object", () => {
       item.id === "third" ? { ...item, parentId: "second" } : item
     ),
   };
-  const sent = (test: ReturnType<typeof setup>) =>
-    (test.preview.send as ReturnType<typeof mock>).mock.calls.map(
-      ([command]) =>
-        command as { selectors?: string[]; token?: string; type: string }
-    );
+  const sent = (test: ReturnType<typeof setup>) => test.sent;
 
   it("hides the object and its children before the write resolves, then drops them from the list", async () => {
     let release: () => void = () => undefined;

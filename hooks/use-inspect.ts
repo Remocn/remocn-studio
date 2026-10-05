@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toastManager } from "@/components/ui/toast";
 import type { Composer } from "@/hooks/use-composer";
 import { useNow } from "@/hooks/use-now";
-import { type PreviewControl, useOnPreview } from "@/hooks/use-preview";
+import { type PreviewControl, usePreviewMessage } from "@/hooks/use-preview";
 import { causeMessage } from "@/lib/error-message";
 import { removeCode } from "@/lib/studio/code-removal";
 import {
@@ -23,9 +23,7 @@ import {
   hideCommand,
   highlightCommand,
   inspectCommand,
-  PREVIEW_COMMAND_SOURCE,
   type PreviewInspect,
-  type PreviewMessage,
   type PreviewRect,
   type PreviewSelection,
   type PreviewTuneResult,
@@ -234,7 +232,8 @@ export function useInspect({
   cardRef.current = card;
 
   const { select, selections } = composer;
-  const { frameOf, send } = preview;
+  const { frameOf } = preview;
+  const { send } = preview.channel;
 
   playing.current = preview.playing;
 
@@ -492,48 +491,39 @@ export function useInspect({
     }
   }, []);
 
-  const onMessage = useCallback(
-    (message: PreviewMessage) => {
-      if (message.type === "selection") {
-        if (isArmed && unavailable === null) {
-          onSelection(message);
-        }
-        return;
-      }
-
-      if (message.type === "studio.select") {
-        abandon(cardRef.current);
-        cardRef.current = null;
-        setCard(null);
-        return;
-      }
-
-      if (message.type === "inspect.ready") {
-        setReported(null);
-        setAsked(Date.now());
-        send(inspectCommand(isArmed));
-        return;
-      }
-
-      if (message.type === "inspect") {
-        setReported(message);
-        return;
-      }
-
-      if (message.type === "rebuilt") {
-        onRebuilt();
-        send(inspectCommand(isArmed));
-        return;
-      }
-
-      if (message.type === "tune.result") {
-        onTuneResult(message);
+  const onPicked = useCallback(
+    (message: PreviewSelection) => {
+      if (isArmed && unavailable === null) {
+        onSelection(message);
       }
     },
-    [abandon, isArmed, onRebuilt, onSelection, onTuneResult, send, unavailable]
+    [isArmed, onSelection, unavailable]
   );
+  usePreviewMessage(preview, "selection", onPicked);
 
-  useOnPreview(preview, onMessage);
+  const onManagedSelect = useCallback(() => {
+    abandon(cardRef.current);
+    cardRef.current = null;
+    setCard(null);
+  }, [abandon]);
+  usePreviewMessage(preview, "studio.select", onManagedSelect);
+
+  const onReady = useCallback(() => {
+    setReported(null);
+    setAsked(Date.now());
+    send(inspectCommand(isArmed));
+  }, [isArmed, send]);
+  usePreviewMessage(preview, "inspect.ready", onReady);
+
+  usePreviewMessage(preview, "inspect", setReported);
+
+  const onRebuild = useCallback(() => {
+    onRebuilt();
+    send(inspectCommand(isArmed));
+  }, [isArmed, onRebuilt, send]);
+  usePreviewMessage(preview, "rebuilt", onRebuild);
+
+  usePreviewMessage(preview, "tune.result", onTuneResult);
 
   useEffect(() => {
     setReported(null);
@@ -797,7 +787,7 @@ export function useInspect({
         target.instanceId.length > 0 ? [target.instanceId] : []
       )
     );
-    send({ source: PREVIEW_COMMAND_SOURCE, type: "inspect.clear" });
+    send({ type: "inspect.clear" });
     cardRef.current = null;
     setCard(null);
     const exit = await Effect.runPromiseExit(
@@ -1224,10 +1214,6 @@ function troubleOf(
   }
 
   const status = reported?.status ?? null;
-  if (status === "no-grab") {
-    return "React Grab did not load, so selections will carry no source location.";
-  }
-
   if (status === "no-canvas") {
     return "The player is not on screen yet, so there is nothing to pick from.";
   }

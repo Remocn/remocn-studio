@@ -1,5 +1,10 @@
 import { existsSync } from "node:fs";
 import { delimiter, join } from "node:path";
+import type {
+  EnvironmentCheck,
+  PromptParams,
+  PromptResult,
+} from "@/shared/ipc";
 
 export interface Lookup {
   readonly env: string;
@@ -81,4 +86,15 @@ export function findExecutable(
   }
 
   return null;
+}
+
+export function missingCli(
+  row: EnvironmentCheck,
+  params: Pick<PromptParams, "sessionId">
+): PromptResult {
+  return {
+    context: null,
+    failure: { kind: "auth", message: row.detail ?? row.title },
+    sessionId: params.sessionId,
+  };
 }

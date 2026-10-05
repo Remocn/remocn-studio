@@ -1,4 +1,8 @@
-import { SESSION_MODE_LABELS, type SessionMode } from "@/shared/ipc";
+import {
+  SESSION_MODE_LABELS,
+  SESSION_MODES,
+  type SessionMode,
+} from "@/shared/ipc";
 import type { AgentProvider } from "@/shared/providers";
 
 export interface ModelChoice {
@@ -45,6 +49,59 @@ export function runningMode(mode: SessionMode, model: string): RunningMode {
 
 export function runningModeLabel(mode: RunningMode): string {
   return mode === "default" ? "Default" : SESSION_MODE_LABELS[mode];
+}
+
+export interface ModeChoice {
+  readonly disabled?: boolean;
+  readonly hint?: string;
+  readonly label: string;
+  readonly value: SessionMode;
+}
+
+export interface ModeChoices {
+  readonly hint: string | null;
+  readonly items: readonly ModeChoice[];
+  readonly running: RunningMode;
+}
+
+const MODES: readonly ModeChoice[] = SESSION_MODES.map((mode) => ({
+  label: SESSION_MODE_LABELS[mode],
+  value: mode,
+}));
+
+const NO_MODEL_LIMITS: ReadonlySet<string> = new Set();
+
+const AUTOLESS: Record<AgentProvider, ReadonlySet<string>> = {
+  claude: WITHOUT_AUTO,
+  codex: NO_MODEL_LIMITS,
+  copilot: NO_MODEL_LIMITS,
+  grok: NO_MODEL_LIMITS,
+};
+
+export function modeChoices(
+  provider: AgentProvider,
+  mode: SessionMode,
+  model: string
+): ModeChoices {
+  if (!AUTOLESS[provider].has(model)) {
+    return { hint: null, items: MODES, running: mode };
+  }
+
+  const name = modelLabelOf(provider, model);
+  const running = runningMode(mode, model);
+
+  return {
+    hint:
+      running === mode
+        ? null
+        : `${name} does not offer ${SESSION_MODE_LABELS[mode]}`,
+    items: MODES.map((item) =>
+      item.value === "auto"
+        ? { ...item, disabled: true, hint: `${name} does not offer this mode` }
+        : item
+    ),
+    running,
+  };
 }
 
 // Codex's catalog is dynamic and account-shaped: thirteen explicit gpt-5.x

@@ -16,12 +16,8 @@ import type {
 import { PROVIDER_INFO } from "@/shared/providers";
 import { abortQuietly } from "../agent/abort";
 import type { AgentAdapter, TurnServices } from "../agent/adapter";
-import {
-  announce,
-  type KnowledgeBundle,
-  locateBundle,
-} from "../agent/knowledge";
-import { conventionsFor } from "../claude/conventions";
+import { missingCli } from "../agent/cli";
+import { announce, locateBundle } from "../agent/knowledge";
 import { accountCheck, missingRow } from "./account";
 import { findCodex } from "./cli";
 import { inputOf } from "./content";
@@ -58,20 +54,17 @@ export const EFFORTS: Record<EffortLevel, ModelReasoningEffort> = {
 export const codexAdapter: AgentAdapter = {
   account: () => accountCheck(),
 
+  forget: () => Effect.void,
+
   info: PROVIDER_INFO.codex,
+
+  toolKey: ({ turn }) => turn,
 
   turn: (params: PromptParams, services: TurnServices) =>
     Effect.gen(function* () {
       const executable = findCodex();
       if (executable === null) {
-        return {
-          context: null,
-          failure: {
-            kind: "unknown",
-            message: missingRow().detail ?? "Codex is not installed.",
-          },
-          sessionId: params.sessionId,
-        } satisfies PromptResult;
+        return missingCli(missingRow(), params);
       }
 
       const sessionId = yield* Ref.make(params.sessionId);
@@ -81,10 +74,13 @@ export const codexAdapter: AgentAdapter = {
 
       const attached = codexHome(locateBundle(services.cwd));
       yield* announce(attached.knowledge, services);
+      const { media, system, trailer } = services.instructions(
+        attached.knowledge.loaded
+      );
 
       const codex = new Codex({
         codexPathOverride: executable,
-        config: configOf(services, attached.knowledge),
+        config: configOf(services, system),
         ...(attached.home === null
           ? {}
           : { env: { ...inherited(), CODEX_HOME: attached.home } }),
@@ -106,13 +102,7 @@ export const codexAdapter: AgentAdapter = {
           ? codex.startThread(options)
           : codex.resumeThread(params.sessionId, options);
 
-      const input = inputOf(
-        params,
-        [services.briefs.assets, services.briefs.brand]
-          .filter(Boolean)
-          .join("\n\n") || null,
-        services.briefs.media
-      );
+      const input = inputOf(params, trailer, media);
 
       yield* Effect.tryPromise({
         catch: (cause) => new CodexError({ message: errorMessage(cause) }),
@@ -189,15 +179,10 @@ function inherited(): Record<string, string> {
 // `home.ts`, and the brief only claims them once that attach succeeded.
 function configOf(
   services: TurnServices,
-  knowledge: KnowledgeBundle
+  system: string
 ): NonNullable<CodexOptions["config"]> {
-  const conventions = conventionsFor(knowledge.loaded, services.video);
-
   return {
-    developer_instructions:
-      services.briefs.pipeline === null
-        ? conventions
-        : `${conventions}\n\n${services.briefs.pipeline}`,
+    developer_instructions: system,
     // The studio's own servers are pre-approved ("approve"), the same
     // decision the Claude gate makes for them. Not "auto": that mode reads
     // the tool annotations and treats an unannotated tool as destructive, so

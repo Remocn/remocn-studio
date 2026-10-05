@@ -5,6 +5,7 @@ import {
   requestSidecar,
   type SidecarError,
 } from "@/lib/studio/sidecar";
+import type * as Protocol from "@/preview/protocol";
 import {
   CodeNodePath,
   CodePropStatus,
@@ -25,8 +26,15 @@ import {
 } from "@/shared/ipc";
 import { StudioValue } from "@/shared/studio-document";
 
+export type {
+  CommandOf,
+  CommandType,
+  MessageType,
+  TargetStatuses,
+} from "@/preview/protocol";
+export type PreviewCommand = Protocol.PreviewCommand;
+
 export const PREVIEW_MESSAGE_SOURCE = "remocn-preview";
-export const PREVIEW_COMMAND_SOURCE = "remocn-studio";
 
 export const PreviewPick = Schema.Literals([
   "asked",
@@ -53,7 +61,6 @@ export const InspectStatus = Schema.Literals([
   "armed",
   "disarmed",
   "no-canvas",
-  "no-grab",
 ]);
 
 export const SnapshotStatus = Schema.Literals([
@@ -151,8 +158,8 @@ export const TuningTarget = Schema.Struct({
   ),
   ordinal: Schema.Int.pipe(Schema.withDecodingDefault(Effect.succeed(1))),
   // The JSX call site, from Remotion's own stack — where a value is written.
-  // `where` is a different fact and stays: it is what React Grab resolved for
-  // the node, which is the component's own file and the pane's subtitle.
+  // `where` is a different fact and stays: it is the component's own file,
+  // the pane's subtitle.
   origin: Schema.NullOr(TuningWhere).pipe(
     Schema.withDecodingDefault(Effect.succeed(null))
   ),
@@ -375,8 +382,6 @@ export const PreviewMessage = Schema.Union([
   }),
 ]);
 
-const to = Schema.Literal(PREVIEW_COMMAND_SOURCE);
-
 export const PreviewCommand = Schema.Union([
   Schema.Struct({
     enabled: Schema.Boolean,
@@ -390,20 +395,17 @@ export const PreviewCommand = Schema.Union([
     ),
     generation: Schema.NonEmptyString,
     objectId: Schema.NullOr(Schema.NonEmptyString),
-    source: to,
     type: Schema.Literal("studio.geometry.config"),
     video: Schema.NonEmptyString,
   }),
   Schema.Struct({
     error: Schema.NullOr(Schema.String),
     requestId: Schema.NonEmptyString,
-    source: to,
     type: Schema.Literal("studio.geometry.result"),
   }),
   Schema.Struct({
     generation: Schema.NonEmptyString,
     objectId: Schema.NonEmptyString,
-    source: to,
     type: Schema.Literal("studio.batch"),
     values: Schema.Record(Schema.NonEmptyString, StudioValue),
   }),
@@ -411,94 +413,78 @@ export const PreviewCommand = Schema.Union([
     candidate: Schema.Int,
     label: Schema.String,
     requestId: Schema.NonEmptyString,
-    source: to,
     type: Schema.Literal("studio.text.open"),
     value: Schema.String,
   }),
   Schema.Struct({
     error: Schema.NullOr(Schema.String),
     requestId: Schema.NonEmptyString,
-    source: to,
     type: Schema.Literal("studio.text.close"),
   }),
-  Schema.Struct({ source: to, type: Schema.Literal("inspect.clear") }),
-  Schema.Struct({ source: to, type: Schema.Literal("transport.request") }),
-  Schema.Struct({ source: to, type: Schema.Literal("transport.toggle") }),
+  Schema.Struct({ type: Schema.Literal("inspect.clear") }),
+  Schema.Struct({ type: Schema.Literal("transport.request") }),
+  Schema.Struct({ type: Schema.Literal("transport.toggle") }),
   Schema.Struct({
     direction: Schema.Literals([-1, 1]),
-    source: to,
     type: Schema.Literal("transport.step"),
   }),
   Schema.Struct({
     muted: Schema.Boolean,
-    source: to,
     type: Schema.Literal("transport.audio"),
     volume: Schema.Finite.check(Schema.isBetween({ maximum: 1, minimum: 0 })),
   }),
   Schema.Struct({
     rate: Schema.Literals(PLAYBACK_RATES),
-    source: to,
     type: Schema.Literal("transport.rate"),
   }),
-  Schema.Struct({ source: to, type: Schema.Literal("studio.request") }),
+  Schema.Struct({ type: Schema.Literal("studio.request") }),
   Schema.Struct({
     field: Schema.NonEmptyString,
     generation: Schema.NonEmptyString,
     objectId: Schema.NonEmptyString,
-    source: to,
     type: Schema.Literal("studio.draft"),
     value: StudioValue,
   }),
   Schema.Struct({
     generation: Schema.NonEmptyString,
     objectId: Schema.NullOr(Schema.NonEmptyString),
-    source: to,
     type: Schema.Literal("studio.highlight"),
     video: Schema.NonEmptyString,
   }),
   Schema.Struct({
     objectId: Schema.NullOr(Schema.NonEmptyString),
-    source: to,
     type: Schema.Literal("studio.hover"),
   }),
   Schema.Struct({
     selectors: Schema.Array(Schema.NonEmptyString),
-    source: to,
     token: Schema.NonEmptyString,
     type: Schema.Literal("studio.hide"),
   }),
   Schema.Struct({
-    source: to,
     token: Schema.NonEmptyString,
     type: Schema.Literal("studio.unhide"),
   }),
   Schema.Struct({
     armed: Schema.Boolean,
-    source: to,
     type: Schema.Literal("inspect"),
   }),
   Schema.Struct({
     armed: Schema.Boolean,
-    source: to,
     type: Schema.Literal("snapshot"),
   }),
   Schema.Struct({
     frame: Schema.Int,
-    source: to,
     type: Schema.Literal("seek"),
   }),
   Schema.Struct({
     from: Schema.Int,
-    source: to,
     type: Schema.Literal("replay"),
     until: Schema.Int,
   }),
   Schema.Struct({
-    source: to,
     type: Schema.Literal("pause"),
   }),
   Schema.Struct({
-    source: to,
     targets: Schema.Array(
       Schema.Struct({
         nodePath: Schema.NullOr(CodeNodePath),
@@ -515,14 +501,12 @@ export const PreviewCommand = Schema.Union([
     // and the second read as the first, so Cancel moved the box back onto the
     // picked element and left it there.
     open: Schema.Boolean,
-    source: to,
     targetId: Schema.NullOr(Schema.NonEmptyString),
     type: Schema.Literal("highlight"),
   }),
   Schema.Struct({
     path: Schema.NonEmptyString,
     requestId: Schema.NonEmptyString,
-    source: to,
     targetId: Schema.NonEmptyString,
     type: Schema.Literal("tune.set"),
     value: TuningValue,
@@ -530,7 +514,6 @@ export const PreviewCommand = Schema.Union([
   Schema.Struct({
     paths: Schema.Array(Schema.NonEmptyString),
     requestId: Schema.NonEmptyString,
-    source: to,
     targetId: Schema.NonEmptyString,
     type: Schema.Literal("tune.reset"),
   }),
@@ -547,7 +530,6 @@ export type PreviewTuneResult = Extract<
   PreviewMessage,
   { type: "tune.result" }
 >;
-export type PreviewCommand = (typeof PreviewCommand)["Type"];
 export type PreviewComposition = Extract<
   PreviewMessage,
   { type: "composition" }
@@ -560,20 +542,53 @@ export type TuningField = (typeof TuningField)["Type"];
 export type TuningTarget = (typeof TuningTarget)["Type"];
 export type TuningWhere = (typeof TuningWhere)["Type"];
 export type TuningValue = (typeof TuningValue)["Type"];
-export type TuningStatuses = Extract<
-  PreviewCommand,
-  { type: "tuning.statuses" }
->["targets"][number];
+export type TuningStatuses = Protocol.TargetStatuses;
+export type PreviewMessageOf<T extends Protocol.MessageType> = Extract<
+  PreviewMessage,
+  { type: T }
+>;
+
+type Bare<T> = T extends unknown ? Omit<T, "source"> : never;
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type Shape<T> = T extends readonly (infer E)[]
+  ? Shape<E>[]
+  : T extends object
+    ? {
+        -readonly [K in keyof T]-?: [
+          Shape<Exclude<T[K], undefined>>,
+          Pick<T, K> extends Required<Pick<T, K>> ? "required" : "optional",
+        ];
+      }
+    : T;
+type Agree<S extends { type: string }, P extends { type: string }> = {
+  [K in S["type"] | P["type"]]: Same<
+    Shape<Bare<Extract<S, { type: K }>>>,
+    Shape<Extract<P, { type: K }>>
+  >;
+};
+type Assert<T extends true> = T;
+type SchemaCommand = (typeof PreviewCommand)["Type"];
+
+export type EveryMessageAgrees = Assert<
+  Same<PreviewMessage["type"], Protocol.MessageType>
+>;
+export type EveryCommandAgrees = Assert<
+  Same<SchemaCommand["type"], Protocol.CommandType>
+>;
+export const messagesAgree: { [K in Protocol.MessageType]: true } =
+  null as unknown as Agree<PreviewMessage, Protocol.PreviewMessage>;
+export const commandsAgree: { [K in Protocol.CommandType]: true } =
+  null as unknown as Agree<SchemaCommand, Protocol.PreviewCommand>;
 
 export const decodePreviewMessage = Schema.decodeUnknownExit(PreviewMessage);
 export const decodePreviewCommand = Schema.decodeUnknownExit(PreviewCommand);
 
 export function inspectCommand(armed: boolean): PreviewCommand {
-  return { armed, source: PREVIEW_COMMAND_SOURCE, type: "inspect" };
+  return { armed, type: "inspect" };
 }
 
 export function snapshotCommand(armed: boolean): PreviewCommand {
-  return { armed, source: PREVIEW_COMMAND_SOURCE, type: "snapshot" };
+  return { armed, type: "snapshot" };
 }
 
 /** Point at one `Interactive` of the open selection, or at none. */
@@ -581,23 +596,18 @@ export function highlightCommand(
   targetId: string | null,
   open: boolean
 ): PreviewCommand {
-  return { open, source: PREVIEW_COMMAND_SOURCE, targetId, type: "highlight" };
+  return { open, targetId, type: "highlight" };
 }
 
 export function hideCommand(
   token: string,
   selectors: readonly string[]
 ): PreviewCommand {
-  return {
-    selectors,
-    source: PREVIEW_COMMAND_SOURCE,
-    token,
-    type: "studio.hide",
-  };
+  return { selectors, token, type: "studio.hide" };
 }
 
 export function unhideCommand(token: string): PreviewCommand {
-  return { source: PREVIEW_COMMAND_SOURCE, token, type: "studio.unhide" };
+  return { token, type: "studio.unhide" };
 }
 
 export function managedSelector(objectId: string): string {
@@ -605,30 +615,21 @@ export function managedSelector(objectId: string): string {
 }
 
 export function seekCommand(frame: number): PreviewCommand {
-  return { frame, source: PREVIEW_COMMAND_SOURCE, type: "seek" };
+  return { frame, type: "seek" };
 }
 
 export function replayCommand(span: PreviewWindow): PreviewCommand {
-  return {
-    from: span.from,
-    source: PREVIEW_COMMAND_SOURCE,
-    type: "replay",
-    until: span.until,
-  };
+  return { from: span.from, type: "replay", until: span.until };
 }
 
 export function pauseCommand(): PreviewCommand {
-  return { source: PREVIEW_COMMAND_SOURCE, type: "pause" };
+  return { type: "pause" };
 }
 
 export function tuningStatusesCommand(
   targets: readonly TuningStatuses[]
 ): PreviewCommand {
-  return {
-    source: PREVIEW_COMMAND_SOURCE,
-    targets: [...targets],
-    type: "tuning.statuses",
-  };
+  return { targets: [...targets], type: "tuning.statuses" };
 }
 
 export function tuneSetCommand(
@@ -637,14 +638,7 @@ export function tuneSetCommand(
   path: string,
   value: TuningValue
 ): PreviewCommand {
-  return {
-    path,
-    requestId,
-    source: PREVIEW_COMMAND_SOURCE,
-    targetId,
-    type: "tune.set",
-    value,
-  };
+  return { path, requestId, targetId, type: "tune.set", value };
 }
 
 export function tuneResetCommand(
@@ -652,21 +646,7 @@ export function tuneResetCommand(
   targetId: string,
   paths: readonly string[]
 ): PreviewCommand {
-  return {
-    paths: [...paths],
-    requestId,
-    source: PREVIEW_COMMAND_SOURCE,
-    targetId,
-    type: "tune.reset",
-  };
-}
-
-export function originOf(url: string): string | null {
-  try {
-    return new URL(url).origin;
-  } catch {
-    return null;
-  }
+  return { paths: [...paths], requestId, targetId, type: "tune.reset" };
 }
 
 export function startPreview(

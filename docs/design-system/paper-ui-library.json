@@ -1,0 +1,3912 @@
+{
+  "version": 1,
+  "createdAt": "2026-10-03",
+  "file": {
+    "id": "01M40EK8FFWZTW2G14NW9CXN69",
+    "name": "Remocn Studio · UI & Design System",
+    "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69"
+  },
+  "source": {
+    "repository": "remocn-studio",
+    "baseCommit": "86f64ee",
+    "state": "Working tree including pre-existing uncommitted changes; extraction was not an immutable commit snapshot."
+  },
+  "counts": {
+    "sourceFiles": 179,
+    "uiFiles": 74,
+    "studioFiles": 105,
+    "tokens": 154,
+    "componentSpecimens": 180,
+    "componentThemeVariants": 360,
+    "screenStates": 8,
+    "screenThemeVariants": 16,
+    "shaderStates": 4,
+    "shaderThemeVariants": 8
+  },
+  "fidelity": {
+    "sourceRendered": 107,
+    "sourceGuided": 74,
+    "sourceAssembled": 7,
+    "definitions": {
+      "source-rendered": "Direct React static render with representative fixture data and computed browser geometry.",
+      "source-guided": "Editable reconstruction following source structure and styling; not a pixel-identical runtime capture.",
+      "source-assembled": "Full-screen composition combining directly rendered blocks and source-guided content."
+    }
+  },
+  "limitations": [
+    "Named editable groups; no linked component instances.",
+    "Static states and representative data; not an exhaustive interactive state machine.",
+    "Shader layers are frozen raster frames; UI text, shapes and vectors are editable.",
+    "Absolute geometry extracted at fixed sizes; typography/spacing changes need a layout review.",
+    "No automatic synchronization from Paper back to source code.",
+    "Source-guided specimens and assembled screens require verification against the running application before implementation."
+  ],
+  "pages": [
+    {
+      "name": "00 · Start here",
+      "id": "p-1-0"
+    },
+    {
+      "name": "01 · Foundations",
+      "id": "p-2-0"
+    },
+    {
+      "name": "02 · UI Primitives",
+      "id": "p-3-0"
+    },
+    {
+      "name": "03 · Studio Components",
+      "id": "p-4-0"
+    },
+    {
+      "name": "04 · Screens & Flows",
+      "id": "p-5-0"
+    }
+  ],
+  "specimens": [
+    {
+      "id": "button",
+      "group": "Actions",
+      "title": "Button · variants",
+      "source": "components/ui/button.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "5X-0",
+        "dark": "7S-0"
+      }
+    },
+    {
+      "id": "button-sizes",
+      "group": "Actions",
+      "title": "Button · sizes & states",
+      "source": "components/ui/button.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "6H-0",
+        "dark": "8C-0"
+      }
+    },
+    {
+      "id": "badge",
+      "group": "Actions",
+      "title": "Badge · variants",
+      "source": "components/ui/badge.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "1Q6-0",
+        "dark": "1R1-0"
+      }
+    },
+    {
+      "id": "avatar",
+      "group": "Actions",
+      "title": "Avatar · fallback",
+      "source": "components/ui/avatar.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "1RW-0",
+        "dark": "1SB-0"
+      }
+    },
+    {
+      "id": "kbd",
+      "group": "Actions",
+      "title": "Keyboard shortcuts",
+      "source": "components/ui/kbd.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "1SQ-0",
+        "dark": "1TA-0"
+      }
+    },
+    {
+      "id": "toggle",
+      "group": "Actions",
+      "title": "Toggle · off / on / disabled",
+      "source": "components/ui/toggle.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "33R-0",
+        "dark": "34A-0"
+      }
+    },
+    {
+      "id": "toggle-group",
+      "group": "Actions",
+      "title": "Toggle group",
+      "source": "components/ui/toggle-group.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "1UW-0",
+        "dark": "1VI-0"
+      }
+    },
+    {
+      "id": "button-group",
+      "group": "Actions",
+      "title": "Button group",
+      "source": "components/ui/button-group.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "44M-0",
+        "dark": "452-0"
+      }
+    },
+    {
+      "id": "group",
+      "group": "Actions",
+      "title": "Group · leading label",
+      "source": "components/ui/group.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "1X0-0",
+        "dark": "1XE-0"
+      }
+    },
+    {
+      "id": "input",
+      "group": "Inputs",
+      "title": "Input · default / filled / invalid / disabled",
+      "source": "components/ui/input.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "1XS-0",
+        "dark": "1YF-0"
+      }
+    },
+    {
+      "id": "textarea",
+      "group": "Inputs",
+      "title": "Textarea",
+      "source": "components/ui/textarea.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "1Z2-0",
+        "dark": "1ZB-0"
+      }
+    },
+    {
+      "id": "input-group",
+      "group": "Inputs",
+      "title": "Input group · leading & trailing actions",
+      "source": "components/ui/input-group.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "45I-0",
+        "dark": "460-0"
+      }
+    },
+    {
+      "id": "label",
+      "group": "Inputs",
+      "title": "Label",
+      "source": "components/ui/label.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "20K-0",
+        "dark": "20T-0"
+      }
+    },
+    {
+      "id": "field",
+      "group": "Inputs",
+      "title": "Field · label & description",
+      "source": "components/ui/field.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "212-0",
+        "dark": "21I-0"
+      }
+    },
+    {
+      "id": "fieldset",
+      "group": "Inputs",
+      "title": "Fieldset",
+      "source": "components/ui/fieldset.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "21Y-0",
+        "dark": "22F-0"
+      }
+    },
+    {
+      "id": "form",
+      "group": "Inputs",
+      "title": "Form · validation",
+      "source": "components/ui/form.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "22W-0",
+        "dark": "23B-0"
+      }
+    },
+    {
+      "id": "native-select",
+      "group": "Inputs",
+      "title": "Native select",
+      "source": "components/ui/native-select.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "36P-0",
+        "dark": "371-0"
+      }
+    },
+    {
+      "id": "select",
+      "group": "Inputs",
+      "title": "Select · trigger",
+      "source": "components/ui/select.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "37D-0",
+        "dark": "37Q-0"
+      }
+    },
+    {
+      "id": "combobox",
+      "group": "Inputs",
+      "title": "Combobox · search",
+      "source": "components/ui/combobox.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "383-0",
+        "dark": "38J-0"
+      }
+    },
+    {
+      "id": "autocomplete",
+      "group": "Inputs",
+      "title": "Autocomplete",
+      "source": "components/ui/autocomplete.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "260-0",
+        "dark": "26B-0"
+      }
+    },
+    {
+      "id": "number-field",
+      "group": "Selection",
+      "title": "Number field",
+      "source": "components/ui/number-field.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "26P-0",
+        "dark": "27B-0"
+      }
+    },
+    {
+      "id": "checkbox",
+      "group": "Selection",
+      "title": "Checkbox · states",
+      "source": "components/ui/checkbox.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "27X-0",
+        "dark": "28O-0"
+      }
+    },
+    {
+      "id": "checkbox-group",
+      "group": "Selection",
+      "title": "Checkbox group",
+      "source": "components/ui/checkbox-group.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "29F-0",
+        "dark": "2A0-0"
+      }
+    },
+    {
+      "id": "radio-group",
+      "group": "Selection",
+      "title": "Radio group",
+      "source": "components/ui/radio-group.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2AL-0",
+        "dark": "2B5-0"
+      }
+    },
+    {
+      "id": "switch",
+      "group": "Selection",
+      "title": "Switch · off / on / disabled",
+      "source": "components/ui/switch.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2BP-0",
+        "dark": "2C2-0"
+      }
+    },
+    {
+      "id": "slider",
+      "group": "Selection",
+      "title": "Slider · single / range",
+      "source": "components/ui/slider.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2CF-0",
+        "dark": "2CX-0"
+      }
+    },
+    {
+      "id": "progress",
+      "group": "Selection",
+      "title": "Progress · determinate",
+      "source": "components/ui/progress.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2DF-0",
+        "dark": "2DT-0"
+      }
+    },
+    {
+      "id": "meter",
+      "group": "Selection",
+      "title": "Meter",
+      "source": "components/ui/meter.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2E7-0",
+        "dark": "2EL-0"
+      }
+    },
+    {
+      "id": "otp-field",
+      "group": "Selection",
+      "title": "OTP field",
+      "source": "components/ui/otp-field.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2EZ-0",
+        "dark": "2FO-0"
+      }
+    },
+    {
+      "id": "input-otp",
+      "group": "Selection",
+      "title": "Input OTP",
+      "source": "components/ui/input-otp.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2GD-0",
+        "dark": "2H7-0"
+      }
+    },
+    {
+      "id": "tabs",
+      "group": "Navigation",
+      "title": "Tabs · default",
+      "source": "components/ui/tabs.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2S7-0",
+        "dark": "2SR-0"
+      }
+    },
+    {
+      "id": "breadcrumb",
+      "group": "Navigation",
+      "title": "Breadcrumb",
+      "source": "components/ui/breadcrumb.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "46I-0",
+        "dark": "46Z-0"
+      }
+    },
+    {
+      "id": "pagination",
+      "group": "Navigation",
+      "title": "Pagination",
+      "source": "components/ui/pagination.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2U9-0",
+        "dark": "2V5-0"
+      }
+    },
+    {
+      "id": "toolbar",
+      "group": "Navigation",
+      "title": "Toolbar",
+      "source": "components/ui/toolbar.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2W1-0",
+        "dark": "2WN-0"
+      }
+    },
+    {
+      "id": "navigation-menu",
+      "group": "Navigation",
+      "title": "Navigation menu",
+      "source": "components/ui/navigation-menu.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2X9-0",
+        "dark": "2XT-0"
+      }
+    },
+    {
+      "id": "accordion",
+      "group": "Disclosure",
+      "title": "Accordion · expanded",
+      "source": "components/ui/accordion.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "39A-0",
+        "dark": "39W-0"
+      }
+    },
+    {
+      "id": "collapsible",
+      "group": "Disclosure",
+      "title": "Collapsible",
+      "source": "components/ui/collapsible.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3AI-0",
+        "dark": "3AU-0"
+      }
+    },
+    {
+      "id": "card",
+      "group": "Structure",
+      "title": "Card",
+      "source": "components/ui/card.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "47G-0",
+        "dark": "47Z-0"
+      }
+    },
+    {
+      "id": "frame",
+      "group": "Structure",
+      "title": "Frame",
+      "source": "components/ui/frame.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3CJ-0",
+        "dark": "3D0-0"
+      }
+    },
+    {
+      "id": "item",
+      "group": "Structure",
+      "title": "Item",
+      "source": "components/ui/item.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3DH-0",
+        "dark": "3EA-0"
+      }
+    },
+    {
+      "id": "separator",
+      "group": "Structure",
+      "title": "Separator",
+      "source": "components/ui/separator.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3F3-0",
+        "dark": "3FF-0"
+      }
+    },
+    {
+      "id": "scroll-area",
+      "group": "Structure",
+      "title": "Scroll area",
+      "source": "components/ui/scroll-area.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3FR-0",
+        "dark": "3GB-0"
+      }
+    },
+    {
+      "id": "aspect-ratio",
+      "group": "Structure",
+      "title": "Aspect ratio · 16:9",
+      "source": "components/ui/aspect-ratio.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3GV-0",
+        "dark": "3HB-0"
+      }
+    },
+    {
+      "id": "resizable",
+      "group": "Structure",
+      "title": "Resizable panes",
+      "source": "components/ui/resizable.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3HR-0",
+        "dark": "3IA-0"
+      }
+    },
+    {
+      "id": "empty",
+      "group": "Feedback",
+      "title": "Empty state",
+      "source": "components/ui/empty.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3OC-0",
+        "dark": "3P0-0"
+      }
+    },
+    {
+      "id": "alert",
+      "group": "Feedback",
+      "title": "Alert",
+      "source": "components/ui/alert.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "48I-0",
+        "dark": "48Y-0"
+      }
+    },
+    {
+      "id": "skeleton",
+      "group": "Feedback",
+      "title": "Skeleton",
+      "source": "components/ui/skeleton.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3QK-0",
+        "dark": "3QU-0"
+      }
+    },
+    {
+      "id": "spinner",
+      "group": "Feedback",
+      "title": "Spinner",
+      "source": "components/ui/spinner.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3R4-0",
+        "dark": "3RH-0"
+      }
+    },
+    {
+      "id": "dotm-square-1",
+      "group": "Feedback",
+      "title": "Dot matrix · square 1",
+      "source": "components/ui/dotm-square-1.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3RU-0",
+        "dark": "3SR-0"
+      }
+    },
+    {
+      "id": "dotm-square-11",
+      "group": "Feedback",
+      "title": "Dot matrix · square 11",
+      "source": "components/ui/dotm-square-11.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3TO-0",
+        "dark": "3UL-0"
+      }
+    },
+    {
+      "id": "bubble",
+      "group": "Conversation",
+      "title": "Bubble · variants",
+      "source": "components/ui/bubble.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3X9-0",
+        "dark": "3Y1-0"
+      }
+    },
+    {
+      "id": "message",
+      "group": "Conversation",
+      "title": "Message · sent / assistant",
+      "source": "components/ui/message.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3YT-0",
+        "dark": "3ZD-0"
+      }
+    },
+    {
+      "id": "marker",
+      "group": "Conversation",
+      "title": "Marker · variants",
+      "source": "components/ui/marker.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3ZX-0",
+        "dark": "40D-0"
+      }
+    },
+    {
+      "id": "attachment",
+      "group": "Conversation",
+      "title": "Attachment",
+      "source": "components/ui/attachment.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "40T-0",
+        "dark": "41G-0"
+      }
+    },
+    {
+      "id": "message-scroller",
+      "group": "Conversation",
+      "title": "Message scroller",
+      "source": "components/ui/message-scroller.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "423-0",
+        "dark": "42K-0"
+      }
+    },
+    {
+      "id": "direction",
+      "group": "Conversation",
+      "title": "Direction · LTR / RTL",
+      "source": "components/ui/direction.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "431-0",
+        "dark": "43C-0"
+      }
+    },
+    {
+      "id": "menu",
+      "group": "Overlays",
+      "title": "menu · open",
+      "source": "components/ui/menu.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "49P-0",
+        "dark": "4B1-0"
+      }
+    },
+    {
+      "id": "dropdown-menu",
+      "group": "Overlays",
+      "title": "dropdown-menu · open",
+      "source": "components/ui/dropdown-menu.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4CD-0",
+        "dark": "4DP-0"
+      }
+    },
+    {
+      "id": "context-menu",
+      "group": "Overlays",
+      "title": "context-menu · open",
+      "source": "components/ui/context-menu.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4F1-0",
+        "dark": "4GD-0"
+      }
+    },
+    {
+      "id": "menubar",
+      "group": "Navigation",
+      "title": "Menubar",
+      "source": "components/ui/menubar.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "2YD-0",
+        "dark": "2YT-0"
+      }
+    },
+    {
+      "id": "dialog",
+      "group": "Overlays",
+      "title": "Dialog",
+      "source": "components/ui/dialog.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4HP-0",
+        "dark": "4I8-0"
+      }
+    },
+    {
+      "id": "alert-dialog",
+      "group": "Overlays",
+      "title": "Alert dialog",
+      "source": "components/ui/alert-dialog.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4IR-0",
+        "dark": "4JA-0"
+      }
+    },
+    {
+      "id": "sheet",
+      "group": "Overlays",
+      "title": "Sheet",
+      "source": "components/ui/sheet.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4JT-0",
+        "dark": "4KB-0"
+      }
+    },
+    {
+      "id": "drawer",
+      "group": "Overlays",
+      "title": "Drawer",
+      "source": "components/ui/drawer.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4KT-0",
+        "dark": "4LE-0"
+      }
+    },
+    {
+      "id": "popover",
+      "group": "Overlays",
+      "title": "Popover",
+      "source": "components/ui/popover.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4LZ-0",
+        "dark": "4ML-0"
+      }
+    },
+    {
+      "id": "tooltip",
+      "group": "Overlays",
+      "title": "tooltip",
+      "source": "components/ui/tooltip.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4N7-0",
+        "dark": "4NF-0"
+      }
+    },
+    {
+      "id": "hover-card",
+      "group": "Overlays",
+      "title": "hover-card",
+      "source": "components/ui/hover-card.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4NN-0",
+        "dark": "4NZ-0"
+      }
+    },
+    {
+      "id": "preview-card",
+      "group": "Overlays",
+      "title": "preview-card",
+      "source": "components/ui/preview-card.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "4OB-0",
+        "dark": "4ON-0"
+      }
+    },
+    {
+      "id": "command",
+      "group": "Navigation",
+      "title": "Command palette",
+      "source": "components/ui/command.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "2Z9-0",
+        "dark": "30C-0"
+      }
+    },
+    {
+      "id": "toast",
+      "group": "Feedback",
+      "title": "Toast · success / error",
+      "source": "components/ui/toast.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "3VI-0",
+        "dark": "3W8-0"
+      }
+    },
+    {
+      "id": "calendar",
+      "group": "Selection",
+      "title": "Calendar",
+      "source": "components/ui/calendar.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "2I1-0",
+        "dark": "2N4-0"
+      }
+    },
+    {
+      "id": "carousel",
+      "group": "Structure",
+      "title": "Carousel",
+      "source": "components/ui/carousel.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3IT-0",
+        "dark": "3JE-0"
+      }
+    },
+    {
+      "id": "table",
+      "group": "Structure",
+      "title": "Table",
+      "source": "components/ui/table.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "3JZ-0",
+        "dark": "3L1-0"
+      }
+    },
+    {
+      "id": "chart",
+      "group": "Structure",
+      "title": "Chart · data visualization",
+      "source": "components/ui/chart.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "3M3-0",
+        "dark": "3N2-0"
+      }
+    },
+    {
+      "id": "sidebar",
+      "group": "Navigation",
+      "title": "Sidebar",
+      "source": "components/ui/sidebar.tsx",
+      "width": 580,
+      "note": "Rendered from source",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "31F-0",
+        "dark": "32L-0"
+      }
+    },
+    {
+      "id": "studio-logo-mark",
+      "group": "Studio / Identity",
+      "title": "Logo mark & wordmark",
+      "source": "components/studio/logo-mark.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "759-0",
+        "dark": "75N-0"
+      }
+    },
+    {
+      "id": "studio-thinking",
+      "group": "Studio / Thinking",
+      "title": "Thinking · live",
+      "source": "components/studio/thinking.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "4PA-0",
+        "dark": "4QB-0"
+      }
+    },
+    {
+      "id": "studio-thinking-strip",
+      "group": "Studio / Thinking",
+      "title": "Thinking strip",
+      "source": "components/studio/thinking.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "4RC-0",
+        "dark": "4TM-0"
+      }
+    },
+    {
+      "id": "studio-task-checklist",
+      "group": "Studio / Thinking",
+      "title": "Task checklist",
+      "source": "components/studio/task-checklist.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "4VW-0",
+        "dark": "4XH-0"
+      }
+    },
+    {
+      "id": "studio-notice-card",
+      "group": "Studio / Feedback",
+      "title": "Notice card",
+      "source": "components/studio/notice-card.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "7JM-0",
+        "dark": "7K3-0"
+      }
+    },
+    {
+      "id": "studio-provider-icon",
+      "group": "Studio / Identity",
+      "title": "Provider icons",
+      "source": "components/studio/provider-icon.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "761-0",
+        "dark": "76T-0"
+      }
+    },
+    {
+      "id": "studio-file-icon",
+      "group": "Studio / Identity",
+      "title": "File icons",
+      "source": "components/studio/file-icon.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "77L-0",
+        "dark": "78E-0"
+      }
+    },
+    {
+      "id": "studio-task-status-icon",
+      "group": "Studio / Identity",
+      "title": "Task status · pending / working / complete",
+      "source": "components/studio/task-status-icon.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "797-0",
+        "dark": "7AW-0"
+      }
+    },
+    {
+      "id": "studio-startup",
+      "group": "Studio / Onboarding",
+      "title": "Startup · first project",
+      "source": "components/studio/startup.tsx",
+      "width": 640,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "7KV-0",
+        "dark": "7MV-0"
+      }
+    },
+    {
+      "id": "studio-format-picker",
+      "group": "Studio / Onboarding",
+      "title": "Format picker",
+      "source": "components/studio/format-picker.tsx",
+      "width": 640,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "7OV-0",
+        "dark": "7QA-0"
+      }
+    },
+    {
+      "id": "studio-new-video-wizard",
+      "group": "Studio / Onboarding",
+      "title": "New video",
+      "source": "components/studio/new-video-wizard.tsx",
+      "width": 640,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "7RP-0",
+        "dark": "7TS-0"
+      }
+    },
+    {
+      "id": "studio-new-project-wizard",
+      "group": "Studio / Onboarding",
+      "title": "New project",
+      "source": "components/studio/new-project-wizard.tsx",
+      "width": 640,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "7VV-0",
+        "dark": "7Y6-0"
+      }
+    },
+    {
+      "id": "studio-composer-empty",
+      "group": "Studio / Composer",
+      "title": "Composer · empty",
+      "source": "components/studio/composer.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "5BB-0",
+        "dark": "5CM-0"
+      }
+    },
+    {
+      "id": "studio-composer-filled",
+      "group": "Studio / Composer",
+      "title": "Composer · filled",
+      "source": "components/studio/composer.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "5DX-0",
+        "dark": "5F8-0"
+      }
+    },
+    {
+      "id": "studio-composer-attached",
+      "group": "Studio / Composer",
+      "title": "Composer · attached",
+      "source": "components/studio/composer.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "5GJ-0",
+        "dark": "5IB-0"
+      }
+    },
+    {
+      "id": "studio-composer-running",
+      "group": "Studio / Composer",
+      "title": "Composer · running",
+      "source": "components/studio/composer.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "5K3-0",
+        "dark": "5LM-0"
+      }
+    },
+    {
+      "id": "studio-composer-waiting",
+      "group": "Studio / Composer",
+      "title": "Composer · waiting",
+      "source": "components/studio/composer.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "5N5-0",
+        "dark": "5OG-0"
+      }
+    },
+    {
+      "id": "studio-composer-add",
+      "group": "Studio / Composer",
+      "title": "Composer · add menu",
+      "source": "components/studio/composer.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "5PR-0",
+        "dark": "5QQ-0"
+      }
+    },
+    {
+      "id": "studio-model-menu",
+      "group": "Studio / Composer",
+      "title": "Model menu · providers & models",
+      "source": "components/studio/model-menu.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "5RP-0",
+        "dark": "5T2-0"
+      }
+    },
+    {
+      "id": "studio-mention-popup",
+      "group": "Studio / Composer",
+      "title": "File mentions",
+      "source": "components/studio/mention-popup.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "5UF-0",
+        "dark": "5VB-0"
+      }
+    },
+    {
+      "id": "studio-context-meter",
+      "group": "Studio / Composer",
+      "title": "Context meter",
+      "source": "components/studio/context-meter.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "5W7-0",
+        "dark": "5WJ-0"
+      }
+    },
+    {
+      "id": "studio-reasoning-steps",
+      "group": "Studio / Thinking",
+      "title": "Reasoning steps · live",
+      "source": "components/studio/reasoning-steps.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "4Z2-0",
+        "dark": "50B-0"
+      }
+    },
+    {
+      "id": "studio-activity-done",
+      "group": "Studio / Thinking",
+      "title": "Activity line · done",
+      "source": "components/studio/activity-line.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "51K-0",
+        "dark": "51X-0"
+      }
+    },
+    {
+      "id": "studio-activity-running",
+      "group": "Studio / Thinking",
+      "title": "Activity line · running",
+      "source": "components/studio/activity-line.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "52A-0",
+        "dark": "52N-0"
+      }
+    },
+    {
+      "id": "studio-activity-failed",
+      "group": "Studio / Thinking",
+      "title": "Activity line · failed",
+      "source": "components/studio/activity-line.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "530-0",
+        "dark": "53H-0"
+      }
+    },
+    {
+      "id": "studio-activity-run",
+      "group": "Studio / Thinking",
+      "title": "Activity run · collapsed",
+      "source": "components/studio/activity-run.tsx",
+      "width": 580,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "53Y-0",
+        "dark": "54F-0"
+      }
+    },
+    {
+      "id": "studio-task-dock",
+      "group": "Studio / Thinking",
+      "title": "Task dock · expanded",
+      "source": "components/studio/task-dock.tsx",
+      "width": 640,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "54W-0",
+        "dark": "56Y-0"
+      }
+    },
+    {
+      "id": "studio-queue-dock",
+      "group": "Studio / Thinking",
+      "title": "Queue dock · expanded",
+      "source": "components/studio/queue-dock.tsx",
+      "width": 640,
+      "note": "Source-guided static specimen with representative content; behavior and runtime data are not transferred.",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "590-0",
+        "dark": "5A0-0"
+      }
+    },
+    {
+      "id": "studio-permission-card",
+      "group": "Studio / Conversation",
+      "title": "Permission card · action",
+      "source": "components/studio/permission-card.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "6TO-0",
+        "dark": "6UO-0"
+      }
+    },
+    {
+      "id": "studio-permission-gathered",
+      "group": "Studio / Conversation",
+      "title": "Permission card · grouped requests",
+      "source": "components/studio/permission-card.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "6VO-0",
+        "dark": "6X4-0"
+      }
+    },
+    {
+      "id": "studio-transcript",
+      "group": "Studio / Conversation",
+      "title": "Transcript · user, work, assistant",
+      "source": "components/studio/transcript.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "6YK-0",
+        "dark": "704-0"
+      }
+    },
+    {
+      "id": "studio-chat-result",
+      "group": "Studio / Conversation",
+      "title": "Chat result · ready",
+      "source": "components/studio/chat-result.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "71O-0",
+        "dark": "72B-0"
+      }
+    },
+    {
+      "id": "studio-activity-detail",
+      "group": "Studio / Conversation",
+      "title": "Activity detail · code output",
+      "source": "components/studio/activity-detail.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "72Y-0",
+        "dark": "736-0"
+      }
+    },
+    {
+      "id": "studio-design-review",
+      "group": "Studio / Conversation",
+      "title": "Design review · evidence",
+      "source": "components/studio/design-review.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "73E-0",
+        "dark": "746-0"
+      }
+    },
+    {
+      "id": "studio-preview-controls",
+      "group": "Studio / Preview",
+      "title": "Preview controls · playing",
+      "source": "components/studio/preview-controls.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "5X6-0",
+        "dark": "5YT-0"
+      }
+    },
+    {
+      "id": "studio-canvas-toolbar",
+      "group": "Studio / Preview",
+      "title": "Canvas toolbar",
+      "source": "components/studio/canvas-preview.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "60G-0",
+        "dark": "61D-0"
+      }
+    },
+    {
+      "id": "studio-canvas-rulers",
+      "group": "Studio / Preview",
+      "title": "Canvas rulers",
+      "source": "components/studio/canvas-rulers.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "62A-0",
+        "dark": "62Z-0"
+      }
+    },
+    {
+      "id": "studio-inspect-overlay",
+      "group": "Studio / Preview",
+      "title": "Inspect overlay · selected element",
+      "source": "components/studio/inspect-overlay.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "63O-0",
+        "dark": "63Z-0"
+      }
+    },
+    {
+      "id": "studio-video-layers",
+      "group": "Studio / Preview",
+      "title": "Video layers",
+      "source": "components/studio/canvas-preview.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "64A-0",
+        "dark": "661-0"
+      }
+    },
+    {
+      "id": "studio-props-pane",
+      "group": "Studio / Inspector",
+      "title": "Properties inspector",
+      "source": "components/studio/props-pane.tsx",
+      "width": 580,
+      "note": "Rendered directly from source using inert state shaped from repository tests",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "68L-0",
+        "dark": "6CJ-0"
+      }
+    },
+    {
+      "id": "studio-managed-props-pane",
+      "group": "Studio / Inspector",
+      "title": "Managed object inspector",
+      "source": "components/studio/managed-props-pane.tsx",
+      "width": 580,
+      "note": "Rendered directly from source using inert state shaped from repository tests",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "6GH-0",
+        "dark": "6IT-0"
+      }
+    },
+    {
+      "id": "studio-tuning-controls",
+      "group": "Studio / Inspector",
+      "title": "Tuning controls · values",
+      "source": "components/studio/tuning-controls.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "6L5-0",
+        "dark": "6M1-0"
+      }
+    },
+    {
+      "id": "studio-managed-fields",
+      "group": "Studio / Inspector",
+      "title": "Managed fields · grouped values",
+      "source": "components/studio/managed-fields.tsx",
+      "width": 580,
+      "note": "Rendered directly from source using inert state shaped from repository tests",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "6MX-0",
+        "dark": "6OA-0"
+      }
+    },
+    {
+      "id": "studio-property-disclosure",
+      "group": "Studio / Inspector",
+      "title": "Property disclosure",
+      "source": "components/studio/property-disclosure.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture data",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "6PN-0",
+        "dark": "6Q7-0"
+      }
+    },
+    {
+      "id": "studio-managed-instruction",
+      "group": "Studio / Inspector",
+      "title": "Element instruction",
+      "source": "components/studio/managed-instruction.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture data",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "6QR-0",
+        "dark": "6R7-0"
+      }
+    },
+    {
+      "id": "studio-dialkit-surface",
+      "group": "Studio / Inspector",
+      "title": "DialKit · easing & spring",
+      "source": "components/studio/dialkit-surface.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "6RN-0",
+        "dark": "6SI-0"
+      }
+    },
+    {
+      "id": "studio-export-button",
+      "group": "Studio / Export",
+      "title": "Export button · ready / progress",
+      "source": "components/studio/export-button.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "85C-0",
+        "dark": "85T-0"
+      }
+    },
+    {
+      "id": "studio-export-dialog",
+      "group": "Studio / Export",
+      "title": "Export dialog",
+      "source": "components/studio/export-dialog.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "86A-0",
+        "dark": "88Q-0"
+      }
+    },
+    {
+      "id": "studio-export-status",
+      "group": "Studio / Export",
+      "title": "Export status · result / failure",
+      "source": "components/studio/preview-pane.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8B6-0",
+        "dark": "8BV-0"
+      }
+    },
+    {
+      "id": "studio-asset-grid",
+      "group": "Studio / Library",
+      "title": "Asset grid",
+      "source": "components/studio/asset-grid.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8CV-0",
+        "dark": "8E4-0"
+      }
+    },
+    {
+      "id": "studio-assets-pane",
+      "group": "Studio / Library",
+      "title": "Assets pane",
+      "source": "components/studio/assets-pane.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8FD-0",
+        "dark": "8GZ-0"
+      }
+    },
+    {
+      "id": "studio-assets-scope",
+      "group": "Studio / Library",
+      "title": "Asset scope",
+      "source": "components/studio/assets-scope.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8IL-0",
+        "dark": "8IY-0"
+      }
+    },
+    {
+      "id": "studio-asset-row",
+      "group": "Studio / Library",
+      "title": "Asset row",
+      "source": "components/studio/asset-row.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8JB-0",
+        "dark": "8K1-0"
+      }
+    },
+    {
+      "id": "studio-media-row",
+      "group": "Studio / Library",
+      "title": "Media attachments",
+      "source": "components/studio/media-row.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8KR-0",
+        "dark": "8LN-0"
+      }
+    },
+    {
+      "id": "studio-selection-row",
+      "group": "Studio / Library",
+      "title": "Selected elements",
+      "source": "components/studio/selection-row.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8MJ-0",
+        "dark": "8N3-0"
+      }
+    },
+    {
+      "id": "studio-asset-source-card",
+      "group": "Studio / Library",
+      "title": "Asset source choice",
+      "source": "components/studio/asset-source-card.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8NN-0",
+        "dark": "8O6-0"
+      }
+    },
+    {
+      "id": "studio-asset-offer-card",
+      "group": "Studio / Library",
+      "title": "Save asset offer",
+      "source": "components/studio/asset-offer-card.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8OP-0",
+        "dark": "8P7-0"
+      }
+    },
+    {
+      "id": "studio-stock-pane",
+      "group": "Studio / Library",
+      "title": "Stock search",
+      "source": "components/studio/stock-pane.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8PP-0",
+        "dark": "8R2-0"
+      }
+    },
+    {
+      "id": "studio-components-pane",
+      "group": "Studio / Library",
+      "title": "Component browser",
+      "source": "components/studio/components-pane.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8SF-0",
+        "dark": "8UZ-0"
+      }
+    },
+    {
+      "id": "studio-sound-prompt",
+      "group": "Studio / Audio",
+      "title": "Sound prompt",
+      "source": "components/studio/sound-prompt.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8XU-0",
+        "dark": "8YH-0"
+      }
+    },
+    {
+      "id": "studio-audio-transport",
+      "group": "Studio / Audio",
+      "title": "Audio transport",
+      "source": "components/studio/audio-transport.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "8Z4-0",
+        "dark": "90L-0"
+      }
+    },
+    {
+      "id": "studio-sound-result-card",
+      "group": "Studio / Audio",
+      "title": "Generated sound result",
+      "source": "components/studio/sound-result-card.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "922-0",
+        "dark": "941-0"
+      }
+    },
+    {
+      "id": "studio-sound-asset",
+      "group": "Studio / Audio",
+      "title": "Sound asset",
+      "source": "components/studio/sound-asset.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "960-0",
+        "dark": "96M-0"
+      }
+    },
+    {
+      "id": "studio-settings-appearance",
+      "group": "Studio / Settings",
+      "title": "Appearance",
+      "source": "components/studio/settings-page.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "97J-0",
+        "dark": "99B-0"
+      }
+    },
+    {
+      "id": "studio-settings-behavior",
+      "group": "Studio / Settings",
+      "title": "Behavior",
+      "source": "components/studio/settings-page.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "9B3-0",
+        "dark": "9CQ-0"
+      }
+    },
+    {
+      "id": "studio-settings-notifications",
+      "group": "Studio / Settings",
+      "title": "Notifications",
+      "source": "components/studio/settings-page.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "9ED-0",
+        "dark": "9GI-0"
+      }
+    },
+    {
+      "id": "studio-settings-hotkeys",
+      "group": "Studio / Settings",
+      "title": "Hotkeys",
+      "source": "components/studio/settings-page.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "9IN-0",
+        "dark": "9PI-0"
+      }
+    },
+    {
+      "id": "studio-settings-accounts",
+      "group": "Studio / Settings",
+      "title": "AI accounts",
+      "source": "components/studio/settings-page.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "9WD-0",
+        "dark": "9Y1-0"
+      }
+    },
+    {
+      "id": "studio-integrations-section",
+      "group": "Studio / Settings",
+      "title": "Integrations · services",
+      "source": "components/studio/integrations-section.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "9ZP-0",
+        "dark": "A0O-0"
+      }
+    },
+    {
+      "id": "studio-integration-connect",
+      "group": "Studio / Settings",
+      "title": "Integration · connect",
+      "source": "components/studio/integrations-section.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "A1N-0",
+        "dark": "A2E-0"
+      }
+    },
+    {
+      "id": "studio-settings-updates",
+      "group": "Studio / Settings",
+      "title": "Updates",
+      "source": "components/studio/settings-page.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "A35-0",
+        "dark": "A46-0"
+      }
+    },
+    {
+      "id": "studio-settings-feedback",
+      "group": "Studio / Settings",
+      "title": "Feedback",
+      "source": "components/studio/settings-page.tsx",
+      "width": 640,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "A57-0",
+        "dark": "A6D-0"
+      }
+    },
+    {
+      "id": "studio-project-settings-section",
+      "group": "Studio / Brand",
+      "title": "Project settings",
+      "source": "components/studio/project-settings-section.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AB6-0",
+        "dark": "AC0-0"
+      }
+    },
+    {
+      "id": "studio-project-brand-editor",
+      "group": "Studio / Brand",
+      "title": "Brand editor",
+      "source": "components/studio/project-brand-editor.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "ACU-0",
+        "dark": "AEU-0"
+      }
+    },
+    {
+      "id": "studio-project-brand-color",
+      "group": "Studio / Brand",
+      "title": "Brand color",
+      "source": "components/studio/project-brand-color.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AGU-0",
+        "dark": "AHE-0"
+      }
+    },
+    {
+      "id": "studio-project-brand-apply",
+      "group": "Studio / Brand",
+      "title": "Apply brand to videos",
+      "source": "components/studio/project-brand-apply.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AHY-0",
+        "dark": "AIG-0"
+      }
+    },
+    {
+      "id": "studio-design-drop-zone",
+      "group": "Studio / Brand",
+      "title": "Design import · drop zone",
+      "source": "components/studio/design-drop-zone.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AIY-0",
+        "dark": "AJI-0"
+      }
+    },
+    {
+      "id": "studio-design-import-review",
+      "group": "Studio / Brand",
+      "title": "Design import · review",
+      "source": "components/studio/design-import-review.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AK2-0",
+        "dark": "ALL-0"
+      }
+    },
+    {
+      "id": "studio-doc-tabs",
+      "group": "Studio / Documents",
+      "title": "Document tabs",
+      "source": "components/studio/doc-tabs.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "ANF-0",
+        "dark": "AOI-0"
+      }
+    },
+    {
+      "id": "studio-docs-view",
+      "group": "Studio / Documents",
+      "title": "Documents · markdown view",
+      "source": "components/studio/docs-view.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "APL-0",
+        "dark": "AR4-0"
+      }
+    },
+    {
+      "id": "studio-markdown",
+      "group": "Studio / Documents",
+      "title": "Markdown · prose, list, code",
+      "source": "components/studio/markdown.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "ASN-0",
+        "dark": "AT1-0"
+      }
+    },
+    {
+      "id": "studio-failure-text",
+      "group": "Studio / System",
+      "title": "Failure text · readable error",
+      "source": "components/studio/failure-text.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "ATQ-0",
+        "dark": "AU3-0"
+      }
+    },
+    {
+      "id": "studio-write-failure-card",
+      "group": "Studio / System",
+      "title": "Write failure card",
+      "source": "components/studio/write-failure-card.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AUG-0",
+        "dark": "AUY-0"
+      }
+    },
+    {
+      "id": "studio-environment-checklist",
+      "group": "Studio / System",
+      "title": "Environment checklist",
+      "source": "components/studio/environment-checklist.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AVG-0",
+        "dark": "AWB-0"
+      }
+    },
+    {
+      "id": "studio-sidecar-status",
+      "group": "Studio / System",
+      "title": "Helper status · starting / stopped",
+      "source": "components/studio/sidecar-status.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AX6-0",
+        "dark": "AXO-0"
+      }
+    },
+    {
+      "id": "studio-update-status",
+      "group": "Studio / System",
+      "title": "Update notification",
+      "source": "components/studio/update-status.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AY6-0",
+        "dark": "AYM-0"
+      }
+    },
+    {
+      "id": "studio-quit-guard",
+      "group": "Studio / System",
+      "title": "Quit guard",
+      "source": "components/studio/quit-guard.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "AZ2-0",
+        "dark": "AZL-0"
+      }
+    },
+    {
+      "id": "studio-crash-boundary",
+      "group": "Studio / System",
+      "title": "Crash recovery",
+      "source": "components/studio/crash-boundary.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "B04-0",
+        "dark": "B0K-0"
+      }
+    },
+    {
+      "id": "studio-project-dialogs",
+      "group": "Studio / System",
+      "title": "Project removal confirmation",
+      "source": "components/studio/project-dialogs.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "B10-0",
+        "dark": "B1I-0"
+      }
+    },
+    {
+      "id": "studio-delete-action",
+      "group": "Studio / System",
+      "title": "Delete element confirmation",
+      "source": "components/studio/delete-action.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "B20-0",
+        "dark": "B2F-0"
+      }
+    },
+    {
+      "id": "studio-command-palette",
+      "group": "Studio / System",
+      "title": "Studio command palette",
+      "source": "components/studio/command-palette.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "B2U-0",
+        "dark": "B40-0"
+      }
+    },
+    {
+      "id": "studio-projects-pane",
+      "group": "Studio / Navigation",
+      "title": "Projects sidebar",
+      "source": "components/studio/projects-pane.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "B6F-0",
+        "dark": "BBC-0"
+      }
+    },
+    {
+      "id": "studio-session-item",
+      "group": "Studio / Navigation",
+      "title": "Session item · active / idle",
+      "source": "components/studio/session-item.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "BG9-0",
+        "dark": "BIR-0"
+      }
+    },
+    {
+      "id": "studio-video-group",
+      "group": "Studio / Navigation",
+      "title": "Video group",
+      "source": "components/studio/video-group.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "BL9-0",
+        "dark": "BN6-0"
+      }
+    },
+    {
+      "id": "studio-video-menu",
+      "group": "Studio / Navigation",
+      "title": "Video menu",
+      "source": "components/studio/video-menu.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "BP3-0",
+        "dark": "BQF-0"
+      }
+    },
+    {
+      "id": "studio-video-thumbnail",
+      "group": "Studio / Navigation",
+      "title": "Video thumbnail",
+      "source": "components/studio/video-thumbnail.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "BRR-0",
+        "dark": "BS3-0"
+      }
+    },
+    {
+      "id": "studio-pane",
+      "group": "Studio / Navigation",
+      "title": "Pane anatomy",
+      "source": "components/studio/pane.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "BSF-0",
+        "dark": "BSX-0"
+      }
+    },
+    {
+      "id": "studio-titlebar",
+      "group": "Studio / Identity",
+      "title": "Title bar · quiet",
+      "source": "components/studio/titlebar.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "7CL-0",
+        "dark": "7F0-0"
+      }
+    },
+    {
+      "id": "studio-splash",
+      "group": "Studio / Onboarding",
+      "title": "Splash · resolved logo",
+      "source": "components/studio/splash.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "80H-0",
+        "dark": "80T-0"
+      }
+    },
+    {
+      "id": "studio-onboarding-dialog",
+      "group": "Studio / Onboarding",
+      "title": "Explore Studio",
+      "source": "components/studio/onboarding-dialog.tsx",
+      "width": 640,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "815-0",
+        "dark": "82H-0"
+      }
+    },
+    {
+      "id": "studio-template-list",
+      "group": "Studio / Onboarding",
+      "title": "Prompt templates",
+      "source": "components/studio/template-list.tsx",
+      "width": 580,
+      "note": "Editable static composition guided by source code; representative content and states.",
+      "fidelity": "source-guided",
+      "paper": {
+        "light": "83T-0",
+        "dark": "84F-0"
+      }
+    },
+    {
+      "id": "screen-ready",
+      "group": "Screens",
+      "title": "Studio · ready",
+      "source": "components/studio/app-shell.tsx",
+      "width": 1440,
+      "note": "Source-based screen assembly with directly rendered sidebar, Composer, permission and transport; representative video content. Static reference.",
+      "fidelity": "source-assembled",
+      "paper": {
+        "light": "BUU-0",
+        "dark": "C5Q-0"
+      }
+    },
+    {
+      "id": "screen-thinking",
+      "group": "Screens",
+      "title": "Studio · thinking",
+      "source": "components/studio/app-shell.tsx",
+      "width": 1440,
+      "note": "Source-based screen assembly with directly rendered sidebar, Composer, permission and transport; representative video content. Static reference.",
+      "fidelity": "source-assembled",
+      "paper": {
+        "light": "CGM-0",
+        "dark": "CT6-0"
+      }
+    },
+    {
+      "id": "screen-permission",
+      "group": "Screens",
+      "title": "Studio · permission",
+      "source": "components/studio/app-shell.tsx",
+      "width": 1440,
+      "note": "Source-based screen assembly with directly rendered sidebar, Composer, permission and transport; representative video content. Static reference.",
+      "fidelity": "source-assembled",
+      "paper": {
+        "light": "D5Q-0",
+        "dark": "DLR-0"
+      }
+    },
+    {
+      "id": "screen-new",
+      "group": "Screens",
+      "title": "Studio · new",
+      "source": "components/studio/app-shell.tsx",
+      "width": 1440,
+      "note": "Source-based screen assembly with directly rendered sidebar, Composer, permission and transport; representative video content. Static reference.",
+      "fidelity": "source-assembled",
+      "paper": {
+        "light": "DXJ-0",
+        "dark": "E8X-0"
+      }
+    },
+    {
+      "id": "screen-inspector",
+      "group": "Screens",
+      "title": "Studio · canvas & inspector",
+      "source": "components/studio/canvas-preview.tsx",
+      "width": 1440,
+      "note": "Source-based screen assembly with directly rendered sidebar, Composer, permission and transport; representative video content. Static reference.",
+      "fidelity": "source-assembled",
+      "paper": {
+        "light": "EKB-0",
+        "dark": "EWC-0"
+      }
+    },
+    {
+      "id": "screen-settings",
+      "group": "Screens",
+      "title": "Settings · appearance",
+      "source": "components/studio/settings-page.tsx",
+      "width": 1440,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "F8D-0",
+        "dark": "FCZ-0"
+      }
+    },
+    {
+      "id": "screen-documents",
+      "group": "Screens",
+      "title": "Studio · documents",
+      "source": "components/studio/docs-view.tsx",
+      "width": 1440,
+      "note": "Source-based screen assembly with directly rendered sidebar, Composer, permission and transport; representative video content. Static reference.",
+      "fidelity": "source-assembled",
+      "paper": {
+        "light": "FHL-0",
+        "dark": "FQW-0"
+      }
+    },
+    {
+      "id": "screen-export",
+      "group": "Screens",
+      "title": "Studio · export dialog",
+      "source": "components/studio/export-dialog.tsx",
+      "width": 1440,
+      "note": "Source-based screen assembly with directly rendered sidebar, Composer, permission and transport; representative video content. Static reference.",
+      "fidelity": "source-assembled",
+      "paper": {
+        "light": "G07-0",
+        "dark": "GDH-0"
+      }
+    },
+    {
+      "id": "studio-asset-type-icon",
+      "group": "Studio / Identity",
+      "title": "Asset type icons",
+      "source": "components/studio/asset-type-icon.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "7HF-0",
+        "dark": "7ID-0"
+      }
+    },
+    {
+      "id": "studio-provider-steps",
+      "group": "Studio / Settings",
+      "title": "Provider setup · install & sign in",
+      "source": "components/studio/provider-steps.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "A7J-0",
+        "dark": "A97-0"
+      }
+    },
+    {
+      "id": "studio-canvas-frame-label",
+      "group": "Studio / Preview",
+      "title": "Canvas frame label · idle / working",
+      "source": "components/studio/canvas-frame-label.tsx",
+      "width": 580,
+      "note": "Rendered directly from source with inert fixture state",
+      "fidelity": "source-rendered",
+      "paper": {
+        "light": "67S-0",
+        "dark": "681-0"
+      }
+    },
+    {
+      "id": "studio-sidecar-stream-test",
+      "group": "Studio / System",
+      "title": "Stream test · developer diagnostic",
+      "source": "components/studio/sidecar-stream-test.tsx",
+      "width": 580,
+      "fidelity": "source-rendered",
+      "note": "Rendered directly from source with inert fixture data",
+      "paper": {
+        "light": "B56-0",
+        "dark": "B5N-0"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "path": "components/ui/accordion.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["accordion"]
+      }
+    },
+    {
+      "path": "components/ui/alert-dialog.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["alert-dialog"]
+      }
+    },
+    {
+      "path": "components/ui/alert.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["alert"]
+      }
+    },
+    {
+      "path": "components/ui/aspect-ratio.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["aspect-ratio"]
+      }
+    },
+    {
+      "path": "components/ui/attachment.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["attachment"]
+      }
+    },
+    {
+      "path": "components/ui/autocomplete.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["autocomplete"]
+      }
+    },
+    {
+      "path": "components/ui/avatar.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["avatar"]
+      }
+    },
+    {
+      "path": "components/ui/badge.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["badge"]
+      }
+    },
+    {
+      "path": "components/ui/breadcrumb.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["breadcrumb"]
+      }
+    },
+    {
+      "path": "components/ui/bubble.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["bubble"]
+      }
+    },
+    {
+      "path": "components/ui/button-group.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["button-group"]
+      }
+    },
+    {
+      "path": "components/ui/button.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["button", "button-sizes"]
+      }
+    },
+    {
+      "path": "components/ui/calendar.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["calendar"]
+      }
+    },
+    {
+      "path": "components/ui/card.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["card"]
+      }
+    },
+    {
+      "path": "components/ui/carousel.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["carousel"]
+      }
+    },
+    {
+      "path": "components/ui/chart.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["chart"]
+      }
+    },
+    {
+      "path": "components/ui/checkbox-group.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["checkbox-group"]
+      }
+    },
+    {
+      "path": "components/ui/checkbox.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["checkbox"]
+      }
+    },
+    {
+      "path": "components/ui/collapsible.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["collapsible"]
+      }
+    },
+    {
+      "path": "components/ui/combobox.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["combobox"]
+      }
+    },
+    {
+      "path": "components/ui/command.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["command"]
+      }
+    },
+    {
+      "path": "components/ui/context-menu.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["context-menu"]
+      }
+    },
+    {
+      "path": "components/ui/dialog.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["dialog"]
+      }
+    },
+    {
+      "path": "components/ui/direction.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["direction"]
+      }
+    },
+    {
+      "path": "components/ui/dotm-square-1.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["dotm-square-1"]
+      }
+    },
+    {
+      "path": "components/ui/dotm-square-11.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["dotm-square-11"]
+      }
+    },
+    {
+      "path": "components/ui/drawer.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["drawer"]
+      }
+    },
+    {
+      "path": "components/ui/dropdown-menu.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["dropdown-menu"]
+      }
+    },
+    {
+      "path": "components/ui/empty.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["empty"]
+      }
+    },
+    {
+      "path": "components/ui/field.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["field"]
+      }
+    },
+    {
+      "path": "components/ui/fieldset.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["fieldset"]
+      }
+    },
+    {
+      "path": "components/ui/form.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["form"]
+      }
+    },
+    {
+      "path": "components/ui/frame.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["frame"]
+      }
+    },
+    {
+      "path": "components/ui/group.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["group"]
+      }
+    },
+    {
+      "path": "components/ui/hover-card.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["hover-card"]
+      }
+    },
+    {
+      "path": "components/ui/input-group.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["input-group"]
+      }
+    },
+    {
+      "path": "components/ui/input-otp.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["input-otp"]
+      }
+    },
+    {
+      "path": "components/ui/input.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["input"]
+      }
+    },
+    {
+      "path": "components/ui/item.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["item"]
+      }
+    },
+    {
+      "path": "components/ui/kbd.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["kbd"]
+      }
+    },
+    {
+      "path": "components/ui/label.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["label"]
+      }
+    },
+    {
+      "path": "components/ui/marker.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["marker"]
+      }
+    },
+    {
+      "path": "components/ui/menu.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["menu"]
+      }
+    },
+    {
+      "path": "components/ui/menubar.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["menubar"]
+      }
+    },
+    {
+      "path": "components/ui/message-scroller.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["message-scroller"]
+      }
+    },
+    {
+      "path": "components/ui/message.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["message"]
+      }
+    },
+    {
+      "path": "components/ui/meter.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["meter"]
+      }
+    },
+    {
+      "path": "components/ui/native-select.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["native-select"]
+      }
+    },
+    {
+      "path": "components/ui/navigation-menu.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["navigation-menu"]
+      }
+    },
+    {
+      "path": "components/ui/number-field.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["number-field"]
+      }
+    },
+    {
+      "path": "components/ui/otp-field.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["otp-field"]
+      }
+    },
+    {
+      "path": "components/ui/pagination.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["pagination"]
+      }
+    },
+    {
+      "path": "components/ui/popover.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["popover"]
+      }
+    },
+    {
+      "path": "components/ui/preview-card.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["preview-card"]
+      }
+    },
+    {
+      "path": "components/ui/progress.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["progress"]
+      }
+    },
+    {
+      "path": "components/ui/radio-group.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["radio-group"]
+      }
+    },
+    {
+      "path": "components/ui/resizable.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["resizable"]
+      }
+    },
+    {
+      "path": "components/ui/scroll-area.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["scroll-area"]
+      }
+    },
+    {
+      "path": "components/ui/select.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["select"]
+      }
+    },
+    {
+      "path": "components/ui/separator.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["separator"]
+      }
+    },
+    {
+      "path": "components/ui/sheet.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["sheet"]
+      }
+    },
+    {
+      "path": "components/ui/sidebar.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["sidebar"]
+      }
+    },
+    {
+      "path": "components/ui/skeleton.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["skeleton"]
+      }
+    },
+    {
+      "path": "components/ui/slider.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["slider"]
+      }
+    },
+    {
+      "path": "components/ui/spinner.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["spinner"]
+      }
+    },
+    {
+      "path": "components/ui/switch.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["switch"]
+      }
+    },
+    {
+      "path": "components/ui/table.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["table"]
+      }
+    },
+    {
+      "path": "components/ui/tabs.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["tabs"]
+      }
+    },
+    {
+      "path": "components/ui/textarea.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["textarea"]
+      }
+    },
+    {
+      "path": "components/ui/toast.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["toast"]
+      }
+    },
+    {
+      "path": "components/ui/toggle-group.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["toggle-group"]
+      }
+    },
+    {
+      "path": "components/ui/toggle.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["toggle"]
+      }
+    },
+    {
+      "path": "components/ui/toolbar.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["toolbar"]
+      }
+    },
+    {
+      "path": "components/ui/tooltip.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["tooltip"]
+      }
+    },
+    {
+      "path": "components/studio/activity-detail.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-activity-detail"]
+      }
+    },
+    {
+      "path": "components/studio/activity-icon.tsx",
+      "representation": {
+        "type": "nested",
+        "specimens": [
+          "studio-activity-done",
+          "studio-activity-running",
+          "studio-activity-failed"
+        ],
+        "note": "Activity line icon inside Thinking specimens."
+      }
+    },
+    {
+      "path": "components/studio/activity-line.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": [
+          "studio-activity-done",
+          "studio-activity-running",
+          "studio-activity-failed"
+        ]
+      }
+    },
+    {
+      "path": "components/studio/activity-run.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-activity-run"]
+      }
+    },
+    {
+      "path": "components/studio/activity-target.tsx",
+      "representation": {
+        "type": "nested",
+        "specimens": [
+          "studio-activity-done",
+          "studio-activity-running",
+          "studio-activity-failed"
+        ],
+        "note": "Activity target inside Thinking specimens."
+      }
+    },
+    {
+      "path": "components/studio/app-shell.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": [
+          "screen-ready",
+          "screen-thinking",
+          "screen-permission",
+          "screen-new"
+        ]
+      }
+    },
+    {
+      "path": "components/studio/asset-grid.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-asset-grid"]
+      }
+    },
+    {
+      "path": "components/studio/asset-offer-card.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-asset-offer-card"]
+      }
+    },
+    {
+      "path": "components/studio/asset-row.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-asset-row"]
+      }
+    },
+    {
+      "path": "components/studio/asset-source-card.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-asset-source-card"]
+      }
+    },
+    {
+      "path": "components/studio/asset-type-icon.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-asset-type-icon"]
+      }
+    },
+    {
+      "path": "components/studio/assets-pane.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-assets-pane"]
+      }
+    },
+    {
+      "path": "components/studio/assets-scope.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-assets-scope"]
+      }
+    },
+    {
+      "path": "components/studio/audio-transport.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-audio-transport"]
+      }
+    },
+    {
+      "path": "components/studio/canvas-frame-label.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-canvas-frame-label"]
+      }
+    },
+    {
+      "path": "components/studio/canvas-preview.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": [
+          "studio-canvas-toolbar",
+          "studio-video-layers",
+          "screen-inspector"
+        ]
+      }
+    },
+    {
+      "path": "components/studio/canvas-rulers.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-canvas-rulers"]
+      }
+    },
+    {
+      "path": "components/studio/chat-pane.tsx",
+      "representation": {
+        "type": "assembled",
+        "specimens": [
+          "studio-permission-card",
+          "studio-permission-gathered",
+          "studio-transcript",
+          "studio-chat-result",
+          "studio-activity-detail",
+          "studio-design-review",
+          "studio-composer-empty",
+          "studio-composer-filled",
+          "studio-composer-attached",
+          "studio-composer-running",
+          "studio-composer-waiting",
+          "studio-composer-add",
+          "studio-model-menu",
+          "studio-mention-popup",
+          "studio-context-meter",
+          "screen-ready",
+          "screen-thinking",
+          "screen-permission",
+          "screen-new",
+          "screen-inspector",
+          "screen-settings",
+          "screen-documents",
+          "screen-export"
+        ],
+        "note": "Represented by transcript, Composer and assembled screens."
+      }
+    },
+    {
+      "path": "components/studio/chat-result.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-chat-result"]
+      }
+    },
+    {
+      "path": "components/studio/command-palette.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-command-palette"]
+      }
+    },
+    {
+      "path": "components/studio/components-pane.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-components-pane"]
+      }
+    },
+    {
+      "path": "components/studio/composer.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": [
+          "studio-composer-empty",
+          "studio-composer-filled",
+          "studio-composer-attached",
+          "studio-composer-running",
+          "studio-composer-waiting",
+          "studio-composer-add"
+        ]
+      }
+    },
+    {
+      "path": "components/studio/context-menu-guard.tsx",
+      "representation": {
+        "type": "nonvisual",
+        "specimens": [],
+        "note": "Event guard; no independent visual surface."
+      }
+    },
+    {
+      "path": "components/studio/context-meter.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-context-meter"]
+      }
+    },
+    {
+      "path": "components/studio/crash-boundary.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-crash-boundary"]
+      }
+    },
+    {
+      "path": "components/studio/delete-action.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-delete-action"]
+      }
+    },
+    {
+      "path": "components/studio/design-drop-zone.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-design-drop-zone"]
+      }
+    },
+    {
+      "path": "components/studio/design-import-review.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-design-import-review"]
+      }
+    },
+    {
+      "path": "components/studio/design-review.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-design-review"]
+      }
+    },
+    {
+      "path": "components/studio/dialkit-surface.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-dialkit-surface"]
+      }
+    },
+    {
+      "path": "components/studio/doc-tabs.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-doc-tabs"]
+      }
+    },
+    {
+      "path": "components/studio/dock.tsx",
+      "representation": {
+        "type": "nested",
+        "specimens": ["studio-task-dock", "studio-queue-dock"],
+        "note": "Shared dock anatomy represented in task and queue docks."
+      }
+    },
+    {
+      "path": "components/studio/docs-view.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-docs-view", "screen-documents"]
+      }
+    },
+    {
+      "path": "components/studio/environment-checklist.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-environment-checklist"]
+      }
+    },
+    {
+      "path": "components/studio/export-button.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-export-button"]
+      }
+    },
+    {
+      "path": "components/studio/export-dialog.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-export-dialog", "screen-export"]
+      }
+    },
+    {
+      "path": "components/studio/failure-text.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-failure-text"]
+      }
+    },
+    {
+      "path": "components/studio/file-icon.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-file-icon"]
+      }
+    },
+    {
+      "path": "components/studio/format-picker.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-format-picker"]
+      }
+    },
+    {
+      "path": "components/studio/hint-tooltip.tsx",
+      "representation": {
+        "type": "nested",
+        "specimens": ["studio-preview-controls", "tooltip"],
+        "note": "Closed triggers and generic tooltip primitive; hover timing is not simulated."
+      }
+    },
+    {
+      "path": "components/studio/inspect-overlay.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-inspect-overlay"]
+      }
+    },
+    {
+      "path": "components/studio/integrations-section.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": [
+          "studio-integrations-section",
+          "studio-integration-connect"
+        ]
+      }
+    },
+    {
+      "path": "components/studio/logo-mark.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-logo-mark"]
+      }
+    },
+    {
+      "path": "components/studio/managed-fields.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-managed-fields"]
+      }
+    },
+    {
+      "path": "components/studio/managed-instruction.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-managed-instruction"]
+      }
+    },
+    {
+      "path": "components/studio/managed-props-pane.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-managed-props-pane"]
+      }
+    },
+    {
+      "path": "components/studio/markdown.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-markdown"]
+      }
+    },
+    {
+      "path": "components/studio/media-row.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-media-row"]
+      }
+    },
+    {
+      "path": "components/studio/mention-popup.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-mention-popup"]
+      }
+    },
+    {
+      "path": "components/studio/message-text.tsx",
+      "representation": {
+        "type": "nested",
+        "specimens": [
+          "studio-composer-empty",
+          "studio-composer-filled",
+          "studio-composer-attached",
+          "studio-composer-running",
+          "studio-composer-waiting",
+          "studio-composer-add"
+        ],
+        "note": "Composer text and mention content."
+      }
+    },
+    {
+      "path": "components/studio/model-menu.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-model-menu"]
+      }
+    },
+    {
+      "path": "components/studio/new-project-wizard.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-new-project-wizard"]
+      }
+    },
+    {
+      "path": "components/studio/new-video-wizard.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-new-video-wizard"]
+      }
+    },
+    {
+      "path": "components/studio/notice-card.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-notice-card"]
+      }
+    },
+    {
+      "path": "components/studio/onboarding-dialog.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-onboarding-dialog"]
+      }
+    },
+    {
+      "path": "components/studio/pane-screen.tsx",
+      "representation": {
+        "type": "nested",
+        "specimens": ["studio-projects-pane"],
+        "note": "Pane wrapper included in ProjectsPane rendering."
+      }
+    },
+    {
+      "path": "components/studio/pane.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-pane"]
+      }
+    },
+    {
+      "path": "components/studio/permission-card.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-permission-card", "studio-permission-gathered"]
+      }
+    },
+    {
+      "path": "components/studio/preview-controls.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-preview-controls"]
+      }
+    },
+    {
+      "path": "components/studio/preview-pane.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-export-status"]
+      }
+    },
+    {
+      "path": "components/studio/project-brand-apply.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-project-brand-apply"]
+      }
+    },
+    {
+      "path": "components/studio/project-brand-color.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-project-brand-color"]
+      }
+    },
+    {
+      "path": "components/studio/project-brand-editor.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-project-brand-editor"]
+      }
+    },
+    {
+      "path": "components/studio/project-design-import.tsx",
+      "representation": {
+        "type": "assembled",
+        "specimens": ["studio-design-drop-zone", "studio-design-import-review"],
+        "note": "Represented by drop zone and review states."
+      }
+    },
+    {
+      "path": "components/studio/project-dialogs.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-project-dialogs"]
+      }
+    },
+    {
+      "path": "components/studio/project-settings-group.tsx",
+      "representation": {
+        "type": "assembled",
+        "specimens": [
+          "studio-project-settings-section",
+          "studio-project-brand-editor",
+          "studio-project-brand-color",
+          "studio-project-brand-apply",
+          "studio-design-drop-zone",
+          "studio-design-import-review"
+        ],
+        "note": "Group anatomy represented in brand/settings reference compositions."
+      }
+    },
+    {
+      "path": "components/studio/project-settings-section.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-project-settings-section"]
+      }
+    },
+    {
+      "path": "components/studio/projects-pane.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-projects-pane"]
+      }
+    },
+    {
+      "path": "components/studio/prop-group-heading.tsx",
+      "representation": {
+        "type": "nested",
+        "specimens": [
+          "studio-props-pane",
+          "studio-managed-props-pane",
+          "studio-tuning-controls",
+          "studio-managed-fields",
+          "studio-property-disclosure",
+          "studio-managed-instruction",
+          "studio-dialkit-surface"
+        ],
+        "note": "Group heading inside rendered inspector panels."
+      }
+    },
+    {
+      "path": "components/studio/property-disclosure.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-property-disclosure"]
+      }
+    },
+    {
+      "path": "components/studio/props-pane.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-props-pane"]
+      }
+    },
+    {
+      "path": "components/studio/provider-icon.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-provider-icon"]
+      }
+    },
+    {
+      "path": "components/studio/provider-steps.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-provider-steps"]
+      }
+    },
+    {
+      "path": "components/studio/queue-dock.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-queue-dock"]
+      }
+    },
+    {
+      "path": "components/studio/quit-guard.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-quit-guard"]
+      }
+    },
+    {
+      "path": "components/studio/reasoning-steps.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-reasoning-steps"]
+      }
+    },
+    {
+      "path": "components/studio/scrim.tsx",
+      "representation": {
+        "type": "assembled",
+        "specimens": [
+          "screen-export",
+          "studio-startup",
+          "studio-format-picker",
+          "studio-new-video-wizard",
+          "studio-new-project-wizard",
+          "studio-splash",
+          "studio-onboarding-dialog",
+          "studio-template-list"
+        ],
+        "note": "Overlay treatment represented in modal/onboarding compositions."
+      }
+    },
+    {
+      "path": "components/studio/selection-row.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-selection-row"]
+      }
+    },
+    {
+      "path": "components/studio/session-item.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-session-item"]
+      }
+    },
+    {
+      "path": "components/studio/settings-group.tsx",
+      "representation": {
+        "type": "nested",
+        "specimens": [
+          "studio-settings-appearance",
+          "studio-settings-behavior",
+          "studio-settings-notifications",
+          "studio-settings-hotkeys",
+          "studio-settings-accounts",
+          "studio-integrations-section",
+          "studio-integration-connect",
+          "studio-settings-updates",
+          "studio-settings-feedback",
+          "studio-provider-steps"
+        ],
+        "note": "Grouping rendered through settings sections."
+      }
+    },
+    {
+      "path": "components/studio/settings-page.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": [
+          "studio-settings-appearance",
+          "studio-settings-behavior",
+          "studio-settings-notifications",
+          "studio-settings-hotkeys",
+          "studio-settings-accounts",
+          "studio-settings-updates",
+          "studio-settings-feedback",
+          "screen-settings"
+        ]
+      }
+    },
+    {
+      "path": "components/studio/shader-field.tsx",
+      "representation": {
+        "type": "raster-reference",
+        "specimens": [],
+        "paperNodeIds": ["BTQ-0", "BUA-0", "BTV-0", "BUF-0", "BU0-0", "BUK-0"],
+        "note": "Frozen frames rendered from the installed NeuroNoise shader using source settings."
+      }
+    },
+    {
+      "path": "components/studio/sidecar-status.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-sidecar-status"]
+      }
+    },
+    {
+      "path": "components/studio/sidecar-stream-test.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-sidecar-stream-test"]
+      }
+    },
+    {
+      "path": "components/studio/sound-asset.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-sound-asset"]
+      }
+    },
+    {
+      "path": "components/studio/sound-prompt.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-sound-prompt"]
+      }
+    },
+    {
+      "path": "components/studio/sound-result-card.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-sound-result-card"]
+      }
+    },
+    {
+      "path": "components/studio/splash.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-splash"]
+      }
+    },
+    {
+      "path": "components/studio/startup-backdrop.tsx",
+      "representation": {
+        "type": "raster-reference",
+        "specimens": [],
+        "paperNodeIds": ["BU5-0", "BUP-0"],
+        "note": "Frozen transparent startup shader frames."
+      }
+    },
+    {
+      "path": "components/studio/startup.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-startup"]
+      }
+    },
+    {
+      "path": "components/studio/stock-pane.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-stock-pane"]
+      }
+    },
+    {
+      "path": "components/studio/studio-provider.tsx",
+      "representation": {
+        "type": "nonvisual",
+        "specimens": [],
+        "note": "State/context provider; fixture state was used for source renders."
+      }
+    },
+    {
+      "path": "components/studio/task-checklist.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-task-checklist"]
+      }
+    },
+    {
+      "path": "components/studio/task-dock.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-task-dock"]
+      }
+    },
+    {
+      "path": "components/studio/task-status-icon.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-task-status-icon"]
+      }
+    },
+    {
+      "path": "components/studio/template-list.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-template-list"]
+      }
+    },
+    {
+      "path": "components/studio/thinking.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-thinking", "studio-thinking-strip"]
+      }
+    },
+    {
+      "path": "components/studio/titlebar.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-titlebar"]
+      }
+    },
+    {
+      "path": "components/studio/transcript.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-transcript"]
+      }
+    },
+    {
+      "path": "components/studio/tuning-controls.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-tuning-controls"]
+      }
+    },
+    {
+      "path": "components/studio/update-status.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-update-status"]
+      }
+    },
+    {
+      "path": "components/studio/video-group.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-video-group"]
+      }
+    },
+    {
+      "path": "components/studio/video-menu.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-video-menu"]
+      }
+    },
+    {
+      "path": "components/studio/video-thumbnail.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-video-thumbnail"]
+      }
+    },
+    {
+      "path": "components/studio/write-failure-card.tsx",
+      "representation": {
+        "type": "primary",
+        "specimens": ["studio-write-failure-card"]
+      }
+    }
+  ],
+  "shaderNodes": {
+    "idle:light": "BTQ-0",
+    "waiting:light": "BTV-0",
+    "failed:light": "BU0-0",
+    "startup:light": "BU5-0",
+    "idle:dark": "BUA-0",
+    "waiting:dark": "BUF-0",
+    "failed:dark": "BUK-0",
+    "startup:dark": "BUP-0"
+  },
+  "paperOnlyRepairs": [
+    "Transparent and OKLab SVG paint converted to compatible RGB/opacity.",
+    "Textarea labels and display:contents flattened for Paper.",
+    "Resizable demo height and chart label positions adjusted after static rendering.",
+    "Shimmer text represented by a static muted fill.",
+    "Native range input reconstructed as track/thumb layers.",
+    "Single permission heading spacing corrected.",
+    "New-chat Composer placeholder and disabled send state corrected.",
+    "Brand color swatch fixed to match its displayed hex value.",
+    "Duplicate plain-text mirror layers hidden in imported Composer specimens so text can be edited independently."
+  ]
+}

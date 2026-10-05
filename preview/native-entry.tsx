@@ -2,7 +2,7 @@ import type { PlayerRef } from "@remotion/player";
 import { Component } from "react";
 import { createRoot } from "react-dom/client";
 import { Internals } from "remotion";
-import { configureBridge, type PreviewCommand } from "./bridge";
+import { configureBridge } from "./bridge";
 import { releaseFrameClips } from "./frame-clips";
 import { revealAll } from "./hidden";
 import { restoreSelection, selectedAnchor } from "./inspect";
@@ -16,6 +16,7 @@ import { mountStyles } from "./native-style";
 import type { PlaybackPosition } from "./playback-position";
 import { configurePlayback, Preview } from "./player-runtime";
 import { watchPresence } from "./presence";
+import type { EntrySignal, PreviewCommand, PreviewMessage } from "./protocol";
 import { configureSurface, type SurfaceEnvironment } from "./surface";
 
 const PAINT_GRACE_MS = 3000;
@@ -27,7 +28,7 @@ interface RuntimePosition extends PlaybackPosition {
 }
 
 interface NativeEnvironment extends SurfaceEnvironment {
-  emit: (message: Record<string, unknown>) => void;
+  emit: (message: PreviewMessage | EntrySignal) => void;
   position: RuntimePosition | null;
   subscribe: (receive: (command: PreviewCommand) => void) => () => void;
 }

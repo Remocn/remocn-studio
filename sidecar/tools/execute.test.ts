@@ -1,7 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import type { Asset } from "@/shared/library";
-import type { PipelineStage } from "@/shared/pipeline";
-import { type DesignCalls, executeTool, type TurnTools } from "./execute";
+import { docsFolderOf, type PipelineStage } from "@/shared/pipeline";
+import { stageBrief } from "../agent/instructions";
+import {
+  type DesignCalls,
+  executeTool,
+  type PipelineCalls,
+  type TurnTools,
+} from "./execute";
 
 const CWD = "/videos/promo";
 
@@ -44,6 +50,7 @@ function tools(shape: Partial<TurnTools> = {}): TurnTools {
       save: () => Promise.reject(new Error("no moodboard in this test")),
     },
     pipeline: {
+      brief: () => null,
       requestSource: () =>
         Promise.reject(new Error("no source ask in this test")),
       setStage: () => Promise.reject(new Error("no pipeline in this test")),
@@ -183,6 +190,8 @@ describe("executeTool", () => {
       {},
       tools({
         pipeline: {
+          brief: (moved) =>
+            stageBrief(moved, { planningTool: "TaskCreate", video: "promo" }),
           requestSource: () => Promise.reject(new Error("unused")),
           setStage: () => Promise.reject(new Error("unused")),
           start: () => Promise.resolve(stages),
@@ -193,6 +202,63 @@ describe("executeTool", () => {
     expect(answer.isError).toBe(false);
     expect(answer.text).toContain(JSON.stringify(stages));
     expect(answer.text).toContain("**Analysis**");
+    expect(answer.text).toContain("src/videos/promo/docs/");
+  });
+
+  it("answers a stage move with the brief the turn's port builds for the stages now", async () => {
+    const moved: PipelineStage[] = [
+      { stage: "analysis", status: "done" },
+      { stage: "brand", status: "active" },
+    ];
+    const asked: (readonly PipelineStage[])[] = [];
+    const pipeline: PipelineCalls = {
+      brief: (stages) => {
+        asked.push(stages);
+        return stageBrief(stages, {
+          planningTool: "update_plan",
+          video: "opening-title",
+        });
+      },
+      requestSource: () => Promise.reject(new Error("unused")),
+      setStage: () => Promise.resolve(moved),
+      start: () => Promise.reject(new Error("unused")),
+    };
+
+    const answer = await executeTool(
+      "remocn-pipeline",
+      "set_pipeline_stage",
+      { stage: "brand", status: "active" },
+      tools({ pipeline })
+    );
+
+    expect(answer.isError).toBe(false);
+    expect(asked).toEqual([moved]);
+    expect(answer.text).toStartWith(`${JSON.stringify(moved)}\n\n`);
+    expect(answer.text).toContain("**Brand**");
+    expect(answer.text).toContain("src/videos/opening-title/docs/");
+    expect(answer.text).not.toContain(docsFolderOf(null));
+    expect(answer.text).toContain("update_plan");
+    expect(answer.text).not.toContain("TaskCreate");
+  });
+
+  it("answers with the stages alone when the port has no brief for them", async () => {
+    const finished: PipelineStage[] = [{ stage: "review", status: "done" }];
+
+    const answer = await executeTool(
+      "remocn-pipeline",
+      "set_pipeline_stage",
+      { stage: "analysis", status: "done" },
+      tools({
+        pipeline: {
+          brief: () => null,
+          requestSource: () => Promise.reject(new Error("unused")),
+          setStage: () => Promise.resolve(finished),
+          start: () => Promise.reject(new Error("unused")),
+        },
+      })
+    );
+
+    expect(answer.text).toBe(JSON.stringify(finished));
   });
 
   it("returns the person's source asset decision as structured JSON", async () => {
@@ -206,6 +272,7 @@ describe("executeTool", () => {
       },
       tools({
         pipeline: {
+          brief: () => null,
           requestSource: () =>
             Promise.resolve({
               kind: "uploaded",
@@ -600,6 +667,7 @@ describe("executeTool", () => {
       { stage: "analysis", status: "done" },
       tools({
         pipeline: {
+          brief: () => null,
           requestSource: () => Promise.reject(new Error("unused")),
           setStage: () =>
             Promise.reject(new Error("session s-1 has no pipeline")),

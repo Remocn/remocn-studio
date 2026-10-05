@@ -9,12 +9,8 @@ import {
   type ManagedObjects,
   useManagedObjects,
 } from "@/hooks/use-managed-objects";
-import { type PreviewControl, useOnPreview } from "@/hooks/use-preview";
+import { type PreviewControl, usePreviewMessage } from "@/hooks/use-preview";
 import { type Snapshot, useSnapshot } from "@/hooks/use-snapshot";
-import {
-  PREVIEW_COMMAND_SOURCE,
-  type PreviewMessage,
-} from "@/lib/studio/preview";
 
 type Tool = "snapshot" | null;
 
@@ -80,7 +76,7 @@ export function useTools({
     projectId: writeProjectId,
   });
   const openObjects = managed.open;
-  const { focus, send } = preview;
+  const { focus, send } = preview.channel;
 
   const toggleInspect = useCallback(() => {
     if (unavailable !== null) {
@@ -131,22 +127,14 @@ export function useTools({
       setTool(null);
       return;
     }
-    send({ source: PREVIEW_COMMAND_SOURCE, type: "inspect.clear" });
+    send({ type: "inspect.clear" });
     cancelComment();
     closeObjects();
   }, [cancelComment, closeObjects, send, tool]);
 
-  const onMessage = useCallback(
-    (message: PreviewMessage) => {
-      if (message.type === "rebuilt") {
-        setTool(null);
-      } else if (message.type === "inspect.clear") {
-        dismiss();
-      }
-    },
-    [dismiss]
-  );
-  useOnPreview(preview, onMessage);
+  const onRebuilt = useCallback(() => setTool(null), []);
+  usePreviewMessage(preview, "rebuilt", onRebuilt);
+  usePreviewMessage(preview, "inspect.clear", dismiss);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

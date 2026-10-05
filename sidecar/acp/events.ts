@@ -118,7 +118,7 @@ function chunkText(content: unknown): string {
   return typeof block?.text === "string" ? block.text : "";
 }
 
-function toolText(content: unknown): string {
+export function toolText(content: unknown): string {
   if (!Array.isArray(content)) {
     return "";
   }

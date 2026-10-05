@@ -9,7 +9,6 @@ import type {
   PipelineStageId,
   PipelineStatus,
 } from "@/shared/pipeline";
-import { pipelineBrief } from "../claude/conventions";
 import { type ConnectionCalls, listConnections } from "../integrations/tools";
 import type { MoodboardDraft, MoodboardRecord } from "../library/moodboard";
 import { moodboardBrief } from "../library/moodboard";
@@ -65,6 +64,7 @@ export interface MoodboardCalls {
 }
 
 export interface PipelineCalls {
+  readonly brief: (stages: readonly PipelineStage[]) => string | null;
   readonly requestSource: (input: {
     readonly attempt: string;
     readonly name: string;
@@ -212,7 +212,7 @@ function run(
     return saveMoodboard(args, tools);
   }
   if (server === PIPELINE_SERVER && tool === START_PIPELINE) {
-    return staged(tools.pipeline.start());
+    return staged(tools.pipeline, tools.pipeline.start());
   }
   if (server === PIPELINE_SERVER && tool === REQUEST_SOURCE_ASSET) {
     return requestSource(args, tools.pipeline);
@@ -224,6 +224,7 @@ function run(
     return finishReview(args, tools);
   }
   return staged(
+    tools.pipeline,
     tools.pipeline.setStage(
       args.stage as PipelineStageId,
       args.status as PipelineStatus
@@ -251,7 +252,7 @@ async function finishReview(
   if (problem) {
     throw new Error(problem);
   }
-  return staged(tools.pipeline.setStage("review", "done"));
+  return staged(tools.pipeline, tools.pipeline.setStage("review", "done"));
 }
 
 async function requestSource(
@@ -516,10 +517,11 @@ async function saveMoodboard(
 }
 
 async function staged(
+  pipeline: PipelineCalls,
   moving: Promise<readonly PipelineStage[]>
 ): Promise<string> {
   const stages = await moving;
-  const brief = pipelineBrief(stages);
+  const brief = pipeline.brief(stages);
 
   return `${JSON.stringify(stages)}${brief === null ? "" : `\n\n${brief}`}`;
 }
