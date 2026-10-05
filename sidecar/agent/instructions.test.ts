@@ -290,6 +290,36 @@ describe("the pipeline brief's document paths", () => {
   });
 });
 
+describe("a pointed edit mid-pipeline", () => {
+  it("tells every stage that one specific change ends the turn without moving the stage", () => {
+    for (const stage of PIPELINE_STAGE_IDS) {
+      const brief = (
+        pipelineBrief([{ stage, status: "active" }], "intro") ?? ""
+      ).replaceAll("\n", " ");
+
+      expect(brief).toContain("`[Element #N]`");
+      expect(brief).toContain(
+        "is not stage work: make that change, check the range it affects, and end the turn, leaving the stage where it is."
+      );
+    }
+  });
+
+  it("keeps the push to the end of the pipeline for stage work only", () => {
+    const brief = (pipelineBrief(ANALYSIS, "intro") ?? "").replaceAll(
+      "\n",
+      " "
+    );
+    const pointed = brief.indexOf("is not stage work");
+    const onward = brief.indexOf("When the turn is stage work, do not wait");
+
+    expect(pointed).toBeGreaterThan(-1);
+    expect(onward).toBeGreaterThan(pointed);
+    expect(brief).toContain(
+      "keep going in the same turn until the whole pipeline is done"
+    );
+  });
+});
+
 describe("the choreography stage", () => {
   const brief = pipelineBrief([{ stage: "choreography", status: "active" }]);
 
@@ -450,9 +480,9 @@ describe("the words, as they were before the move", () => {
       video: "intro",
     });
 
-    expect(text).toHaveLength(2176);
+    expect(text).toHaveLength(2432);
     expect(sha256(text ?? "")).toBe(
-      "d7a99ee9b641c1a4aab9881b6310e66cae2b8a9a6f09cf93dabe00740643ebe8"
+      "49c4d740397bd417e4d944057e1295d67c7de7148d3541832932df3029ada3eb"
     );
   });
 
@@ -462,24 +492,35 @@ describe("the words, as they were before the move", () => {
       video: "intro",
     });
 
-    expect(text).toHaveLength(4417);
+    expect(text).toHaveLength(4673);
     expect(sha256(text ?? "")).toBe(
-      "4d3efb102f4e51b1c7515681236e13b4ac8afe15f1e78b8c5657644e7eece82b"
+      "caef524e048e00bf5c3ff1f97fc379b587714f28ec2a2d9cd5722a4789fd12b7"
     );
   });
 
-  it("hands Claude the same system text it was given before", () => {
-    const { system } = instructionsFor({
+  it("keeps the stage brief out of Claude's system text, so a stage moving leaves it alone", () => {
+    const staged = instructionsFor({
       briefs: NO_BRIEFS,
       hasSkills: true,
       provider: PROVIDER_INFO.claude,
       stages: ANALYSIS,
       video: "intro",
     });
+    const unstaged = instructionsFor({
+      briefs: NO_BRIEFS,
+      hasSkills: true,
+      provider: PROVIDER_INFO.claude,
+      stages: [],
+      video: "intro",
+    });
 
-    expect(system).toHaveLength(22_761);
-    expect(sha256(system)).toBe(
-      "8550b8fa7dadf4a39a97b0a26edb5c1a4438782c2c32bbbb5de70f9f9c5202d7"
+    expect(staged.system).toBe(conventionsFor(true, "intro"));
+    expect(staged.system).toBe(unstaged.system);
+    expect(staged.trailer).toBe(
+      stageBrief(ANALYSIS, {
+        planningTool: PROVIDER_INFO.claude.planningTool,
+        video: "intro",
+      })
     );
   });
 });
@@ -495,7 +536,7 @@ const PLANNED = {
 describe("instructionsFor, across the providers", () => {
   it("words the planning step for the plan tool each runtime has", () => {
     for (const provider of AGENT_PROVIDERS) {
-      const { system } = instructionsFor({
+      const { trailer } = instructionsFor({
         briefs: NO_BRIEFS,
         hasSkills: true,
         provider: PROVIDER_INFO[provider],
@@ -503,14 +544,16 @@ describe("instructionsFor, across the providers", () => {
         video: "intro",
       });
 
-      expect(system.replaceAll("\n", " ")).toContain(PLANNED[provider]);
+      expect((trailer ?? "").replaceAll("\n", " ")).toContain(
+        PLANNED[provider]
+      );
     }
   });
 
   it("never names TaskCreate to a runtime that does not have it", () => {
     for (const provider of AGENT_PROVIDERS.filter((id) => id !== "claude")) {
       for (const stage of PIPELINE_STAGE_IDS) {
-        const { system } = instructionsFor({
+        const { system, trailer } = instructionsFor({
           briefs: NO_BRIEFS,
           hasSkills: true,
           provider: PROVIDER_INFO[provider],
@@ -519,6 +562,7 @@ describe("instructionsFor, across the providers", () => {
         });
 
         expect(system).not.toContain("TaskCreate");
+        expect(trailer).not.toContain("TaskCreate");
       }
     }
   });
@@ -539,7 +583,7 @@ describe("instructionsFor, across the providers", () => {
   it("names the video's own docs folder in every stage, for every provider", () => {
     for (const provider of AGENT_PROVIDERS) {
       for (const stage of PIPELINE_STAGE_IDS) {
-        const { system } = instructionsFor({
+        const { trailer } = instructionsFor({
           briefs: NO_BRIEFS,
           hasSkills: false,
           provider: PROVIDER_INFO[provider],
@@ -547,7 +591,7 @@ describe("instructionsFor, across the providers", () => {
           video: "opening-title",
         });
 
-        expect(system).toContain("src/videos/opening-title/docs/");
+        expect(trailer).toContain("src/videos/opening-title/docs/");
       }
     }
   });
@@ -584,6 +628,30 @@ describe("instructionsFor, across the providers", () => {
     expect(both.media).toBe("MEDIA");
     expect(brand.trailer).toBe("BRAND");
     expect(brand.media).toBeNull();
+  });
+
+  it("puts the stage brief last in the trailer, after the assets and the brand", () => {
+    const brief = stageBrief(ANALYSIS, {
+      planningTool: PROVIDER_INFO.codex.planningTool,
+      video: "intro",
+    });
+    const all = instructionsFor({
+      briefs: { assets: "ASSETS", brand: "BRAND", media: null },
+      hasSkills: false,
+      provider: PROVIDER_INFO.codex,
+      stages: ANALYSIS,
+      video: "intro",
+    });
+    const alone = instructionsFor({
+      briefs: NO_BRIEFS,
+      hasSkills: false,
+      provider: PROVIDER_INFO.codex,
+      stages: ANALYSIS,
+      video: "intro",
+    });
+
+    expect(all.trailer).toBe(`ASSETS\n\nBRAND\n\n${brief}`);
+    expect(alone.trailer).toBe(brief);
   });
 
   it("has no trailer when there are neither assets nor a brand", () => {

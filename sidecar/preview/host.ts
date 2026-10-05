@@ -33,7 +33,7 @@ import {
   recovering,
   troubleIn,
 } from "./build-state";
-import { BUNDLE_FLAGS, isHotUpdate, renderOnly } from "./bundling";
+import { BUNDLE_FLAGS, isHotUpdate, renderOnly, watched } from "./bundling";
 import {
   type VideoCheck,
   videoCheckError,
@@ -512,7 +512,8 @@ function watch(
       let compiled = false;
       let stale = true;
 
-      const compiler = webpack(config);
+      const { config: cached, options } = watched(config);
+      const compiler = webpack(cached);
 
       compiler.hooks.invalid.tap(RENDER_COMPILER, () => {
         stale = true;
@@ -522,7 +523,7 @@ function watch(
         Effect.runSync(Ref.update(build, buildStarted));
       });
 
-      const watching = compiler.watch({}, (error, stats) => {
+      const watching = compiler.watch(options, (error, stats) => {
         watching.suspend();
 
         let outcome: BuildOutcome = { ok: true };
