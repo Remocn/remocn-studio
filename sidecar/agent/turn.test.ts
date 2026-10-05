@@ -367,12 +367,14 @@ describe("runTurn", () => {
     expect(brief).not.toBeNull();
     expect(services.instructions(true)).toEqual({
       media: null,
-      system: `${conventionsFor(true, "promo")}\n\n${brief}`,
-      trailer: "BRAND BRIEF",
+      system: conventionsFor(true, "promo"),
+      trailer: `BRAND BRIEF\n\n${brief}`,
     });
-    expect(services.instructions(false).system).toBe(
-      `${conventionsFor(false, "promo")}\n\n${brief}`
-    );
+    expect(services.instructions(false)).toEqual({
+      media: null,
+      system: conventionsFor(false, "promo"),
+      trailer: `BRAND BRIEF\n\n${brief}`,
+    });
     expect(services.cwd).toBe(setup.project.path);
     expect(contexts).toHaveLength(1);
     expect(contexts[0].turnId).toBe(services.turnId);
@@ -420,11 +422,12 @@ describe("runTurn", () => {
 
     await Effect.runPromise(run(params));
 
-    const { system } = turns[0].services.instructions(true);
-    expect(system.replaceAll("\n", " ")).toContain(
+    const { system, trailer } = turns[0].services.instructions(true);
+    expect((trailer ?? "").replaceAll("\n", " ")).toContain(
       "create your task list with fake_planner from what you find:"
     );
-    expect(system).toContain("src/videos/promo/docs/");
+    expect(trailer).toContain("src/videos/promo/docs/");
+    expect(trailer).not.toContain("TaskCreate");
     expect(system).not.toContain("TaskCreate");
 
     const moved = contexts[0].brief(stages) ?? "";
@@ -449,9 +452,9 @@ describe("runTurn", () => {
 
     await Effect.runPromise(run(params));
 
-    const { system } = turns[0].services.instructions(false);
+    const { trailer } = turns[0].services.instructions(false);
     const moved = contexts[0].brief(stages) ?? "";
-    for (const text of [system, moved]) {
+    for (const text of [trailer ?? "", moved]) {
       expect(text).not.toContain("create your task list with");
       expect(text.replaceAll("\n", " ")).toContain(
         "lay out your steps from what you find, in your own planning tool if you have one:"

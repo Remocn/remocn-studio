@@ -10,7 +10,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect } from "effect";
-import type { AgentEvent, SessionMode } from "@/shared/ipc";
+import {
+  type AgentEvent,
+  PLUGIN_DIR_ENV,
+  type SessionMode,
+} from "@/shared/ipc";
 import { makeGate } from "../agent/gate";
 import { makeModeSwitch } from "../agent/mode";
 import type { AcpPeer } from "./connection";
@@ -21,6 +25,7 @@ import { answerPermission, reviewAcp } from "./permission";
 let root = "";
 let project = "";
 let outside = "";
+let bundle = "";
 
 const OPTIONS = [
   { kind: "allow_once", name: "Allow", optionId: "allow" },
@@ -38,9 +43,20 @@ beforeAll(async () => {
   await writeFile(join(project, "src", "Main.tsx"), "");
   await writeFile(outside, "");
   await symlink(outside, join(project, "link.txt"));
+
+  bundle = join(root, "bundle");
+  await mkdir(join(bundle, "skills", "motion-design", "rules"), {
+    recursive: true,
+  });
+  await writeFile(
+    join(bundle, "skills", "motion-design", "rules", "foundations.md"),
+    "# foundations\n"
+  );
+  process.env[PLUGIN_DIR_ENV] = bundle;
 });
 
 afterAll(async () => {
+  delete process.env[PLUGIN_DIR_ENV];
   await rm(root, { force: true, recursive: true });
 });
 
@@ -125,6 +141,68 @@ describe("reviewAcp", () => {
         locations: [{ path: join(project, "..", "elsewhere", "secret.txt") }],
       })
     ).toMatchObject({ reason: "outside" });
+  });
+
+  it("reads and searches the shipped bundle without a card, as Claude does", async () => {
+    const page = join(
+      bundle,
+      "skills",
+      "motion-design",
+      "rules",
+      "foundations.md"
+    );
+
+    expect(await review({ kind: "read", locations: [{ path: page }] })).toEqual(
+      { kind: "allow" }
+    );
+    expect(
+      await review({ kind: "search", locations: [{ path: bundle }] })
+    ).toEqual({ kind: "allow" });
+  });
+
+  it("still asks before anything is written into the shipped bundle", async () => {
+    const page = join(
+      bundle,
+      "skills",
+      "motion-design",
+      "rules",
+      "foundations.md"
+    );
+
+    const verdicts = await Promise.all(
+      ["edit", "delete", "move"].map((kind) =>
+        review({ kind, locations: [{ path: page }] })
+      )
+    );
+
+    for (const verdict of verdicts) {
+      expect(verdict).toMatchObject({ reason: "outside" });
+    }
+  });
+
+  it("still asks about a read outside both the folder and the bundle", async () => {
+    expect(
+      await review({ kind: "read", locations: [{ path: outside }] })
+    ).toMatchObject({ reason: "outside" });
+  });
+
+  it("treats the bundle as any other outside path when the app shipped none", async () => {
+    const page = join(
+      bundle,
+      "skills",
+      "motion-design",
+      "rules",
+      "foundations.md"
+    );
+    delete process.env[PLUGIN_DIR_ENV];
+
+    try {
+      expect(
+        await review({ kind: "read", locations: [{ path: page }] })
+      ).toMatchObject({ reason: "outside" });
+    } finally {
+      process.env[PLUGIN_DIR_ENV] = bundle;
+    }
   });
 
   it("asks about a kind it does not recognise, and a call with no locations", async () => {

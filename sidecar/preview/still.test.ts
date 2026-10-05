@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   rmSync,
@@ -12,6 +13,7 @@ import { Effect, Exit } from "effect";
 import type { StillEvent } from "@/shared/ipc";
 import type { RenderOptions } from "./project";
 import {
+  CAPTURES_DIR,
   type CompositionCache,
   captureStill,
   DELAY_RENDER_TIMEOUT_MS,
@@ -207,8 +209,39 @@ describe("captureStill", () => {
     const first = await Effect.runPromise(capture(state.renderer, target));
     const second = await Effect.runPromise(capture(state.renderer, target));
 
-    expect(readdirSync(target)).toEqual([path.basename(second.path)]);
+    expect(readdirSync(path.join(target, CAPTURES_DIR))).toEqual([
+      path.basename(second.path),
+    ]);
     expect(first.path).not.toBe(second.path);
+  });
+
+  it("leaves the design check's reports and frames where they are", async () => {
+    const target = dir();
+    const state = fake();
+    mkdirSync(path.join(target, "readiness-abc"));
+    writeFileSync(path.join(target, "readiness-abc", "report.json"), "{}");
+    mkdirSync(path.join(target, "design-1234"));
+    writeFileSync(path.join(target, "design-1234", "frame.png"), "png");
+
+    await Effect.runPromise(capture(state.renderer, target));
+
+    expect(existsSync(path.join(target, "readiness-abc", "report.json"))).toBe(
+      true
+    );
+    expect(existsSync(path.join(target, "design-1234", "frame.png"))).toBe(
+      true
+    );
+  });
+
+  it("clears a capture an older build left loose in the stills folder", async () => {
+    const target = dir();
+    const state = fake();
+    writeFileSync(path.join(target, "old-frame-1-0000.png"), "png");
+
+    const taken = await Effect.runPromise(capture(state.renderer, target));
+
+    expect(readdirSync(target).sort()).toEqual([CAPTURES_DIR]);
+    expect(path.dirname(taken.path)).toBe(path.join(target, CAPTURES_DIR));
   });
 
   it("reports a composition the project does not have", async () => {
