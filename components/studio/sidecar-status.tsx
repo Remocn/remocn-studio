@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCwIcon, ScrollTextIcon } from "lucide-react";
+import { RotateCwIcon, ScrollTextIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Popover,

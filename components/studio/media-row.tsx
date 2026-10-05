@@ -1,6 +1,6 @@
 "use client";
 
-import { AudioLinesIcon, LibraryBigIcon, XIcon } from "lucide-react";
+import { AudioLinesIcon, LibraryBigIcon, XIcon } from "@/components/icons";
 import {
   Attachment,
   AttachmentAction,

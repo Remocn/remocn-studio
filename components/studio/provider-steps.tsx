@@ -1,14 +1,14 @@
 "use client";
 
 import { openUrl } from "@tauri-apps/plugin-opener";
+import type { MouseEvent } from "react";
+import { useCallback } from "react";
 import {
   CheckIcon,
   CopyIcon,
   ExternalLinkIcon,
   TerminalIcon,
-} from "lucide-react";
-import type { MouseEvent } from "react";
-import { useCallback } from "react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useCopyCommand } from "@/hooks/use-copy-command";
 import { useTerminal } from "@/hooks/use-terminal";

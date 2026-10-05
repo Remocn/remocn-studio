@@ -5,7 +5,7 @@ import {
   PencilLineIcon,
   PlugZapIcon,
   Trash2Icon,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   AlertDialog,
   AlertDialogClose,

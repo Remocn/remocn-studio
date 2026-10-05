@@ -79,7 +79,8 @@ describe("fitPanes", () => {
   });
 
   it("folds the sidebar first", () => {
-    expect(fitPanes(1436, true)).toEqual({ chat: true, projects: false });
+    expect(fitPanes(1387, true)).toEqual({ chat: true, projects: true });
+    expect(fitPanes(1386, true)).toEqual({ chat: true, projects: false });
   });
 
   it("folds the chat last, leaving the preview", () => {
@@ -89,8 +90,8 @@ describe("fitPanes", () => {
   });
 
   it("keeps the chat whenever the preview is hidden", () => {
-    expect(fitPanes(640, false)).toEqual({ chat: true, projects: false });
-    expect(fitPanes(676, false)).toEqual({ chat: true, projects: true });
+    expect(fitPanes(625, false)).toEqual({ chat: true, projects: false });
+    expect(fitPanes(626, false)).toEqual({ chat: true, projects: true });
   });
 });
 

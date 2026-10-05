@@ -1,15 +1,5 @@
 "use client";
 
-import {
-  ArrowLeftIcon,
-  CheckIcon,
-  DownloadIcon,
-  FolderDownIcon,
-  RotateCcwIcon,
-  SlidersHorizontalIcon,
-  UploadIcon,
-  XIcon,
-} from "lucide-react";
 import Link from "next/link";
 import {
   type ChangeEvent,
@@ -21,6 +11,16 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  DownloadIcon,
+  FolderDownIcon,
+  RotateCcwIcon,
+  SlidersHorizontalIcon,
+  UploadIcon,
+  XIcon,
+} from "@/components/icons";
 import { AppShell } from "@/components/studio/app-shell";
 import { cn } from "@/lib/utils";
 import { LabButton } from "./lab-ui";
@@ -208,7 +208,7 @@ export function PaperUiLab({
       >
         <Link
           aria-label="Back to Studio"
-          className="flex pointer-coarse:size-11 size-10 shrink-0 items-center justify-center rounded-md text-[#a7a7a2] outline-offset-2 hover:bg-white/6 focus-visible:outline-2 focus-visible:outline-[#c7c7c0]"
+          className="flex pointer-coarse:size-11 size-10 shrink-0 items-center justify-center rounded-md text-[#a7a7a2] outline-offset-2 hover:bg-white/6 focus-visible:outline-2 focus-visible:outline-[#c7c7c0] focus-visible:outline-solid"
           href="/"
           title="Back to Studio"
         >
@@ -278,7 +278,7 @@ export function PaperUiLab({
             <div className="flex flex-col gap-2">
               <label htmlFor="paper-font">Font</label>
               <select
-                className="h-10 w-full rounded-md border border-white/12 bg-[#292929] px-3 text-[#e5e5df] outline-offset-2 focus-visible:outline-2 focus-visible:outline-[#c7c7c0]"
+                className="h-10 w-full rounded-md border border-white/12 bg-[#292929] px-3 text-[#e5e5df] outline-offset-2 focus-visible:outline-2 focus-visible:outline-[#c7c7c0] focus-visible:outline-solid"
                 id="paper-font"
                 name="font"
                 onChange={handleFontChange}
@@ -302,7 +302,7 @@ export function PaperUiLab({
                   <button
                     aria-label={accent.label}
                     aria-pressed={parameters.accent === key}
-                    className="flex pointer-coarse:size-11 size-10 cursor-pointer items-center justify-center rounded-md border border-white/12 bg-(--swatch) text-[#181818] outline-offset-2 focus-visible:outline-2 focus-visible:outline-[#c7c7c0]"
+                    className="flex pointer-coarse:size-11 size-10 cursor-pointer items-center justify-center rounded-md border border-white/12 bg-(--swatch) text-[#181818] outline-offset-2 focus-visible:outline-2 focus-visible:outline-[#c7c7c0] focus-visible:outline-solid"
                     data-accent={key}
                     key={key}
                     onClick={handleAccentClick}
@@ -334,7 +334,7 @@ export function PaperUiLab({
                 </div>
                 <input
                   aria-valuetext={`${parameters[control.key]}${control.unit}`}
-                  className="h-7 pointer-coarse:h-11 w-full cursor-pointer accent-[#dbdbd2] focus-visible:outline-2 focus-visible:outline-[#c7c7c0]"
+                  className="h-7 pointer-coarse:h-11 w-full cursor-pointer accent-[#dbdbd2] focus-visible:outline-2 focus-visible:outline-[#c7c7c0] focus-visible:outline-solid"
                   data-control-key={control.key}
                   id={`paper-${control.key}`}
                   max={control.max}

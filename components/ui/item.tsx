@@ -34,7 +34,7 @@ function ItemSeparator({
 }
 
 const itemVariants = cva(
-  "group/item flex w-full flex-wrap items-center rounded-md border text-sm transition-colors duration-100 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 [a]:transition-colors [a]:hover:bg-muted",
+  "group/item flex w-full flex-wrap items-center rounded-xl text-sm transition-colors duration-100 outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2 [a]:transition-colors [a]:hover:bg-accent",
   {
     defaultVariants: {
       size: "default",
@@ -47,9 +47,9 @@ const itemVariants = cva(
         xs: "gap-2 px-2.5 py-2 in-data-[slot=dropdown-menu-content]:p-0",
       },
       variant: {
-        default: "border-transparent",
-        muted: "border-transparent bg-muted/50",
-        outline: "border-border",
+        default: "bg-transparent",
+        muted: "bg-muted/50",
+        outline: "bg-control",
       },
     },
   }

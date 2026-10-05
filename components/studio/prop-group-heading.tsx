@@ -1,6 +1,6 @@
 "use client";
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { useCallback } from "react";
+import { ChevronDownIcon, ChevronRightIcon } from "@/components/icons";
 export function GroupHeading({
   count,
   label,
@@ -25,7 +25,7 @@ export function GroupHeading({
     <h3 className="pb-1.5 font-medium text-foreground text-sm">
       <button
         aria-expanded={isOpen}
-        className="-mx-1 flex min-h-7 pointer-coarse:min-h-10 w-[calc(100%+0.5rem)] items-center gap-1.5 rounded-sm px-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+        className="-mx-1 flex min-h-7 pointer-coarse:min-h-10 w-[calc(100%+0.5rem)] items-center gap-1.5 rounded-sm px-1 text-left outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
         onClick={toggle}
         type="button"
         value={group}

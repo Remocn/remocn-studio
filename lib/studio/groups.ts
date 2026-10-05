@@ -19,6 +19,7 @@ export type RollupStatus = "failed" | "running" | "unread" | "waiting";
 
 export interface SessionRow {
   readonly askedAt: number | null;
+  readonly completed: boolean;
   readonly error: string | null;
   readonly progress: TaskProgress | null;
   readonly session: HistorySession;
@@ -154,6 +155,7 @@ function sameRow(left: SessionRow, right: SessionRow): boolean {
   return (
     left.session === right.session &&
     left.status === right.status &&
+    left.completed === right.completed &&
     left.unread === right.unread &&
     left.error === right.error &&
     left.askedAt === right.askedAt &&
@@ -217,7 +219,7 @@ export function isQuiet(row: SessionRow): boolean {
   return row.status !== "waiting" && row.status !== "running" && !row.unread;
 }
 
-function rowOf(
+export function rowOf(
   session: HistorySession,
   turn: TurnState | undefined
 ): SessionRow {
@@ -233,6 +235,7 @@ function rowOf(
 
   return {
     askedAt,
+    completed: status === "idle" && state.workedMs !== null,
     error: state.error,
     progress: taskProgress(tasks),
     session,

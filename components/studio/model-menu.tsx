@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDownIcon } from "lucide-react";
 import { useCallback } from "react";
+import { ChevronDownIcon } from "@/components/icons";
 import { ProviderIcon } from "@/components/studio/provider-icon";
 import { Button } from "@/components/ui/button";
 import {

@@ -1,6 +1,6 @@
 "use client";
 
-import { LibraryBigIcon } from "lucide-react";
+import { LibraryBigIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import type { AssetOffer } from "@/hooks/use-asset-offer";

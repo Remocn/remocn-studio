@@ -1,6 +1,6 @@
 "use client";
 
-import { FileTextIcon } from "lucide-react";
+import { FileTextIcon } from "@/components/icons";
 import {
   Empty,
   EmptyDescription,

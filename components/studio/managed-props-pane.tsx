@@ -1,8 +1,8 @@
 "use client";
 
 import { SelectControl } from "dialkit";
-import { RotateCcwIcon, XIcon } from "lucide-react";
 import { useCallback, useState } from "react";
+import { RotateCcwIcon, XIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import type { DeletionTarget } from "@/hooks/use-deletion";

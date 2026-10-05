@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckIcon, SearchIcon } from "lucide-react";
 import type { MouseEvent } from "react";
+import { CheckIcon, SearchIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -175,7 +175,7 @@ function StockCard({
         aria-label={
           isSaved ? `${item.name} is in the library` : `Save ${item.name}`
         }
-        className="group relative overflow-hidden rounded-md outline-none ring-1 ring-foreground/10 ring-inset transition-shadow focus-visible:ring-2 focus-visible:ring-ring active:translate-y-px disabled:cursor-default"
+        className="group relative overflow-hidden rounded-md outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 active:translate-y-px disabled:cursor-default"
         disabled={isSaving || isSaved}
         onClick={onSave}
         title={item.name}

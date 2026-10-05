@@ -1,5 +1,5 @@
 export const DOCK_SURFACE =
-  "min-h-32 rounded-lg border border-border bg-field shadow-none before:hidden dark:bg-field [&>[data-align=block-end]]:mt-auto";
+  "min-h-22 rounded-xl bg-field [&>[data-align=block-end]]:mt-auto";
 
 export const DOCK_INSET = "shrink-0 px-4 pb-4";
 

@@ -7,25 +7,22 @@ import {
   FilePlusIcon,
   FolderSearchIcon,
   GlobeIcon,
+  type Icon,
   ListTodoIcon,
-  type LucideIcon,
   NotebookIcon,
   NotebookPenIcon,
   PencilIcon,
   SearchIcon,
   TerminalIcon,
   WrenchIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { cn } from "@/lib/utils";
 import type { ActivityState } from "@/shared/ipc";
 import type { ToolVerb } from "@/shared/providers";
 
 // The verb is the adapter's neutral vocabulary; the name map stays behind it
 // for rows stored before verbs existed, and for names no adapter translates.
-const VERB_ICONS: ReadonlyMap<ToolVerb, LucideIcon> = new Map<
-  ToolVerb,
-  LucideIcon
->([
+const VERB_ICONS: ReadonlyMap<ToolVerb, Icon> = new Map<ToolVerb, Icon>([
   ["create", FilePlusIcon],
   ["edit", PencilIcon],
   ["find", FolderSearchIcon],
@@ -38,7 +35,7 @@ const VERB_ICONS: ReadonlyMap<ToolVerb, LucideIcon> = new Map<
   ["web", GlobeIcon],
 ]);
 
-const ICONS: ReadonlyMap<string, LucideIcon> = new Map<string, LucideIcon>([
+const ICONS: ReadonlyMap<string, Icon> = new Map<string, Icon>([
   ["Bash", TerminalIcon],
   ["Edit", PencilIcon],
   ["ExitPlanMode", ClipboardCheckIcon],
@@ -74,13 +71,13 @@ export function ActivityIcon({
   state: ActivityState;
   verb: ToolVerb | null;
 }) {
-  const Icon =
+  const Glyph =
     (verb === null ? undefined : VERB_ICONS.get(verb)) ??
     ICONS.get(name) ??
     WrenchIcon;
 
   return (
-    <Icon
+    <Glyph
       aria-hidden="true"
       className={cn("size-3.5 shrink-0", STATES[state])}
     />

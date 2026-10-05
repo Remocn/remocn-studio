@@ -11,7 +11,7 @@ export function Scrim({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-2xl border bg-background/70 p-6", className)}>
+    <div className={cn("rounded-2xl bg-background/70 p-6", className)}>
       {children}
     </div>
   );

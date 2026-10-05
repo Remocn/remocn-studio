@@ -7,12 +7,14 @@ import { cn } from "@/lib/utils";
 export function Progress({
   className,
   children,
+  locale = "en-US",
   ...props
 }: ProgressPrimitive.Root.Props): React.ReactElement {
   return (
     <ProgressPrimitive.Root
       className={cn("flex w-full flex-col gap-2", className)}
       data-slot="progress"
+      locale={locale}
       {...props}
     >
       {children ? (
@@ -46,7 +48,7 @@ export function ProgressTrack({
   return (
     <ProgressPrimitive.Track
       className={cn(
-        "block h-1.5 w-full overflow-hidden rounded-full bg-input",
+        "block h-1.5 w-full overflow-hidden rounded-full bg-border",
         className
       )}
       data-slot="progress-track"
@@ -61,7 +63,10 @@ export function ProgressIndicator({
 }: ProgressPrimitive.Indicator.Props): React.ReactElement {
   return (
     <ProgressPrimitive.Indicator
-      className={cn("bg-primary transition-all duration-500", className)}
+      className={cn(
+        "bg-primary transition-[width] duration-200 ease-out motion-reduce:transition-none",
+        className
+      )}
       data-slot="progress-indicator"
       {...props}
     />

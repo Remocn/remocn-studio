@@ -238,7 +238,7 @@ function StageRow({
     <button
       className={cn(
         shell,
-        "cursor-pointer outline-none transition-colors duration-fast ease-out hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+        "cursor-pointer outline-none transition-colors duration-fast ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:-outline-offset-2"
       )}
       onClick={onOpen}
       title={`Read ${nameOf(document)}`}

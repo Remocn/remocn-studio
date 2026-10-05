@@ -21,7 +21,7 @@ export const CHAT_MIN_WIDTH = 380;
 export const INSPECTOR_WIDTH = 340;
 export const INSPECTOR_BAR_WIDTH = 48;
 export const RULER_WIDTH = 20;
-export const SIDEBAR_WIDTH = 288;
+export const SIDEBAR_WIDTH = 238;
 
 export const CANVAS_MIN_WIDTH = 400;
 const CANVAS_LEAD_WIDTH = 100;

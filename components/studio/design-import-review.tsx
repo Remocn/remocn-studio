@@ -1,8 +1,15 @@
 "use client";
 
-import { ChevronDownIcon, FileTextIcon } from "lucide-react";
-import { type ChangeEvent, type ReactNode, useCallback, useState } from "react";
+import {
+  type ChangeEvent,
+  type ReactNode,
+  useCallback,
+  useId,
+  useState,
+} from "react";
+import { ChevronDownIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { NativeCheckbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import type { ProjectBrand } from "@/shared/brand";
@@ -43,6 +50,7 @@ export function DesignImportReview({
   onApply: () => void;
   onCancel: () => void;
 }) {
+  const nameId = useId();
   const colors = selection.colors.filter((entry) => entry.selected);
   const fonts = selection.fonts.filter((entry) => entry.role);
   const families = [
@@ -54,40 +62,35 @@ export function DesignImportReview({
       description="Choose what to add to your brand. Existing values stay unless you select a replacement."
       title="Review design import"
     >
-      <fieldset
-        className="min-w-0 divide-y divide-border/60"
-        disabled={loading}
-      >
+      <fieldset className="@container grid min-w-0 gap-4" disabled={loading}>
         <legend className="sr-only">Import selection</legend>
-        <div className="flex flex-wrap items-center gap-3 py-4">
-          <FileTextIcon
-            aria-hidden="true"
-            className="size-5 shrink-0 text-muted-foreground"
-          />
+        <div className="flex flex-wrap items-center gap-3 rounded-lg bg-card p-3">
           <div className="min-w-0 flex-1 basis-48">
             <p className="break-words text-sm">
               {data.document.file.source?.split(PATH_SEPARATOR).at(-1) ??
                 "DESIGN.md"}
             </p>
-            <p className="mt-1 text-muted-foreground text-xs tabular-nums">
+            <p className="mt-0.5 text-muted-foreground text-xs tabular-nums">
               {selection.colors.length} colors · {families.length} font families
             </p>
           </div>
-          <Button onClick={onReplace} type="button" variant="ghost">
+          <Button onClick={onReplace} size="sm" type="button" variant="ghost">
             {loading ? "Reading…" : "Replace file"}
           </Button>
         </div>
         {data.name ? (
-          <label className="flex min-h-16 cursor-pointer items-center gap-3 py-4 text-sm">
-            <input
+          <label
+            className="flex min-h-10 cursor-pointer items-center gap-3 text-sm"
+            htmlFor={nameId}
+          >
+            <NativeCheckbox
               checked={selection.name}
-              className="size-4 shrink-0 accent-primary"
+              id={nameId}
               name="name"
               onChange={onChange}
-              type="checkbox"
             />
             <span className="min-w-0 flex-1">
-              <span className="block text-muted-foreground text-xs">
+              <span className="block text-[11px] text-muted-foreground leading-5">
                 Brand name
               </span>
               <span className="mt-1 block break-words">{data.name}</span>
@@ -97,119 +100,115 @@ export function DesignImportReview({
             </span>
           </label>
         ) : null}
-        {selection.colors.length ? (
-          <ImportDisclosure
-            description={`${colors.length} of ${selection.colors.length} selected`}
-            preview={
-              <div aria-hidden="true" className="flex gap-1">
-                {selection.colors.slice(0, 6).map((entry) => (
-                  <span
-                    className="size-4 rounded-sm border border-border"
+        <div className="grid @min-[640px]:grid-cols-2 gap-6">
+          {selection.colors.length ? (
+            <div className="min-w-0">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="font-medium text-sm">Colors</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums leading-5">
+                  {colors.length} of {selection.colors.length} selected
+                </span>
+              </div>
+              <section
+                aria-label="Imported colors"
+                className="max-h-80 overflow-y-auto overscroll-contain"
+              >
+                {selection.colors.map((entry, index) => (
+                  <ImportColorRow
+                    color={data.colors[entry.token]}
+                    current={current?.colors[entry.role.trim()]}
+                    entry={entry}
+                    index={index}
                     key={entry.token}
-                    style={{ background: data.colors[entry.token] }}
+                    onChange={onChange}
                   />
                 ))}
+              </section>
+            </div>
+          ) : null}
+          {families.length ? (
+            <div className="min-w-0">
+              <div className="mb-2 flex items-center justify-between gap-4">
+                <h4 className="font-medium text-sm">Typography</h4>
+                <span className="text-[11px] text-muted-foreground tabular-nums leading-5">
+                  {fonts.length} of 3 roles selected
+                </span>
               </div>
-            }
-            title="Colors"
-          >
-            <section
-              aria-label="Imported colors"
-              className="max-h-80 divide-y divide-border/60 overflow-y-auto overscroll-contain pe-2"
-            >
-              {selection.colors.map((entry, index) => (
-                <ImportColorRow
-                  color={data.colors[entry.token]}
-                  current={current?.colors[entry.role.trim()]}
-                  entry={entry}
-                  index={index}
-                  key={entry.token}
-                  onChange={onChange}
-                />
-              ))}
-            </section>
-          </ImportDisclosure>
-        ) : null}
-        {families.length ? (
-          <div className="py-4">
-            <div className="mb-2 flex items-center justify-between gap-4">
-              <h4 className="text-sm">Typography</h4>
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {fonts.length} of 3 roles selected
-              </span>
-            </div>
-            <div className="divide-y divide-border/60">
-              {FONT_ROLE_ORDER.map((role) => {
-                const selected = selection.fonts.find(
-                  (entry) => entry.role === role
-                );
-                const family =
-                  data.fonts.find((font) => font.token === selected?.token)
-                    ?.family ?? "";
-                const previous = current?.typography[role]?.family;
-                return (
-                  <div
-                    className="flex flex-wrap items-center justify-between gap-3 py-3"
-                    key={role}
-                  >
-                    <div className="min-w-0 flex-1 basis-32">
-                      <label
-                        className="text-sm"
-                        htmlFor={`import-font-${role}`}
-                      >
-                        {FONT_ROLES[role]}
-                      </label>
-                      <p className="mt-1 break-words text-muted-foreground text-xs">
-                        {fontChangeLabel(previous, family)}
-                      </p>
-                    </div>
-                    <NativeSelect
-                      className="w-full sm:w-64 [&_select]:truncate"
-                      id={`import-font-${role}`}
-                      name={`font:${role}`}
-                      onChange={onChange}
-                      value={family}
-                    >
-                      <option value="">
-                        {previous ? "Keep current font" : "Do not import"}
-                      </option>
-                      {families.map((font) => (
-                        <option key={font.family} value={font.family}>
-                          {fontName(font.family)}
-                        </option>
-                      ))}
-                    </NativeSelect>
-                  </div>
-                );
-              })}
-            </div>
-            <ImportDisclosure
-              description={`${data.fonts.length} text styles`}
-              title="Found in the document"
-            >
-              <div className="grid gap-4">
-                {families.map((font) => {
-                  const matches = data.fonts.filter(
-                    (item) => item.family === font.family
+              <div className="grid gap-1">
+                {FONT_ROLE_ORDER.map((role) => {
+                  const selected = selection.fonts.find(
+                    (entry) => entry.role === role
                   );
+                  const family =
+                    data.fonts.find((font) => font.token === selected?.token)
+                      ?.family ?? "";
+                  const previous = current?.typography[role]?.family;
                   return (
-                    <div className="grid gap-1" key={font.family}>
-                      <p className="break-words text-sm">{font.family}</p>
-                      <p className="text-muted-foreground text-xs">
-                        Weights:{" "}
-                        {[...new Set(matches.map((item) => item.weight))].join(
-                          ", "
-                        )}
-                      </p>
-                      <p className="break-words text-muted-foreground text-xs">
-                        Used for: {matches.map((item) => item.token).join(", ")}
-                      </p>
+                    <div
+                      className="flex min-h-11 items-center justify-between gap-3"
+                      key={role}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <label
+                          className="text-xs leading-5"
+                          htmlFor={`import-font-${role}`}
+                        >
+                          {FONT_ROLES[role]}
+                        </label>
+                        <p className="break-words text-[11px] text-muted-foreground leading-5">
+                          {fontChangeLabel(previous, family)}
+                        </p>
+                      </div>
+                      <NativeSelect
+                        className="w-1/2 shrink-0 [&_select]:truncate [&_select]:text-xs"
+                        id={`import-font-${role}`}
+                        name={`font:${role}`}
+                        onChange={onChange}
+                        value={family}
+                      >
+                        <option value="">
+                          {previous ? "Keep current font" : "Do not import"}
+                        </option>
+                        {families.map((font) => (
+                          <option key={font.family} value={font.family}>
+                            {fontName(font.family)}
+                          </option>
+                        ))}
+                      </NativeSelect>
                     </div>
                   );
                 })}
               </div>
-            </ImportDisclosure>
-          </div>
+            </div>
+          ) : null}
+        </div>
+        {families.length ? (
+          <ImportDisclosure
+            description={`${data.fonts.length} text styles`}
+            title="Found in the document"
+          >
+            <div className="grid gap-4">
+              {families.map((font) => {
+                const matches = data.fonts.filter(
+                  (item) => item.family === font.family
+                );
+                return (
+                  <div className="grid gap-1" key={font.family}>
+                    <p className="break-words text-sm">{font.family}</p>
+                    <p className="text-muted-foreground text-xs">
+                      Weights:{" "}
+                      {[...new Set(matches.map((item) => item.weight))].join(
+                        ", "
+                      )}
+                    </p>
+                    <p className="break-words text-muted-foreground text-xs">
+                      Used for: {matches.map((item) => item.token).join(", ")}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </ImportDisclosure>
         ) : null}
         <ImportDisclosure
           description={
@@ -230,7 +229,7 @@ export function DesignImportReview({
             {data.document.markdown}
           </pre>
         </ImportDisclosure>
-        <div className="grid gap-3 py-4">
+        <div className="grid gap-3">
           <p className="text-muted-foreground text-xs leading-relaxed">
             The document will be attached as design guidance. Your explicit
             brand settings take priority. Import adds changes to the draft; save
@@ -249,7 +248,7 @@ export function DesignImportReview({
               {colors.length} colors · {fonts.length} font roles
               {selection.name && data.name ? " · brand name" : ""}
             </p>
-            <Button onClick={onCancel} type="button" variant="ghost">
+            <Button onClick={onCancel} size="sm" type="button" variant="ghost">
               Cancel import
             </Button>
             <Button disabled={!!invalid} onClick={onApply} type="button">
@@ -288,10 +287,10 @@ function ImportDisclosure({
 }) {
   return (
     <details className="group/import min-w-0">
-      <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 py-4 outline-offset-4 [&::-webkit-details-marker]:hidden">
-        <span className="min-w-0 flex-1">
+      <summary className="flex min-h-7 cursor-pointer list-none items-center gap-3 rounded-sm outline-offset-4 [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
           <span className="block text-sm">{title}</span>
-          <span className="mt-1 block text-muted-foreground text-xs tabular-nums">
+          <span className="block text-muted-foreground text-xs tabular-nums">
             {description}
           </span>
         </span>
@@ -301,7 +300,7 @@ function ImportDisclosure({
           className="size-4 shrink-0 text-muted-foreground group-open/import:rotate-180"
         />
       </summary>
-      <div className="min-w-0 pb-4">{children}</div>
+      <div className="min-w-0 pt-3 pb-1">{children}</div>
     </details>
   );
 }
@@ -319,44 +318,48 @@ function ImportColorRow({
   index: number;
   onChange: ImportChange;
 }) {
+  const checkboxId = useId();
   const [editing, setEditing] = useState(false);
   const toggleEditing = useCallback(() => setEditing((open) => !open), []);
   return (
-    <div className="grid gap-2 py-2">
-      <div className="flex items-center gap-3">
-        <label className="flex min-h-10 min-w-0 flex-1 cursor-pointer items-center gap-3">
-          <input
+    <div className="grid gap-2">
+      <div className="flex items-center gap-2">
+        <label
+          className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-2"
+          htmlFor={checkboxId}
+        >
+          <NativeCheckbox
             aria-label={`${entry.token}: ${color}`}
             checked={entry.selected}
-            className="size-4 shrink-0 accent-primary"
+            id={checkboxId}
             name={`color:${index}`}
             onChange={onChange}
-            type="checkbox"
           />
           <span
             aria-hidden="true"
-            className="size-6 shrink-0 rounded-md border border-border"
+            className="size-5 shrink-0 rounded-sm"
             style={{ background: color }}
           />
           <span className="min-w-0 flex-1">
-            <span className="block break-words text-sm">
+            <span className="block break-words text-xs leading-5">
               {entry.role || entry.token}
             </span>
-            <span className="block text-muted-foreground text-xs">
+            <span className="block text-[11px] text-muted-foreground leading-5">
               {importChangeLabel(current, entry.selected)}
             </span>
           </span>
-          <span className="shrink-0 font-mono text-muted-foreground text-xs">
+          <span className="shrink-0 font-mono text-[11px] text-muted-foreground leading-5">
             {color}
           </span>
         </label>
         <Button
           aria-expanded={editing}
           aria-label={`Edit role for ${entry.token}`}
+          className="h-7 px-1.5 text-[11px]"
           onClick={toggleEditing}
           size="sm"
           type="button"
-          variant="ghost"
+          variant="secondary"
         >
           {editing ? "Done" : "Edit"}
         </Button>

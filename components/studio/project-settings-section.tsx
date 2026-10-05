@@ -2,8 +2,10 @@
 import dynamic from "next/dynamic";
 import type * as React from "react";
 import { useCallback, useEffect, useState } from "react";
+import { FolderOpenIcon, PencilIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { useFolderPicker } from "@/hooks/use-folder-picker";
 import { useProjectSettings } from "@/hooks/use-project-settings";
@@ -62,6 +64,13 @@ function ProjectForm({ project }: { project: Project }) {
   const visibleError = [error, actionError, pickerError, locate.error].find(
     Boolean
   );
+  const [tab, setTab] = useState("general");
+  const changeTab = useCallback((value: unknown) => {
+    if (typeof value === "string") {
+      setTab(value);
+    }
+  }, []);
+  const editBrand = useCallback(() => setTab("brand"), []);
   const [importing, setImporting] = useState(false);
   const [parent, setParent] = useState<string | null>(null);
   const [phase, setPhase] = useState<string | null>(null);
@@ -138,102 +147,145 @@ function ProjectForm({ project }: { project: Project }) {
     [setDraft]
   );
   return (
-    <div className="grid gap-10 pb-20">
-      <form
-        className="grid gap-10"
-        id="project-settings-form"
-        onSubmit={submit}
+    <Tabs
+      className="@container flex min-h-0 flex-1 flex-col gap-4"
+      onValueChange={changeTab}
+      value={tab}
+    >
+      <TabsList
+        aria-label="Project settings"
+        className="-m-0.5 mb-[7px]"
+        variant="quiet"
       >
-        <ProjectSettingsGroup title="General">
-          {draft ? (
-            <ProjectSettingsRow
-              description="How this project appears in the studio."
-              htmlFor="project-name"
-              title="Project name"
-            >
-              <Input
-                className="max-w-full sm:w-60"
-                disabled={unavailable}
-                id="project-name"
-                onChange={changeName}
-                required
-                value={draft.name}
-              />
-            </ProjectSettingsRow>
-          ) : null}
-          <div className="grid gap-3 py-4">
-            <div className="grid gap-1">
-              <p className="text-sm">Location</p>
-              <p className="break-all font-mono text-muted-foreground text-xs leading-relaxed">
-                {project.path}
-              </p>
-            </div>
-            {project.missing ? (
-              <p className="text-destructive text-sm" role="alert">
-                This folder is missing. Locate it to restore the project.
-              </p>
+        <TabsTab value="general">General</TabsTab>
+        <TabsTab value="brand">Brand</TabsTab>
+        <TabsTab value="typography">Typography</TabsTab>
+        <TabsTab value="guidelines">Guidelines</TabsTab>
+      </TabsList>
+      <form className="contents" id="project-settings-form" onSubmit={submit}>
+        <TabsPanel className="flex-1" keepMounted value="general">
+          <ProjectSettingsGroup title="General">
+            {draft ? (
+              <ProjectSettingsRow
+                description="How this project appears in the studio."
+                htmlFor="project-name"
+                title="Project name"
+              >
+                <Input
+                  className="w-full"
+                  disabled={unavailable}
+                  id="project-name"
+                  onChange={changeName}
+                  required
+                  size="sm"
+                  value={draft.name}
+                />
+              </ProjectSettingsRow>
             ) : null}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                disabled={project.missing || phase !== null}
-                onClick={reveal}
-                type="button"
-                variant="ghost"
-              >
-                Show in {fileManagerName()}
-              </Button>
-              <Button
-                disabled={locationDisabled}
-                onClick={chooseParent}
-                type="button"
-                variant="ghost"
-              >
-                Move project
-              </Button>
-              <Button
-                disabled={dirty || busy}
-                onClick={locateFolder}
-                type="button"
-                variant="ghost"
-              >
-                Locate folder
-              </Button>
-            </div>
-            {parent ? (
-              <div className="grid gap-2 rounded-lg border p-3">
-                <p className="break-all text-sm">
-                  Move to {parent}/{project.path.split("/").at(-1)}
+            <div className="grid gap-4 py-3">
+              <div className="grid gap-2">
+                <p className="text-[14px] leading-5">Location</p>
+                <p className="break-all font-mono text-muted-foreground text-sm leading-[18px]">
+                  {project.path}
                 </p>
-                <div className="flex gap-2">
-                  <Button
-                    disabled={phase !== null}
-                    onClick={move}
-                    type="button"
-                  >
-                    Move project
-                  </Button>
-                  <Button
-                    disabled={!canCancelMove}
-                    onClick={cancelMove}
-                    type="button"
-                    variant="ghost"
-                  >
-                    Cancel
-                  </Button>
-                </div>
               </div>
-            ) : null}
-            {phase ? (
-              <p className="text-sm" role="status">
-                {phase}
+              {project.missing ? (
+                <p className="text-destructive text-sm" role="alert">
+                  This folder is missing. Locate it to restore the project.
+                </p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  disabled={project.missing || phase !== null}
+                  onClick={reveal}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  <FolderOpenIcon />
+                  Show in {fileManagerName()}
+                </Button>
+                <Button
+                  disabled={locationDisabled}
+                  onClick={chooseParent}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  Move project
+                </Button>
+                <Button
+                  disabled={dirty || busy}
+                  onClick={locateFolder}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  Locate folder
+                </Button>
+              </div>
+              {parent ? (
+                <div className="grid gap-2 rounded-lg bg-field p-3">
+                  <p className="break-all text-sm">
+                    Move to {parent}/{project.path.split("/").at(-1)}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      disabled={phase !== null}
+                      onClick={move}
+                      type="button"
+                    >
+                      Move project
+                    </Button>
+                    <Button
+                      disabled={!canCancelMove}
+                      onClick={cancelMove}
+                      type="button"
+                      variant="ghost"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+              {phase ? (
+                <p className="text-sm" role="status">
+                  {phase}
+                </p>
+              ) : null}
+            </div>
+          </ProjectSettingsGroup>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-4 py-[15px]">
+            <div className="grid gap-1.5">
+              <h3 className="font-medium text-[14px] leading-5">
+                Brand for this project
+              </h3>
+              <p className="text-muted-foreground text-sm leading-[18px]">
+                Colors, typography and guidelines apply to new videos.
               </p>
-            ) : null}
+            </div>
+            <Button
+              onClick={editBrand}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              <PencilIcon />
+              Edit brand
+            </Button>
           </div>
-        </ProjectSettingsGroup>
+        </TabsPanel>
         {draft ? (
-          <fieldset className="grid min-w-0 gap-10" disabled={unavailable}>
+          <fieldset className="contents" disabled={unavailable}>
             <legend className="sr-only">Project brand</legend>
             <ProjectBrandEditor
+              brandActions={
+                <ProjectBrandApply
+                  disabled={locationDisabled}
+                  projectId={project.id}
+                  revision={draft.revision}
+                />
+              }
               onBusyChange={setImporting}
               onChange={changeBrand}
               projectId={project.id}
@@ -243,6 +295,14 @@ function ProjectForm({ project }: { project: Project }) {
           </fieldset>
         ) : null}
       </form>
+      {draft || project.missing || error ? null : (
+        <p role="status">Loading project settings…</p>
+      )}
+      {visibleError ? (
+        <p className="text-destructive text-sm" role="alert">
+          {visibleError}
+        </p>
+      ) : null}
       {draft ? (
         <ProjectSaveBar
           busy={busy}
@@ -252,22 +312,7 @@ function ProjectForm({ project }: { project: Project }) {
           saving={saving}
         />
       ) : null}
-      {draft || project.missing || error ? null : (
-        <p role="status">Loading project settings…</p>
-      )}
-      {draft ? (
-        <ProjectBrandApply
-          disabled={locationDisabled}
-          projectId={project.id}
-          revision={draft.revision}
-        />
-      ) : null}
-      {visibleError ? (
-        <p className="text-destructive text-sm" role="alert">
-          {visibleError}
-        </p>
-      ) : null}
-    </div>
+    </Tabs>
   );
 }
 
@@ -305,20 +350,26 @@ function ProjectSaveBar({
   saving: boolean;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 ms-56 border-border/60 border-t bg-background px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-      <div className="mx-auto flex max-w-[688px] flex-wrap items-center justify-end gap-3">
-        <p className="me-auto text-muted-foreground text-xs" role="status">
+    <div className="sticky -bottom-2 mt-auto bg-background">
+      <div className="flex min-h-14 flex-wrap items-center justify-end gap-2 py-2">
+        <p className="me-auto text-muted-foreground text-sm" role="status">
           {dirty ? "Unsaved changes" : "All changes saved"}
         </p>
         <Button
           disabled={!dirty || busy}
           onClick={onCancel}
+          size="sm"
           type="button"
-          variant="ghost"
+          variant="secondary"
         >
           Cancel changes
         </Button>
-        <Button disabled={!canSave} form="project-settings-form" type="submit">
+        <Button
+          disabled={!canSave}
+          form="project-settings-form"
+          size="sm"
+          type="submit"
+        >
           {saving ? "Saving…" : "Save changes"}
         </Button>
       </div>

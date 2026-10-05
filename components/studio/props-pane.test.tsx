@@ -828,7 +828,7 @@ describe("the time strip", () => {
 
     draw(target.fields, { card });
 
-    expect(screen.getByText("animated")).toBeDefined();
+    expect(screen.getByText("Animated")).toBeDefined();
     expect(
       screen.getByText(
         "a change here moves the value at this frame; the animation keeps running"

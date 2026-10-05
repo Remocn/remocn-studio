@@ -197,7 +197,10 @@ function viewCommands(sources: CommandSources): readonly Command[] {
       togglePreview,
       { menu: "view" }
     ),
-    { ...paneRow("pane-videos", "videos", "Videos"), separatorBefore: true },
+    {
+      ...paneRow("pane-projects", "projects", "Projects"),
+      separatorBefore: true,
+    },
     paneRow("pane-assets", "assets", "Assets"),
     paneRow("pane-components", "components", "Components"),
     action(

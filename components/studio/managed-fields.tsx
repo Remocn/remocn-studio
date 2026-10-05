@@ -75,7 +75,7 @@ export function ManagedFields({
         const isOpen = !(groups?.collapsed ?? collapsed).includes(group);
         return (
           <section
-            className="border-border border-t px-4 py-3 first:border-t-0 [&>h3]:pb-0"
+            className="px-4 py-3 [&>h3]:pb-0"
             data-open={isOpen}
             key={group}
           >

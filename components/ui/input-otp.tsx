@@ -1,6 +1,6 @@
 import { OTPInput, OTPInputContext } from "input-otp";
-import { MinusIcon } from "lucide-react";
 import * as React from "react";
+import { MinusIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 function InputOTP({
@@ -14,7 +14,7 @@ function InputOTP({
     <OTPInput
       className={cn("disabled:cursor-not-allowed", className)}
       containerClassName={cn(
-        "cn-input-otp flex items-center has-disabled:opacity-50",
+        "cn-input-otp flex items-center has-disabled:opacity-45",
         containerClassName
       )}
       data-slot="input-otp"
@@ -28,7 +28,7 @@ function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "flex items-center rounded-md has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 dark:has-aria-invalid:ring-destructive/40",
+        "flex items-center rounded-xl has-aria-invalid:bg-destructive/10",
         className
       )}
       data-slot="input-otp-group"
@@ -50,7 +50,7 @@ function InputOTPSlot({
   return (
     <div
       className={cn(
-        "relative flex size-9 items-center justify-center border-y border-r border-input text-sm shadow-xs transition-all outline-none first:rounded-l-md first:border-l last:rounded-r-md aria-invalid:border-destructive data-[active=true]:z-10 data-[active=true]:border-ring data-[active=true]:ring-3 data-[active=true]:ring-ring/50 data-[active=true]:aria-invalid:border-destructive data-[active=true]:aria-invalid:ring-destructive/20 dark:bg-input/30 dark:data-[active=true]:aria-invalid:ring-destructive/40",
+        "relative flex size-9 items-center justify-center rounded-xl bg-control text-sm outline-none transition-colors aria-invalid:bg-destructive/10 data-[active=true]:z-10 data-[active=true]:outline-2 data-[active=true]:outline-solid data-[active=true]:outline-ring data-[active=true]:outline-offset-2",
         className
       )}
       data-active={isActive}

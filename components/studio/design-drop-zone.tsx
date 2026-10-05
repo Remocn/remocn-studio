@@ -1,20 +1,23 @@
 "use client";
 
 import { Effect, Fiber } from "effect";
-import { FileTextIcon, LoaderCircleIcon, UploadIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { LoaderCircleIcon, UploadIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { isInside } from "@/lib/studio/drop";
 import { watchFileDrops } from "@/lib/studio/shell";
 import { SettingsGroup } from "./settings-group";
 
 export function DesignDropZone({
   filename,
+  compact = false,
   loading,
   onChoose,
   onDrop,
   onError,
 }: {
   filename?: string;
+  compact?: boolean;
   loading: boolean;
   onChoose: () => void;
   onDrop: (path: string) => void;
@@ -56,47 +59,72 @@ export function DesignDropZone({
       Effect.runFork(Fiber.interrupt(fiber));
     };
   }, []);
-  const Icon = loading ? LoaderCircleIcon : FileTextIcon;
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          aria-busy={loading}
+          aria-label="Import DESIGN.md"
+          className="data-[over=true]:bg-accent"
+          data-over={over}
+          disabled={loading}
+          onClick={onChoose}
+          ref={ref}
+          size="sm"
+          type="button"
+          variant="secondary"
+        >
+          {loading ? (
+            <LoaderCircleIcon className="animate-spin" />
+          ) : (
+            <UploadIcon />
+          )}
+          {loading ? "Reading…" : "Import brand"}
+        </Button>
+        {filename ? (
+          <span className="break-all text-muted-foreground text-xs">
+            {filename}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <SettingsGroup
       description="Bring your colors, typography and design guidelines from DESIGN.md."
       title="Design reference"
     >
-      <div className="py-4">
+      <div>
         <button
           aria-busy={loading}
           aria-label="Import DESIGN.md"
-          className="group flex min-h-32 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-border/80 border-dashed px-5 py-6 text-center transition-[background-color,border-color] duration-fast ease-out hover:border-foreground/30 hover:bg-background/50 focus-visible:outline-2 focus-visible:outline-foreground/60 focus-visible:outline-offset-4 disabled:cursor-wait disabled:opacity-60 data-[over=true]:border-foreground/50 data-[over=true]:bg-background/70"
+          className="group flex min-h-[180px] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg bg-card px-5 py-6 text-center transition-colors duration-150 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 disabled:cursor-wait disabled:opacity-64 data-[over=true]:bg-accent motion-reduce:transition-none"
           data-over={over}
           disabled={loading}
           onClick={onChoose}
           ref={ref}
           type="button"
         >
+          {loading ? (
+            <LoaderCircleIcon
+              aria-hidden="true"
+              className="pointer-events-none size-5 animate-spin"
+            />
+          ) : null}
           <span
-            aria-hidden="true"
-            className="pointer-events-none flex size-10 items-center justify-center rounded-xl bg-background/80 text-muted-foreground ring-1 ring-border/50"
-          >
-            {over ? (
-              <UploadIcon className="size-5" />
-            ) : (
-              <Icon className={loading ? "size-5 animate-spin" : "size-5"} />
-            )}
-          </span>
-          <span
-            className="pointer-events-none grid max-w-full gap-1"
+            className="pointer-events-none grid max-w-full gap-2"
             role="status"
           >
-            <span className="break-all font-medium text-sm">
+            <span className="break-all font-medium text-[14px] leading-5">
               {dropTitle(loading, over, filename)}
             </span>
-            <span className="text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-sm">
               {filename
                 ? "Drop a new file or click to replace"
                 : "or click anywhere here to choose a file"}
             </span>
           </span>
-          <span className="pointer-events-none text-muted-foreground/70 text-xs">
+          <span className="pointer-events-none text-muted-foreground text-xs">
             Markdown · up to 256 KB
           </span>
         </button>

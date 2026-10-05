@@ -398,6 +398,21 @@ describe("sessionMeta", () => {
     expect(sessionMeta(rowOf("a", IDLE_TURN), NOW)).toBeNull();
     expect(sessionMeta(rowOf("a", unread()), NOW)).toBeNull();
   });
+
+  it("only marks a completed successful turn, independently of unread state", () => {
+    expect(rowOf("a", IDLE_TURN).completed).toBe(false);
+    expect(rowOf("a", { ...IDLE_TURN, workedMs: 1200 }).completed).toBe(true);
+    expect(
+      rowOf("a", { ...IDLE_TURN, unread: true, workedMs: 1200 }).completed
+    ).toBe(true);
+    expect(rowOf("a", { ...failed("failed"), workedMs: 1200 }).completed).toBe(
+      false
+    );
+    expect(rowOf("a", { ...running(), workedMs: 1200 }).completed).toBe(false);
+    expect(rowOf("a", { ...waiting(NOW), workedMs: 1200 }).completed).toBe(
+      false
+    );
+  });
 });
 
 // Clicking a video opens its most recent chat, which is the invariant the rest

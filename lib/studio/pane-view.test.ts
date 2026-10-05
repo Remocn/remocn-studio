@@ -39,8 +39,9 @@ function bundled(
 }
 
 describe("isPaneView", () => {
-  it("accepts the three views and nothing else", () => {
+  it("accepts the workspace and sidebar views and nothing else", () => {
     expect(isPaneView("videos")).toBe(true);
+    expect(isPaneView("projects")).toBe(true);
     expect(isPaneView("assets")).toBe(true);
     expect(isPaneView("components")).toBe(true);
     expect(isPaneView("drawer")).toBe(false);

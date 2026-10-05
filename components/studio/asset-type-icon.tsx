@@ -3,14 +3,14 @@
 import {
   AudioLinesIcon,
   ComponentIcon,
+  type Icon,
   ImageIcon,
-  type LucideIcon,
   VideoIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { cn } from "@/lib/utils";
 import type { AssetType } from "@/shared/library";
 
-const ICONS: Record<AssetType, LucideIcon> = {
+const ICONS: Record<AssetType, Icon> = {
   audio: AudioLinesIcon,
   component: ComponentIcon,
   img: ImageIcon,
@@ -24,7 +24,7 @@ export function AssetTypeIcon({
   className?: string;
   type: AssetType;
 }) {
-  const Icon = ICONS[type];
+  const Glyph = ICONS[type];
 
-  return <Icon aria-hidden="true" className={cn("shrink-0", className)} />;
+  return <Glyph aria-hidden="true" className={cn("shrink-0", className)} />;
 }

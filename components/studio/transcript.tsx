@@ -1,11 +1,12 @@
 "use client";
 
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
+import { ChevronDownIcon, ChevronRightIcon } from "@/components/icons";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Message, MessageContent } from "@/components/ui/message";
 import { MessageScrollerItem } from "@/components/ui/message-scroller";
 import { useTranscriptItems } from "@/hooks/use-transcript-items";
+import { isDesignCheck } from "@/lib/studio/design-review";
 import {
   type LiveLine,
   reasoningLines,
@@ -59,14 +60,21 @@ export function Transcript({
       entries
         .slice(latestUser + 1)
         .filter(
-          (entry) => entry.kind === "activity" && entry.state !== "failed"
+          (entry) =>
+            entry.kind === "activity" &&
+            entry.state !== "failed" &&
+            !isDesignCheck(entry.name)
         )
         .map((entry) => entry.id)
     );
     return {
-      shown: quiet ? items.filter((item) => !technicalIds.has(item.id)) : items,
+      shown: quiet
+        ? items.filter(
+            (item) => item.kind === "tasks" || !technicalIds.has(item.id)
+          )
+        : items,
       technical: items
-        .filter((item) => technicalIds.has(item.id))
+        .filter((item) => item.kind !== "tasks" && technicalIds.has(item.id))
         .flatMap((item): TranscriptItem[] =>
           item.kind === "run"
             ? item.entries.map((entry) => ({
@@ -125,7 +133,7 @@ export function Transcript({
                   <button
                     aria-expanded={expanded}
                     aria-label="Show every step"
-                    className="rounded p-1 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                    className="rounded p-1 text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
                     onClick={toggleExpanded}
                     type="button"
                   >
@@ -139,7 +147,7 @@ export function Transcript({
             ) : (
               <button
                 aria-expanded={expanded}
-                className="flex w-fit items-center gap-1 rounded text-muted-foreground text-xs outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex w-fit items-center gap-1 rounded text-muted-foreground text-xs outline-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
                 onClick={toggleExpanded}
                 type="button"
               >

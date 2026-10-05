@@ -180,6 +180,9 @@ describe("the services group", () => {
 
     expect(await screen.findByText("Off")).toBeVisible();
     expect(screen.queryByText("Connected")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Manage My ElevenLabs" })
+    );
     expect(screen.getByRole("button", { name: "Enable" })).toBeVisible();
   });
 });
@@ -190,6 +193,9 @@ describe("removing a connection", () => {
     render(<IntegrationsSection />);
     await screen.findByText("My ElevenLabs");
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "Manage My ElevenLabs" })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
 
     expect(screen.getByText(KEY_GOES)).toBeVisible();
@@ -201,6 +207,9 @@ describe("removing a connection", () => {
     render(<IntegrationsSection />);
     await screen.findByText("My ElevenLabs");
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "Manage My ElevenLabs" })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
 
@@ -220,6 +229,9 @@ describe("removing a connection", () => {
     render(<IntegrationsSection />);
     await screen.findByText("My ElevenLabs");
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "Manage My ElevenLabs" })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     fireEvent.click(
       screen.getAllByRole("button", { name: "Remove" }).at(-1) as HTMLElement

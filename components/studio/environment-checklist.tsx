@@ -9,7 +9,7 @@ import {
   ExternalLinkIcon,
   RotateCwIcon,
   XCircleIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useCopyCommand } from "@/hooks/use-copy-command";

@@ -1,7 +1,12 @@
 import type { Asset } from "@/shared/library";
 import { MOTION_ROLES, type MotionRole, ROLE_LABELS } from "@/shared/motion";
 
-export const PANE_VIEWS = ["videos", "assets", "components"] as const;
+export const PANE_VIEWS = [
+  "videos",
+  "projects",
+  "assets",
+  "components",
+] as const;
 
 export type PaneView = (typeof PANE_VIEWS)[number];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { PauseIcon, PlayIcon } from "lucide-react";
+import { PauseIcon, PlayIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { type AudioPlayer, audioTime } from "@/hooks/use-audio-player";
@@ -13,7 +13,7 @@ export function AudioTransport({
   player: AudioPlayer;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-xl bg-muted/50 p-3">
+    <div className="flex min-w-0 items-center gap-3 rounded-lg bg-field px-3 py-2">
       <audio
         aria-label={`Audio for ${name}`}
         onDurationChange={player.onMetadata}
@@ -31,10 +31,10 @@ export function AudioTransport({
       </audio>
       <Button
         aria-label={`${player.playing ? "Pause" : "Play"} ${name}`}
-        className="size-11 rounded-full before:rounded-full focus-visible:ring-foreground/50 motion-safe:transition-transform motion-safe:active:scale-[0.96] sm:size-11"
+        className="shrink-0"
         disabled={player.pending || player.url === null}
         onClick={player.toggle}
-        size="icon-xl"
+        size="icon"
         type="button"
         variant="outline"
       >
@@ -44,7 +44,7 @@ export function AudioTransport({
         <input
           aria-label={`Seek ${name}`}
           aria-valuetext={`${audioTime(player.position)} of ${audioTime(player.duration)}`}
-          className="h-7 w-full cursor-pointer accent-foreground focus-visible:outline-2 focus-visible:outline-foreground/50 disabled:cursor-default disabled:opacity-50"
+          className="h-7 w-full cursor-pointer accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 disabled:cursor-default disabled:opacity-45"
           disabled={player.duration <= 0 || player.unavailable}
           max={player.duration || 1}
           min={0}

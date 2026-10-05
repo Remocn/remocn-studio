@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon } from "@/components/icons";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import {
   activityTarget,
@@ -42,7 +42,7 @@ export function ActivityRun({
       <button
         aria-expanded={disclosure.isOpen}
         aria-label={`${label}, ${hidden} more`}
-        className="group flex w-full min-w-0 items-center gap-2 rounded-md text-left font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="group flex w-full min-w-0 items-center gap-2 rounded-md text-left font-mono text-xs outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
         onClick={disclosure.toggle}
         type="button"
       >

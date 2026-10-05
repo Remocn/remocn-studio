@@ -1,7 +1,5 @@
 "use client";
 
-import { ChevronDownIcon } from "lucide-react";
-
 import {
   type ChangeEvent,
   type MouseEvent,
@@ -9,7 +7,9 @@ import {
   useEffect,
   useState,
 } from "react";
+import { ChevronDownIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { NativeCheckbox } from "@/components/ui/checkbox";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import {
   confirmVideoBrand,
@@ -161,28 +161,38 @@ export function ProjectBrandApply({
   return (
     <ProjectSettingsGroup title="Existing videos">
       <details className="group">
-        <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm outline-offset-4 [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-4 py-1 text-sm outline-offset-4 [&::-webkit-details-marker]:hidden">
           <span>Apply brand to existing videos</span>
           <ChevronDownIcon
             aria-hidden="true"
             className="size-4 shrink-0 text-muted-foreground group-open:rotate-180"
           />
         </summary>
-        <div className="grid gap-3 pb-4">
+        <div className="grid gap-3 py-3">
           <p className="text-muted-foreground text-sm">
             The agent updates the selected videos. Review the changes and
             preview before confirming their new brand.
           </p>
-          <Button disabled={disabled} onClick={selectAll} variant="ghost">
+          <Button
+            className="justify-self-start"
+            disabled={disabled}
+            onClick={selectAll}
+            size="sm"
+            variant="ghost"
+          >
             Select all videos
           </Button>
           {videos.map((video) => (
-            <label className="flex items-center gap-2 text-sm" key={video.id}>
-              <input
+            <label
+              className="flex min-h-8 items-center gap-2 text-sm"
+              htmlFor={`apply-brand-${video.id}`}
+              key={video.id}
+            >
+              <NativeCheckbox
                 checked={selected.includes(video.id)}
                 disabled={disabled || studio.isVideoBusy(video.id)}
+                id={`apply-brand-${video.id}`}
                 onChange={toggle}
-                type="checkbox"
                 value={video.id}
               />
               {video.name}
@@ -192,6 +202,7 @@ export function ProjectBrandApply({
             className="justify-self-start"
             disabled={disabled || selected.length === 0}
             onClick={apply}
+            size="sm"
             variant="outline"
           >
             Apply to selected videos

@@ -1,31 +1,31 @@
 "use client";
 
-import { FolderOpenIcon, FolderPlusIcon } from "lucide-react";
+import { type MouseEvent, useCallback, useState } from "react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  FolderOpenIcon,
+  FolderPlusIcon,
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LogoWordmark } from "./logo-mark";
-import { Scrim } from "./scrim";
 
-const STEPS = [
+const HINTS = [
   {
-    body: "The studio scaffolds a real Remotion project, or opens one you already have.",
-    id: "project",
-    title: "Start a project",
+    body: "Click an element on the canvas to adjust its color, size or timing.",
+    title: "Point at what you want to change",
   },
   {
-    body: "Say what the video should be. Your coding agent writes actual Remotion components into that folder — TSX you can read, edit and keep.",
-    id: "describe",
-    title: "Describe the video",
+    body: "Capture a frame or an area and attach it to your next message.",
+    title: "Show, don’t describe",
   },
   {
-    body: "The preview plays the code on disk as it changes. Click an element to comment on it, or snapshot a frame.",
-    id: "watch",
-    title: "Watch it, and point at it",
+    body: "Import DESIGN.md once. New videos inherit the project’s colors and typography.",
+    title: "Keep every video on brand",
   },
   {
-    body: "Rendered by the project’s own Remotion, so the file is what you watched.",
-    id: "export",
-    title: "Export the mp4",
+    body: "Save an animation as a component and reuse it in any video.",
+    title: "Reuse what works",
   },
 ];
 
@@ -39,87 +39,128 @@ export function Startup({
   onOpenFolder: () => void;
 }) {
   return (
-    // Centred with `auto` margins rather than `justify-center`: the pane is a
-    // scroll viewport, and a centred flex child taller than it loses its top
-    // edge instead of scrolling to it.
-    <div className={cn("flex w-full min-w-0 flex-1 flex-col", entrance)}>
-      {/* No width of its own: the scroller column is already the composer's
-          `max-w-2xl`, and this is the thing the composer is waiting under. */}
-      <Scrim className="m-auto flex w-full flex-col gap-8">
-        <header className="flex flex-col gap-4">
-          <LogoWordmark />
-          <h3 className="text-balance font-semibold text-2xl leading-tight tracking-tight">
-            Make a video by describing it
-          </h3>
-        </header>
-
-        <ol aria-label="Getting started" className="flex w-full flex-col">
-          {STEPS.map((step, index) => (
-            <Step
-              body={step.body}
-              index={index}
-              isLast={index === STEPS.length - 1}
-              key={step.id}
-              title={step.title}
-            />
-          ))}
-        </ol>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={onNewProject} size="lg">
-              <FolderPlusIcon data-icon="inline-start" />
-              New Project…
-            </Button>
-            <Button onClick={onOpenFolder} size="lg" variant="ghost">
-              <FolderOpenIcon data-icon="inline-start" />
-              Open an existing project
-            </Button>
-          </div>
-          <p className="text-muted-foreground text-xs">
-            Needs Claude Code, Codex, GitHub Copilot or Grok Build, already
-            signed in.
-          </p>
-        </div>
-      </Scrim>
+    <div
+      className={cn(
+        "flex w-full min-w-0 flex-col items-center pt-[clamp(24px,calc(100dvh-784px),64px)] pb-8",
+        entrance
+      )}
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none h-[clamp(160px,calc(100dvh-434px),232px)] w-80 max-w-full shrink-0 select-none bg-[url('/design-system/welcome-ribbon.svg')] bg-center bg-contain bg-no-repeat"
+      />
+      <header className="mt-6 flex flex-col gap-2 text-center">
+        <h3 className="text-balance font-semibold text-2xl leading-8 tracking-tight">
+          Make a video by describing it
+        </h3>
+        <p className="text-pretty text-muted-foreground text-sm">
+          Start a project, then tell your agent what to make.
+        </p>
+      </header>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <Button
+          className="min-w-36"
+          onClick={onNewProject}
+          size="lg"
+          variant="key-action"
+        >
+          <FolderPlusIcon />
+          New project
+        </Button>
+        <Button
+          className="min-w-[218px]"
+          onClick={onOpenFolder}
+          size="lg"
+          variant="secondary"
+        >
+          <FolderOpenIcon />
+          Open an existing project
+        </Button>
+      </div>
+      <WelcomeHints />
+      <p className="mt-7 text-center text-2xs text-muted-foreground">
+        Needs Claude Code, Codex, GitHub Copilot or Grok Build, already signed
+        in.
+      </p>
     </div>
   );
 }
 
-function Step({
-  body,
-  index,
-  isLast,
-  title,
-}: {
-  body: string;
-  index: number;
-  isLast: boolean;
-  title: string;
-}) {
+function WelcomeHints() {
+  const [index, setIndex] = useState(0);
+  const hint = HINTS[index];
+  const previous = useCallback(
+    () => setIndex((current) => (current + HINTS.length - 1) % HINTS.length),
+    []
+  );
+  const next = useCallback(
+    () => setIndex((current) => (current + 1) % HINTS.length),
+    []
+  );
+  const pick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) =>
+      setIndex(Number(event.currentTarget.value)),
+    []
+  );
   return (
-    <li className="flex gap-3">
-      {/* The rule stretches to whatever the copy beside it needs, which is what
-          makes four rows read as one sequence rather than four cards. */}
-      <div className="flex flex-col items-center gap-1">
-        {/* No `tabular-nums`: these four never change, and DM Sans pads a
-            tabular "1" to the right of its slot, which reads as off-centre in
-            a circle. `leading-none` drops the line box onto the glyph so the
-            flex centring has nothing else to average. */}
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full border bg-card font-medium text-muted-foreground text-xs leading-none">
-          {index + 1}
-        </span>
-        {isLast ? null : <span className="w-px flex-1 bg-border" />}
+    <section
+      aria-label="Quick tips"
+      className="mt-8 flex min-h-30 w-full max-w-[480px] flex-col gap-2 rounded-xl bg-field px-4 py-3"
+    >
+      <div className="flex h-7 items-center gap-2">
+        <span className="text-2xs text-muted-foreground">Quick tip</span>
+        <fieldset aria-label="Choose a tip" className="flex items-center">
+          {HINTS.map((item, i) => (
+            <button
+              aria-current={i === index ? "true" : undefined}
+              aria-label={`Tip ${i + 1}: ${item.title}`}
+              className="flex size-6 items-center justify-center rounded-sm outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid"
+              key={item.title}
+              onClick={pick}
+              type="button"
+              value={i}
+            >
+              <span
+                className={cn(
+                  "h-1 rounded-[2px]",
+                  i === index ? "w-3.5 bg-muted-foreground" : "w-1 bg-input"
+                )}
+              />
+            </button>
+          ))}
+        </fieldset>
+        <div className="ml-auto flex gap-1">
+          <Button
+            aria-label="Previous tip"
+            onClick={previous}
+            size="icon-sm"
+            variant="secondary"
+          >
+            <ChevronLeftIcon />
+          </Button>
+          <Button
+            aria-label="Next tip"
+            onClick={next}
+            size="icon-sm"
+            variant="secondary"
+          >
+            <ChevronRightIcon />
+          </Button>
+        </div>
       </div>
-
       <div
-        className={cn("flex min-w-0 flex-col gap-1", isLast ? null : "pb-5")}
+        aria-atomic="true"
+        aria-live="polite"
+        className="grid min-h-12 gap-1"
       >
-        <p className="font-medium text-base">{title}</p>
-        <p className="text-pretty text-muted-foreground text-sm/relaxed">
-          {body}
-        </p>
+        <div
+          className="animate-fade-in [animation-duration:160ms] motion-reduce:animate-none"
+          key={hint.title}
+        >
+          <p className="font-medium text-sm">{hint.title}</p>
+          <p className="mt-1 text-muted-foreground text-xs">{hint.body}</p>
+        </div>
       </div>
-    </li>
+    </section>
   );
 }

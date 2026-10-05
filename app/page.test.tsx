@@ -8,6 +8,7 @@ import {
   waitForElementToBeRemoved,
   within,
 } from "@testing-library/react";
+import { MotionConfig } from "motion/react";
 import Page from "@/app/page";
 import type {
   HistorySession,
@@ -15,15 +16,16 @@ import type {
   TranscriptEntry,
   Video,
 } from "@/shared/ipc";
+import type { Asset } from "@/shared/library";
 
 const PICKED_FOLDER = "/Users/me/projects/my-video";
+const PROJECT_CHAT = /^Project chat/;
 const SESSION_ROW = /^A promo for the launch/;
 const PRODUCT_DEMO_ROW = /^Product demo/;
 const LAUNCH_TEASER_ROW = /^Launch teaser/;
 const WORDMARK = /^emocn/;
 const STARTUP = "Make a video by describing it";
 const SIDECAR_DOWN = /the sidecar is not running/;
-const VIDEO_ROW = { selector: '[data-slot="sidebar-menu-button"] > span' };
 
 const SIDECAR_READY = {
   attempt: 0,
@@ -37,7 +39,7 @@ const PROJECT: Project = {
   createdAt: 1_700_000_000_000,
   id: "project-1",
   missing: false,
-  name: "my-video",
+  name: "My video",
   path: PICKED_FOLDER,
   updatedAt: 1_700_000_000_000,
 };
@@ -78,6 +80,7 @@ const STORED_SESSION: HistorySession = {
 
 function mockStudio(
   options: {
+    assets?: Asset[];
     blocks?: TranscriptEntry[];
     folder?: string | null;
     projects?:
@@ -108,7 +111,7 @@ function mockStudio(
           return { removed: true };
         }
         if (method === "library.list") {
-          return [];
+          return options.assets ?? [];
         }
         if (method === "project.list") {
           const { projects } = options;
@@ -121,13 +124,33 @@ function mockStudio(
           };
         }
         if (method === "video.list") {
-          return options.videos ?? [VIDEO];
+          const { projectId } = (payload as { params: { projectId: string } })
+            .params;
+          return (options.videos ?? [VIDEO]).filter(
+            (video) => video.projectId === projectId
+          );
         }
         if (method === "video.reconcile") {
-          return options.videos ?? [VIDEO];
+          const { projectId } = (payload as { params: { projectId: string } })
+            .params;
+          return (options.videos ?? [VIDEO]).filter(
+            (video) => video.projectId === projectId
+          );
         }
         if (method === "project.open") {
           return PROJECT;
+        }
+        if (method === "project.settingsGet") {
+          return {
+            brand: null,
+            name: PROJECT.name,
+            projectId: PROJECT.id,
+            revision: 1,
+            schemaVersion: 1,
+          };
+        }
+        if (method === "video.brandStatus") {
+          return null;
         }
         if (method === "preview.start") {
           return new Promise(() => undefined);
@@ -143,8 +166,35 @@ function mockStudio(
 const OLDER_CHAT = /The older one/;
 
 async function renderShell() {
-  render(<Page />);
-  await screen.findByRole("heading", { name: "Videos" });
+  // Happy DOM cannot render WAAPI frames; assert navigation without tweening.
+  render(
+    <MotionConfig skipAnimations>
+      <Page />
+    </MotionConfig>
+  );
+  await screen.findByRole("navigation", { name: "Library views" });
+}
+
+async function openAssets() {
+  fireEvent.click(await screen.findByRole("button", { name: "Assets" }));
+  await screen.findByRole("region", { name: "Library" });
+}
+
+async function openProjects() {
+  fireEvent.click(
+    within(screen.getByRole("navigation", { name: "Library views" })).getByRole(
+      "button",
+      { name: "Projects" }
+    )
+  );
+  return await screen.findByRole("complementary", {
+    name: "Projects navigation",
+  });
+}
+
+async function pickProject(name: string) {
+  const navigation = await openProjects();
+  fireEvent.click(await within(navigation).findByRole("button", { name }));
 }
 
 // Picking a folder moved to the native File menu, which jsdom cannot open, so
@@ -156,10 +206,8 @@ async function openFolderButton() {
   });
 }
 
-// The preview leaves once the project list comes back empty, so its own
-// "show" button is the marker for a settled, project-less shell.
-function showPreviewButton() {
-  return screen.findByRole("button", { name: "Show the preview" });
+function welcomeReady() {
+  return screen.findByRole("heading", { name: STARTUP });
 }
 
 describe("app shell", () => {
@@ -171,18 +219,52 @@ describe("app shell", () => {
     mockStudio({ projects: [PROJECT] });
     await renderShell();
 
-    expect(screen.getByRole("heading", { name: "Videos" })).toBeVisible();
-    expect(await screen.findByRole("heading", { name: "Chat" })).toBeVisible();
     expect(
-      await screen.findByRole("button", { name: "Hide the preview" })
+      screen.getByRole("navigation", { name: "Library views" })
+    ).toBeVisible();
+    expect(
+      within(
+        screen.getByRole("navigation", { name: "Library views" })
+      ).queryByRole("button", { name: "Videos" })
+    ).toBeNull();
+    expect(screen.getByRole("region", { name: "Videos" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Chat" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Export" })).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Hide the preview" })
+    ).toBeNull();
+  });
+
+  it("opens video creation from the sidebar", async () => {
+    mockStudio({ projects: [PROJECT] });
+    await renderShell();
+
+    const createVideo = within(
+      screen.getByRole("region", { name: "Videos" })
+    ).getByRole("button", { name: "New video" });
+    await waitFor(() => expect(createVideo).toBeEnabled());
+    fireEvent.click(createVideo);
+
+    expect(
+      await screen.findByRole("heading", { name: "New video" })
+    ).toBeVisible();
+    expect(screen.queryByRole("region", { name: "Library" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(
+      await screen.findByRole("textbox", { name: "Message" })
     ).toBeVisible();
   });
 
   it("keeps Docs behind a shortcut and offers the way back from it", async () => {
     mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
     await renderShell();
-    fireEvent.click(await screen.findByText("My video", VIDEO_ROW));
-    await screen.findByRole("button", { name: "Hide the preview" });
+    fireEvent.click(
+      await within(screen.getByRole("region", { name: "Videos" })).findByRole(
+        "button",
+        { name: "My video" }
+      )
+    );
+    await screen.findByRole("button", { name: "Export" });
 
     expect(screen.queryByRole("button", { name: "Preview" })).toBeNull();
 
@@ -196,11 +278,13 @@ describe("app shell", () => {
 
   it("keeps the preview out of the way until there is a project", async () => {
     await renderShell();
-    await showPreviewButton();
+    await welcomeReady();
 
-    expect(
-      screen.queryByRole("button", { name: "Hide the preview" })
-    ).toBeNull();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Export" })
+      ).not.toBeInTheDocument()
+    );
   });
 
   it("does not reveal onboarding while stored projects are loading", async () => {
@@ -218,7 +302,9 @@ describe("app shell", () => {
     ).not.toBeInTheDocument();
 
     finishLoading([PROJECT]);
-    expect(await screen.findByText("My video", VIDEO_ROW)).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "My video" })
+    ).toBeVisible();
   });
 
   // A list that failed is not a list that is empty. Onboarding here told a
@@ -250,25 +336,24 @@ describe("app shell", () => {
 
     fireEvent.click(conversation.getByRole("button", { name: "Try again" }));
 
-    expect(await screen.findByText("My video", VIDEO_ROW)).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "My video" })
+    ).toBeVisible();
   });
 
   it("brings the preview back, and lets it be dismissed again", async () => {
     mockStudio({ projects: [PROJECT] });
     await renderShell();
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Hide the preview" })
-    );
+    await screen.findByRole("button", { name: "Export" });
+    fireEvent.keyDown(window, { key: "\\", metaKey: true });
 
     await waitForElementToBeRemoved(() =>
-      screen.queryByRole("button", { name: "Hide the preview" })
+      screen.queryByRole("button", { name: "Export" })
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Show the preview" }));
 
-    expect(
-      screen.getByRole("button", { name: "Hide the preview" })
-    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Export" })).toBeVisible();
   });
 
   // "Clicking a video opens its most recent chat" is the invariant the rest of
@@ -286,7 +371,12 @@ describe("app shell", () => {
     });
     await renderShell();
 
-    fireEvent.click(await screen.findByText("My video", VIDEO_ROW));
+    fireEvent.click(
+      await within(screen.getByRole("region", { name: "Videos" })).findByRole(
+        "button",
+        { name: "My video" }
+      )
+    );
 
     expect(
       await screen.findByRole("heading", { name: "The newer one" })
@@ -314,6 +404,543 @@ describe("app shell", () => {
     expect(screen.queryByRole("combobox")).toBeNull();
   });
 
+  it("keeps the draft when leaving the library or picking the current chat again", async () => {
+    mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
+    await renderShell();
+    fireEvent.click(await screen.findByRole("button", { name: SESSION_ROW }));
+    const message = await screen.findByRole("textbox", { name: "Message" });
+    fireEvent.change(message, { target: { value: "Keep this draft" } });
+
+    await openAssets();
+    fireEvent.click(screen.getByRole("button", { name: "Back to chat" }));
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "Keep this draft"
+    );
+
+    await openAssets();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    fireEvent.change(await screen.findByRole("combobox"), {
+      target: { value: STORED_SESSION.title },
+    });
+    fireEvent.click(await screen.findByRole("option", { name: SESSION_ROW }));
+    expect(
+      screen.queryByRole("region", { name: "Library" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "Keep this draft"
+    );
+  });
+
+  it("keeps the current chat and draft when picking the selected project", async () => {
+    const olderChat = {
+      ...STORED_SESSION,
+      id: "older-chat",
+      title: "Earlier conversation",
+      updatedAt: STORED_SESSION.updatedAt - 1,
+    };
+    mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION, olderChat] });
+    await renderShell();
+    fireEvent.click(
+      await screen.findByRole("button", { name: olderChat.title })
+    );
+    fireEvent.change(await screen.findByRole("textbox", { name: "Message" }), {
+      target: { value: "Keep the earlier draft" },
+    });
+
+    await pickProject(PROJECT.name);
+
+    expect(
+      screen.getByRole("heading", { name: olderChat.title })
+    ).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "Keep the earlier draft"
+    );
+  });
+
+  it("shows chats by update time and switches only the selected project's list", async () => {
+    const otherProject = { ...PROJECT, id: "project-2", name: "Brand film" };
+    const emptyProject = { ...PROJECT, id: "project-3", name: "Empty project" };
+    const chats = Array.from({ length: 9 }, (_, index) => ({
+      ...STORED_SESSION,
+      id: `chat-${index}`,
+      title: `Project chat ${index}`,
+      updatedAt: index,
+    }));
+    const otherChat = {
+      ...STORED_SESSION,
+      id: "other-chat",
+      projectId: otherProject.id,
+      title: "Brand story",
+      videoId: "brand-video",
+    };
+    mockStudio({
+      projects: [PROJECT, otherProject, emptyProject],
+      sessions: [...chats, otherChat],
+      videos: [
+        VIDEO,
+        {
+          ...VIDEO,
+          id: "brand-video",
+          name: "Brand video",
+          projectId: otherProject.id,
+        },
+      ],
+    });
+    await renderShell();
+    const list = screen.getByRole("region", { name: "Videos" });
+    const firstChat = await within(list).findByRole("button", {
+      name: "Project chat 0",
+    });
+    expect(firstChat.closest("[data-video-list]")?.parentElement).toHaveClass(
+      "flex-1",
+      "min-h-0",
+      "overflow-y-auto"
+    );
+    expect(screen.queryByRole("region", { name: "Projects" })).toBeNull();
+    expect(
+      within(list).getAllByRole("button", { name: PROJECT_CHAT })
+    ).toHaveLength(9);
+    expect(
+      within(list)
+        .getAllByRole("button", { name: PROJECT_CHAT })
+        .map((button) => button.getAttribute("value"))
+    ).toEqual(chats.toReversed().map((chat) => chat.id));
+    expect(
+      within(list).queryByRole("button", { name: "Brand story" })
+    ).toBeNull();
+
+    const projectNavigation = await openProjects();
+    const projectButton = within(projectNavigation).getByRole("button", {
+      name: "Brand film",
+    });
+    fireEvent.pointerDown(projectButton);
+    fireEvent.click(projectButton);
+    const brandChat = await within(list).findByRole("button", {
+      name: "Brand story",
+    });
+    expect(brandChat.closest("[data-video-list]")).toHaveAttribute(
+      "data-animate",
+      "true"
+    );
+    expect(
+      within(list).queryByRole("button", { name: "Project chat 0" })
+    ).toBeNull();
+
+    const emptyNavigation = await openProjects();
+    const emptyButton = within(emptyNavigation).getByRole("button", {
+      name: "Empty project",
+    });
+    fireEvent.keyDown(emptyButton, { key: "Enter" });
+    fireEvent.click(emptyButton);
+    const empty = await within(list).findByText(
+      "No videos in this project yet."
+    );
+    expect(empty.closest("[data-video-list]")?.parentElement).toHaveClass(
+      "flex-1",
+      "min-h-0"
+    );
+    expect(empty.closest("[data-video-list]")).toHaveAttribute(
+      "data-animate",
+      "false"
+    );
+    expect(
+      within(list).queryByRole("button", { name: "Brand story" })
+    ).toBeNull();
+
+    await pickProject(PROJECT.name);
+    await within(list).findByRole("button", { name: "Project chat 0" });
+    expect(
+      within(list).getAllByRole("button", { name: PROJECT_CHAT })
+    ).toHaveLength(9);
+  });
+
+  it("nests chats under their video and opens or starts a chat in that video", async () => {
+    const secondChat = {
+      ...STORED_SESSION,
+      id: "second-chat",
+      title: "Second video discussion",
+      videoId: SECOND_VIDEO.id,
+    };
+    mockStudio({
+      projects: [PROJECT],
+      sessions: [STORED_SESSION, secondChat],
+      videos: [VIDEO, SECOND_VIDEO],
+    });
+    await renderShell();
+    const sidebar = screen.getByRole("region", { name: "Videos" });
+    const firstChat = await within(sidebar).findByRole("button", {
+      name: SESSION_ROW,
+    });
+    expect(firstChat.closest("[data-video-row]")).toHaveTextContent(VIDEO.name);
+    expect(
+      within(sidebar).queryByRole("button", { name: secondChat.title })
+    ).toBeNull();
+
+    fireEvent.click(
+      within(sidebar).getByRole("button", {
+        name: "Show the chats about Second video",
+      })
+    );
+    const nestedChat = within(sidebar).getByRole("button", {
+      name: secondChat.title,
+    });
+    expect(nestedChat.closest("[data-video-row]")).toHaveTextContent(
+      SECOND_VIDEO.name
+    );
+    expect(
+      screen.queryByRole("heading", { name: secondChat.title })
+    ).toBeNull();
+
+    fireEvent.click(
+      within(sidebar).getByRole("button", {
+        name: SECOND_VIDEO.name,
+      })
+    );
+    expect(
+      await screen.findByRole("heading", { name: secondChat.title })
+    ).toBeVisible();
+    fireEvent.click(
+      within(sidebar).getByRole("button", { name: "Collapse all chats" })
+    );
+    expect(
+      within(sidebar).queryByRole("button", { name: SESSION_ROW })
+    ).toBeNull();
+    expect(
+      within(sidebar).queryByRole("button", { name: secondChat.title })
+    ).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: secondChat.title })
+    ).toBeVisible();
+    fireEvent.click(
+      within(sidebar).getByRole("button", { name: "Expand all chats" })
+    );
+    expect(
+      within(sidebar).getByRole("button", { name: SESSION_ROW })
+    ).toBeVisible();
+    expect(
+      within(sidebar).getByRole("button", { name: secondChat.title })
+    ).toBeVisible();
+    fireEvent.click(
+      within(sidebar).getByRole("button", {
+        name: "New chat about Second video",
+      })
+    );
+    expect(
+      await screen.findByRole("heading", { name: "New chat" })
+    ).toBeVisible();
+  });
+
+  it("keeps complete lists in scroll areas and video history popovers", async () => {
+    const chats = Array.from({ length: 30 }, (_, index) => ({
+      ...STORED_SESSION,
+      id: `chat-${index}`,
+      title: `Project chat ${index}`,
+      updatedAt: STORED_SESSION.updatedAt + index,
+    }));
+    const projects = Array.from({ length: 12 }, (_, index) => ({
+      ...PROJECT,
+      id: `extra-${index}`,
+      name: `Extra project ${index}`,
+      updatedAt: index,
+    }));
+    mockStudio({ projects: [PROJECT, ...projects], sessions: chats });
+    await renderShell();
+    const list = screen.getByRole("region", { name: "Videos" });
+    await within(list).findByRole("button", { name: "Project chat 29" });
+    expect(
+      within(list).getAllByRole("button", { name: PROJECT_CHAT })
+    ).toHaveLength(30);
+    expect(
+      within(list).getByRole("button", { name: "Project chat 0" })
+    ).toBeInTheDocument();
+
+    fireEvent.click(within(list).getByRole("button", { name: "All videos" }));
+    const chatHistory = screen.getByRole("dialog", {
+      name: "All videos",
+    });
+    expect(
+      within(chatHistory).getAllByRole("button", { name: PROJECT_CHAT })
+    ).toHaveLength(30);
+    fireEvent.click(
+      within(chatHistory).getByRole("button", { name: "Project chat 0" })
+    );
+    expect(
+      within(list).getByRole("button", { name: "All videos" })
+    ).toHaveAttribute("aria-expanded", "false");
+    expect(
+      await screen.findByRole("heading", { name: "Project chat 0" })
+    ).toBeVisible();
+
+    const projectList = await openProjects();
+    expect(
+      within(projectList).getByRole("button", { name: "Extra project 0" })
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(projectList).getByRole("button", { name: "Extra project 0" })
+    );
+    expect(
+      await within(list).findByText("No videos in this project yet.")
+    ).toBeInTheDocument();
+  });
+
+  it("opens Projects in the sidebar and returns to the selected project's videos and chats", async () => {
+    const otherProject = { ...PROJECT, id: "project-2", name: "Brand film" };
+    const otherVideo = {
+      ...VIDEO,
+      id: "brand-video",
+      name: "Brand video",
+      projectId: otherProject.id,
+    };
+    const otherChat = {
+      ...STORED_SESSION,
+      id: "brand-chat",
+      projectId: otherProject.id,
+      title: "Brand story",
+      updatedAt: STORED_SESSION.updatedAt + 1,
+      videoId: otherVideo.id,
+    };
+    mockStudio({
+      projects: [PROJECT, otherProject],
+      sessions: [STORED_SESSION, otherChat],
+      videos: [VIDEO, otherVideo],
+    });
+    await renderShell();
+    fireEvent.click(
+      await screen.findByRole("button", { name: STORED_SESSION.title })
+    );
+    const menu = screen.getByRole("navigation", { name: "Library views" });
+    fireEvent.click(within(menu).getByRole("button", { name: "Projects" }));
+    const navigation = await screen.findByRole("complementary", {
+      name: "Projects navigation",
+    });
+
+    expect(screen.queryByRole("region", { name: "Videos" })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: STORED_SESSION.title })
+    ).toBeVisible();
+    expect(
+      within(navigation).getByRole("button", { name: "Create project" })
+    ).toBeVisible();
+    const projectButtons = within(navigation)
+      .getAllByRole("button")
+      .filter((button) => button.hasAttribute("value"));
+    expect(projectButtons.map((button) => button.textContent)).toEqual([
+      "Brand film",
+      PROJECT.name,
+    ]);
+    fireEvent.click(
+      within(navigation).getByRole("button", { name: "Brand film" })
+    );
+
+    expect(
+      screen.queryByRole("complementary", { name: "Projects navigation" })
+    ).toBeNull();
+    const videos = await screen.findByRole("region", { name: "Videos" });
+    expect(
+      await within(videos).findByRole("button", { name: "Brand video" })
+    ).toBeVisible();
+    expect(
+      await within(videos).findByRole("button", { name: "Brand story" })
+    ).toBeVisible();
+    expect(
+      within(videos).queryByRole("button", { name: STORED_SESSION.title })
+    ).toBeNull();
+    expect(screen.getByRole("heading", { name: "Brand story" })).toBeVisible();
+
+    fireEvent.click(within(menu).getByRole("button", { name: "Projects" }));
+    fireEvent.click(screen.getByRole("button", { name: "Back to chat" }));
+    expect(screen.getByRole("region", { name: "Videos" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Brand story" })).toBeVisible();
+  });
+
+  it("preserves the chat draft when choosing the current project from Projects", async () => {
+    mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
+    await renderShell();
+    fireEvent.click(
+      await screen.findByRole("button", { name: STORED_SESSION.title })
+    );
+    fireEvent.change(await screen.findByRole("textbox", { name: "Message" }), {
+      target: { value: "Keep this project draft" },
+    });
+    fireEvent.click(
+      within(
+        screen.getByRole("navigation", { name: "Library views" })
+      ).getByRole("button", { name: "Projects" })
+    );
+    const navigation = await screen.findByRole("complementary", {
+      name: "Projects navigation",
+    });
+    fireEvent.click(
+      within(navigation).getByRole("button", { name: PROJECT.name })
+    );
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "Keep this project draft"
+    );
+    expect(
+      screen.getByRole("heading", { name: STORED_SESSION.title })
+    ).toBeVisible();
+  });
+
+  it("replaces navigation for Assets and Components and restores the chat draft", async () => {
+    const component: Asset = {
+      audiomap: null,
+      category: null,
+      clip: null,
+      createdAt: 1,
+      dependencies: [],
+      description: "",
+      duration: null,
+      files: ["Title.tsx"],
+      name: "Title reveal",
+      path: "/library/title-reveal",
+      preview: null,
+      proxied: false,
+      role: null,
+      slug: "title-reveal",
+      source: null,
+      type: "component",
+    };
+    mockStudio({
+      assets: [component],
+      projects: [PROJECT],
+      sessions: [STORED_SESSION],
+    });
+    await renderShell();
+    fireEvent.click(await screen.findByRole("button", { name: SESSION_ROW }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "Message" }), {
+      target: { value: "Keep my draft" },
+    });
+    const assets = screen.getByRole("button", { name: "Assets" });
+    assets.focus();
+    fireEvent.pointerDown(assets);
+    fireEvent.click(assets);
+    const navigation = await screen.findByRole("complementary", {
+      name: "Assets navigation",
+    });
+    expect(
+      within(navigation).getByRole("button", { name: "Library" })
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("region", { name: "Videos" })).toBeNull();
+    expect(
+      within(navigation).getByRole("region", { name: "Library" })
+    ).toBeVisible();
+    const draft = screen.getByRole("textbox", { name: "Message" });
+    expect(draft).toBeVisible();
+    expect(draft.closest("[inert]") === null).toBe(true);
+    expect(draft).toHaveValue("Keep my draft");
+    fireEvent.change(draft, {
+      target: { value: "Editing with the library open" },
+    });
+    expect(
+      document.activeElement ===
+        within(navigation).getByRole("button", { name: "Back to chat" })
+    ).toBe(true);
+    expect(
+      navigation.closest("[data-sidebar-slide]")?.getAttribute("style")
+    ).toContain("transform 200ms");
+    fireEvent.click(
+      within(navigation).getByRole("button", { name: "Back to chat" })
+    );
+    await waitFor(() => expect(document.activeElement === assets).toBe(true));
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "Editing with the library open"
+    );
+
+    const components = screen.getByRole("button", {
+      name: "Components",
+    });
+    fireEvent.keyDown(components, { key: "Enter" });
+    fireEvent.click(components);
+    const sources = await screen.findByRole("navigation", {
+      name: "Component sources",
+    });
+    const componentSidebar = screen.getByRole("complementary", {
+      name: "Components navigation",
+    });
+    expect(
+      within(componentSidebar).getByRole("region", { name: "Library" })
+    ).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Message" })).toBeVisible();
+    expect(
+      screen.getByRole("textbox", { name: "Message" }).closest("[inert]") ===
+        null
+    ).toBe(true);
+    fireEvent.click(within(sources).getByRole("button", { name: "Saved" }));
+    expect(
+      within(sources).getByRole("button", { name: "Saved" })
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      sources.closest("[data-sidebar-slide]")?.getAttribute("style")
+    ).toContain("transition: none");
+    fireEvent.click(
+      within(componentSidebar).getByRole("button", {
+        name: "Title reveal, Component",
+      })
+    );
+    expect(componentSidebar).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Remove Title reveal" })
+    ).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "Editing with the library open [Asset #1] "
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Back to chat" }));
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "Editing with the library open [Asset #1] "
+    );
+  });
+
+  it("keeps one project draft across settings tabs and protects it on Back", async () => {
+    mockStudio({ projects: [PROJECT] });
+    await renderShell();
+    await screen.findByRole("button", { name: "My video" });
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Project" }));
+    fireEvent.change(
+      await screen.findByRole("textbox", { name: "Project name" }),
+      {
+        target: { value: "Launch film" },
+      }
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Brand" }));
+    fireEvent.change(
+      await screen.findByRole("textbox", { name: "Brand name" }),
+      {
+        target: { value: "Acme" },
+      }
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Guidelines" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Tone of voice" }), {
+      target: { value: "Clear and direct" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(
+      within(screen.getByRole("region", { name: "Settings" })).getByRole(
+        "alert"
+      )
+    ).toHaveTextContent("Save or cancel your project changes");
+    fireEvent.click(screen.getByRole("tab", { name: "General" }));
+    expect(screen.getByRole("textbox", { name: "Project name" })).toHaveValue(
+      "Launch film"
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Brand" }));
+    expect(screen.getByRole("textbox", { name: "Brand name" })).toHaveValue(
+      "Acme"
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Cancel changes" }));
+    expect(screen.getByRole("textbox", { name: "Brand name" })).toHaveValue("");
+    fireEvent.click(screen.getByRole("tab", { name: "Guidelines" }));
+    expect(screen.getByRole("textbox", { name: "Tone of voice" })).toHaveValue(
+      ""
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("region", { name: "Settings" })
+      ).not.toBeInTheDocument()
+    );
+  });
+
   // Row and chevron did the same thing, so the affordance that tells "expand"
   // from "open" pointed at nothing.
   it("expands without opening when the chevron alone is clicked", async () => {
@@ -323,24 +950,36 @@ describe("app shell", () => {
       videos: [VIDEO, SECOND_VIDEO],
     });
     await renderShell();
-    await screen.findByText("Second video");
+    await within(screen.getByRole("region", { name: "Videos" })).findByText(
+      "Second video"
+    );
 
     fireEvent.click(
-      screen.getByRole("button", {
-        name: "Show the chats about Second video",
-      })
+      within(screen.getByRole("region", { name: "Videos" })).getByRole(
+        "button",
+        {
+          name: "Show the chats about Second video",
+        }
+      )
     );
 
     // The chat is listed under the video, but it is not the open one: the
     // pane's heading still names the chat that was open before.
-    expect(await screen.findByText(STORED_SESSION.title)).toBeVisible();
+    expect(
+      within(screen.getByRole("region", { name: "Videos" })).getByText(
+        STORED_SESSION.title
+      )
+    ).toBeVisible();
     expect(
       screen.queryByRole("heading", { name: STORED_SESSION.title })
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", {
-        name: "Hide the chats about Second video",
-      })
+      within(screen.getByRole("region", { name: "Videos" })).getByRole(
+        "button",
+        {
+          name: "Hide the chats about Second video",
+        }
+      )
     ).toBeVisible();
   });
 
@@ -348,7 +987,7 @@ describe("app shell", () => {
   // lights. What arrives with the first project is the state indicator in it.
   it("keeps the state indicator out of an empty app", async () => {
     const { container } = render(<Page />);
-    await showPreviewButton();
+    await welcomeReady();
 
     expect(container.querySelector('[data-slot="titlebar"]')).toBeVisible();
     expect(container.querySelector('[data-slot="titlebar-mood"]')).toBeNull();
@@ -357,7 +996,7 @@ describe("app shell", () => {
   it("lights the band once there is a project", async () => {
     mockStudio({ projects: [PROJECT] });
     const { container } = render(<Page />);
-    await screen.findByText("My video", VIDEO_ROW);
+    await screen.findByRole("button", { name: "My video" });
 
     expect(
       container.querySelector('[data-slot="titlebar-mood"]')
@@ -366,57 +1005,63 @@ describe("app shell", () => {
 
   it("opens the new project dialog with the project list hidden", async () => {
     await renderShell();
-    await showPreviewButton();
+    await welcomeReady();
     fireEvent.click(
       screen.getByRole("button", { name: "Hide the project list" })
     );
 
-    const [cta] = screen.getAllByRole("button", { name: "New Project…" });
+    const [cta] = screen.getAllByRole("button", { name: "New project" });
     fireEvent.click(cta);
 
     expect(
-      await screen.findByRole("heading", { name: "New Project" })
+      await screen.findByRole("heading", { name: "New project" })
     ).toBeVisible();
   });
 
   it("lets the project list be dismissed and brought back", async () => {
     mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
     await renderShell();
-    await screen.findByText("My video", VIDEO_ROW);
+    await screen.findByRole("button", { name: "My video" });
 
     fireEvent.click(
       screen.getByRole("button", { name: "Hide the project list" })
     );
 
     await waitForElementToBeRemoved(() =>
-      screen.queryByRole("heading", { name: "Videos" })
+      screen.queryByRole("navigation", { name: "Library views" })
     );
-    expect(screen.queryByText("My video", VIDEO_ROW)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "My video" })
+    ).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Show the project list" })
     );
 
-    expect(screen.getByRole("heading", { name: "Videos" })).toBeVisible();
-    expect(await screen.findByText("My video", VIDEO_ROW)).toBeVisible();
+    expect(
+      screen.getByRole("navigation", { name: "Library views" })
+    ).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "My video" })
+    ).toBeVisible();
   });
 
   it("keeps the chat clear of the window buttons on its own", async () => {
     const { container } = render(<Page />);
-    await screen.findByRole("heading", { name: "Chat" });
+    await welcomeReady();
 
     fireEvent.click(
       await screen.findByRole("button", { name: "Hide the project list" })
     );
 
-    expect(container.querySelector('[data-slot="pane-header"]')).toHaveClass(
-      "pl-(--titlebar-inline-inset)"
-    );
+    expect(
+      container.querySelector('[data-slot="workspace-content"]')
+    ).toHaveClass("mt-[46px]");
   });
 
   it("lets the transcript be selected, unlike the rest of the shell", async () => {
     const { container } = render(<Page />);
-    await screen.findByRole("heading", { name: "Chat" });
+    await welcomeReady();
 
     expect(
       container.querySelector('[data-slot="message-scroller-content"]')
@@ -425,32 +1070,37 @@ describe("app shell", () => {
 
   it("leaves the projects pane bare and offers to create one instead", async () => {
     await renderShell();
-    await showPreviewButton();
+    await welcomeReady();
 
     // The pane's own copies moved into the project switcher's menu, so the
     // startup screen is the only one on screen without opening it.
-    const create = screen.getAllByRole("button", { name: "New Project…" });
+    const create = screen.getAllByRole("button", { name: "New project" });
 
     expect(screen.getByRole("heading", { name: STARTUP })).toBeVisible();
     expect(create).toHaveLength(1);
     expect(screen.queryByText("No projects yet")).not.toBeInTheDocument();
   });
 
-  it("walks a first-time user through the steps, ending on the CTA", async () => {
+  it("lets a first-time user browse four hints without leaving welcome", async () => {
     await renderShell();
-    await showPreviewButton();
+    await welcomeReady();
 
-    const steps = screen.getByRole("list", { name: "Getting started" });
-
-    expect(within(steps).getAllByRole("listitem")).toHaveLength(4);
-    expect(within(steps).getByText("Start a project")).toBeVisible();
-    expect(within(steps).getByText("Export the mp4")).toBeVisible();
+    const tips = within(screen.getByRole("group", { name: "Choose a tip" }));
+    expect(tips.getAllByRole("button")).toHaveLength(4);
+    expect(screen.getByText("Point at what you want to change")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Next tip" }));
+    expect(screen.getByText("Show, don’t describe")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Previous tip" }));
+    fireEvent.click(screen.getByRole("button", { name: "Previous tip" }));
+    expect(screen.getByText("Reuse what works")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Next tip" }));
+    expect(screen.getByText("Point at what you want to change")).toBeVisible();
     expect(
       screen.getAllByRole("button", { name: "Open an existing project" })
     ).toHaveLength(1);
   });
 
-  it("names the app at the head of the sidebar, and never a folder", async () => {
+  it("names the app in the header and lists projects in their own sidebar", async () => {
     mockStudio({ projects: [PROJECT], sessions: [STORED_SESSION] });
     await renderShell();
 
@@ -461,10 +1111,11 @@ describe("app shell", () => {
     });
     expect(within(wordmark).getByText(WORDMARK)).toBeVisible();
 
-    // The open project's name lives in the native File menu now, so the
-    // sidebar never spells a folder at all — only the videos inside it.
-    await screen.findByText("My video", VIDEO_ROW);
-    expect(screen.queryByText("my-video")).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Projects" })).toBeNull();
+    const projects = within(await openProjects());
+    expect(
+      await projects.findByRole("button", { name: PROJECT.name })
+    ).toBeVisible();
   });
 
   it("opens the picked folder into the pane", async () => {
@@ -473,7 +1124,9 @@ describe("app shell", () => {
 
     fireEvent.click(await openFolderButton());
 
-    expect(await screen.findByText("My video", VIDEO_ROW)).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "My video" })
+    ).toBeVisible();
     expect(
       screen.queryByRole("heading", { name: STARTUP })
     ).not.toBeInTheDocument();
@@ -483,12 +1136,14 @@ describe("app shell", () => {
   it("keeps the empty states when the picker is dismissed", async () => {
     mockStudio({ folder: null });
     await renderShell();
-    await showPreviewButton();
+    await welcomeReady();
 
     fireEvent.click(await openFolderButton());
 
     expect(await screen.findByRole("heading", { name: STARTUP })).toBeVisible();
-    expect(screen.queryByText("My video", VIDEO_ROW)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "My video" })
+    ).not.toBeInTheDocument();
   });
 
   it("lists stored sessions and opens the one that is clicked", async () => {
@@ -501,7 +1156,9 @@ describe("app shell", () => {
       })
     );
 
-    expect(await screen.findByText("My video", VIDEO_ROW)).toBeVisible();
+    expect(
+      await screen.findByRole("button", { name: "My video" })
+    ).toBeVisible();
     expect(
       await screen.findByRole("heading", { name: "A promo for the launch" })
     ).toBeVisible();
@@ -580,14 +1237,16 @@ describe("app shell", () => {
     ).toBeVisible();
   });
 
-  it("offers a way to start a project from the header", async () => {
+  it("opens the shared project dialog from Projects plus", async () => {
     await renderShell();
+    await openProjects();
 
-    const [header] = await screen.findAllByRole("button", {
-      name: "New Project…",
-    });
-
-    expect(header).toBeVisible();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Create project" })
+    );
+    expect(
+      await screen.findByRole("dialog", { name: "New project" })
+    ).toBeVisible();
   });
 
   it("says so when the history cannot be read", async () => {

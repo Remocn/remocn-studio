@@ -127,7 +127,7 @@ export function revealInFinder(path: string): Effect.Effect<void, ShellError> {
   });
 }
 
-const WINDOW_BACKGROUNDS = { dark: "#181818", light: "#f8f8f8" } as const;
+const WINDOW_BACKGROUNDS = { dark: "#0a0a0a", light: "#f5f5f5" } as const;
 
 export type WindowTheme = keyof typeof WINDOW_BACKGROUNDS;
 

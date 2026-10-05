@@ -34,12 +34,12 @@ function GroupHeading({ count, label }: { count: number; label: string }) {
     // field is pinned above the scroller rather than inside it.
     <h3
       className={cn(
-        "sticky top-0 flex h-8 shrink-0 items-center justify-between bg-sidebar px-2 font-medium text-sidebar-foreground/70 text-xs",
+        "sticky top-0 flex h-8 shrink-0 items-center justify-between bg-background px-1 font-medium text-muted-foreground text-xs",
         OVER_TILES
       )}
     >
       {label}
-      <span className="text-sidebar-foreground/50 tabular-nums">{count}</span>
+      <span className="tabular-nums">{count}</span>
     </h3>
   );
 }

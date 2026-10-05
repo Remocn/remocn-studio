@@ -1,6 +1,6 @@
 "use client";
 
-import { PlayIcon, SquareIcon } from "lucide-react";
+import { PlayIcon, SquareIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useSidecarEmitter } from "@/hooks/use-sidecar-emitter";
 

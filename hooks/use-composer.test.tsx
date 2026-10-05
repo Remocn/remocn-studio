@@ -71,6 +71,47 @@ function composer(projectId: string | null = "project-1") {
 }
 
 describe("useComposer", () => {
+  it("only sends Enter after composition ends and without Shift", async () => {
+    const onSubmit = mock(() => true);
+    const { result } = renderHook(() =>
+      useComposer({ onSubmit, projectId: "project-1" })
+    );
+    act(() => result.current.onChange(typing("こんにちは")));
+
+    for (const state of [
+      { isComposing: true, keyCode: 13, shiftKey: false },
+      { isComposing: false, keyCode: 229, shiftKey: false },
+      { isComposing: false, keyCode: 13, shiftKey: true },
+    ]) {
+      const preventDefault = mock();
+      act(() => {
+        result.current.onKeyDown({
+          key: "Enter",
+          keyCode: state.keyCode,
+          nativeEvent: { isComposing: state.isComposing },
+          preventDefault,
+          shiftKey: state.shiftKey,
+        } as unknown as React.KeyboardEvent<HTMLTextAreaElement>);
+      });
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(preventDefault).not.toHaveBeenCalled();
+      expect(result.current.value).toBe("こんにちは");
+    }
+
+    const preventDefault = mock();
+    await act(() => {
+      result.current.onKeyDown({
+        key: "Enter",
+        keyCode: 13,
+        nativeEvent: { isComposing: false },
+        preventDefault,
+        shiftKey: false,
+      } as unknown as React.KeyboardEvent<HTMLTextAreaElement>);
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+  });
+
   beforeEach(() => {
     mockIPC((cmd) => {
       if (cmd === "save_pasted_image") {

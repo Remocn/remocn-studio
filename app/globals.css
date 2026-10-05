@@ -16,15 +16,15 @@
 .dialkit-root.remocn-dialkit {
   --dial-radius: calc(var(--radius) * 0.8);
   --dial-row-height: 2rem;
-  font-family: var(--font-sans), var(--font-cyrillic), sans-serif;
+  font-family: var(--font-sans);
 }
 
 .property-inspector .dialkit-root.remocn-dialkit {
   --dial-row-height: 1.875rem;
   --dial-row-gap: 0.375rem;
-  --dial-radius: var(--radius);
-  --dial-surface: var(--field);
-  --dial-surface-hover: color-mix(in srgb, var(--field), var(--foreground) 5%);
+  --dial-radius: var(--radius-xl);
+  --dial-surface: var(--control);
+  --dial-surface-hover: var(--accent);
   --dial-surface-active: color-mix(in srgb, var(--foreground) 7%, transparent);
   --dial-surface-subtle: var(--muted);
   --dial-text-root: var(--foreground);
@@ -33,8 +33,8 @@
   --dial-text-focus: var(--foreground);
   --dial-text-primary: var(--foreground);
   --dial-text-secondary: var(--muted-foreground);
-  --dial-border: var(--border);
-  --dial-border-hover: var(--input);
+  --dial-border: transparent;
+  --dial-border-hover: transparent;
   --dial-focus-ring: var(--ring);
   --dial-glass-bg: var(--popover);
   --dial-dropdown-bg: var(--popover);
@@ -92,6 +92,39 @@
   max-height: 6rem;
 }
 
+.property-inspector .remocn-dialkit .dialkit-pad {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.property-inspector .remocn-dialkit .dialkit-pad-fields {
+  display: contents;
+}
+
+.property-inspector .remocn-dialkit .dialkit-pad-caption {
+  grid-column: 1 / -1;
+  order: 0;
+  height: 16px;
+  padding: 0;
+  background: transparent;
+}
+
+.property-inspector .remocn-dialkit .dialkit-pad-surface {
+  grid-column: 1 / -1;
+  order: 1;
+  height: 126px;
+  aspect-ratio: auto;
+}
+
+.property-inspector .remocn-dialkit .dialkit-pad-field {
+  order: 2;
+}
+
+.property-inspector .remocn-dialkit .dialkit-pad-grid-line {
+  background: var(--input);
+}
+
 @media (pointer: coarse) {
   .property-inspector .dialkit-root.remocn-dialkit {
     --dial-row-height: 2.75rem;
@@ -114,6 +147,7 @@
     .dialkit-select-trigger,
     .dialkit-text-control,
     .dialkit-color-control,
+    .dialkit-pad-field,
     .dialkit-labeled-control
   ):focus-within {
   outline: 2px solid var(--ring);
@@ -215,10 +249,13 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-heading: var(--font-heading);
-  /* Both families are variable, so "regular" is a choice, not a file: 450
-     reads a touch sturdier at UI sizes. Routed through the token so every
-     `font-normal` in the tree means the same weight as the base. */
-  --font-weight-normal: 450;
+  --font-weight-normal: 400;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-xs--line-height: 1.125rem;
+  --color-control: var(--control);
+  --color-key-action: var(--key-action);
+  --color-key-action-foreground: var(--key-action-foreground);
   /* The one step below `text-xs`. Badges over stills and monospaced detail
      lines each had their own arbitrary value (10px and 11px); this is the
      token they now share. */
@@ -260,13 +297,13 @@
   --color-code-number: var(--code-number);
   --color-reference: var(--reference);
   --color-pane-border: var(--pane-border);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 0.75rem;
   --animate-titlebar: titlebar-in var(--transition-duration-slow)
     var(--ease-out) both;
   --animate-card-in: card-in var(--transition-duration-base) var(--ease-out)
@@ -396,132 +433,147 @@
 }
 
 :root {
-  --font-sans: var(--font-dm-sans), var(--font-cyrillic), sans-serif;
+  --font-sans: var(--font-inter), sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-heading: var(--font-sans);
-  --card: var(--color-white);
-  --card-foreground: var(--foreground);
-  --popover: var(--color-white);
-  --popover-foreground: var(--foreground);
-  --primary: #33332f;
-  --primary-foreground: #fafaf6;
-  --secondary: rgb(0 0 0 / 0.045);
-  --secondary-foreground: var(--foreground);
-  --muted: rgb(0 0 0 / 0.045);
-  --muted-foreground: #6a6a64;
-  --accent: rgb(0 0 0 / 0.055);
-  --accent-foreground: var(--foreground);
-  --destructive: var(--color-red-500);
-  --border: rgb(0 0 0 / 0.09);
-  --input: var(--border);
-  --field: var(--background);
-  --ring: #777770;
-  --chart-1: var(--color-orange-600);
-  --chart-2: var(--color-teal-600);
-  --chart-3: var(--color-cyan-900);
-  --chart-4: var(--color-amber-400);
-  --chart-5: var(--color-amber-500);
-  --radius: 0.3125rem;
-  --sidebar: #f0f0f0;
-  --sidebar-foreground: #5d5d57;
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--accent);
-  --sidebar-accent-foreground: var(--foreground);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
-  --code: var(--color-white);
-  --code-foreground: var(--foreground);
-  --code-highlight: var(--accent);
-  --code-number: var(--muted-foreground);
-  --reference: #3b5799;
-  --pane-border: var(--border);
-  /* A floating surface over content: the 1px spread stands in for a border, so
-     it composites against whatever it covers rather than being tuned to one
-     background, then a tight layer and a wide ambient one. */
-  --elevation-floating:
-    0 0 0 1px oklch(0 0 0 / 0.06), 0 1px 3px oklch(0 0 0 / 0.06),
-    0 12px 32px -12px oklch(0 0 0 / 0.18);
-  /* Copied from remocn.dev's component customizer, so a control in the
-     properties pane reads as the same object as a control on the site. */
-  --elevation-control:
-    inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.08),
-    0 1px 2px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.06);
-  --elevation-control-hover:
-    inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.12),
-    0 1px 2px rgb(0 0 0 / 0.06), 0 3px 6px -2px rgb(0 0 0 / 0.08);
-  --background: #f8f8f8;
-  --foreground: #282824;
-  --destructive-foreground: var(--color-red-700);
-  --info: var(--color-blue-500);
-  --info-foreground: var(--color-blue-700);
-  --success: var(--color-emerald-500);
-  --success-foreground: var(--color-emerald-700);
-  --warning: var(--color-amber-500);
-  --warning-foreground: var(--color-amber-700);
+  --radius: 0.375rem;
+  --key-action: #b339a1;
+  --key-action-foreground: #fdf4ff;
+  --background: #f7f7f7;
+  --foreground: #202020;
+  --card: #ffffff;
+  --card-foreground: #202020;
+  --popover: #ffffff;
+  --popover-foreground: #202020;
+  --primary: #202020;
+  --primary-foreground: #f7f7f7;
+  --secondary: #f0f0f0;
+  --secondary-foreground: #202020;
+  --muted: #f2f2f2;
+  --muted-foreground: #686868;
+  --accent: #eaeaea;
+  --accent-foreground: #202020;
+  --border: #e5e5e5;
+  --input: #d4d4d4;
+  --field: #ffffff;
+  --ring: #777777;
+  --sidebar: #f5f5f5;
+  --sidebar-foreground: #6b6b6b;
+  --sidebar-primary: #202020;
+  --sidebar-primary-foreground: #f7f7f7;
+  --sidebar-accent: #e8e8e8;
+  --sidebar-accent-foreground: #202020;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #777777;
+  --code: #f5f5f5;
+  --code-foreground: #202020;
+  --code-highlight: #eaeaea;
+  --code-number: #686868;
+  --reference: #686868;
+  --pane-border: #e5e5e5;
+  --destructive: #c8434b;
+  --destructive-foreground: #b13c42;
+  --info: #5265be;
+  --info-foreground: #4355a8;
+  --success: #39825b;
+  --success-foreground: #2f724e;
+  --warning: #ae7729;
+  --warning-foreground: #8a5e20;
+  --chart-1: #5e6ad2;
+  --chart-2: #5c9272;
+  --chart-3: #bc9349;
+  --chart-4: #9974b8;
+  --chart-5: #bc6a76;
+  --control: #f2f2f2;
+  --error-surface: #edddde;
+  --elevation-floating: 0 0 #0000;
+  --elevation-control: 0 0 #0000;
+  --elevation-control-hover: 0 0 #0000;
 }
 
 .dark {
-  --background: #181818;
-  --foreground: #f3f3f3;
-  --card: #222222;
-  --card-foreground: var(--foreground);
-  --popover: #2c2c2c;
-  --popover-foreground: var(--foreground);
-  --primary: #ffffff;
-  --primary-foreground: #181818;
-  --secondary: #2c2c2c;
-  --secondary-foreground: var(--foreground);
-  --muted: #222222;
-  --muted-foreground: #afafaf;
-  --accent: #323232;
-  --accent-foreground: var(--foreground);
-  --destructive: color-mix(
-    in srgb,
-    var(--color-red-500) 90%,
-    var(--color-white)
-  );
-  --border: rgb(255 255 255 / 0.08);
-  --input: rgb(255 255 255 / 0.1);
-  --field: #333333;
-  --ring: #a3a3a3;
-  --chart-1: var(--color-blue-700);
-  --chart-2: var(--color-emerald-500);
-  --chart-3: var(--color-amber-500);
-  --chart-4: var(--color-purple-500);
-  --chart-5: var(--color-rose-500);
-  --sidebar: #181818;
-  --sidebar-foreground: #d4d4d4;
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: #2c2c2c;
-  --sidebar-accent-foreground: var(--foreground);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
-  /* Dark surfaces cannot show a stacked shadow, so depth collapses to a white
-     ring — kept alongside one wide ambient layer, because this surface floats
-     over a scrolling transcript rather than sitting on the page. */
-  --elevation-floating:
-    0 0 0 1px oklch(1 0 0 / 0.1), 0 16px 40px -12px oklch(0 0 0 / 0.7);
-  --elevation-control:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
-    inset 0 0 0 1px rgb(255 255 255 / 0.08);
-  --elevation-control-hover:
-    inset 0 1px 0 rgb(255 255 255 / 0.07),
-    inset 0 0 0 1px rgb(255 255 255 / 0.12);
-  --code: var(--card);
-  --code-foreground: var(--foreground);
-  --code-highlight: var(--accent);
-  --code-number: var(--muted-foreground);
-  --reference: #a0b8ef;
-  --pane-border: var(--border);
-  --destructive-foreground: var(--color-red-400);
-  --info: var(--color-blue-500);
-  --info-foreground: var(--color-blue-400);
-  --success: var(--color-emerald-500);
-  --success-foreground: var(--color-emerald-400);
-  --warning: var(--color-amber-500);
-  --warning-foreground: var(--color-amber-400);
+  --background: #111111;
+  --foreground: #eeeeee;
+  --card: #1a1a1a;
+  --card-foreground: #eeeeee;
+  --popover: #202020;
+  --popover-foreground: #eeeeee;
+  --primary: #626262;
+  --primary-foreground: #f7f7f7;
+  --secondary: #242424;
+  --secondary-foreground: #eeeeee;
+  --muted: #1b1b1b;
+  --muted-foreground: #a0a0a0;
+  --accent: #2a2a2a;
+  --accent-foreground: #eeeeee;
+  --border: #292929;
+  --input: #383838;
+  --field: #171717;
+  --ring: #a0a0a0;
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #999999;
+  --sidebar-primary: #626262;
+  --sidebar-primary-foreground: #f7f7f7;
+  --sidebar-accent: #242424;
+  --sidebar-accent-foreground: #eeeeee;
+  --sidebar-border: #292929;
+  --sidebar-ring: #a0a0a0;
+  --code: #181818;
+  --code-foreground: #eeeeee;
+  --code-highlight: #2a2a2a;
+  --code-number: #a0a0a0;
+  --reference: #a0a0a0;
+  --pane-border: #292929;
+  --destructive-foreground: #eb858b;
+  --info: #8290d9;
+  --info-foreground: #a6b1ef;
+  --success: #67a985;
+  --success-foreground: #83bd9d;
+  --warning: #dbaa52;
+  --warning-foreground: #e3bc76;
+  --chart-1: #8b90df;
+  --chart-2: #76a98a;
+  --chart-3: #cfa967;
+  --chart-4: #b394ca;
+  --chart-5: #d4919c;
+  --destructive: #c8434b;
+  --control: #242424;
+  --error-surface: #3b2829;
+  --elevation-floating: 0 0 #0000;
+  --elevation-control: 0 0 #0000;
+  --elevation-control-hover: 0 0 #0000;
+}
+
+.workspace-scrollbar,
+.workspace-history [data-slot="popover-viewport"] {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent)
+    transparent;
+  scrollbar-width: thin;
+}
+
+.workspace-scrollbar::-webkit-scrollbar,
+.workspace-history [data-slot="popover-viewport"]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.workspace-scrollbar::-webkit-scrollbar-track,
+.workspace-history [data-slot="popover-viewport"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.workspace-scrollbar::-webkit-scrollbar-thumb,
+.workspace-history [data-slot="popover-viewport"]::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--foreground) 24%, transparent);
+  border-radius: 999px;
+}
+
+.workspace-scrollbar::-webkit-scrollbar-thumb:hover,
+.workspace-history
+  [data-slot="popover-viewport"]::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--foreground) 36%, transparent);
 }
 
 @layer base {
@@ -573,6 +625,7 @@
     box-shadow:
       var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000),
       var(--elevation-control-hover);
+    @apply bg-accent;
   }
 }
 
@@ -611,7 +664,7 @@
   }
 }
 
-/* The system's reduce-motion setting. Spinners keep turning — a frozen loader glyph reads as
+/* macOS Reduce Motion. Spinners keep turning — a frozen loader glyph reads as
    a hang, and rotation in place is status, not motion across the screen. The
    word-by-word reveal is switched off in components/studio/markdown.tsx, which
    also withholds `.code-reveal`; the belt below catches anything it missed. */
@@ -844,21 +897,6 @@
 }
 
 @layer base {
-  :root {
-    /* The window has no title bar, so its controls sit straight over the
-       sidebar. This is the band kept clear for them — vertical, not
-       horizontal, so the sidebar's own content still starts on the pane's
-       left edge. It is
-       taller than the buttons need because it is also the state indicator's
-       canvas, and one height for both states is what keeps the first project
-       from moving anything. */
-    --titlebar-block-inset: 3.25rem;
-    /* With the sidebar hidden the chat pane is what the buttons are drawn over,
-       and a band there would drop its header below every other pane's. This is
-       the width they need instead: their own inset plus the three of them. */
-    --titlebar-inline-inset: 5rem;
-  }
-
   /* This is an app window, not a web page: the shell owns the viewport and the
      panes scroll internally. Rubber-banding the whole document would drag the
      title bar around. */
@@ -935,4 +973,55 @@
   width: 1.125rem;
   height: 1.125rem;
   border-radius: 0.3125rem;
+}
+
+/* Streamdown owns the controls and markup; Studio supplies their surfaces. */
+.markdown-stream
+:is(
+  [data-streamdown="table-wrapper"],
+  [data-streamdown="code-block"],
+  [data-streamdown="code-block-actions"],
+  [data-streamdown="code-block-body"]
+),
+.markdown-stream [data-streamdown="table-wrapper"] > div:has(> table),
+.markdown-stream
+  :is([data-streamdown="table"], [data-streamdown="table-body"])
+  > *,
+[data-streamdown="table-fullscreen"] [data-streamdown="table"],
+[data-streamdown="table-fullscreen"]
+  :is([data-streamdown="table"], [data-streamdown="table-body"])
+  > * {
+  border: 0;
+}
+
+.markdown-stream [data-streamdown="table-wrapper"],
+.markdown-stream [data-streamdown="table-wrapper"] > div:has(> table) {
+  background: transparent;
+}
+
+.markdown-stream [data-streamdown="table-wrapper"] {
+  padding: 0;
+}
+
+.markdown-stream
+  :is([data-streamdown="code-block"], [data-streamdown="code-block-body"]) {
+  background-color: var(--code);
+  border-radius: var(--radius-xl);
+}
+
+/* Streamdown omits its block-line class when line numbers are disabled. */
+.markdown-stream [data-streamdown="code-block-body"] pre > code > span {
+  display: block;
+  min-height: 1lh;
+}
+
+:is(.markdown-stream, [data-streamdown="table-fullscreen"])
+  [data-streamdown="table-header"] {
+  background-color: var(--control);
+}
+
+:is(.markdown-stream, [data-streamdown="table-fullscreen"])
+  [data-streamdown="table-header-cell"] {
+  font-weight: 500;
+  color: var(--muted-foreground);
 }

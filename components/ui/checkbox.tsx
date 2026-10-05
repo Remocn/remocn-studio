@@ -2,6 +2,7 @@
 
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
 import type React from "react";
+import { CheckIcon, MinusIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 export function Checkbox({
@@ -11,14 +12,14 @@ export function Checkbox({
   return (
     <CheckboxPrimitive.Root
       className={cn(
-        "relative inline-flex size-4.5 shrink-0 items-center justify-center rounded-[.25rem] border border-input bg-background not-dark:bg-clip-padding shadow-xs/5 outline-none ring-ring transition-shadow before:pointer-events-none before:absolute before:inset-0 before:rounded-[3px] not-data-disabled:not-data-checked:not-aria-invalid:before:shadow-[0_1px_--theme(--color-black/4%)] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-background aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/48 data-disabled:cursor-not-allowed data-disabled:opacity-64 sm:size-4 dark:not-data-checked:bg-input/32 dark:aria-invalid:ring-destructive/24 dark:not-data-disabled:not-data-checked:not-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/6%)] [[data-disabled],[data-checked],[aria-invalid]]:shadow-none",
+        "relative inline-flex size-4 shrink-0 items-center justify-center rounded-sm bg-accent outline-none transition-colors focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2 aria-invalid:bg-destructive/10 data-disabled:cursor-not-allowed data-disabled:opacity-45",
         className
       )}
       data-slot="checkbox"
       {...props}
     >
       <CheckboxPrimitive.Indicator
-        className="absolute -inset-px flex items-center justify-center rounded-[.25rem] text-primary-foreground data-unchecked:hidden data-checked:bg-primary data-indeterminate:text-foreground"
+        className="absolute inset-0 flex items-center justify-center rounded-sm text-primary-foreground data-unchecked:hidden data-checked:bg-primary data-indeterminate:text-foreground"
         data-slot="checkbox-indicator"
         render={(
           props: React.ComponentProps<"span">,
@@ -26,37 +27,9 @@ export function Checkbox({
         ) => (
           <span {...props}>
             {state.indeterminate ? (
-              <svg
-                aria-hidden="true"
-                className="size-3.5 sm:size-3"
-                fill="none"
-                height="24"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="3"
-                viewBox="0 0 24 24"
-                width="24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M5.252 12h13.496" />
-              </svg>
+              <MinusIcon className="size-3" />
             ) : (
-              <svg
-                aria-hidden="true"
-                className="size-3.5 sm:size-3"
-                fill="none"
-                height="24"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="3"
-                viewBox="0 0 24 24"
-                width="24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M5.252 12.7 10.2 18.63 18.748 5.37" />
-              </svg>
+              <CheckIcon className="size-3" />
             )}
           </span>
         )}
@@ -66,3 +39,22 @@ export function Checkbox({
 }
 
 export { CheckboxPrimitive };
+
+export function NativeCheckbox({
+  className,
+  ...props
+}: Omit<React.ComponentProps<"input">, "type">): React.ReactElement {
+  return (
+    <span className={cn("relative inline-flex size-4 shrink-0", className)}>
+      <input
+        className="peer absolute inset-0 m-0 size-full cursor-pointer appearance-none rounded-sm bg-accent outline-none checked:bg-primary focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+        type="checkbox"
+        {...props}
+      />
+      <CheckIcon
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 m-auto size-3 text-primary-foreground opacity-0 peer-checked:opacity-100 "
+      />
+    </span>
+  );
+}

@@ -31,11 +31,7 @@ export function WriteFailureCard({
   );
 
   return (
-    <Card
-      aria-label={TITLE}
-      className="bg-input/50 ring-none"
-      data-slot="write-failure-card"
-    >
+    <Card aria-label={TITLE} data-slot="write-failure-card">
       <CardHeader className="gap-1 p-4">
         <CardTitle className="text-sm">{TITLE}</CardTitle>
         <ul className="flex flex-col gap-1 rounded-md bg-muted/50 px-2.5 py-1.5">
@@ -54,7 +50,7 @@ export function WriteFailureCard({
       <CardContent className="p-4">
         <div className="flex flex-col">
           <button
-            className="-mx-1 flex items-baseline gap-2 rounded-md px-2 py-1.5 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted/80"
+            className="-mx-1 flex min-h-9 pointer-coarse:min-h-11 flex-col items-start gap-0.5 rounded-md px-2 py-2 text-left outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 active:bg-accent disabled:pointer-events-none disabled:opacity-45"
             onClick={choose}
             type="button"
             value="yes"
@@ -67,7 +63,7 @@ export function WriteFailureCard({
             </span>
           </button>
           <button
-            className="-mx-1 flex items-baseline gap-2 rounded-md px-2 py-1.5 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted/80"
+            className="-mx-1 flex min-h-9 pointer-coarse:min-h-11 flex-col items-start gap-0.5 rounded-md px-2 py-2 text-left outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 active:bg-accent disabled:pointer-events-none disabled:opacity-45"
             onClick={choose}
             type="button"
             value="no"

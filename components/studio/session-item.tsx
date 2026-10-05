@@ -1,12 +1,12 @@
 "use client";
 
-import {
-  CircleAlertIcon,
-  CircleQuestionMarkIcon,
-  Trash2Icon,
-} from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
-import { memo } from "react";
+import { memo, useId } from "react";
+import {
+  CircleQuestionMarkIcon,
+  MessageSquareIcon,
+  Trash2Icon,
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { DotmSquare1 } from "@/components/ui/dotm-square-1";
 import { useChatRowMenu } from "@/hooks/use-row-menus";
@@ -15,6 +15,7 @@ import { relativeTime } from "@/lib/studio/time";
 import { cn } from "@/lib/utils";
 
 interface RowProps {
+  compact?: boolean;
   isActive: boolean;
   now: number;
   onRemove: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -25,33 +26,47 @@ interface RowProps {
 function SessionItemBlock(props: RowProps) {
   const { now, row } = props;
   const meta = sessionMeta(row, now);
+  const metaId = useId();
 
   return (
     <RowShell
       {...props}
-      marker={<Marker row={row} />}
+      marker={<Marker compact={props.compact} row={row} />}
       meta={
         meta === null ? null : (
           <p
             className={cn(
               "truncate text-xs tabular-nums",
-              meta.isError ? "text-destructive" : "text-muted-foreground"
+              meta.isError ? "text-destructive" : "text-muted-foreground",
+              props.compact && "sr-only"
             )}
-            id={`session-meta-${row.session.id}`}
+            id={metaId}
           >
             {meta.text}
           </p>
         )
       }
-      metaId={meta === null ? null : `session-meta-${row.session.id}`}
-      time={meta === null ? relativeTime(row.session.updatedAt, now) : null}
+      metaId={meta === null ? null : metaId}
+      time={
+        meta === null && !props.compact
+          ? relativeTime(row.session.updatedAt, now)
+          : null
+      }
     />
   );
 }
 
 export const SessionItem = memo(SessionItemBlock);
 
+const MATRIX_COLORS = {
+  failed: "var(--destructive)",
+  idle: "var(--success)",
+  running: "var(--key-action)",
+  waiting: "var(--sidebar-primary)",
+};
+
 function RowShell({
+  compact,
   isActive,
   marker,
   meta,
@@ -68,7 +83,7 @@ function RowShell({
 }) {
   const { session, status } = row;
   const busy = status === "running" || status === "waiting";
-  const titleId = `session-title-${session.id}`;
+  const titleId = useId();
   const menu = useChatRowMenu(!busy);
 
   return (
@@ -76,9 +91,8 @@ function RowShell({
       <div
         className={cn(
           "rounded-md py-1.5 pr-8 pl-7 text-sm",
-          isActive
-            ? "bg-sidebar-accent/60"
-            : "group-hover/session:bg-sidebar-accent/40"
+          compact && "h-7 py-1 pl-8 leading-5",
+          isActive ? "bg-sidebar-accent" : "group-hover/session:bg-accent"
         )}
       >
         <div className="flex items-baseline gap-2">
@@ -116,7 +130,7 @@ function RowShell({
         aria-describedby={metaId ?? undefined}
         aria-keyshortcuts={busy ? undefined : "Meta+Backspace"}
         aria-labelledby={titleId}
-        className="absolute inset-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+        className="absolute inset-0 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
         data-row-action="open"
         onClick={onSelect}
         onContextMenu={menu.onContextMenu}
@@ -128,7 +142,10 @@ function RowShell({
       {busy ? null : (
         <Button
           aria-label={`Delete ${session.title}`}
-          className="absolute top-1 right-1 z-10 opacity-0 after:absolute after:-inset-1 focus-visible:opacity-100 group-hover/session:opacity-100"
+          className={cn(
+            "absolute top-1 right-1 z-10 opacity-0 pointer-coarse:opacity-100 focus-visible:opacity-100 group-hover/session:opacity-100",
+            compact && "top-0.5"
+          )}
           data-row-action="delete"
           onClick={onRemove}
           size="icon-xs"
@@ -142,13 +159,23 @@ function RowShell({
   );
 }
 
-function Marker({ row }: { row: SessionRow }) {
+function Marker({ compact, row }: { compact?: boolean; row: SessionRow }) {
   const label = statusLabel(row);
   // `left-1.5` puts the marker in the same column as the project row's chevron,
   // so a session and its project share one icon gutter.
-  const className = "pointer-events-none absolute top-2 left-1.5 shrink-0";
+  const className = cn(
+    "pointer-events-none absolute top-2 left-1.5 shrink-0",
+    compact && "top-1.5 left-2"
+  );
 
   if (label === null) {
+    if (compact) {
+      return (
+        <MessageSquareIcon
+          className={cn(className, "size-4 text-muted-foreground")}
+        />
+      );
+    }
     return (
       <DotmSquare1
         animated={false}
@@ -163,12 +190,13 @@ function Marker({ row }: { row: SessionRow }) {
   // `role="img"`, not `role="status"`: a live region per row would re-announce
   // as `paneGroups` promotes rows, and one with no text content never announces
   // reliably anyway. The label still names the state when the row is read.
-  if (row.status === "running") {
+  if (row.status === "running" || row.status === "failed" || row.completed) {
     return (
       <DotmSquare1
+        animated={row.status === "running"}
         ariaLabel={label}
         className={className}
-        colorPreset="grad-prism"
+        color={MATRIX_COLORS[row.status]}
         dotSize={2}
         role="img"
         size={16}
@@ -181,16 +209,6 @@ function Marker({ row }: { row: SessionRow }) {
       <CircleQuestionMarkIcon
         aria-label={label}
         className={cn(className, "size-4 text-sidebar-primary")}
-        role="img"
-      />
-    );
-  }
-
-  if (row.status === "failed") {
-    return (
-      <CircleAlertIcon
-        aria-label={label}
-        className={cn(className, "size-4 text-destructive")}
         role="img"
       />
     );
@@ -220,6 +238,9 @@ function statusLabel(row: SessionRow): string | null {
   }
   if (status === "failed") {
     return `${session.title} failed`;
+  }
+  if (row.completed) {
+    return `${session.title} completed successfully${unread ? " — unread" : ""}`;
   }
 
   return unread ? `${session.title} has news` : null;

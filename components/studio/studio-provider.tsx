@@ -1,7 +1,16 @@
 "use client";
 
-import { createContext, memo, use, useCallback, useMemo } from "react";
+import {
+  createContext,
+  memo,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useAppMenu } from "@/hooks/use-app-menu";
+import { type AssetsScope, useAssetsScope } from "@/hooks/use-assets-scope";
 import { type ClaudeEffort, useClaudeEffort } from "@/hooks/use-claude-effort";
 import { useCommandPalette } from "@/hooks/use-command-palette";
 import { useCommands } from "@/hooks/use-commands";
@@ -18,6 +27,7 @@ import { type FileDrops, useFileDrops } from "@/hooks/use-file-drops";
 import { useHydratedSettings } from "@/hooks/use-hydrated-settings";
 import { type Library, useLibrary } from "@/hooks/use-library";
 import { type StudioModels, useModels } from "@/hooks/use-models";
+import { useNavigationMotion } from "@/hooks/use-navigation-motion";
 import { type NewProject, useNewProject } from "@/hooks/use-new-project";
 import { type NewVideo, useNewVideo } from "@/hooks/use-new-video";
 import {
@@ -46,7 +56,9 @@ import { type Tools, useTools } from "@/hooks/use-tools";
 import { type Updates, useUpdates } from "@/hooks/use-updates";
 import { useWorkspace, type Workspace } from "@/hooks/use-workspace";
 import type { VideoFormat } from "@/lib/studio/formats";
+import { rowOf, type SessionRow } from "@/lib/studio/groups";
 import { type ShellMood, shellMood } from "@/lib/studio/mood";
+import type { PaneView } from "@/lib/studio/pane-view";
 import type { StudioSettings } from "@/lib/studio/settings";
 import { isStudioBootReady } from "@/lib/studio/splash";
 import type { TurnState } from "@/lib/studio/turns";
@@ -69,6 +81,15 @@ export type Studio = ClaudeEffort &
     mood: ShellMood;
     newProject: NewProject;
     newVideo: NewVideo;
+    openSearch: () => void;
+    isLibraryOpen: boolean;
+    libraryAnimate: boolean;
+    assetsScope: AssetsScope;
+    componentScope: "all" | "saved" | "bundled";
+    setComponentScope: (scope: "all" | "saved" | "bundled") => void;
+    openLibrary: (view: PaneView) => void;
+    closeLibrary: () => void;
+    projectSessions: readonly SessionRow[];
     notifications: NotificationConsent;
     preferences: Preferences;
     provider: AgentProvider;
@@ -177,6 +198,33 @@ function StudioStateProvider({
 
   const { createProject } = workspace;
   const { showPane } = panes;
+  const [isLibraryOpen, setLibraryOpen] = useState(false);
+  const [libraryAnimate, setLibraryAnimate] = useState(false);
+  const assetsScope = useAssetsScope();
+  const [componentScope, setComponentScope] = useState<
+    "all" | "saved" | "bundled"
+  >("all");
+  const shouldAnimateNavigation = useNavigationMotion();
+  const openLibrary = useCallback(
+    (view: PaneView) => {
+      setLibraryAnimate(shouldAnimateNavigation());
+      showPane(view);
+      setLibraryOpen(view !== "videos");
+    },
+    [showPane, shouldAnimateNavigation]
+  );
+  const closeLibrary = useCallback(() => {
+    setLibraryAnimate(shouldAnimateNavigation());
+    setLibraryOpen(false);
+  }, [shouldAnimateNavigation]);
+  const projectSessions = useMemo(
+    () =>
+      workspace.sessions
+        .filter((session) => session.projectId === workspace.activeProject?.id)
+        .toSorted((a, b) => b.updatedAt - a.updatedAt)
+        .map((session) => rowOf(session, turns.get(session.id))),
+    [workspace.sessions, workspace.activeProject?.id, turns]
+  );
   const createAndShow = useCallback(
     async (draft: ProjectDraft, format: VideoFormat) => {
       const project = await createProject(draft, format);
@@ -191,7 +239,10 @@ function StudioStateProvider({
   const newProject = useNewProject(createAndShow);
 
   const { openTemplate } = workspace;
-  const showVideos = useCallback(() => showPane("videos"), [showPane]);
+  const showVideos = useCallback(() => {
+    showPane("videos");
+    closeLibrary();
+  }, [showPane, closeLibrary]);
   useTemplateLinks({ onOpened: showVideos, openTemplate });
 
   const { addVideo } = workspace;
@@ -207,6 +258,11 @@ function StudioStateProvider({
   );
 
   const newVideo = useNewVideo(addAndShow);
+  useEffect(() => {
+    if (newVideo.isOpen || newProject.isOpen) {
+      closeLibrary();
+    }
+  }, [newVideo.isOpen, newProject.isOpen, closeLibrary]);
 
   const {
     activeProject,
@@ -336,7 +392,7 @@ function StudioStateProvider({
     revealProject: projectMenu.reveal,
     selectProject,
     selectSession: workspace.selectSession,
-    showPane,
+    showPane: openLibrary,
     snapshotUnavailable: tools.snapshot.unavailable,
     startSessionIn: workspace.startSessionIn,
     stopTurn: turn.stop,
@@ -345,7 +401,29 @@ function StudioStateProvider({
     toggleProjects: panes.toggleProjects,
     toggleSnapshot: tools.snapshot.toggle,
   });
-  const palette = useCommandPalette(baseCommands, openedSessionId);
+  const navigationCommands = useMemo(
+    () =>
+      baseCommands.map((command) => {
+        if (
+          command.group !== "videos" &&
+          command.group !== "projects" &&
+          command.id !== "new-chat" &&
+          command.id !== "previous-video" &&
+          command.id !== "next-video"
+        ) {
+          return command;
+        }
+        return {
+          ...command,
+          run: () => {
+            closeLibrary();
+            command.run();
+          },
+        };
+      }),
+    [baseCommands, closeLibrary]
+  );
+  const palette = useCommandPalette(navigationCommands, openedSessionId);
   const isMenuInstalled = useAppMenu(palette.commands);
   useShortcuts(palette.commands, isMenuInstalled);
 
@@ -383,7 +461,7 @@ function StudioStateProvider({
       turn.source === null,
     paneView: panes.paneView,
     save: library.save,
-    showPane,
+    showPane: openLibrary,
   });
 
   const onboarding = useOnboarding({
@@ -425,19 +503,28 @@ function StudioStateProvider({
       ...effort,
       ...panes,
       accounts,
+      assetsScope,
+      closeLibrary,
+      componentScope,
       composerActions,
       docs,
       drops,
       environment,
       feedback,
+      isLibraryOpen,
       library,
+      libraryAnimate,
       mood,
       newProject,
       newVideo,
       notifications,
       onboarding,
+      openLibrary,
+      openSearch: palette.toggle,
       preferences,
+      projectSessions,
       provider,
+      setComponentScope,
       settings,
       settingsView,
       tools,
@@ -457,6 +544,14 @@ function StudioStateProvider({
       newProject,
       newVideo,
       notifications,
+      palette.toggle,
+      isLibraryOpen,
+      libraryAnimate,
+      assetsScope,
+      componentScope,
+      openLibrary,
+      closeLibrary,
+      projectSessions,
       panes,
       preferences,
       provider,

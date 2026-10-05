@@ -108,7 +108,7 @@ async function renderShell() {
       <Page />
     </ThemeProvider>
   );
-  await screen.findByRole("heading", { name: "Videos" });
+  await screen.findByRole("navigation", { name: "Library views" });
 }
 
 async function openSettings() {
@@ -138,8 +138,6 @@ describe("the settings page", () => {
 
     expect(screen.getByRole("heading", { name: "Appearance" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Dark" })).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "System" }));
-    expect(await screen.findByText("Follows macOS")).toBeVisible();
   });
 
   it("names the system rather than macOS on Linux", async () => {
@@ -147,11 +145,8 @@ describe("the settings page", () => {
     await renderShell();
     await openSettings();
 
-    fireEvent.click(screen.getByRole("button", { name: "System" }));
-    expect(await screen.findByText("Follows the system")).toBeVisible();
-
     fireEvent.click(screen.getByRole("button", { name: "Updates" }));
-    expect(screen.getByText("System")).toBeVisible();
+    expect(await screen.findByText("System")).toBeVisible();
     expect(screen.queryByText("macOS")).toBeNull();
   });
 
@@ -163,6 +158,23 @@ describe("the settings page", () => {
     expect(
       await screen.findByRole("region", { name: "Settings" })
     ).toBeVisible();
+  });
+
+  it("moves focus to Back and restores it without making the window chrome inert", async () => {
+    await renderShell();
+    const opener = screen.getByRole("button", { name: "Settings" });
+    opener.focus();
+    await openSettings();
+    expect(document.activeElement?.textContent).toBe("Back");
+    expect(
+      Boolean(
+        screen
+          .getByRole("button", { name: "Hide the project list" })
+          .closest("[inert]")
+      )
+    ).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    await waitFor(() => expect(document.activeElement === opener).toBe(true));
   });
 
   it("switches sections from the rail", async () => {
@@ -188,7 +200,7 @@ describe("the settings page", () => {
     expect(screen.queryByText(REMOCN_ACCOUNT)).toBeNull();
   });
 
-  it("lists every shortcut under Hotkeys, read-only", async () => {
+  it("lists and filters shortcuts without changing their bindings", async () => {
     await renderShell();
     await openSettings();
 
@@ -203,8 +215,22 @@ describe("the settings page", () => {
     expect(
       screen
         .getByRole("region", { name: "Settings" })
-        .querySelectorAll("input, button[role=switch], [role=switch]")
+        .querySelectorAll(
+          "input:not([type=search]), button[role=switch], [role=switch]"
+        )
     ).toHaveLength(0);
+    const search = screen.getByRole("searchbox", { name: "Find a shortcut" });
+    fireEvent.change(search, { target: { value: "export" } });
+    expect(video.getByText("Export")).toBeVisible();
+    expect(video.queryByText("Snapshot") === null).toBe(true);
+    fireEvent.change(search, { target: { value: "not-a-shortcut" } });
+    expect(
+      within(screen.getByRole("region", { name: "Settings" })).getByRole(
+        "status"
+      ).textContent
+    ).toBe("No shortcuts match “not-a-shortcut”.");
+    fireEvent.change(search, { target: { value: "" } });
+    expect(screen.getByLabelText("⇧⌘S")).toBeVisible();
   });
 
   it("keeps the notifications switch unavailable without the desktop app", async () => {
@@ -350,7 +376,11 @@ describe("the settings page", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Integrations" }));
 
-    expect(await screen.findByText("Claude Code is logged in")).toBeVisible();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Manage Claude Code" })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Set up Codex" }));
+    expect(screen.getByText("Claude Code is logged in")).toBeVisible();
     expect(screen.getByText("Codex is not logged in")).toBeVisible();
     expect(screen.getByText("codex login")).toBeVisible();
     // Grok has no row in the mock: unknown must never read as signed out.
@@ -378,8 +408,10 @@ describe("the settings page", () => {
     await renderShell();
     await openSettings();
 
-    const motion = screen.getByRole("switch", { name: "Animate it" });
-    const shader = screen.getByRole("switch", { name: "Show the shader" });
+    const motion = screen.getByRole("switch", { name: "Animate activity" });
+    const shader = screen.getByRole("switch", {
+      name: "Show activity in title bar",
+    });
     expect(shader).toBeChecked();
     expect(motion).toBeChecked();
 
