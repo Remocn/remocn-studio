@@ -42,13 +42,15 @@ function stats(ok: boolean, messages: string[] = []) {
 function fakeCompile() {
   const calls: WebpackConfig[] = [];
   const closed: number[] = [];
+  const watched: unknown[] = [];
   let done:
     | ((error: Error | null, result?: ReturnType<typeof stats>) => void)
     | null = null;
   const compile = ((config: WebpackConfig) => {
     calls.push(config);
     return {
-      watch: (_options: unknown, callback: NonNullable<typeof done>) => {
+      watch: (options: unknown, callback: NonNullable<typeof done>) => {
+        watched.push(options);
         done = callback;
         callback(null, stats(true));
         return {
@@ -70,6 +72,7 @@ function fakeCompile() {
     compile,
     fire: (ok: boolean, messages?: string[]) =>
       done?.(null, stats(ok, messages)),
+    watched,
   };
 }
 
@@ -164,6 +167,31 @@ describe("messagesOf", () => {
 });
 
 describe("nativeBundle", () => {
+  it("rebuilds from a cache kept in memory, watching with the project's own options", async () => {
+    const { calls, compile, watched } = fakeCompile();
+    const watchOptions = {
+      aggregateTimeout: 0,
+      ignored: ["**/.git/**", "**/.turbo/**", "**/node_modules/**"],
+    };
+
+    await run(
+      Effect.gen(function* () {
+        const bundle = yield* nativeBundle(
+          compile,
+          Effect.succeed(baseConfig({ cache: false, watchOptions })),
+          baseOptions()
+        );
+        yield* bundle.prepare;
+      })
+    );
+
+    expect(firstConfig(calls).cache).toEqual({
+      maxGenerations: 1,
+      type: "memory",
+    });
+    expect(watched).toEqual([watchOptions]);
+  });
+
   it("appends the project's entry and the native runtime after the stack-trace setup", async () => {
     const { calls, compile } = fakeCompile();
 

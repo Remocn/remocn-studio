@@ -351,12 +351,17 @@ Start the stage by finding out what is already known, in this order, and ${plann
    say plainly what you assumed so the person can correct it, and carry on.
 3. Only when neither source answers: ${template.ask}
 
+A message that asks for one specific change — an edit to an element it names as
+\`[Element #N]\`, or a single pointed fix — is not stage work: make that change,
+check the range it affects, and end the turn, leaving the stage where it is.
+
 Never invent facts the discovery did not surface; asking and ending your turn
 is a normal way for a turn to finish when something essential is missing — the
-stage stays open for the answer. Otherwise do not wait: the moment the
-done-condition above holds, call \`mcp__remocn-pipeline__set_pipeline_stage\`
-to mark this stage done and the next one active, and keep going in the same
-turn until the whole pipeline is done or you are genuinely blocked.`;
+stage stays open for the answer. When the turn is stage work, do not wait: the
+moment the done-condition above holds, call
+\`mcp__remocn-pipeline__set_pipeline_stage\` to mark this stage done and the
+next one active, and keep going in the same turn until the whole pipeline is
+done or you are genuinely blocked.`;
 }
 
 export interface TurnInstructions {
@@ -401,7 +406,7 @@ export function instructionsFor({
 
   return {
     media: briefs.media,
-    system: brief === null ? conventions : `${conventions}\n\n${brief}`,
-    trailer: joined(briefs.assets, briefs.brand),
+    system: conventions,
+    trailer: joined(briefs.assets, briefs.brand, brief),
   };
 }

@@ -287,6 +287,12 @@ export function captureStill(
   );
 }
 
+// Captures keep to a folder of their own. The stills folder also holds the
+// design check's reports and frames, and a capture that swept all of it took
+// the report a later `review done` names with it. Loose files an older build
+// left beside those folders are captures too, so they go; folders never do.
+export const CAPTURES_DIR = "captures";
+
 function freshFile(
   dir: string,
   request: StillRequest
@@ -294,20 +300,27 @@ function freshFile(
   return Effect.tryPromise({
     catch: renderError,
     try: async () => {
-      await mkdir(dir, { recursive: true });
+      const captures = path.join(dir, CAPTURES_DIR);
+      await mkdir(captures, { recursive: true });
 
-      const stale = await readdir(dir);
+      const [stale, loose] = await Promise.all([
+        readdir(captures),
+        readdir(dir, { withFileTypes: true }),
+      ]);
 
-      await Promise.all(
-        stale.map((name) =>
-          rm(path.join(dir, name), { force: true, recursive: true })
-        )
-      );
+      await Promise.all([
+        ...stale.map((name) =>
+          rm(path.join(captures, name), { force: true, recursive: true })
+        ),
+        ...loose
+          .filter((entry) => entry.isFile())
+          .map((entry) => rm(path.join(dir, entry.name), { force: true })),
+      ]);
 
       const stem = slug(request.composition);
       const token = randomBytes(4).toString("hex");
 
-      return path.join(dir, `${stem}-frame-${request.frame}-${token}.png`);
+      return path.join(captures, `${stem}-frame-${request.frame}-${token}.png`);
     },
   });
 }
