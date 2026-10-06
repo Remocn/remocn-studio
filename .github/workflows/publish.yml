@@ -27,6 +27,10 @@ name: publish
 # succeeded in 16s, `release-macos` was skipped for want of a tag, and no tag was
 # ever created.
 #
+# A release is built for macOS (Apple silicon, Intel) and Linux (x86_64,
+# aarch64), and all four jobs upload to the same GitHub release and merge their
+# entries into one `latest.json`.
+#
 # The app version lives in ONE place: `package.json`. `src-tauri/tauri.conf.json`
 # sets `"version": "../package.json"`, which Tauri resolves at build time, so
 # Changesets bumping package.json is enough — there is no version sync step and
@@ -211,9 +215,14 @@ jobs:
           releaseBody: |
             See CHANGELOG.md for what changed.
 
-            Signed with a Developer ID and notarized by Apple — the app opens
-            without a Gatekeeper prompt on first install, and in-app updates
-            bring the next version the same way.
+            macOS: the .dmg is signed with a Developer ID and notarized by
+            Apple, so the app opens without a Gatekeeper prompt on first
+            install.
+
+            Linux: download the AppImage and make it executable, or install
+            the .deb or .rpm with your package manager.
+
+            In-app updates bring the next version the same way on both.
           # Published, not a draft: a draft's assets have no reachable download
           # URL, so the updater could fetch neither `latest.json` nor the
           # `.app.tar.gz` it points at.
@@ -226,9 +235,9 @@ jobs:
           # transport; the webview and the sidecar carry their own SDKs and
           # need no flag.
           #
-          # **This job is the only place any Rust is compiled in CI**, so a
-          # break here is found while cutting a release. `cargo check --features
-          # crash-reports` on a Mac is what stands in for that.
+          # The `rust core` job in dev.yml checks the same features on macOS
+          # and Linux for every pull request, so a break is not first found
+          # here.
           #
           # `--features` takes a *list*, so it goes first and `--target` ends
           # it: a flag terminates the list, where anything tauri-action might
@@ -257,3 +266,82 @@ jobs:
           xcrun stapler staple "$dmg"
           spctl -a -vv -t open --context context:primary-signature "$dmg"
           gh release upload "v${{ needs.version.outputs.version }}" "$dmg" --clobber
+
+  release-linux:
+    name: Linux ${{ matrix.label }}
+    # After macOS, never beside it: `latest.json` is merged by reading the
+    # asset already on the release, so two jobs writing at once drop one
+    # platform. `!cancelled()` still releases Linux when a macOS job failed.
+    needs: [version, release-macos]
+    if: ${{ !cancelled() && needs.version.outputs.released == 'true' }}
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          # 22.04 rather than latest: an AppImage runs on any glibc at least as
+          # new as the one it was built against, so the oldest supported runner
+          # is the widest reach.
+          - runner: ubuntu-22.04
+            label: x86_64
+          - runner: ubuntu-22.04-arm
+            label: aarch64
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      # WebKitGTK and GTK for the window, libdbus for the Secret Service
+      # keyring, patchelf and file for the AppImage, and GStreamer with its
+      # plugins because `bundleMediaFramework` copies them out of the build
+      # host into the AppImage so footage plays in the preview.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libdbus-1-dev libssl-dev patchelf file \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad gstreamer1.0-libav
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: ${{ matrix.runner }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # tauri-action runs `beforeBuildCommand` (`bun run tauri:before-build`)
+      # itself: the bun runtime for this runner's triple, the sidecar bundle and
+      # the Next static export in `out/`, before compiling the Rust binary.
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The same minisign key as macOS: `createUpdaterArtifacts` signs the
+          # AppImage, the .deb and the .rpm, and the updater installs whichever
+          # one the person is running.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          REMOCN_STUDIO_PEXELS_KEY: ${{ secrets.REMOCN_STUDIO_PEXELS_KEY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          REMOCN_STUDIO_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          tagName: v${{ needs.version.outputs.version }}
+          releaseName: Remocn Studio v${{ needs.version.outputs.version }}
+          releaseDraft: false
+          prerelease: false
+          args: --features crash-reports --bundles appimage,deb,rpm
+          uploadUpdaterJson: true

@@ -4,7 +4,7 @@
   "version": "../package.json",
   "identifier": "com.remocn.remocn-studio",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "bun run tauri:before-dev",
     "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "bun run tauri:before-build",
     "frontendDist": "../out"
@@ -54,7 +54,7 @@
       }
     },
     "targets": "all",
-    "externalBin": ["binaries/bun"],
+    "externalBin": ["binaries/remocn-studio-bun"],
     "createUpdaterArtifacts": true,
     "resources": {
       "../LICENSE": "LICENSE",
@@ -106,7 +106,24 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
+      "deb": {
+        "depends": [
+          "gstreamer1.0-plugins-good",
+          "gstreamer1.0-plugins-bad",
+          "gstreamer1.0-libav"
+        ],
+        "desktopTemplate": "linux/remocn-studio.desktop"
+      },
+      "rpm": {
+        "depends": ["gstreamer1-plugins-good"],
+        "desktopTemplate": "linux/remocn-studio.desktop"
+      }
+    }
   },
   "plugins": {
     "deep-link": {

@@ -294,10 +294,20 @@ export const handlers: Handlers<HistoryStore | ProjectStore | VideoStore> = {
       Effect.mapError(unstocked)
     ),
 
+  // The official installer is a macOS .pkg; elsewhere the webview opens the
+  // Node.js download page instead and never asks for this.
   "node.install": ({ emit }) =>
-    installNode((event) => emit(event)).pipe(
-      Effect.mapError((error) => new HandlerError({ message: error.message }))
-    ),
+    process.platform === "darwin"
+      ? installNode((event) => emit(event)).pipe(
+          Effect.mapError(
+            (error) => new HandlerError({ message: error.message })
+          )
+        )
+      : Effect.fail(
+          new HandlerError({
+            message: "The Node.js installer only runs on macOS",
+          })
+        ),
 
   "pipeline.get": ({ params }) =>
     Effect.flatMap(HistoryStore, (store) =>

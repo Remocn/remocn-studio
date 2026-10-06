@@ -11,6 +11,7 @@ import Page from "@/app/page";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { EnvironmentCheck } from "@/shared/ipc";
 import { stubGlobal, unstubAllGlobals } from "@/test/stub-global";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
 
 const STORE_RID = 7;
 const REMOCN_ACCOUNT = /Remocn account/;
@@ -39,10 +40,12 @@ const CODEX_ROW: EnvironmentCheck = {
   title: "Codex is not logged in",
 };
 
-const REFUSED_WORDING =
+const NOT_ALLOWED = /Your desktop has not allowed the studio to notify/;
+
+const REFUSED_ON_MAC =
   /Notifications are off for the studio in System Settings/;
 
-const NEVER_ASKED = /macOS has not allowed the studio to notify yet/;
+const NEVER_ASKED_ON_MAC = /macOS has not allowed the studio to notify yet/;
 
 function notificationShim(permission: "default" | "denied" | "granted") {
   return {
@@ -126,6 +129,7 @@ describe("the settings page", () => {
 
   afterEach(() => {
     unstubAllGlobals();
+    withAgent(MAC);
   });
 
   it("opens from the gear on Appearance", async () => {
@@ -134,6 +138,21 @@ describe("the settings page", () => {
 
     expect(screen.getByRole("heading", { name: "Appearance" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Dark" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "System" }));
+    expect(await screen.findByText("Follows macOS")).toBeVisible();
+  });
+
+  it("names the system rather than macOS on Linux", async () => {
+    withAgent(LINUX);
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "System" }));
+    expect(await screen.findByText("Follows the system")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Updates" }));
+    expect(screen.getByText("System")).toBeVisible();
+    expect(screen.queryByText("macOS")).toBeNull();
   });
 
   it("opens on Cmd+comma", async () => {
@@ -256,7 +275,8 @@ describe("the settings page", () => {
     await waitFor(() => expect(turn).toBeChecked());
   });
 
-  it("offers Grant permission with the refused wording when macOS said no", async () => {
+  it("offers Grant permission when the desktop said no", async () => {
+    withAgent(LINUX);
     stubGlobal("Notification", notificationShim("denied"));
     mockStudio(written, [["notifications", "enabled"]]);
     await renderShell();
@@ -264,24 +284,48 @@ describe("the settings page", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
 
-    expect(await screen.findByText(REFUSED_WORDING)).toBeVisible();
+    expect(await screen.findByText(NOT_ALLOWED)).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Grant permission" })
     ).toBeVisible();
     expect(screen.getByRole("switch", { name: "Notify me" })).toBeChecked();
   });
 
-  it("offers Grant permission while macOS has never been asked", async () => {
+  it("offers Grant permission while the desktop has never been asked", async () => {
+    withAgent(LINUX);
     stubGlobal("Notification", notificationShim("default"));
     await renderShell();
     await openSettings();
 
     fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
 
-    expect(await screen.findByText(NEVER_ASKED)).toBeVisible();
+    expect(await screen.findByText(NOT_ALLOWED)).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Grant permission" })
     ).toBeVisible();
+  });
+
+  it("words a refusal on macOS as System Settings", async () => {
+    withAgent(MAC);
+    stubGlobal("Notification", notificationShim("denied"));
+    mockStudio(written, [["notifications", "enabled"]]);
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+
+    expect(await screen.findByText(REFUSED_ON_MAC)).toBeVisible();
+  });
+
+  it("words a first ask on macOS as macOS's own", async () => {
+    withAgent(MAC);
+    stubGlobal("Notification", notificationShim("default"));
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+
+    expect(await screen.findByText(NEVER_ASKED_ON_MAC)).toBeVisible();
   });
 
   // Opt-in, and the wording that earns the switch is part of what is being

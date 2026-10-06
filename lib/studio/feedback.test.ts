@@ -42,6 +42,23 @@ describe("feedbackMailto", () => {
     expect(body).toContain("attach");
   });
 
+  it("names the distribution as the system on Linux", () => {
+    const body = bodyOf(
+      feedbackMailto(
+        {
+          environment: "production",
+          os: "Ubuntu 24.04.1 LTS",
+          provider: "Claude",
+          version: "0.4.1",
+        },
+        "linux"
+      )
+    );
+
+    expect(body).toContain("System: Ubuntu 24.04.1 LTS");
+    expect(body).not.toContain("macOS");
+  });
+
   it("omits the lines it cannot answer instead of writing unknowns", () => {
     const body = bodyOf(
       feedbackMailto({

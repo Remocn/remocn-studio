@@ -7,9 +7,13 @@ request needs before it can be merged.
 ## Before you start
 
 - **Bugs.** Open an issue with what you did, what you expected and what
-  happened. Include the macOS version, the chip (Apple silicon or Intel), the
-  studio version from Settings, and which agent you use. The sidecar log at
-  `~/Library/Logs/com.remocn.remocn-studio/sidecar.log` often explains the rest.
+  happened. Include the studio version from Settings and which agent you use.
+  On macOS, add the macOS version and the chip (Apple silicon or Intel). On
+  Linux, add the distribution and its version, the desktop or window manager
+  (and X11 or Wayland), and whether you run the AppImage, the `.deb` or the
+  `.rpm`. The sidecar log often explains the rest: it is at
+  `~/Library/Logs/com.remocn.remocn-studio/sidecar.log` on macOS and
+  `~/.local/share/com.remocn.remocn-studio/logs/sidecar.log` on Linux.
   Read it before you attach it, since it can include project paths.
 - **Features and larger changes.** Open an issue first and describe the
   problem you want to solve. The studio has a narrow shape on purpose: no
@@ -20,10 +24,11 @@ request needs before it can be merged.
 
 ## Setting up
 
-You need macOS, [Bun](https://bun.sh) 1.4 (the exact version is pinned in
-`packageManager` in `package.json`), and the
+You need macOS or Linux, [Bun](https://bun.sh) 1.4 (the exact version is
+pinned in `packageManager` in `package.json`), and the
 [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/): a Rust
-toolchain and the Xcode Command Line Tools. To use the studio end to end, you
+toolchain, plus the Xcode Command Line Tools on macOS, or WebKitGTK, libdbus
+and GStreamer on Linux (the README lists the packages per distribution). To use the studio end to end, you
 also need one of the supported agents installed and signed in. The README
 lists them.
 
@@ -35,8 +40,17 @@ cp .env.example .env   # optional: a Pexels key turns on stock photos
 bun tauri dev
 ```
 
-In a debug build the Rust core runs the sidecar straight from `sidecar/`, so
-editing sidecar code needs a restart and no build step.
+`bun tauri dev` first fetches the bundled bun and bundles the sidecar
+(`tauri:before-dev`), because the Rust build checks both exist; the first run
+needs network for the bun download. In a debug build the Rust core then runs
+the sidecar straight from `sidecar/`, so editing sidecar code needs a restart
+and no build step.
+
+Platform-specific code is gated, never forked: `#[cfg(target_os = ...)]` in the
+Rust core, `process.platform` in the sidecar, and `currentPlatform()` or
+`usePlatform()` from `lib/studio/platform.ts` in the webview. A change that
+touches one platform's branch should say how it was tried on that platform;
+the `rust core` CI job compiles the core on both.
 
 ## Where things are
 

@@ -6,6 +6,7 @@ import {
   CheckIcon,
   CopyIcon,
   DownloadIcon,
+  ExternalLinkIcon,
   RotateCwIcon,
   XCircleIcon,
 } from "lucide-react";
@@ -14,8 +15,13 @@ import { Spinner } from "@/components/ui/spinner";
 import { useCopyCommand } from "@/hooks/use-copy-command";
 import type { Environment } from "@/hooks/use-environment";
 import { useOnline } from "@/hooks/use-online";
+import { usePlatform } from "@/hooks/use-platform";
 import { usePresence } from "@/hooks/use-presence";
-import { downloadPercent, troubleHeading } from "@/lib/studio/environment";
+import {
+  downloadPercent,
+  NODE_DOWNLOAD_URL,
+  troubleHeading,
+} from "@/lib/studio/environment";
 import { cn } from "@/lib/utils";
 import type { EnvironmentCheck, EnvironmentState } from "@/shared/ipc";
 import { isAgentProvider } from "@/shared/providers";
@@ -96,6 +102,17 @@ export function EnvironmentChecklist({
 }
 
 function NodeFix({ environment }: { environment: Environment }) {
+  const platform = usePlatform();
+
+  return platform === "mac" ? (
+    <NodeInstallerFix environment={environment} />
+  ) : (
+    <NodeDownloadFix environment={environment} />
+  );
+}
+
+// macOS: the studio fetches the official .pkg and opens it.
+function NodeInstallerFix({ environment }: { environment: Environment }) {
   const online = useOnline();
   const percent = downloadPercent(environment.download);
 
@@ -128,6 +145,41 @@ function NodeFix({ environment }: { environment: Environment }) {
           {percent === null ? "Downloading…" : `Downloading… ${percent}%`}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+// Linux: there is no system installer to hand a package to, so the button
+// opens the download page.
+function NodeDownloadFix({ environment }: { environment: Environment }) {
+  const online = useOnline();
+
+  if (!online) {
+    return (
+      <p className="text-muted-foreground text-xs leading-snug">
+        You are offline, so the Node.js download page cannot be reached. Connect
+        and press Recheck.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div>
+        <Button
+          onClick={environment.installNode}
+          size="xs"
+          title={NODE_DOWNLOAD_URL}
+          variant="outline"
+        >
+          <ExternalLinkIcon data-icon="inline-start" />
+          Install Node.js
+        </Button>
+      </div>
+      <p className="text-muted-foreground text-xs leading-snug">
+        Opens the Node.js download page. Your distribution’s package manager, or
+        a version manager such as mise or nvm, installs it too.
+      </p>
     </div>
   );
 }

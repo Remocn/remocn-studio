@@ -26,7 +26,11 @@ import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useCopyCommand } from "@/hooks/use-copy-command";
-import type { NotificationConsent } from "@/hooks/use-notification-consent";
+import type {
+  NotificationConsent,
+  PermissionReading,
+} from "@/hooks/use-notification-consent";
+import { useIsMac } from "@/hooks/use-platform";
 import { usePresence } from "@/hooks/use-presence";
 import { useScrolledIntoView } from "@/hooks/use-scrolled-into-view";
 import {
@@ -324,6 +328,14 @@ const THEME_TILES: readonly {
   },
 ];
 
+function themeCaption(choice: ThemeChoice | null, isMac: boolean) {
+  if (choice === "system" && !isMac) {
+    return "Follows the system";
+  }
+
+  return THEME_TILES.find((tile) => tile.id === choice)?.caption;
+}
+
 // A setting: its name and a sentence on the leading side, the control on the
 // trailing side, top-aligned so a description that wraps never moves the
 // switch. `htmlFor` makes the name the control's label.
@@ -396,6 +408,7 @@ function AppearanceSection() {
 
 function ThemeGroup() {
   const { choice, select } = useThemeChoice();
+  const isMac = useIsMac();
 
   const onPickTheme = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -410,7 +423,7 @@ function ThemeGroup() {
   return (
     <Group
       description={
-        THEME_TILES.find((tile) => tile.id === choice)?.caption ??
+        themeCaption(choice, isMac) ??
         "Dark is the default until a choice is made"
       }
       title="Theme"
@@ -460,6 +473,7 @@ const SAMPLE_MOOD: ShellMood = { isBusy: false, tone: "idle" };
 // effect where the person is looking rather than behind the page.
 function TitlebarGroup() {
   const { preferences } = useStudio();
+  const isMac = useIsMac();
 
   return (
     <Group
@@ -493,7 +507,7 @@ function TitlebarGroup() {
         </Row>
 
         <Row
-          description="Off holds one frame of the field; the hue still follows the mood. Also off whenever macOS asks to reduce motion."
+          description={`Off holds one frame of the field; the hue still follows the mood. Also off whenever ${isMac ? "macOS" : "the system"} asks to reduce motion.`}
           htmlFor="settings-titlebar-motion"
           title="Animate it"
         >
@@ -511,6 +525,7 @@ function TitlebarGroup() {
 
 function BehaviorSection() {
   const { preferences, onboarding, updates } = useStudio();
+  const isMac = useIsMac();
 
   return (
     <>
@@ -544,7 +559,7 @@ function BehaviorSection() {
       </Group>
 
       <Group
-        description="Nothing leaves this Mac unless a switch here says so"
+        description={`Nothing leaves ${isMac ? "this Mac" : "this computer"} unless a switch here says so`}
         title="Privacy"
       >
         <CrashReportsRow
@@ -588,6 +603,7 @@ const EVENT_ROWS: readonly {
 function NotificationsSection() {
   const { notifications } = useStudio();
   const { permission } = notifications;
+  const isMac = useIsMac();
   const isUnavailable = permission === "unavailable";
   const needsPermission = permission === "default" || permission === "denied";
 
@@ -599,7 +615,11 @@ function NotificationsSection() {
       >
         <div className="flex flex-col gap-2">
           <Row
-            description="Turn every notification on or off. macOS asks once, the first time this goes on."
+            description={
+              isMac
+                ? "Turn every notification on or off. macOS asks once, the first time this goes on."
+                : "Turn every notification on or off. They are shown by your desktop's notification service."
+            }
             htmlFor="settings-notifications"
             title="Notify me"
           >
@@ -620,9 +640,7 @@ function NotificationsSection() {
           {needsPermission ? (
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
               <p className="text-muted-foreground text-xs leading-snug">
-                {permission === "denied"
-                  ? "Notifications are off for the studio in System Settings. Nothing will arrive until they are turned on there."
-                  : "macOS has not allowed the studio to notify yet. Nothing will arrive until it has."}
+                {notificationPermissionText(isMac, permission)}
               </p>
               <Button onClick={notifications.grant} size="sm" variant="outline">
                 Grant permission
@@ -658,6 +676,18 @@ function NotificationsSection() {
   );
 }
 
+function notificationPermissionText(
+  isMac: boolean,
+  permission: PermissionReading
+): string {
+  if (!isMac) {
+    return "Your desktop has not allowed the studio to notify. Nothing will arrive until notifications are allowed for it in your desktop's own settings.";
+  }
+
+  return permission === "denied"
+    ? "Notifications are off for the studio in System Settings. Nothing will arrive until they are turned on there."
+    : "macOS has not allowed the studio to notify yet. Nothing will arrive until it has.";
+}
 function EventRow({
   consent,
   description,
@@ -735,6 +765,7 @@ function CrashReportsRow({
 // second group the eye has to connect back.
 function FeedbackSection() {
   const { feedback, provider, updates } = useStudio();
+  const isMac = useIsMac();
 
   return (
     <Group
@@ -769,7 +800,7 @@ function FeedbackSection() {
                   ? "—"
                   : ENVIRONMENTS[updates.environment],
               ],
-              ["macOS", updates.os ?? "—"],
+              [isMac ? "macOS" : "System", updates.os ?? "—"],
               ["Agent", PROVIDER_INFO[provider].name],
             ]}
           />
@@ -813,6 +844,7 @@ const ENVIRONMENTS: Record<AppEnvironment, string> = {
 // while there is one — an empty "Releases" group said nothing.
 function UpdatesSection() {
   const { hasRunningTurns, updates } = useStudio();
+  const isMac = useIsMac();
   const { download, release } = updates;
 
   return (
@@ -859,7 +891,7 @@ function UpdatesSection() {
             </Button>
           </div>
 
-          <Facts rows={[["macOS", updates.os ?? "—"]]} />
+          <Facts rows={[[isMac ? "macOS" : "System", updates.os ?? "—"]]} />
 
           {updates.error === null ? null : (
             <p className="text-destructive text-xs">{updates.error}</p>

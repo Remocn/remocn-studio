@@ -81,4 +81,18 @@ describe("wordFailure", () => {
     });
     expect(wordFailure(null, FALLBACK).sentence).toBe(FALLBACK);
   });
+
+  it("words a refused permission as macOS's own on a Mac", () => {
+    expect(
+      wordFailure("EACCES: permission denied, open '/srv/x'", FALLBACK, "mac")
+        .sentence
+    ).toBe("macOS did not allow the studio to use a file there.");
+  });
+
+  it("words a refused permission without naming macOS on Linux", () => {
+    expect(
+      wordFailure("EACCES: permission denied, open '/srv/x'", FALLBACK, "linux")
+        .sentence
+    ).toBe("The system did not allow the studio to use a file there.");
+  });
 });

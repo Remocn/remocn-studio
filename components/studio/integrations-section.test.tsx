@@ -1,7 +1,11 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { IntegrationsSection } from "@/components/studio/integrations-section";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
+
+const KEYCHAIN_LINE = /Keys stay in this Mac’s keychain/;
+const KEYRING_LINE = /Keys stay in your system keyring/;
 
 const ELEVENLABS = {
   authorization: ["api-key"],
@@ -101,6 +105,21 @@ describe("the services group", () => {
 
     expect(await screen.findByText("Nothing is connected yet")).toBeVisible();
     expect(screen.getByRole("button", { name: ADD })).toBeVisible();
+    expect(screen.getByText(KEYCHAIN_LINE)).toBeVisible();
+  });
+
+  describe("on Linux", () => {
+    afterEach(() => {
+      withAgent(MAC);
+    });
+
+    it("says the keys stay in the system keyring", async () => {
+      withAgent(LINUX);
+      studio();
+      render(<IntegrationsSection />);
+
+      expect(await screen.findByText(KEYRING_LINE)).toBeVisible();
+    });
   });
 
   it("offers nothing to add when this build carries no service", async () => {

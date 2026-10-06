@@ -1,7 +1,7 @@
 # shell/layout-and-panes Specification
 
 ## Purpose
-The shape of the window: the sidebar beside the resizable chat, preview and properties panes, how each is shown, hidden and remembered, the Preview and Docs switch in the preview's header, the theme, and the title bar band the shell breathes through.
+The shape of the window: the sidebar beside the resizable chat, preview and properties panes, how each is shown, hidden and remembered, the Preview and Docs switch in the preview's header, the theme, and the title bar band the shell breathes through, which on Linux also carries the window's own controls.
 
 ## Requirements
 

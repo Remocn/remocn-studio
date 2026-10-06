@@ -1,6 +1,7 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Data, Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
+import { currentPlatform, type Platform } from "@/lib/studio/platform";
 
 export class FeedbackError extends Data.TaggedError("FeedbackError")<{
   message: string;
@@ -15,7 +16,10 @@ export interface FeedbackDiagnostics {
   version: string | null;
 }
 
-export function feedbackMailto(diagnostics: FeedbackDiagnostics): string {
+export function feedbackMailto(
+  diagnostics: FeedbackDiagnostics,
+  platform: Platform = currentPlatform()
+): string {
   const subject = encodeURIComponent("Remocn Studio feedback");
   const body = encodeURIComponent(
     [
@@ -26,20 +30,27 @@ export function feedbackMailto(diagnostics: FeedbackDiagnostics): string {
       "Screenshots help — attach them to this email before sending.",
       "",
       "---",
-      ...diagnosticLines(diagnostics),
+      ...diagnosticLines(diagnostics, platform),
     ].join("\n")
   );
   return `mailto:${FEEDBACK_INTAKE_EMAIL}?subject=${subject}&body=${body}`;
 }
 
-function diagnosticLines(diagnostics: FeedbackDiagnostics): string[] {
+function diagnosticLines(
+  diagnostics: FeedbackDiagnostics,
+  platform: Platform
+): string[] {
   const lines: string[] = [];
   const build = buildLine(diagnostics);
   if (build !== null) {
     lines.push(build);
   }
   if (diagnostics.os !== null) {
-    lines.push(`macOS ${diagnostics.os}`);
+    lines.push(
+      platform === "mac"
+        ? `macOS ${diagnostics.os}`
+        : `System: ${diagnostics.os}`
+    );
   }
   if (diagnostics.provider !== null) {
     lines.push(`Agent: ${diagnostics.provider}`);

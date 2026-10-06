@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { env } from "node:process";
+import { SYSTEM_BIN_DIRS, userBinDirs } from "./agent/cli";
 
 export const PACKAGE_MANAGERS = ["bun", "pnpm", "yarn", "npm"] as const;
 
@@ -16,21 +17,6 @@ export const LOCKFILES = [
   ["package-lock.json", "npm"],
   ["npm-shrinkwrap.json", "npm"],
 ] as const satisfies readonly (readonly [string, PackageManager])[];
-
-const HOME_DIRS = [
-  ".bun/bin",
-  ".volta/bin",
-  ".yarn/bin",
-  "Library/pnpm",
-  ".local/share/pnpm",
-];
-
-const FALLBACK_DIRS = [
-  "/opt/homebrew/bin",
-  "/usr/local/bin",
-  "/usr/bin",
-  "/bin",
-];
 
 export interface ProjectManager {
   readonly lockfile: string | null;
@@ -112,21 +98,36 @@ export function isOwnRuntime(manager: PackageManager): boolean {
   );
 }
 
-export function searchDirs(): readonly string[] {
+// Where a package manager installs itself, searched ahead of PATH as it always
+// was. The shared dirs a desktop launcher's PATH lacks come last, so they find a
+// manager nothing earlier had and never shadow one that was found before.
+const MANAGER_HOME_DIRS = [
+  ".bun/bin",
+  ".volta/bin",
+  ".yarn/bin",
+  "Library/pnpm",
+  ".local/share/pnpm",
+] as const;
+
+export function searchDirs(
+  at: Readonly<Record<string, string | undefined>> = env
+): readonly string[] {
   const dirs: string[] = [];
-  const home = env.HOME;
+  const home = at.HOME;
 
   if (home !== undefined) {
-    dirs.push(...HOME_DIRS.map((dir) => path.join(home, dir)));
+    dirs.push(...MANAGER_HOME_DIRS.map((dir) => path.join(home, dir)));
   }
 
-  if (env.PATH !== undefined) {
-    dirs.push(
-      ...env.PATH.split(path.delimiter).filter((dir) => dir.length > 0)
-    );
+  if (at.PATH !== undefined) {
+    dirs.push(...at.PATH.split(path.delimiter).filter((dir) => dir.length > 0));
   }
 
-  dirs.push(...FALLBACK_DIRS);
+  dirs.push(...SYSTEM_BIN_DIRS);
+
+  if (home !== undefined) {
+    dirs.push(...userBinDirs(home, at));
+  }
 
   return [...new Set(dirs)];
 }

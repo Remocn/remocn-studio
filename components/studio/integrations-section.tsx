@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useIntegrations } from "@/hooks/use-integrations";
+import { keyringName } from "@/lib/studio/platform";
 import type {
   AuthorizationKind,
   Connection,
@@ -162,7 +163,7 @@ export function IntegrationsSection() {
           aria-hidden="true"
           className="mt-0.5 size-3.5 shrink-0"
         />
-        Keys stay in this Mac’s keychain, outside your chats and projects.
+        Keys stay in {keyringName()}, outside your chats and projects.
       </p>
     </Group>
   );
@@ -576,8 +577,8 @@ function ConnectionRow({
       {confirming ? (
         <div className="flex flex-col gap-2 rounded-md border border-destructive/40 px-3 py-2">
           <p className="text-xs">
-            Remove “{connection.name}”? Its key is deleted from this Mac’s
-            keychain and the studio stops using it.
+            Remove “{connection.name}”? Its key is deleted from {keyringName()}{" "}
+            and the studio stops using it.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Button

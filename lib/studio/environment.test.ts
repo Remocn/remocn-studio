@@ -1,10 +1,14 @@
 import { describe, expect, it } from "bun:test";
+import { mockIPC } from "@tauri-apps/api/mocks";
+import { Effect, Exit } from "effect";
 import type { EnvironmentCheck } from "@/shared/ipc";
 import {
   compositionRow,
   downloadPercent,
   isBlocked,
   merged,
+  NODE_DOWNLOAD_URL,
+  openNodeDownload,
   unresolved,
 } from "./environment";
 import { PREVIEW_MESSAGE_SOURCE, type PreviewComposition } from "./preview";
@@ -108,6 +112,34 @@ describe("downloadPercent", () => {
     expect(
       downloadPercent({ received: 300, total: 200, type: "progress" })
     ).toBe(100);
+  });
+});
+
+describe("openNodeDownload", () => {
+  it("opens the Node.js download page and asks the sidecar nothing", async () => {
+    const asked: [string, unknown][] = [];
+    mockIPC((cmd, args) => {
+      asked.push([cmd, args]);
+      return null;
+    });
+
+    await Effect.runPromise(openNodeDownload);
+
+    expect(asked).toHaveLength(1);
+    const [command, payload] = asked[0] ?? [null, null];
+    expect(command).toBe("plugin:opener|open_url");
+    expect(payload).toMatchObject({ url: NODE_DOWNLOAD_URL });
+  });
+
+  it("fails with a sentence that carries the address", async () => {
+    mockIPC(() => {
+      throw new Error("no browser");
+    });
+
+    const exit = await Effect.runPromiseExit(openNodeDownload);
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    expect(String(exit)).toContain("https://nodejs.org/en/download");
   });
 });
 

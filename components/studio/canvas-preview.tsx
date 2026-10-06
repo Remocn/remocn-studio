@@ -34,6 +34,7 @@ import type { Tools } from "@/hooks/use-tools";
 import { formatShortcut, SHORTCUTS } from "@/lib/studio/command-registry";
 import type { LayerRow } from "@/lib/studio/layers";
 import { INSPECTOR_WIDTH } from "@/lib/studio/panes";
+import { modKeyCombo } from "@/lib/studio/platform";
 import { cn } from "@/lib/utils";
 import { CanvasFrameLabel } from "./canvas-frame-label";
 import { CanvasRulers } from "./canvas-rulers";
@@ -434,7 +435,7 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               variant="ghost"
             />
           }
-          shortcut="⌘−"
+          shortcut={modKeyCombo("−")}
         >
           <MinusIcon />
         </HintTooltip>
@@ -449,7 +450,7 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               variant="ghost"
             />
           }
-          shortcut="⌘0"
+          shortcut={modKeyCombo("0")}
         >
           <ZoomReadout camera={camera} />
         </HintTooltip>
@@ -464,7 +465,7 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               variant="ghost"
             />
           }
-          shortcut="⌘+"
+          shortcut={modKeyCombo("+")}
         >
           <PlusIcon />
         </HintTooltip>

@@ -1,9 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import {
   fileManagerName,
+  isModKey,
+  keyringName,
   modKeyCombo,
   modKeyLabel,
   platformOf,
+  terminalOpenHint,
+  terminalPasteHint,
 } from "./platform";
 
 describe("platformOf", () => {
@@ -50,5 +54,33 @@ describe("labels", () => {
     expect(fileManagerName("mac")).toBe("Finder");
     expect(fileManagerName("windows")).toBe("File Explorer");
     expect(fileManagerName("linux")).toBe("Files");
+  });
+
+  it("holds a shortcut with ⌘ on macOS and Ctrl elsewhere", () => {
+    const command = { ctrlKey: false, metaKey: true };
+    const control = { ctrlKey: true, metaKey: false };
+
+    expect(isModKey(command, "mac")).toBe(true);
+    expect(isModKey(control, "mac")).toBe(false);
+    expect(isModKey(control, "linux")).toBe(true);
+    expect(isModKey(command, "linux")).toBe(false);
+  });
+
+  it("names the keychain on macOS and the keyring elsewhere", () => {
+    expect(keyringName("mac")).toBe("this Mac’s keychain");
+    expect(keyringName("linux")).toBe("your system keyring");
+  });
+
+  it("says Terminal on macOS and the person's own terminal elsewhere", () => {
+    expect(terminalOpenHint("mac")).toContain("an empty Terminal window");
+    expect(terminalOpenHint("linux")).toContain(
+      "an empty window of your terminal"
+    );
+  });
+
+  it("tells a Linux terminal to paste with Shift", () => {
+    expect(terminalPasteHint("linux")).toBe("Ctrl+Shift+V, then Enter");
+    expect(terminalPasteHint("mac")).toBe("⌘V, then Enter");
+    expect(terminalPasteHint("windows")).toBe("Ctrl+V, then Enter");
   });
 });

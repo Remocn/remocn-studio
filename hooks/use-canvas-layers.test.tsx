@@ -5,6 +5,7 @@ import type { PreviewScene } from "@/lib/studio/preview";
 import type { PreviewMessage } from "@/preview/protocol";
 import type { StudioObject } from "@/shared/studio-document";
 import { previewControl } from "@/test/preview-channel";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
 import { useCanvasLayers } from "./use-canvas-layers";
 
 function object(
@@ -498,6 +499,23 @@ describe("deleting from the canvas and the list", () => {
     expect(press({ key: "z", metaKey: true }).defaultPrevented).toBe(false);
     expect(deletion.remove).not.toHaveBeenCalled();
     expect(deletion.undo).not.toHaveBeenCalled();
+  });
+
+  describe("on Linux", () => {
+    afterEach(() => {
+      withAgent(MAC);
+    });
+
+    it("undoes on Ctrl+Z, and leaves the Super key alone", () => {
+      withAgent(LINUX);
+      const { deletion, press } = setup("card");
+      expect(press({ key: "z", metaKey: true }).defaultPrevented).toBe(false);
+      expect(
+        press({ ctrlKey: true, key: "z", shiftKey: true }).defaultPrevented
+      ).toBe(false);
+      expect(press({ ctrlKey: true, key: "z" }).defaultPrevented).toBe(true);
+      expect(deletion.undo).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("opens the row's menu for its object", () => {
