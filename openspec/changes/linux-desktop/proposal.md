@@ -61,23 +61,26 @@ None.
 - `projects/environment-checklist`: on Linux, Open in Terminal uses the person's terminal.
 - `projects/project-lifecycle`: projects are switched without a File menu on Linux.
 - `projects/project-settings-and-brand`: Show in Files on Linux.
-- `sidecar/supervision`: the log path on Linux.
+- `sidecar/supervision`: the log path on Linux; `bun` naming the shipped runtime for what the
+  sidecar starts; the order the added CLI dirs are searched in.
 
 ## Impact
 
 - **Shared contract:** unchanged; `node.install` stays and the sidecar refuses it off
   macOS.
-- **Sidecar:** one shared list of CLI search dirs replaces the per-CLI copies.
+- **Sidecar:** one shared list of CLI search dirs replaces the per-CLI copies, searched
+  after `PATH` and the system dirs so it never shadows what was found before.
 - **Rust core:**
   - `keyring` features per platform.
   - The bundled runtime is renamed `remocn-studio-bun` on both, so a `.deb` never claims
-    `/usr/bin/bun`.
+    `/usr/bin/bun`; a `bun` link in the data folder keeps `bun` naming it for everything
+    the sidecar starts.
   - Linux versions of the terminal launcher, the consent location, the OS version, behind
     `cfg(target_os)`.
   - `tauri.linux.conf.json` for the frameless window; Linux bundle settings in
     `tauri.conf.json`.
 - **Webview:** window controls, per-platform menu, wording, Node install and notification
-  permission; tests default to a Linux user agent and switch to macOS through
+  permission; tests keep the macOS user agent and switch to Linux through
   `test/user-agent.ts`.
 - **Tooling and docs:** `fetch-bun.ts`, `publish.yml`, `dev.yml`, `README.md`,
   `CONTRIBUTING.md`, `CLAUDE.md` and `openspec/config.yaml`.

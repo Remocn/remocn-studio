@@ -519,7 +519,14 @@ One seam per line: what it owns, the specs that define it, the records that expl
   `src-tauri/src/sidecar/spawn.rs` is the same list for the `PATH` the core hands the
   sidecar; `SYSTEM_BIN_DIRS` likewise. Both lists serve both platforms (Homebrew and
   `~/Library/pnpm` sit beside the Linux dirs) — a dir that does not exist is never matched. `sidecar/agent/cli.test.ts` reads `spawn.rs` and fails when they differ — edit
-  both.
+  both. **The home dirs are searched last**, after `~/.bun/bin`, `PATH` and the system dirs
+  (the package managers keep their own home dirs ahead of `PATH`): put first, an asdf or
+  mise shim with no version set answers `node` with an error where Homebrew's node runs.
+- **`bun` on the sidecar's `PATH`**: the shipped runtime is `remocn-studio-bun`, so a `.deb`
+  never claims `/usr/bin/bun`, but turns and project scripts run `bun` by name.
+  `spawn::bun_dir` puts `<data dir>/bin`, holding a `bun` link to the runtime, first on the
+  sidecar's `PATH`, and checks the link on every launch — an AppImage mounts somewhere new
+  each time.
 - **Open in Terminal** (`src-tauri/src/terminal.rs`) asks Terminal.app through `osascript` on
   macOS. On Linux it spawns, detached and with no
   arguments, `$TERMINAL`, then `xdg-terminal-exec`, `x-terminal-emulator`, then the first

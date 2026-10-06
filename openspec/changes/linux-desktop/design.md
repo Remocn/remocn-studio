@@ -134,6 +134,17 @@ collide with a distribution's or a user's `/usr/bin/bun`. `spawn::shipped_bun`
 looks for `remocn-studio-bun` beside the executable. The re-execed hosts already
 use `process.execPath`, so they follow without change.
 
+What the sidecar starts still asks for `bun` by name: a turn's `bun add`, which the
+conventions send to the project's own package manager (bun for a new project), and a
+project's own scripts. Before the rename the core put the runtime's dir first on the
+sidecar's `PATH`, and `Contents/MacOS/bun` answered. So `spawn::bun_dir` names the
+dir to put first: the runtime's own when the file is already called `bun`, else
+`<data dir>/bin` with a `bun` symlink to the runtime. The link is checked on every
+launch, because an AppImage mounts at a new path each time, and replaced by a rename
+so a second instance never finds it missing. A failure is a line in the sidecar log,
+not a failed launch. The renamed runtime's own dir is no longer put on the `PATH`: on
+a `.deb` it is `/usr/bin`, which would go ahead of everything the person set.
+
 `scripts/fetch-bun.ts` maps:
 
 - `x86_64-unknown-linux-gnu` → `bun-linux-x64-baseline`
@@ -158,6 +169,16 @@ The list is `.local/bin`, `.bun/bin`, `.npm-global/bin`, `.volta/bin`,
 `Library/pnpm`, then `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, `/bin` and
 `/usr/sbin`. `$NVM_BIN` is added when it is set. One list serves both platforms: a
 dir that does not exist on this one is never matched.
+
+The new dirs are **appended, never put ahead**. The core searches `~/.bun/bin`, the
+`PATH` it was given, Homebrew and the system dirs — the order it always had, and the
+one `sidecar/supervision` states — and only then the rest of the home dirs and
+`$NVM_BIN`. The package managers' lookup keeps its own home dirs ahead of `PATH` as
+before and appends the rest. A dir added for a launcher's minimal `PATH` therefore
+finds a tool nothing earlier had, and never displaces one that was found before: put
+first, an asdf or mise shim with no version set answers `node` with an error where
+Homebrew's node used to run. The price is on Linux: started from a desktop entry, a
+distribution's `/usr/bin/node` wins over a version manager's node.
 
 A launcher started from a `.desktop` file gets the session's minimal `PATH`. These
 dirs are where the agent CLIs and Node actually are, so this is the difference
@@ -217,33 +238,42 @@ to fetch new versions by hand, for no gain: the key and the manifest already exi
 
 ### 9. Wording, read from the platform helper
 
-Text that names macOS becomes neutral where one word serves both, and is read
-from the platform where it cannot:
+A Mac keeps every word it had; Linux reads the general sentence. Each line is read
+from the platform — `useIsMac()` in a component, which answers true until mounted
+(what the prerendered page carries, so a Mac never sees a word change), and a
+`platform` argument defaulting to `currentPlatform()` in `lib/`:
 
-| Before | After |
+| macOS (unchanged) | Linux |
 | --- | --- |
 | "Follows macOS" | "Follows the system" |
-| "macOS asks once…" | kept on macOS; the desktop's service on Linux |
-| "this Mac's keychain" | `keyringName()`: the same on macOS, "your system keyring" on Linux |
+| "…whenever macOS asks to reduce motion" | "…whenever the system asks to reduce motion" |
+| "Nothing leaves this Mac…" | "Nothing leaves this computer…" |
+| "macOS asks once…" | the desktop's notification service |
+| "this Mac's keychain" | "your system keyring" (`keyringName()`) |
 | "macOS did not allow the studio…" | "The system did not allow the studio…" |
-| the `macOS` fact row | `System` |
-| `macOS ${os}` in feedback | the OS string as read, which the core now prefixes with `macOS` |
+| "an empty Terminal window" | "an empty window of your terminal" (`terminalOpenHint()`) |
+| the `macOS` fact row, `15.5` | `System`, `Ubuntu 24.04.1 LTS` |
+| `macOS 15.5` in feedback | `System: Ubuntu 24.04.1 LTS` |
 | "Show in Finder" | `Show in ${fileManagerName()}` |
-| the hard-coded `⌘−`, `⌘0`, `⌘+` in `canvas-preview.tsx` | `modKeyCombo` |
+| `⌘−`, `⌘0`, `⌘+` in `canvas-preview.tsx` | `Ctrl+…` through `modKeyCombo` |
+
+The two shortcuts that read `metaKey` alone — ⌘⌫ on a video or chat row and ⌘Z
+after a canvas deletion — read `isModKey()`, which is ⌘ on a Mac and Ctrl
+elsewhere; on Linux the Super key belongs to the desktop.
 
 On macOS, *Grant permission* still opens the studio's row in System Settings once
 macOS has refused. On Linux the desktop's notification service has no such row, so
 it only re-requests, and the line names the desktop's own settings.
 
-`commands.rs` keeps `sw_vers` on macOS, now answering `macOS <version>`, and on
+`commands.rs` keeps `sw_vers` on macOS, answering the bare version as before, and on
 Linux reads `/etc/os-release`, falling back to `/usr/lib/os-release`. It answers
 `PRETTY_NAME`, else `NAME VERSION_ID`, else `unknown`. The field stays `os`, so there
 is no IPC change.
 
-`test/register-dom.ts` registers a WebKitGTK user agent (`X11; Linux x86_64`). The
-nine test files that assert `⌘` assert `Ctrl+…` instead, and a test of a macOS
-branch switches with `withAgent(MAC)` from `test/user-agent.ts`. `platform.test.ts`
-keeps testing all three platforms by argument.
+`test/register-dom.ts` keeps the macOS user agent, so every test that does not say
+otherwise covers the platform the studio has always shipped on. A test of a Linux
+branch switches with `withAgent(LINUX)` from `test/user-agent.ts` and puts `MAC`
+back afterwards. `platform.test.ts` keeps testing all three platforms by argument.
 
 ### 10. Consent location
 
@@ -305,8 +335,8 @@ other never compiles.
   package with `dpkg -i` or `rpm -U`.
   → The prompt is the platform's own; an AppImage updates without one.
 - **[A change breaks the platform its author did not run]**
-  → The `rust` CI job compiles the core on both; the webview tests cover both
-  branches by switching the user agent.
+  → The `rust` CI job compiles the core on both; the webview tests run as macOS by
+  default and cover each Linux branch by switching the user agent.
 - **[The search-dir lists drift between Rust and TS]**
   → The parity test in decision 5.
 - **[Software GL makes Linux exports slower than Mac ones]**
@@ -335,7 +365,7 @@ other never compiles.
 There are no users of a Linux build yet, and nothing in history or settings
 changes shape on either platform. The sidecar protocol is unchanged. The bundled
 runtime is renamed `remocn-studio-bun` on macOS too, so run `bun run bun:fetch`
-after pulling. Rollback is reverting the change; there is no data to convert.
+after pulling; the core makes `<data dir>/bin/bun` itself on the next launch. Rollback is reverting the change; there is no data to convert.
 
 ## Open Questions
 

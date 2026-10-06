@@ -2,7 +2,12 @@
 
 ### Requirement: On Linux the window draws its own frame
 
-On Linux the window SHALL carry no frame or title bar from the desktop; on macOS it keeps the overlay title bar and its traffic lights, and none of this applies. The title bar band at the top of the sidebar SHALL hold the studio's own Close, Minimise and Maximise controls at its left edge. Dragging the band SHALL move the window, double-clicking it SHALL toggle maximise, and dragging any edge of the window SHALL resize it. The webview owns the controls; the core performs the window operations. Close SHALL go through the same quit guard as any other quit (see `shell/quit-and-updates`).
+On Linux the window SHALL carry no frame or title bar from the desktop, and the title bar band at the top of the sidebar SHALL hold the studio's own Close, Minimise and Maximise controls at its left edge. Dragging the band SHALL move the window, double-clicking it SHALL toggle maximise, and dragging any edge SHALL resize it. Close SHALL go through the same quit guard as any other quit (see `shell/quit-and-updates`).
+
+#### Scenario: On macOS
+
+- **WHEN** the studio runs on macOS
+- **THEN** the window keeps the overlay title bar and its traffic lights, and none of this applies
 
 #### Scenario: Closing from the band
 

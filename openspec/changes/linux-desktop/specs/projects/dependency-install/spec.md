@@ -1,7 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: On Linux, installing Node.js opens its download page
-On Linux, where there is no system installer to hand a package to, the studio SHALL, when asked to install Node.js, open the Node.js download page (`https://nodejs.org/en/download`) in the person's default browser and SHALL say beside the button that the distribution's package manager or a version manager installs it too. The studio SHALL NOT download, unpack or install Node.js itself, and SHALL NOT ask for administrator rights. The webview owns this; the sidecar takes no part in it, and refuses `node.install` off macOS. On macOS the studio keeps fetching the official installer and handing it to the system installer.
+On Linux, where there is no system installer to hand a package to, the studio SHALL, when asked to install Node.js, open the Node.js download page (`https://nodejs.org/en/download`) in the person's default browser and SHALL say beside the button that the distribution's package manager or a version manager installs it too. The studio SHALL NOT download, unpack or install Node.js itself, and SHALL NOT ask for administrator rights.
+
+#### Scenario: The sidecar is asked to install on Linux
+- **WHEN** `node.install` reaches the sidecar off macOS
+- **THEN** it refuses; the webview opens the page itself, and on macOS the studio keeps fetching the official installer and handing it to the system installer
 
 #### Scenario: The install is asked for
 - **WHEN** *Install Node.js* is pressed on Linux

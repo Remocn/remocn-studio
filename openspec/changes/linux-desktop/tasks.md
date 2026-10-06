@@ -39,7 +39,7 @@
 - [x] 5.2 Add `hooks/use-window-controls.ts`, which exposes `close`, `minimize` and `toggleMaximize` over `getCurrentWindow()` and drops failures silently. Add `components/studio/window-controls.tsx`, which renders three labelled buttons (Close, Minimise, Maximise) only when `currentPlatform() === "linux"`, fixed in the traffic-light slot above the drag region. Mount it once at the root. Verify: `hooks/use-window-controls.test.tsx` (with `mockIPC`) asserts each button sends its window command and a rejected command shows nothing. `components/studio/window-controls.test.tsx` asserts it renders on a Linux agent and not on a Mac one.
 - [x] 5.3 In `hooks/use-app-menu.ts`, skip `installAppMenu` and answer `false` unless the platform is `mac` (design §2). Verify: `hooks/use-app-menu.test.tsx` asserts no menu IPC is sent on Linux and `useShortcuts` then fires a menu-owned shortcut such as Ctrl+E.
 
-## 6. Webview: tests run as Linux
+## 6. Webview: tests run as Linux *(Superseded by 11.4.)*
 
 - [x] 6.1 Register a WebKitGTK user agent (`Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko)`) in `test/register-dom.ts`. Update the `⌘` assertions in:
   - `lib/studio/command-registry.test.ts`
@@ -112,3 +112,12 @@
 - [x] 10.7 `publish.yml` keeps the signed macOS jobs and adds `release-linux` after them, signing for the updater and uploading `latest.json`; `dev.yml`'s `rust` job runs on `ubuntu-22.04` and `macos-latest`.
 - [x] 10.8 README, CONTRIBUTING, CLAUDE.md, `docs/decisions/README.md`, `openspec/config.yaml`, the spec Purpose lines and this change's proposal, design and deltas describe both platforms; `sign-and-notarize-macos` is restored.
 - [ ] 10.9 On a Mac, run `bun tauri dev` and check the traffic lights, the menu bar, the keychain prompt, Terminal.app, the Node `.pkg`, and System Settings from *Grant permission* behave as before. Verify: the `rust core (macOS)` CI job passes.
+
+## 11. Review follow-ups
+
+- [x] 11.1 `spawn::bun_dir` puts `<data dir>/bin`, holding a `bun` link to the shipped runtime, first on the sidecar's `PATH`, so `bun` still names the studio's runtime for turns and project scripts (design §4, `sidecar/supervision` delta). Verify: `cargo test` covers the link, its replacement when the runtime moves, and its place first on the `PATH`.
+- [x] 11.2 `Cargo.lock` is staging's again plus the keyring backend's crates, and `@tauri-apps/api` and `@tauri-apps/plugin-updater` are back at staging's versions: removing and re-adding the updater had moved tauri to 2.12.1, tao, wry, muda and window-vibrancy with it. Verify: the lockfile differs from staging only by `dbus-secret-service` and its dependencies.
+- [x] 11.3 The new home dirs are searched after `PATH` and the system dirs, in `spawn.rs` and in `sidecar/package-manager.ts` (design §5). Verify: `cargo test` and `sidecar/package-manager.test.ts` pin the order.
+- [x] 11.4 `test/register-dom.ts` keeps the macOS user agent; Linux tests switch with `withAgent(LINUX)` (design §9). Verify: the `⌘` assertions are back and every Linux test names its platform.
+- [x] 11.5 A Mac keeps its own wording and Linux gets the general sentence (design §9 table); `os_version` answers the bare `sw_vers` version on macOS. Verify: settings-page, feedback, failure-text and platform tests cover both.
+- [x] 11.6 ⌘⌫ on a row and ⌘Z on the canvas read `isModKey()`, so Linux takes Ctrl. Verify: `use-row-menus.test.tsx` and `use-canvas-layers.test.tsx` cover Linux.
