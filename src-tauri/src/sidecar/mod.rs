@@ -397,12 +397,23 @@ async fn run_session(inner: &Arc<Inner>) -> Session {
     let crash_consent = crash::consent_in(&data_dir);
     let version = inner.app.package_info().version.to_string();
 
+    let bun_dir = match spawn::bun_dir(&bun, &data_dir) {
+        Ok(dir) => Some(dir),
+        Err(reason) => {
+            inner.log.host(format!(
+                "`bun` will not name the studio's runtime for what the sidecar starts: {reason}"
+            ));
+            None
+        }
+    };
+
     inner
         .log
         .host(format!("starting {} {}", bun.display(), script.display()));
 
     let mut child = match spawn::launch(spawn::Launch {
         bun: &bun,
+        bun_dir: bun_dir.as_deref(),
         crash_consent,
         data_dir: &data_dir,
         library_dir: library_dir.as_deref(),
