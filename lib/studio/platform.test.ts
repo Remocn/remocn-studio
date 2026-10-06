@@ -5,6 +5,7 @@ import {
   modKeyCombo,
   modKeyLabel,
   platformOf,
+  terminalOpenHint,
   terminalPasteHint,
 } from "./platform";
 
@@ -57,6 +58,13 @@ describe("labels", () => {
   it("names the keychain on macOS and the keyring elsewhere", () => {
     expect(keyringName("mac")).toBe("this Mac’s keychain");
     expect(keyringName("linux")).toBe("your system keyring");
+  });
+
+  it("says Terminal on macOS and the person's own terminal elsewhere", () => {
+    expect(terminalOpenHint("mac")).toContain("an empty Terminal window");
+    expect(terminalOpenHint("linux")).toContain(
+      "an empty window of your terminal"
+    );
   });
 
   it("tells a Linux terminal to paste with Shift", () => {

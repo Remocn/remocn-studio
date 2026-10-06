@@ -82,8 +82,9 @@ pub async fn studio_build(app: AppHandle) -> StudioBuild {
 
 static OS_VERSION: OnceLock<String> = OnceLock::new();
 
-/// The operating system and its version, as diagnostics name it: `macOS 15.5`
-/// on a Mac, the os-release name (`Ubuntu 24.04.1 LTS`) on Linux.
+/// The operating system's version, as diagnostics show it: the bare version
+/// on a Mac (`15.5`, which the webview labels macOS), the os-release name
+/// (`Ubuntu 24.04.1 LTS`) on Linux.
 pub(crate) fn os_version() -> String {
     OS_VERSION
         .get_or_init(|| read_os_version().unwrap_or_else(|| "unknown".to_string()))
@@ -99,7 +100,6 @@ fn read_os_version() -> Option<String> {
         .and_then(|output| String::from_utf8(output.stdout).ok())
         .map(|version| version.trim().to_string())
         .filter(|version| !version.is_empty())
-        .map(|version| format!("macOS {version}"))
 }
 
 #[cfg(not(target_os = "macos"))]

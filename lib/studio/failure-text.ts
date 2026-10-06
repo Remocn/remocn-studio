@@ -1,3 +1,5 @@
+import { currentPlatform, type Platform } from "@/lib/studio/platform";
+
 export interface WordedFailure {
   details: string | null;
   sentence: string;
@@ -12,14 +14,22 @@ const LONGEST_SENTENCE = 280;
 const SPACE = /\s/;
 const LINES = /\r?\n/;
 
-const KNOWN: readonly { pattern: RegExp; sentence: string }[] = [
+// `offMac` words the same failure where the operating system is not macOS.
+interface Known {
+  offMac?: string;
+  pattern: RegExp;
+  sentence: string;
+}
+
+const KNOWN: readonly Known[] = [
   {
     pattern: /\bENOENT\b|no such file or directory/i,
     sentence: "A file it needed could not be found.",
   },
   {
+    offMac: "The system did not allow the studio to use a file there.",
     pattern: /\bE(?:ACCES|PERM)\b|permission denied|operation not permitted/i,
-    sentence: "The system did not allow the studio to use a file there.",
+    sentence: "macOS did not allow the studio to use a file there.",
   },
   {
     pattern: /\bENOSPC\b|no space left on device/i,
@@ -31,10 +41,10 @@ const KNOWN: readonly { pattern: RegExp; sentence: string }[] = [
   },
 ];
 
-function known(text: string): string | null {
-  for (const { pattern, sentence } of KNOWN) {
+function known(text: string, platform: Platform): string | null {
+  for (const { offMac, pattern, sentence } of KNOWN) {
     if (pattern.test(text)) {
-      return sentence;
+      return platform !== "mac" && offMac !== undefined ? offMac : sentence;
     }
   }
   return null;
@@ -51,7 +61,8 @@ function isSentence(line: string): boolean {
 
 export function wordFailure(
   raw: string | null | undefined,
-  fallback: string
+  fallback: string,
+  platform: Platform = currentPlatform()
 ): WordedFailure {
   const text = raw?.trim() ?? "";
   if (text.length === 0) {
@@ -60,7 +71,7 @@ export function wordFailure(
 
   const [head = "", ...rest] = text.split(LINES);
   const first = head.replace(ERROR_PREFIX, "").trim();
-  const mapped = known(first);
+  const mapped = known(first, platform);
   if (mapped !== null) {
     return { details: text, sentence: mapped };
   }

@@ -30,7 +30,7 @@ import type {
   NotificationConsent,
   PermissionReading,
 } from "@/hooks/use-notification-consent";
-import { usePlatform } from "@/hooks/use-platform";
+import { useIsMac } from "@/hooks/use-platform";
 import { usePresence } from "@/hooks/use-presence";
 import { useScrolledIntoView } from "@/hooks/use-scrolled-into-view";
 import {
@@ -320,13 +320,21 @@ const THEME_TILES: readonly {
   },
   {
     bar: "bg-white/25",
-    caption: "Follows the system",
+    caption: "Follows macOS",
     chip: "bg-black/25",
     id: "system",
     label: "System",
     swatch: "bg-linear-to-br from-[#141318] from-50% to-white to-50%",
   },
 ];
+
+function themeCaption(choice: ThemeChoice | null, isMac: boolean) {
+  if (choice === "system" && !isMac) {
+    return "Follows the system";
+  }
+
+  return THEME_TILES.find((tile) => tile.id === choice)?.caption;
+}
 
 // A setting: its name and a sentence on the leading side, the control on the
 // trailing side, top-aligned so a description that wraps never moves the
@@ -400,6 +408,7 @@ function AppearanceSection() {
 
 function ThemeGroup() {
   const { choice, select } = useThemeChoice();
+  const isMac = useIsMac();
 
   const onPickTheme = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -414,7 +423,7 @@ function ThemeGroup() {
   return (
     <Group
       description={
-        THEME_TILES.find((tile) => tile.id === choice)?.caption ??
+        themeCaption(choice, isMac) ??
         "Dark is the default until a choice is made"
       }
       title="Theme"
@@ -464,6 +473,7 @@ const SAMPLE_MOOD: ShellMood = { isBusy: false, tone: "idle" };
 // effect where the person is looking rather than behind the page.
 function TitlebarGroup() {
   const { preferences } = useStudio();
+  const isMac = useIsMac();
 
   return (
     <Group
@@ -497,7 +507,7 @@ function TitlebarGroup() {
         </Row>
 
         <Row
-          description="Off holds one frame of the field; the hue still follows the mood. Also off whenever the system asks to reduce motion."
+          description={`Off holds one frame of the field; the hue still follows the mood. Also off whenever ${isMac ? "macOS" : "the system"} asks to reduce motion.`}
           htmlFor="settings-titlebar-motion"
           title="Animate it"
         >
@@ -515,6 +525,7 @@ function TitlebarGroup() {
 
 function BehaviorSection() {
   const { preferences, onboarding, updates } = useStudio();
+  const isMac = useIsMac();
 
   return (
     <>
@@ -548,7 +559,7 @@ function BehaviorSection() {
       </Group>
 
       <Group
-        description="Nothing leaves this computer unless a switch here says so"
+        description={`Nothing leaves ${isMac ? "this Mac" : "this computer"} unless a switch here says so`}
         title="Privacy"
       >
         <CrashReportsRow
@@ -592,7 +603,7 @@ const EVENT_ROWS: readonly {
 function NotificationsSection() {
   const { notifications } = useStudio();
   const { permission } = notifications;
-  const isMac = usePlatform() === "mac";
+  const isMac = useIsMac();
   const isUnavailable = permission === "unavailable";
   const needsPermission = permission === "default" || permission === "denied";
 
@@ -754,6 +765,7 @@ function CrashReportsRow({
 // second group the eye has to connect back.
 function FeedbackSection() {
   const { feedback, provider, updates } = useStudio();
+  const isMac = useIsMac();
 
   return (
     <Group
@@ -788,7 +800,7 @@ function FeedbackSection() {
                   ? "—"
                   : ENVIRONMENTS[updates.environment],
               ],
-              ["System", updates.os ?? "—"],
+              [isMac ? "macOS" : "System", updates.os ?? "—"],
               ["Agent", PROVIDER_INFO[provider].name],
             ]}
           />
@@ -826,12 +838,13 @@ const ENVIRONMENTS: Record<AppEnvironment, string> = {
 
 // The popover in the sidebar keeps `UpdatesBody`, sized for a popover. The
 // page reads top to bottom as one card: the version, its build and the
-// system it runs on, the studio's own sentence about it, and the check on the
+// macOS it runs on, the studio's own sentence about it, and the check on the
 // same line as the thing it checks. A release that is ready is a second
 // card under it, with its notes and the install button, and it exists only
 // while there is one — an empty "Releases" group said nothing.
 function UpdatesSection() {
   const { hasRunningTurns, updates } = useStudio();
+  const isMac = useIsMac();
   const { download, release } = updates;
 
   return (
@@ -878,7 +891,7 @@ function UpdatesSection() {
             </Button>
           </div>
 
-          <Facts rows={[["System", updates.os ?? "—"]]} />
+          <Facts rows={[[isMac ? "macOS" : "System", updates.os ?? "—"]]} />
 
           {updates.error === null ? null : (
             <p className="text-destructive text-xs">{updates.error}</p>

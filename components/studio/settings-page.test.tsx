@@ -139,7 +139,20 @@ describe("the settings page", () => {
     expect(screen.getByRole("heading", { name: "Appearance" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Dark" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "System" }));
+    expect(await screen.findByText("Follows macOS")).toBeVisible();
+  });
+
+  it("names the system rather than macOS on Linux", async () => {
+    withAgent(LINUX);
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "System" }));
     expect(await screen.findByText("Follows the system")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Updates" }));
+    expect(screen.getByText("System")).toBeVisible();
+    expect(screen.queryByText("macOS")).toBeNull();
   });
 
   it("opens on Cmd+comma", async () => {
@@ -159,7 +172,7 @@ describe("the settings page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Updates" }));
     expect(screen.getByRole("heading", { name: "Updates" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Check now" })).toBeVisible();
-    expect(screen.getByText("System")).toBeVisible();
+    expect(screen.getByText("macOS")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Behavior" }));
     expect(

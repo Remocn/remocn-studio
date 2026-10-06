@@ -20,3 +20,11 @@ export function usePlatform(): Platform | null {
 
   return platform;
 }
+
+// The macOS wording until mounted, which is also what the prerendered page
+// carries: a Mac never sees a word change, and Linux swaps before paint.
+export function useIsMac(): boolean {
+  const platform = usePlatform();
+
+  return platform === null || platform === "mac";
+}

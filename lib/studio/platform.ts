@@ -56,6 +56,14 @@ export function terminalPasteHint(
     : "Ctrl+V, then Enter";
 }
 
+export function terminalOpenHint(
+  platform: Platform = currentPlatform()
+): string {
+  return platform === "mac"
+    ? "Copies the command and opens an empty Terminal window. Nothing runs until you paste it and press Enter."
+    : "Copies the command and opens an empty window of your terminal. Nothing runs until you paste it and press Enter.";
+}
+
 export function keyringName(platform: Platform = currentPlatform()): string {
   return platform === "mac" ? "this Mac’s keychain" : "your system keyring";
 }
