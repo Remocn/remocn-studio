@@ -16,12 +16,18 @@
  * uploads nothing and still does the one thing that is not optional, which is
  * making sure `out/` ships no `.map` files.
  *
- * The sidecar half needs no inject at all: `bun build --sourcemap=external`
- * already writes a `//# debugId=` line into the bundle and the matching id
- * into the map — measured, and the reason `sidecar:build` had to move from
- * `--outfile` to `--outdir`, which is what bun requires for an external map.
- * The inject is run over both directories anyway, because it is idempotent
- * where an id is already present and the static export has none.
+ * The sidecar half needs its comment taken out first. `bun build
+ * --sourcemap=external` writes a `//# debugId=` line into the bundle and the
+ * matching id into the map — the reason `sidecar:build` had to move from
+ * `--outfile` to `--outdir`, which is what bun requires for an external map —
+ * but a comment is all it writes. The SDK learns a frame's debug id at runtime
+ * from `globalThis._sentryDebugIds`, which only inject's snippet fills, and
+ * inject skips any file that already carries the comment. So v1.0.0 and
+ * v1.0.1 uploaded a map for `main.js` that no event could name: every sidecar
+ * report arrived with no `debug_meta` and stayed minified (REM-652). With the
+ * line gone, inject reuses the map's own id, puts the snippet below the
+ * `// @bun` pragma, and shifts the map by the lines it adds — all measured
+ * against `@sentry/bun` with a capturing transport.
  *
  * `@sentry/cli` is deliberately not a dependency: its postinstall downloads a
  * platform binary of some 20 MB, and `bun install` runs in three CI jobs that
@@ -30,13 +36,14 @@
  */
 
 import { spawn } from "node:child_process";
-import { readdir, readFile, rm } from "node:fs/promises";
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { crashRelease } from "@/shared/crash";
 
 const SENTRY_CLI = "@sentry/cli@2";
 const EXPORT_DIR = "out";
 const SIDECAR_DIR = "sidecar-dist";
+const BUN_DEBUG_ID = /\n\/\/# debugId=[0-9A-Fa-f]+\s*$/;
 
 const token = process.env.SENTRY_AUTH_TOKEN ?? "";
 const org = process.env.SENTRY_ORG ?? "";
@@ -54,6 +61,8 @@ try {
       "sourcemaps: nothing uploaded — SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT and NEXT_PUBLIC_SENTRY_DSN are what turn this on"
     );
   } else {
+    await dropBunDebugId(join(SIDECAR_DIR, "main.js"));
+
     // Both bundles go up under one release, which is what makes a crash that
     // starts in the webview and ends in the sidecar read as one story.
     for (const dir of [EXPORT_DIR, SIDECAR_DIR]) {
@@ -111,6 +120,12 @@ function sentry(args: readonly string[]): Promise<void> {
       reject(new Error(`sentry-cli ${args.join(" ")} exited with ${code}`));
     });
   });
+}
+
+async function dropBunDebugId(file: string): Promise<void> {
+  const source = await readFile(file, "utf8");
+
+  await writeFile(file, source.replace(BUN_DEBUG_ID, "\n"));
 }
 
 async function removeMaps(dir: string): Promise<void> {
