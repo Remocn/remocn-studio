@@ -59,7 +59,7 @@ describe("CommandPalette", () => {
     expect(screen.getByText("Actions")).toBeVisible();
     expect(screen.getByText("Videos")).toBeVisible();
     expect(screen.getByText("Export…")).toBeVisible();
-    expect(screen.getByText("Ctrl+E")).toBeVisible();
+    expect(screen.getByText("⌘E")).toBeVisible();
     expect(screen.getByText("The preview is not running yet.")).toBeVisible();
     expect(
       screen.getByRole("option", { name: "First cut, open" })

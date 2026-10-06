@@ -129,7 +129,7 @@ describe("the settings page", () => {
 
   afterEach(() => {
     unstubAllGlobals();
-    withAgent(LINUX);
+    withAgent(MAC);
   });
 
   it("opens from the gear on Appearance", async () => {
@@ -184,9 +184,9 @@ describe("the settings page", () => {
     expect(screen.getByRole("heading", { name: "Hotkeys" })).toBeVisible();
     const video = within(screen.getByRole("region", { name: "Video" }));
     expect(video.getByText("Export")).toBeVisible();
-    expect(video.getByLabelText("Ctrl+E")).toBeVisible();
-    expect(video.getByLabelText("Ctrl+Shift+S")).toBeVisible();
-    expect(video.getByLabelText("Ctrl+Alt+↓")).toBeVisible();
+    expect(video.getByLabelText("⌘E")).toBeVisible();
+    expect(video.getByLabelText("⇧⌘S")).toBeVisible();
+    expect(video.getByLabelText("⌥⌘↓")).toBeVisible();
     expect(
       screen
         .getByRole("region", { name: "Settings" })
@@ -263,6 +263,7 @@ describe("the settings page", () => {
   });
 
   it("offers Grant permission when the desktop said no", async () => {
+    withAgent(LINUX);
     stubGlobal("Notification", notificationShim("denied"));
     mockStudio(written, [["notifications", "enabled"]]);
     await renderShell();
@@ -278,6 +279,7 @@ describe("the settings page", () => {
   });
 
   it("offers Grant permission while the desktop has never been asked", async () => {
+    withAgent(LINUX);
     stubGlobal("Notification", notificationShim("default"));
     await renderShell();
     await openSettings();

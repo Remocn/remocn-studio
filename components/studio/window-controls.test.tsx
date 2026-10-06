@@ -4,7 +4,7 @@ import { WindowControls } from "@/components/studio/window-controls";
 import { LINUX, MAC, withAgent } from "@/test/user-agent";
 
 afterEach(() => {
-  withAgent(LINUX);
+  withAgent(MAC);
 });
 
 describe("WindowControls", () => {

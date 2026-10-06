@@ -141,7 +141,7 @@ const NO_NODE: EnvironmentCheck = {
 
 describe("the Node.js row", () => {
   afterEach(() => {
-    withAgent(LINUX);
+    withAgent(MAC);
   });
 
   it("downloads the installer on macOS and shows how far it has got", async () => {
@@ -160,7 +160,8 @@ describe("the Node.js row", () => {
     expect(screen.queryByText(PACKAGE_MANAGER)).toBeNull();
   });
 
-  it("opens the download page and says a package manager works too", () => {
+  it("opens the download page on Linux and says a package manager works too", () => {
+    withAgent(LINUX);
     const installNode = mock();
 
     render(
@@ -188,9 +189,11 @@ const CODEX_SIGNED_OUT: EnvironmentCheck = {
 describe("Open in Terminal", () => {
   afterEach(() => {
     unstubAllGlobals();
+    withAgent(MAC);
   });
 
-  it("copies the command, opens a terminal, and says to paste with Shift", async () => {
+  it("copies the command, opens a terminal, and says to paste with Shift on Linux", async () => {
+    withAgent(LINUX);
     const opened: string[] = [];
     const copied: string[] = [];
     stubGlobal("navigator", {

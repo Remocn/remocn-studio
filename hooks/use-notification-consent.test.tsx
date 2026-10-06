@@ -82,7 +82,7 @@ describe("useNotificationConsent", () => {
 
   afterEach(() => {
     unstubAllGlobals();
-    withAgent(LINUX);
+    withAgent(MAC);
   });
 
   it("is off until asked, and asks the OS when the master switch goes on", async () => {
@@ -101,6 +101,7 @@ describe("useNotificationConsent", () => {
   });
 
   it("keeps the wish when the OS says no, and opens nothing on Linux", async () => {
+    withAgent(LINUX);
     shim("default", "denied");
     const { result } = renderHook(() => useNotificationConsent(settings(null)));
     await waitFor(() => expect(result.current.permission).toBe("default"));
@@ -121,6 +122,7 @@ describe("useNotificationConsent", () => {
   });
 
   it("grants by asking on Linux, whether never asked or refused before", async () => {
+    withAgent(LINUX);
     const asked = shim("default", "granted");
     const first = renderHook(() => useNotificationConsent(settings(true)));
     await waitFor(() =>

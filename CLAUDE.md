@@ -224,12 +224,14 @@ are stricter than Vitest's — `toEqual(expected: T)` against the received type 
 and `test/matchers.d.ts` widens the four structural matchers back to `unknown`
 rather than casting two dozen literals.
 
-**happy-dom is registered with a WebKitGTK user agent.** Its default agent is
-built from `process.platform`, which made the platform the tests saw depend on
-the machine running them; `test/register-dom.ts` pins `X11; Linux x86_64`, so
-by default every shortcut renders as `Ctrl+…` and the window controls render.
-A test about the macOS branch calls `withAgent(MAC)` from `test/user-agent.ts`
-and puts `LINUX` back in an `afterEach`.
+**happy-dom reports the host OS, and the tests assume a Mac.** Its default user
+agent is built from `process.platform`, so on the Linux CI runner
+`currentPlatform()` answered `linux` and every shortcut rendered as `Ctrl+…`
+while the tests looked for `⌘`; `test/register-dom.ts` registers the DOM with a
+macOS user agent, the platform the studio has shipped on from the start, so
+every test that does not say otherwise covers it. A test about the Linux
+branch calls `withAgent(LINUX)` from `test/user-agent.ts` and puts `MAC` back
+in an `afterEach`.
 
 **happy-dom is not a Tauri webview.** There is no `window.__TAURI_INTERNALS__`,
 so any `invoke()` that reaches the real transport throws. Tests touching IPC

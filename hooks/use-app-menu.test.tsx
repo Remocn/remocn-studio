@@ -63,7 +63,7 @@ function registry(run: () => void, enabled = true): readonly Command[] {
 
 describe("useAppMenu on Linux", () => {
   afterEach(() => {
-    withAgent(LINUX);
+    withAgent(MAC);
   });
 
   it("installs no menu bar and answers that none is up", async () => {
@@ -88,7 +88,7 @@ describe("useAppMenu", () => {
   });
 
   afterEach(() => {
-    withAgent(LINUX);
+    withAgent(MAC);
   });
 
   it("installs once for a registry whose closures change but whose shape does not", async () => {
