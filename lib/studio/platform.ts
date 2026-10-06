@@ -33,6 +33,14 @@ export function modKeyCombo(
   return platform === "mac" ? `⌘${key}` : `Ctrl+${key}`;
 }
 
+// The key a shortcut is held with: ⌘ on a Mac, Ctrl everywhere else.
+export function isModKey(
+  event: { readonly ctrlKey: boolean; readonly metaKey: boolean },
+  platform: Platform = currentPlatform()
+): boolean {
+  return platform === "mac" ? event.metaKey : event.ctrlKey;
+}
+
 export function fileManagerName(
   platform: Platform = currentPlatform()
 ): string {

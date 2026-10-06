@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   fileManagerName,
+  isModKey,
   keyringName,
   modKeyCombo,
   modKeyLabel,
@@ -53,6 +54,16 @@ describe("labels", () => {
     expect(fileManagerName("mac")).toBe("Finder");
     expect(fileManagerName("windows")).toBe("File Explorer");
     expect(fileManagerName("linux")).toBe("Files");
+  });
+
+  it("holds a shortcut with ⌘ on macOS and Ctrl elsewhere", () => {
+    const command = { ctrlKey: false, metaKey: true };
+    const control = { ctrlKey: true, metaKey: false };
+
+    expect(isModKey(command, "mac")).toBe(true);
+    expect(isModKey(control, "mac")).toBe(false);
+    expect(isModKey(control, "linux")).toBe(true);
+    expect(isModKey(command, "linux")).toBe(false);
   });
 
   it("names the keychain on macOS and the keyring elsewhere", () => {
