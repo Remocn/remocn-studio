@@ -98,21 +98,36 @@ export function isOwnRuntime(manager: PackageManager): boolean {
   );
 }
 
-export function searchDirs(): readonly string[] {
+// Where a package manager installs itself, searched ahead of PATH as it always
+// was. The shared dirs a desktop launcher's PATH lacks come last, so they find a
+// manager nothing earlier had and never shadow one that was found before.
+const MANAGER_HOME_DIRS = [
+  ".bun/bin",
+  ".volta/bin",
+  ".yarn/bin",
+  "Library/pnpm",
+  ".local/share/pnpm",
+] as const;
+
+export function searchDirs(
+  at: Readonly<Record<string, string | undefined>> = env
+): readonly string[] {
   const dirs: string[] = [];
-  const home = env.HOME;
+  const home = at.HOME;
 
   if (home !== undefined) {
-    dirs.push(...userBinDirs(home, env));
+    dirs.push(...MANAGER_HOME_DIRS.map((dir) => path.join(home, dir)));
   }
 
-  if (env.PATH !== undefined) {
-    dirs.push(
-      ...env.PATH.split(path.delimiter).filter((dir) => dir.length > 0)
-    );
+  if (at.PATH !== undefined) {
+    dirs.push(...at.PATH.split(path.delimiter).filter((dir) => dir.length > 0));
   }
 
   dirs.push(...SYSTEM_BIN_DIRS);
+
+  if (home !== undefined) {
+    dirs.push(...userBinDirs(home, at));
+  }
 
   return [...new Set(dirs)];
 }

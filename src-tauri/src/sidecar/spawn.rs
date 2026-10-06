@@ -19,9 +19,9 @@ const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
 // Where an app started from Finder, the Dock or a desktop entry finds the
 // agent CLIs, Node and package managers, since it inherits the session's
 // minimal PATH. One list serves macOS and Linux; a dir that does not exist is
-// never matched. The sidecar's `USER_BIN_DIRS` and `SYSTEM_BIN_DIRS` must name
-// the same dirs; `sidecar/agent/cli.test.ts` reads this file to hold them
-// together.
+// never matched, and `ordered_dirs` searches these last. The sidecar's
+// `USER_BIN_DIRS` and `SYSTEM_BIN_DIRS` must name the same dirs;
+// `sidecar/agent/cli.test.ts` reads this file to hold them together.
 const HOME_BIN_DIRS: [&str; 9] = [
     ".local/bin",
     ".bun/bin",
@@ -333,19 +333,37 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
 }
 
 pub(crate) fn search_dirs() -> Vec<PathBuf> {
+    let home = env::var_os("HOME").map(PathBuf::from);
+
+    ordered_dirs(
+        home.as_deref(),
+        env::var_os("PATH").as_deref(),
+        env::var_os("NVM_BIN").as_deref(),
+    )
+}
+
+/// `~/.bun/bin`, the PATH the app was given, then Homebrew and the system
+/// dirs — the order the studio has always searched — and only after them the
+/// home dirs of version and package managers. Those are appended, never put
+/// ahead: they find a tool nothing earlier had, but never shadow one that
+/// was found before, where an asdf or mise shim with no version set would
+/// fail in place of a working Homebrew node.
+fn ordered_dirs(home: Option<&Path>, path: Option<&OsStr>, nvm: Option<&OsStr>) -> Vec<PathBuf> {
     let mut dirs = Vec::new();
 
-    if let Some(home) = env::var_os("HOME") {
-        let home = PathBuf::from(home);
-        dirs.extend(HOME_BIN_DIRS.iter().map(|dir| home.join(dir)));
+    if let Some(home) = home {
+        dirs.push(home.join(".bun/bin"));
     }
-    if let Some(nvm) = env::var_os("NVM_BIN").filter(|dir| !dir.is_empty()) {
-        dirs.push(PathBuf::from(nvm));
-    }
-    if let Some(path) = env::var_os("PATH") {
-        dirs.extend(env::split_paths(&path));
+    if let Some(path) = path {
+        dirs.extend(env::split_paths(path));
     }
     dirs.extend(SYSTEM_BIN_DIRS.iter().map(PathBuf::from));
+    if let Some(home) = home {
+        dirs.extend(HOME_BIN_DIRS.iter().map(|dir| home.join(dir)));
+    }
+    if let Some(nvm) = nvm.filter(|dir| !dir.is_empty()) {
+        dirs.push(PathBuf::from(nvm));
+    }
 
     let mut seen = HashSet::new();
     dirs.retain(|dir| seen.insert(dir.clone()));
@@ -434,9 +452,40 @@ mod tests {
             .filter(|entry| entry.file_name() != "bun")
             .collect();
         assert!(staged.is_empty(), "no staged link is left behind");
-        for dir in [root, first.parent().unwrap().to_path_buf(), second.parent().unwrap().to_path_buf()] {
+        for dir in [
+            root,
+            first.parent().unwrap().to_path_buf(),
+            second.parent().unwrap().to_path_buf(),
+        ] {
             let _ = std::fs::remove_dir_all(dir);
         }
+    }
+
+    #[test]
+    fn the_new_home_dirs_come_after_everything_searched_before() {
+        let dirs = ordered_dirs(
+            Some(Path::new("/home/a")),
+            Some(OsStr::new("/usr/bin:/home/a/.nvm/bin")),
+            Some(OsStr::new("/home/a/.nvm/bin")),
+        );
+        let at = |dir: &str| {
+            dirs.iter()
+                .position(|found| found == Path::new(dir))
+                .unwrap()
+        };
+
+        assert_eq!(dirs[0], PathBuf::from("/home/a/.bun/bin"));
+        assert_eq!(dirs[1], PathBuf::from("/usr/bin"));
+        assert_eq!(dirs[2], PathBuf::from("/home/a/.nvm/bin"));
+        assert!(at("/opt/homebrew/bin") < at("/home/a/.local/share/mise/shims"));
+        assert!(at("/usr/local/bin") < at("/home/a/.asdf/shims"));
+        assert!(at("/usr/sbin") < at("/home/a/.local/bin"));
+        assert_eq!(
+            dirs.iter()
+                .filter(|dir| *dir == Path::new("/home/a/.bun/bin"))
+                .count(),
+            1
+        );
     }
 
     #[test]
