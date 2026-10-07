@@ -9,6 +9,7 @@ import { HistoryStore } from "./history/store";
 import { VideoStore } from "./history/videos";
 import { runHost } from "./host";
 import { untilOrphaned, untilSignalled } from "./lifecycle";
+import { untilBroken } from "./pipes";
 import { previewRoot, prunePreviewOutputs } from "./preview/outputs";
 
 export const runSidecar = Effect.gen(function* () {
@@ -42,6 +43,7 @@ export const runSidecar = Effect.gen(function* () {
 
   const reason = yield* Effect.raceAll([
     runHost(handlers).pipe(Effect.as("the host closed stdin")),
+    untilBroken(process.stdout, "the host closed stdout"),
     untilOrphaned,
     untilSignalled,
   ]).pipe(
