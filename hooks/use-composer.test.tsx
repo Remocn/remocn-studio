@@ -71,6 +71,47 @@ function composer(projectId: string | null = "project-1") {
 }
 
 describe("useComposer", () => {
+  it("only sends Enter after composition ends and without Shift", async () => {
+    const onSubmit = mock(() => true);
+    const { result } = renderHook(() =>
+      useComposer({ onSubmit, projectId: "project-1" })
+    );
+    act(() => result.current.onChange(typing("こんにちは")));
+
+    for (const state of [
+      { isComposing: true, keyCode: 13, shiftKey: false },
+      { isComposing: false, keyCode: 229, shiftKey: false },
+      { isComposing: false, keyCode: 13, shiftKey: true },
+    ]) {
+      const preventDefault = mock();
+      act(() => {
+        result.current.onKeyDown({
+          key: "Enter",
+          keyCode: state.keyCode,
+          nativeEvent: { isComposing: state.isComposing },
+          preventDefault,
+          shiftKey: state.shiftKey,
+        } as unknown as React.KeyboardEvent<HTMLTextAreaElement>);
+      });
+      expect(onSubmit).not.toHaveBeenCalled();
+      expect(preventDefault).not.toHaveBeenCalled();
+      expect(result.current.value).toBe("こんにちは");
+    }
+
+    const preventDefault = mock();
+    await act(() => {
+      result.current.onKeyDown({
+        key: "Enter",
+        keyCode: 13,
+        nativeEvent: { isComposing: false },
+        preventDefault,
+        shiftKey: false,
+      } as unknown as React.KeyboardEvent<HTMLTextAreaElement>);
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+  });
+
   beforeEach(() => {
     mockIPC((cmd) => {
       if (cmd === "save_pasted_image") {
@@ -443,4 +484,34 @@ describe("useComposer", () => {
     expect(result.current.attachments.items).toHaveLength(0);
     expect(result.current.counts).toEqual({ asset: 0, element: 0, image: 0 });
   });
+});
+
+it("keeps distinct caption styles and reuses a repeated style attachment until Send", async () => {
+  const submit = mock(() => true);
+  const { result } = renderHook(() =>
+    useComposer({ onSubmit: submit, projectId: "project" })
+  );
+  const karaoke = {
+    ...asset("remocn/caption-karaoke", "Karaoke"),
+    category: "Captions",
+  };
+  const subtitle = {
+    ...asset("remocn/caption-subtitle", "Subtitle"),
+    category: "Captions",
+  };
+  act(() => {
+    result.current.pick(karaoke);
+    result.current.pick(subtitle);
+    result.current.pick(karaoke);
+  });
+  expect(result.current.assets.items.map((item) => item.slug)).toEqual([
+    karaoke.slug,
+    subtitle.slug,
+  ]);
+  expect(submit).not.toHaveBeenCalled();
+  expect(result.current.canSubmit).toBe(true);
+  await act(async () => {
+    await result.current.submit();
+  });
+  expect(submit).toHaveBeenCalledTimes(1);
 });

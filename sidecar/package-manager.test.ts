@@ -10,6 +10,7 @@ import {
   isOwnRuntime,
   lockfileIn,
   pmOf,
+  searchDirs,
 } from "./package-manager";
 
 let folder = "";
@@ -174,5 +175,35 @@ describe("binaryOf", () => {
       expect(path.isAbsolute(found)).toBe(true);
       expect(existsSync(found)).toBe(true);
     }
+  });
+});
+
+describe("searchDirs", () => {
+  const HOME = "/home/someone";
+
+  it("keeps the managers' own dirs ahead of PATH and the shared dirs after the system ones", () => {
+    const dirs = searchDirs({ HOME, PATH: "/usr/bin:/custom/bin" });
+    const at = (dir: string) => dirs.indexOf(dir);
+
+    expect(dirs.slice(0, 5)).toEqual([
+      `${HOME}/.bun/bin`,
+      `${HOME}/.volta/bin`,
+      `${HOME}/.yarn/bin`,
+      `${HOME}/Library/pnpm`,
+      `${HOME}/.local/share/pnpm`,
+    ]);
+    expect(dirs[5]).toBe("/usr/bin");
+    expect(dirs[6]).toBe("/custom/bin");
+    expect(at("/opt/homebrew/bin")).toBeLessThan(
+      at(`${HOME}/.local/share/mise/shims`)
+    );
+    expect(at("/usr/local/bin")).toBeLessThan(at(`${HOME}/.asdf/shims`));
+    expect(at("/usr/sbin")).toBeLessThan(at(`${HOME}/.local/bin`));
+  });
+
+  it("names each dir once", () => {
+    const dirs = searchDirs({ HOME, PATH: `${HOME}/.bun/bin:/usr/bin` });
+
+    expect(new Set(dirs).size).toBe(dirs.length);
   });
 });

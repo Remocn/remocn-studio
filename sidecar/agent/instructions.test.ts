@@ -14,6 +14,7 @@ import { AGENT_PROVIDERS, PROVIDER_INFO } from "@/shared/providers";
 import {
   conventionsFor,
   instructionsFor,
+  MANAGED_OBJECTS,
   STUDIO_CONVENTIONS,
   stageBrief,
 } from "@/sidecar/agent/instructions";
@@ -290,6 +291,36 @@ describe("the pipeline brief's document paths", () => {
   });
 });
 
+describe("a pointed edit mid-pipeline", () => {
+  it("tells every stage that one specific change ends the turn without moving the stage", () => {
+    for (const stage of PIPELINE_STAGE_IDS) {
+      const brief = (
+        pipelineBrief([{ stage, status: "active" }], "intro") ?? ""
+      ).replaceAll("\n", " ");
+
+      expect(brief).toContain("`[Element #N]`");
+      expect(brief).toContain(
+        "is not stage work: make that change, check the range it affects, and end the turn, leaving the stage where it is."
+      );
+    }
+  });
+
+  it("keeps the push to the end of the pipeline for stage work only", () => {
+    const brief = (pipelineBrief(ANALYSIS, "intro") ?? "").replaceAll(
+      "\n",
+      " "
+    );
+    const pointed = brief.indexOf("is not stage work");
+    const onward = brief.indexOf("When the turn is stage work, do not wait");
+
+    expect(pointed).toBeGreaterThan(-1);
+    expect(onward).toBeGreaterThan(pointed);
+    expect(brief).toContain(
+      "keep going in the same turn until the whole pipeline is done"
+    );
+  });
+});
+
 describe("the choreography stage", () => {
   const brief = pipelineBrief([{ stage: "choreography", status: "active" }]);
 
@@ -394,11 +425,11 @@ it("gives managed videos precedence over legacy Interactive authoring rules", ()
   expect(text).toContain("takes precedence over the legacy Interactive");
 });
 
-it("teaches the v6 provider and what a removed object means", () => {
+it("teaches coherent v7 providers and what a removed object means", () => {
   const text = conventionsFor(true, "intro");
   expect(text).toContain("src/lib/studio-objects-v6/README.md");
   expect(text).toContain(
-    "Import the provider and hook from src/lib/studio-objects-v6"
+    "Import the provider and hook from src/lib/studio-objects-v7"
   );
   expect(text).toContain('"removed": true');
   expect(text).toContain(
@@ -425,22 +456,22 @@ const CHOREOGRAPHY: readonly PipelineStage[] = [
 
 const NO_BRIEFS = { assets: null, brand: null, media: null };
 
-describe("the words, as they were before the move", () => {
+describe("versioned instruction snapshots", () => {
   it("keeps the conventions with the skills byte for byte", () => {
     const text = conventionsFor(true, "intro");
 
-    expect(text).toHaveLength(20_583);
+    expect(text).toHaveLength(23_203);
     expect(sha256(text)).toBe(
-      "402c8c9eb3060e39121d7cc523fb8bc69b72e4eb2477abf33399905e5ce70cc4"
+      "2b4e469c2ff08f484428a94ad9238c6227c2841d8697becce42d61ceab23a5e4"
     );
   });
 
   it("keeps the conventions alone byte for byte", () => {
     const text = conventionsFor(false, null);
 
-    expect(text).toHaveLength(18_600);
+    expect(text).toHaveLength(21_220);
     expect(sha256(text)).toBe(
-      "03b8db94e3df0b7c570b950ebce1dbc7255c9f520d7456ef2b8bc76845da6c35"
+      "4bdf332382bc1a93b8da62c1e80dd12bd743bd7d19d8e1fc24a1f21fd507ac1d"
     );
   });
 
@@ -450,9 +481,9 @@ describe("the words, as they were before the move", () => {
       video: "intro",
     });
 
-    expect(text).toHaveLength(2176);
+    expect(text).toHaveLength(2432);
     expect(sha256(text ?? "")).toBe(
-      "d7a99ee9b641c1a4aab9881b6310e66cae2b8a9a6f09cf93dabe00740643ebe8"
+      "49c4d740397bd417e4d944057e1295d67c7de7148d3541832932df3029ada3eb"
     );
   });
 
@@ -462,24 +493,35 @@ describe("the words, as they were before the move", () => {
       video: "intro",
     });
 
-    expect(text).toHaveLength(4417);
+    expect(text).toHaveLength(4673);
     expect(sha256(text ?? "")).toBe(
-      "4d3efb102f4e51b1c7515681236e13b4ac8afe15f1e78b8c5657644e7eece82b"
+      "caef524e048e00bf5c3ff1f97fc379b587714f28ec2a2d9cd5722a4789fd12b7"
     );
   });
 
-  it("hands Claude the same system text it was given before", () => {
-    const { system } = instructionsFor({
+  it("keeps the stage brief out of Claude's system text, so a stage moving leaves it alone", () => {
+    const staged = instructionsFor({
       briefs: NO_BRIEFS,
       hasSkills: true,
       provider: PROVIDER_INFO.claude,
       stages: ANALYSIS,
       video: "intro",
     });
+    const unstaged = instructionsFor({
+      briefs: NO_BRIEFS,
+      hasSkills: true,
+      provider: PROVIDER_INFO.claude,
+      stages: [],
+      video: "intro",
+    });
 
-    expect(system).toHaveLength(22_761);
-    expect(sha256(system)).toBe(
-      "8550b8fa7dadf4a39a97b0a26edb5c1a4438782c2c32bbbb5de70f9f9c5202d7"
+    expect(staged.system).toBe(conventionsFor(true, "intro"));
+    expect(staged.system).toBe(unstaged.system);
+    expect(staged.trailer).toBe(
+      stageBrief(ANALYSIS, {
+        planningTool: PROVIDER_INFO.claude.planningTool,
+        video: "intro",
+      })
     );
   });
 });
@@ -495,7 +537,7 @@ const PLANNED = {
 describe("instructionsFor, across the providers", () => {
   it("words the planning step for the plan tool each runtime has", () => {
     for (const provider of AGENT_PROVIDERS) {
-      const { system } = instructionsFor({
+      const { trailer } = instructionsFor({
         briefs: NO_BRIEFS,
         hasSkills: true,
         provider: PROVIDER_INFO[provider],
@@ -503,14 +545,16 @@ describe("instructionsFor, across the providers", () => {
         video: "intro",
       });
 
-      expect(system.replaceAll("\n", " ")).toContain(PLANNED[provider]);
+      expect((trailer ?? "").replaceAll("\n", " ")).toContain(
+        PLANNED[provider]
+      );
     }
   });
 
   it("never names TaskCreate to a runtime that does not have it", () => {
     for (const provider of AGENT_PROVIDERS.filter((id) => id !== "claude")) {
       for (const stage of PIPELINE_STAGE_IDS) {
-        const { system } = instructionsFor({
+        const { system, trailer } = instructionsFor({
           briefs: NO_BRIEFS,
           hasSkills: true,
           provider: PROVIDER_INFO[provider],
@@ -519,6 +563,7 @@ describe("instructionsFor, across the providers", () => {
         });
 
         expect(system).not.toContain("TaskCreate");
+        expect(trailer).not.toContain("TaskCreate");
       }
     }
   });
@@ -539,7 +584,7 @@ describe("instructionsFor, across the providers", () => {
   it("names the video's own docs folder in every stage, for every provider", () => {
     for (const provider of AGENT_PROVIDERS) {
       for (const stage of PIPELINE_STAGE_IDS) {
-        const { system } = instructionsFor({
+        const { trailer } = instructionsFor({
           briefs: NO_BRIEFS,
           hasSkills: false,
           provider: PROVIDER_INFO[provider],
@@ -547,7 +592,7 @@ describe("instructionsFor, across the providers", () => {
           video: "opening-title",
         });
 
-        expect(system).toContain("src/videos/opening-title/docs/");
+        expect(trailer).toContain("src/videos/opening-title/docs/");
       }
     }
   });
@@ -586,6 +631,30 @@ describe("instructionsFor, across the providers", () => {
     expect(brand.media).toBeNull();
   });
 
+  it("puts the stage brief last in the trailer, after the assets and the brand", () => {
+    const brief = stageBrief(ANALYSIS, {
+      planningTool: PROVIDER_INFO.codex.planningTool,
+      video: "intro",
+    });
+    const all = instructionsFor({
+      briefs: { assets: "ASSETS", brand: "BRAND", media: null },
+      hasSkills: false,
+      provider: PROVIDER_INFO.codex,
+      stages: ANALYSIS,
+      video: "intro",
+    });
+    const alone = instructionsFor({
+      briefs: NO_BRIEFS,
+      hasSkills: false,
+      provider: PROVIDER_INFO.codex,
+      stages: ANALYSIS,
+      video: "intro",
+    });
+
+    expect(all.trailer).toBe(`ASSETS\n\nBRAND\n\n${brief}`);
+    expect(alone.trailer).toBe(brief);
+  });
+
   it("has no trailer when there are neither assets nor a brand", () => {
     const { trailer } = instructionsFor({
       briefs: NO_BRIEFS,
@@ -597,4 +666,21 @@ describe("instructionsFor, across the providers", () => {
 
     expect(trailer).toBeNull();
   });
+});
+
+it("preserves inserted shader identities and keeps scene slots below foreground content", () => {
+  const text = MANAGED_OBJECTS;
+  expect(text).toContain("Scene IDs and slot IDs are permanent");
+  expect(text).toContain(
+    "after the opaque background and before foreground content"
+  );
+  expect(text).toContain("Preserve user-created shader records");
+  expect(text).toContain("Preserve its original createdWithStudioVersion");
+  expect(text).toContain("never backfill or change it");
+  expect(text).toContain(
+    "Existing videos without studio-origin.json are checked by structure"
+  );
+  expect(text).toContain("never invent their creation version");
+  expect(text).toContain("sourceRevision is the SHA-256");
+  expect(text).toContain("never mix v5/v6 hooks");
 });

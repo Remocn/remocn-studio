@@ -30,8 +30,8 @@ describe("useWindowBackground", () => {
     view.rerender({ theme: "system" });
     expect(seen).toEqual([]);
     view.rerender({ theme: "light" });
-    await waitFor(() => expect(seen).toEqual(["#f8f8f8"]));
+    await waitFor(() => expect(seen).toEqual(["#f5f5f5"]));
     view.rerender({ theme: "dark" });
-    await waitFor(() => expect(seen).toEqual(["#f8f8f8", "#181818"]));
+    await waitFor(() => expect(seen).toEqual(["#f5f5f5", "#0a0a0a"]));
   });
 });

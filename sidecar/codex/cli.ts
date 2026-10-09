@@ -1,17 +1,10 @@
 import { spawn } from "node:child_process";
 import { homedir } from "node:os";
-import { join } from "node:path";
-import { findExecutable, type LookupHost } from "../agent/cli";
+import { fallbackDirs, findExecutable, type LookupHost } from "../agent/cli";
 
 export const CODEX_ENV = "REMOCN_STUDIO_CODEX";
 
-const FALLBACK_DIRS = [
-  join(homedir(), ".bun", "bin"),
-  join(homedir(), ".npm-global", "bin"),
-  join(homedir(), ".local", "bin"),
-  "/opt/homebrew/bin",
-  "/usr/local/bin",
-];
+const FALLBACK_DIRS = fallbackDirs(homedir());
 
 export function findCodex(at?: LookupHost): string | null {
   return findExecutable(

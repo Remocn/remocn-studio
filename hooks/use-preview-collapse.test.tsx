@@ -3,6 +3,9 @@ import { act, renderHook } from "@testing-library/react";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import { usePreviewCollapse } from "@/hooks/use-preview-collapse";
 
+const USER = { isUserInteraction: true };
+const AUTOMATIC = { isUserInteraction: false };
+
 function panel(isCollapsed: boolean): PanelImperativeHandle {
   return {
     collapse: mock(),
@@ -28,7 +31,7 @@ describe("usePreviewCollapse", () => {
   it("folds a collapse the group reports into the app's own flag", () => {
     const { onCollapsed, view } = mounted(true, true);
 
-    act(() => view.result.current.onResize());
+    act(() => view.result.current.onLayoutChanged({}, USER));
 
     expect(onCollapsed).toHaveBeenCalledTimes(1);
   });
@@ -36,7 +39,7 @@ describe("usePreviewCollapse", () => {
   it("says nothing while the panel is merely narrow", () => {
     const { onCollapsed, view } = mounted(true, false);
 
-    act(() => view.result.current.onResize());
+    act(() => view.result.current.onLayoutChanged({}, USER));
 
     expect(onCollapsed).not.toHaveBeenCalled();
   });
@@ -46,7 +49,7 @@ describe("usePreviewCollapse", () => {
   it("ignores the collapse it asked for itself", () => {
     const { onCollapsed, view } = mounted(false, true);
 
-    act(() => view.result.current.onResize());
+    act(() => view.result.current.onLayoutChanged({}, USER));
 
     expect(onCollapsed).not.toHaveBeenCalled();
   });
@@ -55,7 +58,17 @@ describe("usePreviewCollapse", () => {
     const onCollapsed = mock();
     const view = renderHook(() => usePreviewCollapse(true, onCollapsed));
 
-    expect(() => act(() => view.result.current.onResize())).not.toThrow();
+    expect(() =>
+      act(() => view.result.current.onLayoutChanged({}, USER))
+    ).not.toThrow();
+    expect(onCollapsed).not.toHaveBeenCalled();
+  });
+
+  it("keeps the requested preview open during automatic sidebar sizing", () => {
+    const { onCollapsed, view } = mounted(true, true);
+
+    act(() => view.result.current.onLayoutChanged({}, AUTOMATIC));
+
     expect(onCollapsed).not.toHaveBeenCalled();
   });
 });

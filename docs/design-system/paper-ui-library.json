@@ -1,4 +1,6 @@
 {
+  "historicalSnapshot": true,
+  "supersededBy": "paper-handoff.json",
   "version": 1,
   "createdAt": "2026-10-03",
   "file": {

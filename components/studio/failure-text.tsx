@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronRightIcon, CopyIcon } from "lucide-react";
 import type { AriaRole } from "react";
+import { ChevronRightIcon, CopyIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,

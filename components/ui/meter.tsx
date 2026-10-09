@@ -7,11 +7,13 @@ import { cn } from "@/lib/utils";
 export function Meter({
   className,
   children,
+  locale = "en-US",
   ...props
 }: MeterPrimitive.Root.Props): React.ReactElement {
   return (
     <MeterPrimitive.Root
       className={cn("flex w-full flex-col gap-2", className)}
+      locale={locale}
       {...props}
     >
       {children ? (
@@ -44,7 +46,7 @@ export function MeterTrack({
 }: MeterPrimitive.Track.Props): React.ReactElement {
   return (
     <MeterPrimitive.Track
-      className={cn("block h-2 w-full overflow-hidden bg-input", className)}
+      className={cn("block h-2 w-full overflow-hidden bg-border", className)}
       data-slot="meter-track"
       {...props}
     />
@@ -57,7 +59,10 @@ export function MeterIndicator({
 }: MeterPrimitive.Indicator.Props): React.ReactElement {
   return (
     <MeterPrimitive.Indicator
-      className={cn("bg-primary transition-all duration-500", className)}
+      className={cn(
+        "bg-primary transition-[width] duration-200 ease-out motion-reduce:transition-none",
+        className
+      )}
       data-slot="meter-indicator"
       {...props}
     />

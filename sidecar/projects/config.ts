@@ -342,3 +342,13 @@ async function rejectLinks(
     }
   }
 }
+
+export function hashSources(sources: Readonly<Record<string, string>>) {
+  return hashBytes(
+    JSON.stringify(
+      Object.entries(sources).sort(([left], [right]) =>
+        left.localeCompare(right)
+      )
+    )
+  );
+}

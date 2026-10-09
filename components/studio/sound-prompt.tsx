@@ -1,7 +1,7 @@
 "use client";
 
-import { Music2Icon, Volume2Icon } from "lucide-react";
 import { useCallback } from "react";
+import { Music2Icon, Volume2Icon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useSoundPrompt } from "@/hooks/use-sound-prompt";

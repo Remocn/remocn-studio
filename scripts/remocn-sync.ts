@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
+import { CAPTIONS_PIN } from "./remocn-sources";
 
 // The pin is the whole contract: registry-artifacts/*.json are committed
 // upstream, so one commit names every file this script will ever fetch.
@@ -332,12 +333,17 @@ async function check(): Promise<void> {
   const lock = JSON.parse(await readFile(LOCK, "utf8")) as {
     files: Record<string, string>;
     pin: string;
+    captionsPin?: string;
   };
 
   const wrong: string[] = [];
 
   if (lock.pin !== PIN) {
     wrong.push(`lock pin ${lock.pin} does not match the script's ${PIN}`);
+  }
+
+  if (lock.captionsPin !== CAPTIONS_PIN) {
+    wrong.push("Caption source pin differs from the vendored caption batch.");
   }
 
   const found = new Set<string>();
@@ -385,8 +391,12 @@ async function check(): Promise<void> {
 }
 
 const { 2: mode } = process.argv;
-if (mode === "--check") {
+if (import.meta.main && mode === "--check") {
   await check();
 } else if (import.meta.main) {
-  await sync();
+  if (mode !== "--captions") {
+    await sync();
+  }
+  const { syncCaptions } = await import("./remocn-captions");
+  await syncCaptions();
 }

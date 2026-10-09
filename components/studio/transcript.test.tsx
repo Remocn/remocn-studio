@@ -131,6 +131,37 @@ function renderTranscript(
 beforeAll(() => Effect.runPromise(loadMarkdownRenderer));
 
 describe("Transcript", () => {
+  it("keeps the design review visible while routine tool steps are collapsed", () => {
+    renderTranscript([
+      ENTRIES[0] as TranscriptEntry,
+      read(1),
+      {
+        id: "design-review",
+        input: { mode: "full" },
+        kind: "activity",
+        name: "mcp__remocn-design__design_check",
+        result: JSON.stringify({ composition: "Main", findings: [] }),
+        state: "done",
+        verb: null,
+      },
+      {
+        id: "answer",
+        kind: "assistant",
+        text: "The checked frames are ready.",
+      },
+    ]);
+    expect(
+      screen.getByRole("region", { name: "Video review: Main" })
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: WORKED })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(
+      screen.queryByRole("button", { name: "Read components/studio/Pane1.tsx" })
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps completed work behind one disclosure", () => {
     renderTranscript(ENTRIES);
 
@@ -367,6 +398,7 @@ describe("Transcript", () => {
   });
   it("shows the plan as one checklist of subjects, with states and detail", () => {
     renderTranscript([
+      ENTRIES[0] as TranscriptEntry,
       {
         id: "c1",
         input: {

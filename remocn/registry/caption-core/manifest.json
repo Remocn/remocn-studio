@@ -1,0 +1,20 @@
+{
+  "category": null,
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/captions"
+  ],
+  "description": "The timing engine every caption style shares: pages a timed transcript, finds the word being spoken and how far into it the voice is, and decides when a page leaves the screen.",
+  "files": [
+    {
+      "file": "caption-core.ts",
+      "target": "src/lib/remocn/caption-core.ts"
+    }
+  ],
+  "name": "caption-core",
+  "preview": null,
+  "registryDependencies": [],
+  "sourcePin": "d6cd742fa4f3ab0a74fecf2ac93f1542fa2ea8f7",
+  "title": "Caption Core"
+}

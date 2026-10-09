@@ -1,10 +1,11 @@
 import { beforeAll, describe, expect, it } from "bun:test";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect, Exit } from "effect";
 import { causeMessage } from "@/lib/error-message";
-import { TEMPLATE_DIR_ENV } from "@/shared/ipc";
+import { version } from "@/package.json";
+import { APP_VERSION_ENV, TEMPLATE_DIR_ENV } from "@/shared/ipc";
 import {
   expandTemplate,
   expandVideo,
@@ -13,6 +14,10 @@ import {
   sized,
   VIDEO_TEMPLATE,
 } from "@/sidecar/scaffold/template";
+import {
+  readShaderManifest,
+  validateShaderSources,
+} from "../projects/shader-targets";
 
 const TEMPLATE = join(process.cwd(), "templates", "remotion");
 const RANGE_PREFIX = /^[\^~>=]+/;
@@ -209,6 +214,38 @@ describe("expandVideo", () => {
     process.env[TEMPLATE_DIR_ENV] = TEMPLATE;
   });
 
+  it("records the host Studio version separately for each newly created video", async () => {
+    const prior = process.env[APP_VERSION_ENV];
+    const target = await folder("versioned");
+    try {
+      process.env[APP_VERSION_ENV] = "1.0.0";
+      const first = await run(
+        expandVideo(target, { name: "First", size: LANDSCAPE, slug: "first" })
+      );
+      process.env[APP_VERSION_ENV] = "1.2.0";
+      const second = await run(
+        expandVideo(target, { name: "Second", size: LANDSCAPE, slug: "second" })
+      );
+      await run(
+        expandVideo(target, { name: "First", size: LANDSCAPE, slug: "first" })
+      );
+      expect(
+        JSON.parse(await readFile(join(first, "studio-origin.json"), "utf8"))
+          .createdWithStudioVersion
+      ).toBe("1.0.0");
+      expect(
+        JSON.parse(await readFile(join(second, "studio-origin.json"), "utf8"))
+          .createdWithStudioVersion
+      ).toBe("1.2.0");
+    } finally {
+      if (prior === undefined) {
+        delete process.env[APP_VERSION_ENV];
+      } else {
+        process.env[APP_VERSION_ENV] = prior;
+      }
+    }
+  });
+
   it("writes one folder under src/videos, sized and named", async () => {
     const target = await folder("reel");
     await run(expandTemplate(target));
@@ -222,6 +259,12 @@ describe("expandVideo", () => {
     );
 
     expect(written).toBe(join(target, "src", "videos", "intro"));
+    expect(
+      JSON.parse(await readFile(join(written, "studio-origin.json"), "utf8"))
+    ).toEqual({
+      createdWithStudioVersion: process.env.REMOCN_STUDIO_VERSION ?? version,
+      version: 1,
+    });
 
     const module = await readFile(join(written, "index.tsx"), "utf8");
 
@@ -233,6 +276,19 @@ describe("expandVideo", () => {
     expect(data.video).toBe("intro");
     expect(data.objects[1].values.text).toBe("Интро");
     expect(module).not.toContain("__VIDEO_NAME__");
+    expect(module).toContain("studio-objects-v7");
+    expect(module).toContain("<StudioShaderSlot");
+    expect(module.indexOf("<Backdrop />")).toBeLessThan(
+      module.indexOf("<StudioShaderSlot")
+    );
+    expect(module.indexOf("<StudioShaderSlot")).toBeLessThan(
+      module.indexOf('<Heading id="heading"')
+    );
+    const manifest = await run(readShaderManifest(target, "intro"));
+    expect(manifest?.slots[0].id).toBe("root-shaders");
+    if (manifest) {
+      await run(validateShaderSources(target, manifest));
+    }
   });
 
   it("never overwrites a video the agent has already edited", async () => {
@@ -241,12 +297,25 @@ describe("expandVideo", () => {
 
     const draft = { name: "Intro", size: LANDSCAPE, slug: "intro" };
     const written = await run(expandVideo(target, draft));
+    const origin = JSON.stringify({
+      createdWithStudioVersion: "0.8.0",
+      version: 1,
+    });
+    await writeFile(join(written, "studio-origin.json"), origin);
     await writeFile(join(written, "index.tsx"), "// mine\n", "utf8");
     await run(expandVideo(target, draft));
 
     expect(await readFile(join(written, "index.tsx"), "utf8")).toBe(
       "// mine\n"
     );
+    expect(await readFile(join(written, "studio-origin.json"), "utf8")).toBe(
+      origin
+    );
+    await rm(join(written, "studio-origin.json"));
+    await run(expandVideo(target, draft));
+    await expect(
+      readFile(join(written, "studio-origin.json"))
+    ).rejects.toThrow();
   });
 });
 

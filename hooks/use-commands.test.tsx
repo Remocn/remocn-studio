@@ -38,6 +38,7 @@ function session(id: string, videoId: string, title: string): HistorySession {
 function group(row: Video, sessions: readonly HistorySession[]): PaneGroup {
   const rows = sessions.map((entry) => ({
     askedAt: null,
+    completed: false,
     error: null,
     progress: null,
     session: entry,
@@ -252,10 +253,37 @@ describe("useCommands", () => {
     ).toBe(true);
   });
 
+  it("opens Projects from the navigation command", () => {
+    const { result, spies } = sources({ paneView: "projects" });
+    const command = byId(result, "pane-projects");
+    expect(command.checked).toBe(true);
+    command.run();
+    expect(spies.showPane).toHaveBeenCalledWith("projects");
+  });
+
+  it("exposes Shaders in the native View menu without taking an existing shortcut", () => {
+    const { result, spies } = sources({ paneView: "shaders" });
+    const command = byId(result, "pane-shaders");
+    expect(command.checked).toBe(true);
+    expect(command.menu).toBe("view");
+    expect(command.shortcut).toBeUndefined();
+    command.run();
+    expect(spies.showPane).toHaveBeenCalledWith("shaders");
+  });
+  it("exposes Captions in the native View menu without taking an existing shortcut", () => {
+    const { result, spies } = sources({ paneView: "captions" });
+    const command = byId(result, "pane-captions");
+    expect(command.checked).toBe(true);
+    expect(command.menu).toBe("view");
+    expect(command.shortcut).toBeUndefined();
+    command.run();
+    expect(spies.showPane).toHaveBeenCalledWith("captions");
+  });
+
   it("checks the sidebar view that is showing", () => {
     const { result } = sources({ paneView: "components" });
 
     expect(byId(result, "pane-components").checked).toBe(true);
-    expect(byId(result, "pane-videos").checked).toBe(false);
+    expect(byId(result, "pane-assets").checked).toBe(false);
   });
 });

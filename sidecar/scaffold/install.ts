@@ -1,8 +1,10 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { realpathSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
-import { Effect, Semaphore } from "effect";
+import { semver } from "bun";
+import { Effect, Schema, Semaphore } from "effect";
+import { PAPER_SHADER_VERSION } from "@/shared/shaders";
 import {
   addCommand,
   binaryOf,
@@ -131,6 +133,135 @@ export function upgradeDependencies(
     log,
     runner,
     remotionRootOf(cwd)
+  );
+}
+
+const PaperManifest = Schema.Struct({
+  dependencies: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+  devDependencies: Schema.optionalKey(
+    Schema.Record(Schema.String, Schema.String)
+  ),
+});
+const PackageVersion = Schema.Struct({ version: Schema.NonEmptyString });
+const decodePaperManifest = Schema.decodeUnknownEffect(PaperManifest);
+const decodePackageVersion = Schema.decodeUnknownEffect(PackageVersion);
+const PAPER_PACKAGES = ["@paper-design/shaders", "@paper-design/shaders-react"];
+
+function installedPaperManifest(root: string, name: string): unknown {
+  let cursor = root;
+  for (;;) {
+    const path = join(cursor, "node_modules", name, "package.json");
+    if (existsSync(path)) {
+      return JSON.parse(readFileSync(path, "utf8"));
+    }
+    const parent = dirname(cursor);
+    if (parent === cursor) {
+      return null;
+    }
+    cursor = parent;
+  }
+}
+
+function paperState(root: string) {
+  const failed = (cause: unknown) =>
+    new ScaffoldError({
+      message:
+        cause instanceof Error
+          ? cause.message
+          : "Could not check the project's Paper shader dependencies.",
+    });
+  return Effect.gen(function* () {
+    const raw = yield* Effect.try({
+      catch: failed,
+      try: () =>
+        JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as unknown,
+    });
+    const manifest = yield* decodePaperManifest(raw).pipe(
+      Effect.mapError(failed)
+    );
+    return yield* Effect.forEach(PAPER_PACKAGES, (name) =>
+      Effect.gen(function* () {
+        const declared =
+          manifest.dependencies?.[name] ?? manifest.devDependencies?.[name];
+        if (
+          declared !== undefined &&
+          !semver.satisfies(PAPER_SHADER_VERSION, declared)
+        ) {
+          return yield* Effect.fail(
+            new ScaffoldError({
+              message: `${name} declares ${declared}. Shader insertion requires ${PAPER_SHADER_VERSION}; resolve this dependency before adding a shader.`,
+            })
+          );
+        }
+        const installed = yield* Effect.try({
+          catch: failed,
+          try: () => installedPaperManifest(root, name),
+        });
+        if (installed === null) {
+          return { declared, installed: false, name };
+        }
+        const pkg = yield* decodePackageVersion(installed).pipe(
+          Effect.mapError(failed)
+        );
+        if (pkg.version !== PAPER_SHADER_VERSION) {
+          return yield* Effect.fail(
+            new ScaffoldError({
+              message: `${name} ${pkg.version} is installed. Shader insertion requires ${PAPER_SHADER_VERSION}; Studio will not replace it automatically.`,
+            })
+          );
+        }
+        return { declared, installed: true, name };
+      })
+    );
+  });
+}
+
+export function checkPaperDependencies(cwd: string) {
+  return paperState(remotionRootOf(cwd)).pipe(Effect.asVoid);
+}
+
+export function preparePaperDependencies(
+  cwd: string,
+  log: (line: string) => Effect.Effect<void>,
+  runner: Runner = NODE_RUNNER
+) {
+  const root = remotionRootOf(cwd);
+  const project = pmOf(root);
+  return laneOf(project.root).withPermits(1)(
+    Effect.gen(function* () {
+      const state = yield* paperState(root);
+      const missing = state
+        .filter((item) => !item.installed || item.declared === undefined)
+        .map((item) => item.name);
+      if (missing.length === 0) {
+        return;
+      }
+      const binary = runner.binary(project.manager);
+      if (binary === null) {
+        return yield* Effect.fail(
+          new ScaffoldError({ message: notInstalled(project.manager) })
+        );
+      }
+      yield* run(
+        binary,
+        upgradeArgs(project.manager, missing, PAPER_SHADER_VERSION),
+        addCommand(project.manager),
+        log,
+        runner,
+        root
+      );
+      const verified = yield* paperState(root);
+      if (
+        verified.some((item) => !item.installed || item.declared === undefined)
+      ) {
+        return yield* Effect.fail(
+          new ScaffoldError({
+            message:
+              "The package manager finished without preparing both Paper shader packages. Retry after checking the project installation.",
+          })
+        );
+      }
+    })
   );
 }
 

@@ -19,6 +19,52 @@ export interface LookupHost {
 
 const host: LookupHost = { env: process.env, exists: existsSync };
 
+// One list for both platforms: a dir that does not exist on this one is
+// simply never matched.
+export const USER_BIN_DIRS = [
+  ".local/bin",
+  ".bun/bin",
+  ".npm-global/bin",
+  ".volta/bin",
+  ".local/share/mise/shims",
+  ".asdf/shims",
+  ".local/share/pnpm",
+  ".yarn/bin",
+  "Library/pnpm",
+] as const;
+
+export const SYSTEM_BIN_DIRS = [
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+  "/usr/bin",
+  "/bin",
+  "/usr/sbin",
+] as const;
+
+export function userBinDirs(
+  home: string,
+  env: Readonly<Record<string, string | undefined>> = process.env
+): string[] {
+  const nvm = env.NVM_BIN;
+  const dirs = USER_BIN_DIRS.map((dir) => join(home, dir));
+
+  return nvm !== undefined && nvm.length > 0 ? [...dirs, nvm] : dirs;
+}
+
+export function fallbackDirs(
+  home: string,
+  extra: readonly string[] = [],
+  env: Readonly<Record<string, string | undefined>> = process.env
+): string[] {
+  return [
+    ...new Set([
+      ...userBinDirs(home, env),
+      ...extra.map((dir) => join(home, dir)),
+      ...SYSTEM_BIN_DIRS,
+    ]),
+  ];
+}
+
 export function findExecutable(
   lookup: Lookup,
   at: LookupHost = host

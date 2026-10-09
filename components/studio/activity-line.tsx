@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronRightIcon } from "lucide-react";
 import { useMemo } from "react";
+import { ChevronRightIcon } from "@/components/icons";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import {
   activityTarget,
@@ -50,7 +50,7 @@ export function ActivityLine({
       <button
         aria-expanded={detail === null ? undefined : disclosure.isOpen}
         aria-label={target === null ? name : `${name} ${targetText(target)}`}
-        className="group flex w-full min-w-0 items-center gap-2 rounded-md text-left font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-default"
+        className="group flex w-full min-w-0 items-center gap-2 rounded-md text-left font-mono text-xs outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 disabled:cursor-default"
         disabled={detail === null}
         onClick={disclosure.toggle}
         type="button"

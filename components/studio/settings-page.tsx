@@ -1,5 +1,14 @@
 "use client";
 
+import type { ChangeEvent, MouseEvent } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowLeftIcon,
   BellIcon,
@@ -13,20 +22,23 @@ import {
   PlugZapIcon,
   RefreshCwIcon,
   RotateCwIcon,
+  SearchIcon,
   SlidersHorizontalIcon,
   SunMoonIcon,
-} from "lucide-react";
-import type { MouseEvent } from "react";
-import { Fragment, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useCopyCommand } from "@/hooks/use-copy-command";
-import type { NotificationConsent } from "@/hooks/use-notification-consent";
+import type {
+  NotificationConsent,
+  PermissionReading,
+} from "@/hooks/use-notification-consent";
+import { useIsMac } from "@/hooks/use-platform";
 import { usePresence } from "@/hooks/use-presence";
 import { useScrolledIntoView } from "@/hooks/use-scrolled-into-view";
 import {
@@ -46,7 +58,6 @@ import {
   SHORTCUTS,
   shortcutKeys,
 } from "@/lib/studio/command-registry";
-import type { ShellMood } from "@/lib/studio/mood";
 import { modKeyLabel } from "@/lib/studio/platform";
 import { shortDay } from "@/lib/studio/time";
 import { downloadedLabel, downloadedShare } from "@/lib/studio/updates";
@@ -61,14 +72,12 @@ import {
   type AgentProvider,
   PROVIDER_INFO,
 } from "@/shared/providers";
-import { CHECK_ICONS } from "./environment-checklist";
 import { IntegrationsSection } from "./integrations-section";
 import { ProjectSettingsSection } from "./project-settings-section";
-import { ProviderIcon } from "./provider-icon";
 import { ProviderSteps } from "./provider-steps";
 import { SettingsPanel as Group } from "./settings-group";
+import { SidebarSlide } from "./sidebar-slide";
 import { useStudio } from "./studio-provider";
-import { MoodField } from "./titlebar";
 import { updateSummary } from "./update-status";
 
 type SectionId = SettingsSection;
@@ -86,7 +95,7 @@ const SECTIONS: readonly {
     label: "Project",
   },
   {
-    description: "How the studio looks",
+    description: "Make the studio feel right for you.",
     icon: SunMoonIcon,
     id: "appearance",
     label: "Appearance",
@@ -104,41 +113,59 @@ const SECTIONS: readonly {
     label: "Notifications",
   },
   {
-    description: "Every keyboard shortcut, in one place",
+    description: "Every keyboard shortcut, in one place.",
     icon: KeyboardIcon,
     id: "hotkeys",
     label: "Hotkeys",
   },
   {
-    description: "Services and AI accounts the studio can reach",
+    description: "Connect your tools and AI accounts.",
     icon: PlugZapIcon,
     id: "integrations",
     label: "Integrations",
   },
   {
-    description: "Keep the studio current",
+    description: "Keep the studio up to date.",
     icon: CircleArrowUpIcon,
     id: "updates",
     label: "Updates",
   },
   {
-    description: "Tell us what broke, or what is missing",
+    description: "Tell us what broke, or what is missing.",
     icon: MessageSquareIcon,
     id: "feedback",
     label: "Feedback",
   },
 ];
 
-// Settings takes the window: a rail on the left, one readable column on the
-// right, and nothing floating. The shell stays mounted underneath — inert, so
-// keys and clicks cannot reach it — which is what keeps the preview's iframe
-// and a running turn exactly where they were when the page closes. It only
-// crossfades, briefly and without moving: this should feel like switching a
-// tab, not opening a window.
+// Settings replaces the sidebar below stationary window chrome. The workspace
+// remains mounted and inert so switching back preserves the preview and turn.
 export function SettingsPage() {
   const { settingsView } = useStudio();
   const { section, setSection } = settingsView;
-  const presence = usePresence(settingsView.isOpen ? true : null);
+  const presence = usePresence(
+    settingsView.isOpen ? true : null,
+    settingsView.animate ? 200 : 0
+  );
+  const back = useRef<HTMLButtonElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (settingsView.isOpen) {
+      opener.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      back.current?.focus({ preventScroll: true });
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      if (opener.current?.isConnected) {
+        opener.current.focus({ preventScroll: true });
+      }
+      opener.current = null;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [settingsView.isOpen]);
 
   const onPickSection = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -150,69 +177,109 @@ export function SettingsPage() {
     [setSection]
   );
 
-  if (presence.shown === null) {
-    return null;
-  }
-
-  const active = SECTIONS.find((entry) => entry.id === section) ?? SECTIONS[0];
-
   return (
     <section
+      aria-hidden={!settingsView.isOpen || undefined}
       aria-label="Settings"
-      className="fixed inset-0 z-40 flex animate-fade-in bg-background text-foreground transition-opacity duration-fast ease-out [animation-duration:var(--transition-duration-fast)] data-leaving:pointer-events-none data-leaving:opacity-0"
-      data-leaving={presence.isLeaving ? "" : undefined}
-      inert={presence.isLeaving || undefined}
+      className="pointer-events-none absolute inset-x-0 top-[46px] bottom-0 z-40 flex text-foreground"
+      inert={!settingsView.isOpen || undefined}
     >
-      <SectionRail
-        active={section}
-        onBack={settingsView.close}
-        onPick={onPickSection}
-      />
+      <div className="w-[238px] shrink-0 overflow-hidden max-sm:w-44">
+        <SidebarSlide
+          animate={settingsView.animate}
+          inactive={!settingsView.isOpen}
+          offset={settingsView.isOpen ? 0 : 1}
+        >
+          <SectionRail
+            active={section}
+            backRef={back}
+            onBack={settingsView.close}
+            onPick={onPickSection}
+          />
+        </SidebarSlide>
+      </div>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      {presence.shown === null ? null : <SettingsContent />}
+    </section>
+  );
+}
+
+function SettingsContent() {
+  const { settingsView } = useStudio();
+  const { section } = settingsView;
+  const active = SECTIONS.find((entry) => entry.id === section) ?? SECTIONS[0];
+  return (
+    <div className="pointer-events-auto mr-2 mb-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-background">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div
-          className="h-(--titlebar-block-inset) shrink-0"
-          data-tauri-drag-region
-        />
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 pt-2 pb-12 sm:px-10">
-            <header className="flex flex-col gap-1 px-4">
-              <h2 className="font-heading font-medium text-xl tracking-tight">
-                {active.label}
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                {active.description}
-              </p>
-            </header>
+          className={cn(
+            "flex min-h-full w-full flex-col gap-6 px-6 pt-6 pb-2",
+            section === "hotkeys" ? "max-w-[1040px]" : "max-w-[768px]"
+          )}
+        >
+          <header className="flex flex-col gap-2">
+            <h2 className="font-heading font-medium text-2xl leading-8 tracking-[-.025em]">
+              {active.label}
+            </h2>
+            <p className="text-[14px] text-muted-foreground leading-5">
+              {active.description}
+            </p>
+          </header>
 
-            <div className="flex flex-col gap-10">
-              {settingsView.blocked ? (
-                <p className="text-destructive text-sm" role="alert">
-                  Save or cancel your project changes before leaving.
-                </p>
-              ) : null}
-              {section === "project" ? (
-                <ProjectSettingsSection
-                  key={settingsView.projectId ?? "none"}
-                />
-              ) : null}
-              {section === "appearance" ? <AppearanceSection /> : null}
-              {section === "behavior" ? <BehaviorSection /> : null}
-              {section === "notifications" ? <NotificationsSection /> : null}
-              {section === "hotkeys" ? <HotkeysSection /> : null}
-              {section === "integrations" ? (
-                <>
-                  <IntegrationsSection />
-                  <AccountsSection />
-                </>
-              ) : null}
-              {section === "updates" ? <UpdatesSection /> : null}
-              {section === "feedback" ? <FeedbackSection /> : null}
-            </div>
+          <div
+            className={cn(
+              "flex flex-col gap-4",
+              section === "project" && "flex-1"
+            )}
+          >
+            {settingsView.blocked ? (
+              <p className="text-destructive text-sm" role="alert">
+                Save or cancel your project changes before leaving.
+              </p>
+            ) : null}
+            {section === "project" ? (
+              <ProjectSettingsSection key={settingsView.projectId ?? "none"} />
+            ) : null}
+            {section === "appearance" ? <AppearanceSection /> : null}
+            {section === "behavior" ? <BehaviorSection /> : null}
+            {section === "notifications" ? <NotificationsSection /> : null}
+            {section === "hotkeys" ? <HotkeysSection /> : null}
+            {section === "integrations" ? (
+              <>
+                <IntegrationsSection />
+                <AccountsSection />
+              </>
+            ) : null}
+            {section === "updates" ? <UpdatesSection /> : null}
+            {section === "feedback" ? <FeedbackSection /> : null}
           </div>
+          <SettingsFooter section={section} />
         </div>
       </div>
-    </section>
+    </div>
+  );
+}
+
+const FOOTNOTES: Record<SectionId, string | null> = {
+  appearance: "Changes are saved automatically",
+  behavior: "Changes are saved automatically",
+  feedback: "Esc · Back to studio",
+  hotkeys: "Shortcuts follow your platform. Use Ctrl instead of ⌘ on Windows.",
+  integrations: "Changes are saved automatically",
+  notifications: "Changes are saved automatically",
+  project: null,
+  updates: "Esc · Back to studio",
+};
+
+function SettingsFooter({ section }: { section: SectionId }) {
+  const text = FOOTNOTES[section];
+  if (text === null) {
+    return null;
+  }
+  return (
+    <p className="mt-auto flex min-h-14 shrink-0 items-center text-muted-foreground text-sm leading-[18px]">
+      {text}
+    </p>
   );
 }
 
@@ -221,24 +288,27 @@ export function SettingsPage() {
 // carries a dot while a release is waiting, so the dialog never hides it.
 function SectionRail({
   active,
+  backRef,
   onBack,
   onPick,
 }: {
   active: SectionId;
+  backRef: React.RefObject<HTMLButtonElement | null>;
   onBack: () => void;
   onPick: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const { updates } = useStudio();
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col bg-sidebar p-3 pt-(--titlebar-block-inset)">
+    <aside className="pointer-events-auto flex h-full w-full flex-col overflow-y-auto bg-sidebar px-3 pt-2 pb-4">
       {/* The arrow and the word are one control: the whole row goes back,
           and the word is what the row is named by. */}
-      <div className="mb-3" data-tauri-drag-region>
+      <div className="mb-[18px]" data-tauri-drag-region>
         <Button
           aria-label="Back"
-          className="w-full justify-start text-foreground"
+          className="w-full justify-start gap-2 px-2 text-muted-foreground"
           onClick={onBack}
+          ref={backRef}
           size="sm"
           variant="ghost"
         >
@@ -246,20 +316,21 @@ function SectionRail({
             className="text-muted-foreground"
             data-icon="inline-start"
           />
-          <span className="font-heading font-medium text-sm">Settings</span>
+          <span className="font-medium text-sm">Back</span>
         </Button>
-        <h1 className="sr-only">Settings</h1>
       </div>
-
-      <nav aria-label="Settings sections" className="flex flex-col gap-0.5">
+      <h1 className="mb-1 flex h-6 shrink-0 items-center px-2 font-normal text-muted-foreground text-xs">
+        Settings
+      </h1>
+      <nav aria-label="Settings sections" className="flex flex-col">
         {SECTIONS.map((entry) => (
           <button
             aria-current={active === entry.id ? "true" : undefined}
             className={cn(
-              "flex h-8 items-center gap-2 rounded-md px-2 text-left text-sm outline-none transition-colors duration-fast focus-visible:ring-2 focus-visible:ring-ring/50 active:bg-accent",
+              "flex h-7 shrink-0 items-center gap-2 rounded-md px-2 text-left text-sm leading-[18px] outline-none transition-colors duration-fast focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 active:bg-accent",
               active === entry.id
                 ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
             key={entry.id}
             onClick={onPick}
@@ -291,7 +362,6 @@ function SectionRail({
 }
 
 const THEME_TILES: readonly {
-  caption: string;
   id: ThemeChoice;
   label: string;
   swatch: string;
@@ -299,28 +369,25 @@ const THEME_TILES: readonly {
   chip: string;
 }[] = [
   {
-    bar: "bg-white/25",
-    caption: "The studio’s native palette",
-    chip: "bg-white/10",
+    bar: "bg-[#f5f5f5]",
+    chip: "bg-[#303030]",
     id: "dark",
     label: "Dark",
-    swatch: "bg-[#141318]",
+    swatch: "bg-[#1c1c1c]",
   },
   {
-    bar: "bg-black/40",
-    caption: "Bright surfaces, dark text",
-    chip: "bg-black/10",
+    bar: "bg-[#191919]",
+    chip: "bg-[#eeeeee]",
     id: "light",
     label: "Light",
     swatch: "bg-white",
   },
   {
-    bar: "bg-white/25",
-    caption: "Follows macOS",
-    chip: "bg-black/25",
+    bar: "bg-[#191919]",
+    chip: "bg-[#eeeeee]",
     id: "system",
     label: "System",
-    swatch: "bg-linear-to-br from-[#141318] from-50% to-white to-50%",
+    swatch: "bg-[#d0d0d0]",
   },
 ];
 
@@ -339,49 +406,97 @@ function Row({
   title: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4 first:pt-0 last:pb-0">
-      <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
+    <div className="flex min-w-0 items-center justify-between gap-6 py-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         {htmlFor === undefined ? (
-          <span className="text-sm">{title}</span>
+          <span className="text-[14px] leading-5">{title}</span>
         ) : (
-          <Label className="font-normal text-sm" htmlFor={htmlFor}>
+          <Label
+            className="font-normal text-[14px] leading-5"
+            htmlFor={htmlFor}
+          >
             {title}
           </Label>
         )}
-        <p className="text-muted-foreground text-xs leading-relaxed">
+        <p className="max-w-[480px] text-muted-foreground text-sm leading-[18px]">
           {description}
         </p>
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="flex w-[min(200px,40%)] shrink-0 items-center justify-end">
+        {children}
+      </div>
     </div>
   );
 }
 
 function HotkeysSection() {
+  const [query, setQuery] = useState("");
+  const onSearch = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) =>
+      setQuery(event.currentTarget.value),
+    []
+  );
+  const search = query.trim().toLowerCase();
+  const groups = HOTKEY_GROUPS.map((group) => ({
+    ...group,
+    ids: group.ids.filter((id) =>
+      `${group.title} ${SHORTCUT_TITLES[id]} ${formatShortcut(SHORTCUTS[id])}`
+        .toLowerCase()
+        .includes(search)
+    ),
+  })).filter((group) => group.ids.length > 0);
+
   return (
-    <>
-      {HOTKEY_GROUPS.map((group) => (
-        <Group key={group.title} title={group.title}>
-          <div className="flex flex-col divide-y divide-border/60">
+    <div className="@container/hotkeys grid gap-6">
+      <div className="relative">
+        <SearchIcon
+          aria-hidden="true"
+          className="pointer-events-none absolute top-2.5 left-[9px] z-1 size-4 text-muted-foreground"
+        />
+        <Input
+          aria-label="Find a shortcut"
+          className="h-9 pl-8"
+          onChange={onSearch}
+          placeholder="Find a shortcut…"
+          type="search"
+          value={query}
+        />
+      </div>
+      <div className="grid @2xl/hotkeys:grid-cols-2 gap-8">
+        {groups.map((group) => (
+          <section
+            aria-label={group.title}
+            className="grid content-start gap-2"
+            key={group.title}
+          >
+            <h3 className="font-medium text-[14px] leading-5">{group.title}</h3>
             {group.ids.map((id) => (
               <div
-                className="flex items-center justify-between gap-6 py-3 first:pt-0 last:pb-0"
+                className="flex min-h-7 items-center justify-between gap-4"
                 key={id}
               >
-                <span className="text-sm">{SHORTCUT_TITLES[id]}</span>
-                <KbdGroup aria-label={formatShortcut(SHORTCUTS[id])}>
-                  {shortcutKeys(SHORTCUTS[id]).map((key) => (
-                    <Kbd aria-hidden="true" key={key}>
-                      {key}
-                    </Kbd>
-                  ))}
-                </KbdGroup>
+                <span className="min-w-0 flex-1 text-sm leading-[18px]">
+                  {SHORTCUT_TITLES[id]}
+                </span>
+                <span className="flex w-28 shrink-0 justify-end">
+                  <Kbd
+                    aria-label={formatShortcut(SHORTCUTS[id])}
+                    className="h-auto rounded-md bg-secondary px-2 py-0.5 font-mono font-normal text-foreground text-sm leading-[18px]"
+                  >
+                    {shortcutKeys(SHORTCUTS[id]).join(" ")}
+                  </Kbd>
+                </span>
               </div>
             ))}
-          </div>
-        </Group>
-      ))}
-    </>
+          </section>
+        ))}
+      </div>
+      {groups.length === 0 ? (
+        <p className="py-6 text-muted-foreground text-sm" role="status">
+          No shortcuts match “{query.trim()}”.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -408,18 +523,12 @@ function ThemeGroup() {
   );
 
   return (
-    <Group
-      description={
-        THEME_TILES.find((tile) => tile.id === choice)?.caption ??
-        "Dark is the default until a choice is made"
-      }
-      title="Theme"
-    >
+    <Group description="Choose a theme, or follow your system." title="Theme">
       <div className="flex gap-3">
         {THEME_TILES.map((tile) => (
           <button
             aria-pressed={choice === tile.id}
-            className="group flex min-w-0 flex-1 flex-col items-stretch gap-2 rounded-md outline-none active:translate-y-px"
+            className="group flex min-w-0 flex-1 flex-col items-stretch gap-2.5 rounded-md outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
             key={tile.id}
             onClick={onPickTheme}
             type="button"
@@ -427,23 +536,23 @@ function ThemeGroup() {
           >
             <span
               className={cn(
-                "flex h-24 flex-col justify-between rounded-md p-2 ring-1 ring-foreground/10 ring-inset transition-shadow group-focus-visible:ring-2 group-focus-visible:ring-ring",
-                tile.swatch,
-                choice === tile.id && "ring-2 ring-primary"
+                "flex h-[104px] flex-col justify-between rounded-md p-[9px]",
+                tile.swatch
               )}
             >
-              <span className={cn("h-1.5 w-1/2 rounded-full", tile.bar)} />
               <span
-                className={cn("h-4 w-2/3 self-end rounded-sm", tile.chip)}
+                className={cn("h-[5px] w-16 max-w-full rounded-sm", tile.bar)}
+              />
+              <span
+                className={cn(
+                  "h-6 w-[100px] max-w-full self-end rounded-md",
+                  tile.chip
+                )}
               />
             </span>
-            <span
-              className={cn(
-                "text-xs",
-                choice === tile.id ? "text-foreground" : "text-muted-foreground"
-              )}
-            >
+            <span className="flex items-center justify-between text-sm leading-[18px]">
               {tile.label}
+              {choice === tile.id ? <CheckIcon className="size-4" /> : null}
             </span>
           </button>
         ))}
@@ -452,56 +561,44 @@ function ThemeGroup() {
   );
 }
 
-const SAMPLE_MOOD: ShellMood = { isBusy: false, tone: "idle" };
-
-// The band under the traffic lights, with the shader the shell breathes
-// through: on by default, and both halves are a person's to turn off. The
-// sample is the same field the shell draws, so the switches show their
-// effect where the person is looking rather than behind the page.
 function TitlebarGroup() {
   const { preferences } = useStudio();
+  const isMac = useIsMac();
 
   return (
     <Group
-      description="The band at the top of the window carries a shader that shifts with what the studio is doing: calm while idle, faster while a turn runs, another hue while something waits on you or has failed."
+      description="A subtle signal when a turn is running or needs attention."
       title="Title bar"
     >
-      <div
-        aria-hidden="true"
-        className="relative h-24 overflow-hidden rounded-md bg-sidebar ring-1 ring-foreground/10 ring-inset"
-      >
-        {preferences.titlebarShader ? (
-          <MoodField
-            isBooting={false}
-            isStill={!preferences.titlebarMotion}
-            mood={SAMPLE_MOOD}
-          />
-        ) : null}
-      </div>
-
-      <div className="flex flex-col divide-y divide-border/60">
+      <div className="flex flex-col gap-4">
         <Row
-          description="Off leaves the band plain, in the sidebar’s own colour"
+          description="Keep the title bar plain when this is off."
           htmlFor="settings-titlebar-shader"
-          title="Show the shader"
+          title="Show activity in title bar"
         >
           <Switch
             checked={preferences.titlebarShader}
             id="settings-titlebar-shader"
             onCheckedChange={preferences.setTitlebarShader}
+            size="default"
           />
         </Row>
 
         <Row
-          description="Off holds one frame of the field; the hue still follows the mood. Also off whenever macOS asks to reduce motion."
+          description={
+            isMac
+              ? "Follows your system’s Reduce Motion preference."
+              : "Follows your system’s reduce-motion setting."
+          }
           htmlFor="settings-titlebar-motion"
-          title="Animate it"
+          title="Animate activity"
         >
           <Switch
             checked={preferences.titlebarMotion}
             disabled={!preferences.titlebarShader}
             id="settings-titlebar-motion"
             onCheckedChange={preferences.setTitlebarMotion}
+            size="default"
           />
         </Row>
       </div>
@@ -511,6 +608,7 @@ function TitlebarGroup() {
 
 function BehaviorSection() {
   const { preferences, onboarding, updates } = useStudio();
+  const isMac = useIsMac();
 
   return (
     <>
@@ -518,7 +616,7 @@ function BehaviorSection() {
         description="What the studio offers on its own, without being asked"
         title="Suggestions"
       >
-        <div className="flex flex-col divide-y divide-border/60">
+        <div className="flex flex-col gap-2">
           <Row
             description="When a turn ends, offer to save the pictures and clips it carried into the asset library"
             htmlFor="settings-asset-offers"
@@ -528,6 +626,7 @@ function BehaviorSection() {
               checked={preferences.assetOffers}
               id="settings-asset-offers"
               onCheckedChange={preferences.setAssetOffers}
+              size="default"
             />
           </Row>
 
@@ -544,7 +643,7 @@ function BehaviorSection() {
       </Group>
 
       <Group
-        description="Nothing leaves this Mac unless a switch here says so"
+        description={`Nothing leaves ${isMac ? "this Mac" : "this computer"} unless a switch here says so`}
         title="Privacy"
       >
         <CrashReportsRow
@@ -588,6 +687,7 @@ const EVENT_ROWS: readonly {
 function NotificationsSection() {
   const { notifications } = useStudio();
   const { permission } = notifications;
+  const isMac = useIsMac();
   const isUnavailable = permission === "unavailable";
   const needsPermission = permission === "default" || permission === "denied";
 
@@ -599,7 +699,11 @@ function NotificationsSection() {
       >
         <div className="flex flex-col gap-2">
           <Row
-            description="Turn every notification on or off. macOS asks once, the first time this goes on."
+            description={
+              isMac
+                ? "Turn every notification on or off. macOS asks once, the first time this goes on."
+                : "Turn every notification on or off. They are shown by your desktop's notification service."
+            }
             htmlFor="settings-notifications"
             title="Notify me"
           >
@@ -608,6 +712,7 @@ function NotificationsSection() {
               disabled={isUnavailable}
               id="settings-notifications"
               onCheckedChange={notifications.toggle}
+              size="default"
             />
           </Row>
 
@@ -620,9 +725,7 @@ function NotificationsSection() {
           {needsPermission ? (
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
               <p className="text-muted-foreground text-xs leading-snug">
-                {permission === "denied"
-                  ? "Notifications are off for the studio in System Settings. Nothing will arrive until they are turned on there."
-                  : "macOS has not allowed the studio to notify yet. Nothing will arrive until it has."}
+                {notificationPermissionText(isMac, permission)}
               </p>
               <Button onClick={notifications.grant} size="sm" variant="outline">
                 Grant permission
@@ -642,7 +745,7 @@ function NotificationsSection() {
         description="Which moments are worth a notification"
         title="Events"
       >
-        <div className="flex flex-col divide-y divide-border/60">
+        <div className="flex flex-col gap-2">
           {EVENT_ROWS.map((row) => (
             <EventRow
               consent={notifications}
@@ -658,6 +761,18 @@ function NotificationsSection() {
   );
 }
 
+function notificationPermissionText(
+  isMac: boolean,
+  permission: PermissionReading
+): string {
+  if (!isMac) {
+    return "Your desktop has not allowed the studio to notify. Nothing will arrive until notifications are allowed for it in your desktop's own settings.";
+  }
+
+  return permission === "denied"
+    ? "Notifications are off for the studio in System Settings. Nothing will arrive until they are turned on there."
+    : "macOS has not allowed the studio to notify yet. Nothing will arrive until it has.";
+}
 function EventRow({
   consent,
   description,
@@ -682,6 +797,7 @@ function EventRow({
         disabled={!consent.isEnabled}
         id={id}
         onCheckedChange={onChange}
+        size="default"
       />
     </Row>
   );
@@ -711,6 +827,7 @@ function CrashReportsRow({
           checked={value}
           id="settings-crash-reports"
           onCheckedChange={onChange}
+          size="default"
         />
       </Row>
 
@@ -729,71 +846,61 @@ function CrashReportsRow({
   );
 }
 
-// One card, read top to bottom: what the button does, the button on the
-// same line, and under a rule the four facts the email is filled with —
-// so "what leaves the app" is answered where the sending happens, not in a
-// second group the eye has to connect back.
 function FeedbackSection() {
   const { feedback, provider, updates } = useStudio();
+  const isMac = useIsMac();
 
   return (
-    <Group
-      description="Feedback is an email you write and send yourself; nothing leaves the app on its own"
-      title="Email"
-    >
-      <div className="grid min-w-0 gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <p className="min-w-0 flex-1 basis-48 text-muted-foreground text-xs leading-relaxed">
-            Opens your mail client with the facts below already filled in. A
-            screenshot says more than a paragraph, so attach one by hand before
-            sending.
+    <>
+      <Group
+        description="Describe the problem or the improvement you would like."
+        title="Email feedback"
+      >
+        <div className="grid min-w-0 justify-items-start gap-3">
+          <p className="max-w-[580px] text-[14px] leading-5">
+            Your mail app opens with the app details below. Add a screenshot and
+            send the message when you’re ready.
           </p>
-          <Button
-            className="shrink-0"
-            onClick={feedback.send}
-            size="sm"
-            variant="outline"
-          >
+          <Button onClick={feedback.send} size="sm">
             <MailIcon data-icon="inline-start" />
             Email feedback
           </Button>
+          {feedback.error === null ? null : (
+            <p className="break-words text-destructive text-xs" role="alert">
+              {feedback.error}
+            </p>
+          )}
         </div>
-
-        <div className="border-border border-t pt-3">
-          <Facts
-            rows={[
-              ["Studio", updates.version ?? "—"],
-              [
-                "Build",
-                updates.environment === null
-                  ? "—"
-                  : ENVIRONMENTS[updates.environment],
-              ],
-              ["macOS", updates.os ?? "—"],
-              ["Agent", PROVIDER_INFO[provider].name],
-            ]}
-          />
-        </div>
-
-        {feedback.error === null ? null : (
-          <p className="break-words text-destructive text-xs" role="alert">
-            {feedback.error}
-          </p>
-        )}
-      </div>
-    </Group>
+      </Group>
+      <Group title="Included app details">
+        <Facts
+          rows={[
+            ["Studio", updates.version ?? "—"],
+            [
+              "Build",
+              updates.environment === null
+                ? "—"
+                : ENVIRONMENTS[updates.environment],
+            ],
+            [isMac ? "macOS" : "System", updates.os ?? "—"],
+            ["Agent", PROVIDER_INFO[provider].name],
+          ]}
+        />
+        <p className="text-muted-foreground text-sm leading-[18px]">
+          Nothing is sent automatically.
+        </p>
+      </Group>
+    </>
   );
 }
 
-// Two columns of facts: the name in the leading column, the value in mono
-// beside it, every row on the same two edges.
 function Facts({ rows }: { rows: readonly (readonly [string, string])[] }) {
   return (
-    <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-xs">
+    <dl className="grid grid-cols-[minmax(80px,144px)_minmax(0,1fr)] gap-4 text-sm leading-[18px]">
       {rows.map(([name, value]) => (
         <Fragment key={name}>
           <dt className="text-muted-foreground">{name}</dt>
-          <dd className="font-mono tabular-nums">{value}</dd>
+          <dd className="break-words font-mono tabular-nums">{value}</dd>
         </Fragment>
       ))}
     </dl>
@@ -813,30 +920,30 @@ const ENVIRONMENTS: Record<AppEnvironment, string> = {
 // while there is one — an empty "Releases" group said nothing.
 function UpdatesSection() {
   const { hasRunningTurns, updates } = useStudio();
+  const isMac = useIsMac();
   const { download, release } = updates;
 
   return (
     <>
       <Group
-        description="Releases are checked once each time the studio opens; installing replaces the app and restarts it"
+        description="The studio checks for updates when it opens."
         title="This build"
       >
         <div className="grid min-w-0 gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="flex items-baseline gap-2">
-                <span className="font-heading font-semibold text-2xl tabular-nums tracking-tight">
-                  {updates.version ?? "—"}
-                </span>
-                {updates.environment === null ? null : (
-                  <Badge variant="outline">
-                    {ENVIRONMENTS[updates.environment]}
-                  </Badge>
-                )}
+          <div className="flex flex-wrap items-center justify-between gap-4 py-[9px]">
+            <div className="flex min-w-0 flex-col gap-2">
+              <span className="font-medium text-xl leading-7">
+                Remocn Studio
               </span>
-              <span className="text-muted-foreground text-xs">
-                {updateSummary(updates)}
-              </span>
+              <p className="text-muted-foreground text-sm leading-[18px]">
+                {updates.version ?? "—"}
+                {updates.environment === null
+                  ? null
+                  : ` · ${ENVIRONMENTS[updates.environment]}`}
+                {" · "}
+                <span>{isMac ? "macOS" : "System"}</span>
+                {updates.os === null ? null : ` ${updates.os}`}
+              </p>
             </div>
             <Button
               className="shrink-0"
@@ -859,7 +966,20 @@ function UpdatesSection() {
             </Button>
           </div>
 
-          <Facts rows={[["macOS", updates.os ?? "—"]]} />
+          <p
+            className="flex min-h-11 items-center gap-2.5 rounded-md p-3 text-[14px] leading-5"
+            role="status"
+          >
+            <RefreshCwIcon
+              aria-hidden="true"
+              className="size-4 shrink-0 text-muted-foreground"
+            />
+            {updateSummary(updates)}
+          </p>
+          <p className="text-muted-foreground text-sm leading-[18px]">
+            Installing an update restarts the app. Finish active turns before
+            installing.
+          </p>
 
           {updates.error === null ? null : (
             <p className="text-destructive text-xs">{updates.error}</p>
@@ -920,37 +1040,39 @@ function AccountsSection() {
   const { accounts, settingsView } = useStudio();
 
   return (
-    <Group
-      action={
-        <Button
-          disabled={accounts.isChecking}
-          onClick={accounts.recheck}
-          size="sm"
-          variant="outline"
-        >
-          {accounts.isChecking ? (
-            <Spinner className="size-3.5" data-icon="inline-start" />
-          ) : (
-            <RotateCwIcon data-icon="inline-start" />
-          )}
-          Recheck
-        </Button>
-      }
-      description="Each provider is asked with its own probe; a chat can only start on one that is signed in"
-      title="Providers"
-    >
-      <div className="flex flex-col divide-y divide-border/60">
-        {AGENT_PROVIDERS.map((provider) => (
-          <AccountRow
-            isChecking={accounts.isChecking}
-            isFocused={settingsView.provider === provider}
-            key={provider}
-            provider={provider}
-            row={accounts.rows[provider]}
-          />
-        ))}
-      </div>
-    </Group>
+    <div className="pt-3">
+      <Group
+        action={
+          <Button
+            disabled={accounts.isChecking}
+            onClick={accounts.recheck}
+            size="sm"
+            variant="outline"
+          >
+            {accounts.isChecking ? (
+              <Spinner className="size-3.5" data-icon="inline-start" />
+            ) : (
+              <RotateCwIcon data-icon="inline-start" />
+            )}
+            Recheck
+          </Button>
+        }
+        description="Sign in to at least one provider to start a turn."
+        title="AI accounts"
+      >
+        <div className="@container/accounts flex flex-col gap-4">
+          {AGENT_PROVIDERS.map((provider) => (
+            <AccountRow
+              isChecking={accounts.isChecking}
+              isFocused={settingsView.provider === provider}
+              key={provider}
+              provider={provider}
+              row={accounts.rows[provider]}
+            />
+          ))}
+        </div>
+      </Group>
+    </div>
   );
 }
 
@@ -961,21 +1083,6 @@ const STATE_LABELS = {
   warn: "Check",
 } satisfies Record<EnvironmentState, string>;
 
-const STATE_VARIANTS = {
-  failed: "error",
-  ok: "success",
-  pending: "outline",
-  warn: "warning",
-} satisfies Record<
-  EnvironmentState,
-  "error" | "outline" | "success" | "warning"
->;
-
-// Providers share one surface: the mark, then the name with the
-// probe's sentence right under it, then the verdict as a chip that says it in
-// a word and a colour. The setup steps, when there are any, unfold under the
-// sentence in the same column, so a provider with work to do grows downward
-// and its neighbours stay put.
 function AccountRow({
   isChecking,
   isFocused,
@@ -987,56 +1094,57 @@ function AccountRow({
   provider: AgentProvider;
   row: EnvironmentCheck | undefined;
 }) {
-  const info = PROVIDER_INFO[provider];
+  const name = {
+    claude: "Claude Code",
+    codex: "Codex",
+    copilot: "GitHub Copilot",
+    grok: "Grok Build",
+  }[provider];
   const anchor = useScrolledIntoView<HTMLDivElement>(isFocused);
-
-  return (
-    <div
-      className={cn(
-        "flex min-w-0 items-start gap-3 py-4 first:pt-0 last:pb-0",
-        isFocused &&
-          "rounded-md bg-background/60 outline outline-border outline-offset-4"
-      )}
-      data-provider={provider}
-      ref={anchor}
-    >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
-        <ProviderIcon className="size-4" provider={provider} />
-      </span>
-
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-sm leading-tight">{info.name}</span>
-        <AccountStatus isChecking={isChecking} provider={provider} row={row} />
-      </div>
-
-      <StateChip isChecking={isChecking} row={row} />
-    </div>
-  );
-}
-
-function StateChip({
-  isChecking,
-  row,
-}: {
-  isChecking: boolean;
-  row: EnvironmentCheck | undefined;
-}) {
-  if (row === undefined) {
-    return isChecking ? (
-      <Spinner className="mt-2 size-3.5 text-muted-foreground" />
-    ) : null;
+  const [expanded, setExpanded] = useState(isFocused);
+  const detailsId = useId();
+  useEffect(() => {
+    if (isFocused) {
+      setExpanded(true);
+    }
+  }, [isFocused]);
+  const onManage = useCallback(() => setExpanded((value) => !value), []);
+  const action = row?.state === "ok" ? "Manage" : "Set up";
+  const unknownStatus = isChecking ? "Checking…" : "Not checked yet";
+  let status = row === undefined ? unknownStatus : STATE_LABELS[row.state];
+  if (row?.state === "failed" && row.fix?.type === "provider") {
+    status = row.fix.step === "install" ? "Not installed" : "Sign-in required";
   }
-  const Icon = CHECK_ICONS[row.state];
 
   return (
-    <Badge
-      className="mt-1.5 gap-1"
-      size="lg"
-      variant={STATE_VARIANTS[row.state]}
-    >
-      <Icon aria-hidden="true" className="size-3.5" />
-      {STATE_LABELS[row.state]}
-    </Badge>
+    <div className="min-w-0" data-provider={provider} ref={anchor}>
+      <div className="grid min-h-12 @xl/accounts:grid-cols-[1fr_160px_88px] grid-cols-[1fr_88px] items-center gap-x-3 gap-y-1 py-2">
+        <span className="text-[14px] leading-5">{name}</span>
+        <span className="@xl/accounts:col-start-2 col-start-1 @xl/accounts:row-start-1 row-start-2 text-muted-foreground text-sm leading-[18px]">
+          {status}
+        </span>
+        <Button
+          aria-controls={detailsId}
+          aria-expanded={expanded}
+          aria-label={`${action} ${name}`}
+          className="@xl/accounts:col-start-3 col-start-2 row-start-1 w-[88px]"
+          onClick={onManage}
+          size="sm"
+          variant="secondary"
+        >
+          {action}
+        </Button>
+      </div>
+      {expanded ? (
+        <div className="pb-4" id={detailsId}>
+          <AccountStatus
+            isChecking={isChecking}
+            provider={provider}
+            row={row}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }
 

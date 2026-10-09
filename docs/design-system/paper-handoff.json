@@ -1,0 +1,3401 @@
+{
+  "version": 2,
+  "preparedAt": "2026-10-04",
+  "file": {
+    "id": "01M40EK8FFWZTW2G14NW9CXN69",
+    "name": "Remocn Studio · UI & Design System",
+    "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-1-0"
+  },
+  "purpose": "Implementation handoff. Current visual direction, not an implementation status report.",
+  "design": {
+    "font": "Inter",
+    "mono": "Geist Mono",
+    "keyAction": "#B339A1",
+    "keyActionUse": ["Create project", "Export"],
+    "surfaceStyle": "Flat, no decorative borders or shadows",
+    "desktop": {
+      "width": 1440,
+      "height": 900,
+      "chrome": 46,
+      "sidebar": 238,
+      "inspector": 340
+    },
+    "radius": {
+      "control": 6,
+      "surface": 8,
+      "panel": 12
+    },
+    "tokenSnapshot": "paper-tokens.css"
+  },
+  "priorities": [
+    "Current screen composition",
+    "Shared specimen for component anatomy",
+    "Semantic tokens for values",
+    "Existing code for behavior and data"
+  ],
+  "pages": [
+    {
+      "id": "p-1-0",
+      "name": "00 · Handoff",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-1-0",
+      "artboards": [
+        {
+          "id": "43N-0",
+          "name": "H00 / Handoff index",
+          "width": 1200,
+          "height": null,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-1-0/43N-0"
+        },
+        {
+          "id": "GQR-0",
+          "name": "H03 / Source coverage & provenance",
+          "width": 1200,
+          "height": null,
+          "x": 1280,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-1-0/GQR-0"
+        },
+        {
+          "id": "1NR9-0",
+          "name": "H01 / Component map & implementation rules",
+          "width": 1200,
+          "height": null,
+          "x": 2560,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-1-0/1NR9-0"
+        },
+        {
+          "id": "1NRA-0",
+          "name": "H02 / Layout, states & interaction contract",
+          "width": 1200,
+          "height": null,
+          "x": 3840,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-1-0/1NRA-0"
+        }
+      ]
+    },
+    {
+      "id": "p-2-0",
+      "name": "01 · Foundations",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-2-0",
+      "artboards": [
+        {
+          "id": "1-0",
+          "name": "F01 · Color system — Light / Dark",
+          "width": 1440,
+          "height": null,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-2-0/1-0"
+        },
+        {
+          "id": "37-0",
+          "name": "F02 · Typography, spacing & anatomy",
+          "width": 1440,
+          "height": null,
+          "x": 1600,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-2-0/37-0"
+        }
+      ]
+    },
+    {
+      "id": "p-3-0",
+      "name": "02 · UI Primitives",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0",
+      "artboards": [
+        {
+          "id": "5N-0",
+          "name": "P01 · Actions & identity — Light / Dark",
+          "width": 1440,
+          "height": null,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0/5N-0"
+        },
+        {
+          "id": "G6-0",
+          "name": "P02 · Inputs · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 1760,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0/G6-0"
+        },
+        {
+          "id": "QX-0",
+          "name": "P03 · Selection · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 3520,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0/QX-0"
+        },
+        {
+          "id": "1E8-0",
+          "name": "P04 · Navigation · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 0,
+          "y": 1977,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0/1E8-0"
+        },
+        {
+          "id": "38Z-0",
+          "name": "P05 · Disclosure · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 1760,
+          "y": 1977,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0/38Z-0"
+        },
+        {
+          "id": "3B6-0",
+          "name": "P06 · Structure · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 3520,
+          "y": 1977,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0/3B6-0"
+        },
+        {
+          "id": "3O1-0",
+          "name": "P07 · Feedback · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 0,
+          "y": 4649,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0/3O1-0"
+        },
+        {
+          "id": "3WY-0",
+          "name": "P08 · Conversation · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 1760,
+          "y": 4649,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0/3WY-0"
+        },
+        {
+          "id": "49E-0",
+          "name": "P09 · Overlays · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 3520,
+          "y": 4649,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-3-0/49E-0"
+        }
+      ]
+    },
+    {
+      "id": "p-4-0",
+      "name": "03 · Studio Components",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0",
+      "artboards": [
+        {
+          "id": "4OZ-0",
+          "name": "S05 · Thinking · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 1760,
+          "y": 3395,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/4OZ-0"
+        },
+        {
+          "id": "5B0-0",
+          "name": "S04 · Composer · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 0,
+          "y": 3395,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/5B0-0"
+        },
+        {
+          "id": "5WV-0",
+          "name": "S07 · Preview · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 0,
+          "y": 5913,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/5WV-0"
+        },
+        {
+          "id": "68A-0",
+          "name": "S08 · Inspector · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 1760,
+          "y": 5913,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/68A-0"
+        },
+        {
+          "id": "6TD-0",
+          "name": "S06 · Conversation · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 3520,
+          "y": 3395,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/6TD-0"
+        },
+        {
+          "id": "74Y-0",
+          "name": "S01 · Identity · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/74Y-0"
+        },
+        {
+          "id": "7JB-0",
+          "name": "S16 · Feedback · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 0,
+          "y": 16876,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/7JB-0"
+        },
+        {
+          "id": "7KK-0",
+          "name": "S03 · Onboarding · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 3520,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/7KK-0"
+        },
+        {
+          "id": "851-0",
+          "name": "S09 · Export · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 3520,
+          "y": 5913,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/851-0"
+        },
+        {
+          "id": "8CK-0",
+          "name": "S10 · Library · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 0,
+          "y": 8916,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/8CK-0"
+        },
+        {
+          "id": "8XJ-0",
+          "name": "S11 · Audio · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 1760,
+          "y": 8916,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/8XJ-0"
+        },
+        {
+          "id": "978-0",
+          "name": "S13 · Settings · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 0,
+          "y": 11570,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/978-0"
+        },
+        {
+          "id": "AAV-0",
+          "name": "S14 · Brand · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 1760,
+          "y": 11570,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/AAV-0"
+        },
+        {
+          "id": "AN4-0",
+          "name": "S12 · Documents · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 3520,
+          "y": 8916,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/AN4-0"
+        },
+        {
+          "id": "ATF-0",
+          "name": "S15 · System · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 3520,
+          "y": 11570,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/ATF-0"
+        },
+        {
+          "id": "B64-0",
+          "name": "S02 · Navigation · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 1760,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/B64-0"
+        },
+        {
+          "id": "BTF-0",
+          "name": "S17 · Atmosphere · Light / Dark",
+          "width": 1600,
+          "height": null,
+          "x": 1760,
+          "y": 16876,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/BTF-0"
+        },
+        {
+          "id": "1JP2-0",
+          "name": "S18 / New project dialog / Filled / Dark",
+          "width": 816,
+          "height": 516,
+          "x": 5280,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/1JP2-0"
+        },
+        {
+          "id": "1MHG-0",
+          "name": "S18 / New project dialog / Filled / Light",
+          "width": 816,
+          "height": 516,
+          "x": 6256,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/1MHG-0"
+        },
+        {
+          "id": "1MXE-0",
+          "name": "S19 / New project dialog / Empty + focus / Dark",
+          "width": 816,
+          "height": 516,
+          "x": 5280,
+          "y": 720,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/1MXE-0"
+        },
+        {
+          "id": "1MZH-0",
+          "name": "S19 / New project dialog / Empty + focus / Light",
+          "width": 816,
+          "height": 516,
+          "x": 6256,
+          "y": 720,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-4-0/1MZH-0"
+        }
+      ]
+    },
+    {
+      "id": "p-5-0",
+      "name": "04 · Studio & Inspector",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0",
+      "artboards": [
+        {
+          "id": "BUU-0",
+          "name": "W01 / Studio / Ready / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/BUU-0"
+        },
+        {
+          "id": "C5Q-0",
+          "name": "W01 / Studio / Ready / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/C5Q-0"
+        },
+        {
+          "id": "CGM-0",
+          "name": "W02 / Studio / Thinking / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 1060,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/CGM-0"
+        },
+        {
+          "id": "CT6-0",
+          "name": "W02 / Studio / Thinking / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 1060,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/CT6-0"
+        },
+        {
+          "id": "D5Q-0",
+          "name": "W03 / Studio / Permission / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 2120,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/D5Q-0"
+        },
+        {
+          "id": "DLR-0",
+          "name": "W03 / Studio / Permission / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 2120,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/DLR-0"
+        },
+        {
+          "id": "DXJ-0",
+          "name": "W04 / Studio / New chat / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 3180,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/DXJ-0"
+        },
+        {
+          "id": "E8X-0",
+          "name": "W04 / Studio / New chat / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 3180,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/E8X-0"
+        },
+        {
+          "id": "EKB-0",
+          "name": "W05 / Studio / Inspect / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 4240,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/EKB-0"
+        },
+        {
+          "id": "EWC-0",
+          "name": "W05 / Studio / Inspect / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 4240,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/EWC-0"
+        },
+        {
+          "id": "120X-0",
+          "name": "I07 / Inspector / Layers / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 10600,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/120X-0"
+        },
+        {
+          "id": "YF5-0",
+          "name": "I01 / Inspector / Typography & color / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 7420,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/YF5-0"
+        },
+        {
+          "id": "105T-0",
+          "name": "I06 / Inspector / Control states / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 9540,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/105T-0"
+        },
+        {
+          "id": "ZTW-0",
+          "name": "I05 / Inspector / Managed appearance / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 9540,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/ZTW-0"
+        },
+        {
+          "id": "ZHZ-0",
+          "name": "I04 / Inspector / Arrays / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 8480,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/ZHZ-0"
+        },
+        {
+          "id": "Z62-0",
+          "name": "I03 / Inspector / Animation & easing / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 8480,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/Z62-0"
+        },
+        {
+          "id": "YU5-0",
+          "name": "I02 / Inspector / Transform & assets / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 7420,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/YU5-0"
+        },
+        {
+          "id": "FHL-0",
+          "name": "W06 / Studio / Document / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 5300,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/FHL-0"
+        },
+        {
+          "id": "FQW-0",
+          "name": "W06 / Studio / Document / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 5300,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/FQW-0"
+        },
+        {
+          "id": "G07-0",
+          "name": "W07 / Studio / Export dialog / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 6360,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/G07-0"
+        },
+        {
+          "id": "GDH-0",
+          "name": "W07 / Studio / Export dialog / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 6360,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-5-0/GDH-0"
+        }
+      ]
+    },
+    {
+      "id": "p-6-0",
+      "name": "05 · Settings",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0",
+      "artboards": [
+        {
+          "id": "HPS-0",
+          "name": "T01 / Project / General / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/HPS-0"
+        },
+        {
+          "id": "HSW-0",
+          "name": "T01 / Project / General / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/HSW-0"
+        },
+        {
+          "id": "HVW-0",
+          "name": "T02 / Appearance / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 1060,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/HVW-0"
+        },
+        {
+          "id": "HYW-0",
+          "name": "T02 / Appearance / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 1060,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/HYW-0"
+        },
+        {
+          "id": "I1W-0",
+          "name": "T03 / Behavior / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 2120,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/I1W-0"
+        },
+        {
+          "id": "I4F-0",
+          "name": "T03 / Behavior / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 2120,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/I4F-0"
+        },
+        {
+          "id": "I6Y-0",
+          "name": "T04 / Notifications / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 3180,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/I6Y-0"
+        },
+        {
+          "id": "I9W-0",
+          "name": "T04 / Notifications / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 3180,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/I9W-0"
+        },
+        {
+          "id": "ICU-0",
+          "name": "T05 / Hotkeys / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 4240,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/ICU-0"
+        },
+        {
+          "id": "II5-0",
+          "name": "T05 / Hotkeys / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 4240,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/II5-0"
+        },
+        {
+          "id": "ING-0",
+          "name": "T06 / Integrations / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 5300,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/ING-0"
+        },
+        {
+          "id": "IQL-0",
+          "name": "T06 / Integrations / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 5300,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/IQL-0"
+        },
+        {
+          "id": "ITF-0",
+          "name": "T07 / Updates / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 6360,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/ITF-0"
+        },
+        {
+          "id": "IVM-0",
+          "name": "T07 / Updates / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 6360,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/IVM-0"
+        },
+        {
+          "id": "IXM-0",
+          "name": "T08 / Feedback / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 7420,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/IXM-0"
+        },
+        {
+          "id": "J05-0",
+          "name": "T08 / Feedback / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 7420,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/J05-0"
+        },
+        {
+          "id": "J2D-0",
+          "name": "T09 / Project / Brand / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 8480,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/J2D-0"
+        },
+        {
+          "id": "J67-0",
+          "name": "T09 / Project / Brand / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 8480,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/J67-0"
+        },
+        {
+          "id": "J9R-0",
+          "name": "T10 / Project / Typography / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 9540,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/J9R-0"
+        },
+        {
+          "id": "JCT-0",
+          "name": "T10 / Project / Typography / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 9540,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/JCT-0"
+        },
+        {
+          "id": "JFL-0",
+          "name": "T11 / Project / Guidelines / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 10600,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/JFL-0"
+        },
+        {
+          "id": "JIM-0",
+          "name": "T11 / Project / Guidelines / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 10600,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-6-0/JIM-0"
+        }
+      ]
+    },
+    {
+      "id": "p-7-0",
+      "name": "06 · Turn Variations",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-7-0",
+      "artboards": [
+        {
+          "id": "JLD-0",
+          "name": "V01 / Long answer / reading / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-7-0/JLD-0"
+        },
+        {
+          "id": "LNQ-0",
+          "name": "V01 / Long answer / reading / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-7-0/LNQ-0"
+        },
+        {
+          "id": "JLE-0",
+          "name": "V02 / design_check / report / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 1060,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-7-0/JLE-0"
+        },
+        {
+          "id": "JLF-0",
+          "name": "V03 / Audio / generated track / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 2120,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-7-0/JLF-0"
+        },
+        {
+          "id": "JLG-0",
+          "name": "V04 / Audio / generating / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 3180,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-7-0/JLG-0"
+        },
+        {
+          "id": "M13-0",
+          "name": "V02 / design_check / report / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 1060,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-7-0/M13-0"
+        },
+        {
+          "id": "MDR-0",
+          "name": "V03 / Audio / generated track / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 2120,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-7-0/MDR-0"
+        },
+        {
+          "id": "MQC-0",
+          "name": "V04 / Audio / generating / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 3180,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-7-0/MQC-0"
+        }
+      ]
+    },
+    {
+      "id": "p-8-0",
+      "name": "07 · Layout & Behavior",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-8-0",
+      "artboards": [
+        {
+          "id": "L8S-0",
+          "name": "02 · Mobile / Preview",
+          "width": 390,
+          "height": 844,
+          "x": 0,
+          "y": 928,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-8-0/L8S-0"
+        },
+        {
+          "id": "LA1-0",
+          "name": "03 · Mobile / Assistant",
+          "width": 390,
+          "height": 844,
+          "x": 520,
+          "y": 928,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-8-0/LA1-0"
+        },
+        {
+          "id": "LCQ-0",
+          "name": "04 · Interaction rules",
+          "width": 1200,
+          "height": null,
+          "x": 1184,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-8-0/LCQ-0"
+        },
+        {
+          "id": "LF6-0",
+          "name": "01 · Compact workspace / 1024",
+          "width": 1024,
+          "height": 768,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-8-0/LF6-0"
+        },
+        {
+          "id": "114U-0",
+          "name": "05 · Many tabs / scrolling in the middle · Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 1940,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-8-0/114U-0"
+        },
+        {
+          "id": "11K0-0",
+          "name": "06 · Many tabs / start of the list · Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 1940,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-8-0/11K0-0"
+        },
+        {
+          "id": "1KV7-0",
+          "name": "B03 / Welcome hints / 4 states + behavior",
+          "width": 1064,
+          "height": 540,
+          "x": 0,
+          "y": 3100,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-8-0/1KV7-0"
+        },
+        {
+          "id": "1GJJ-0",
+          "name": "B04 / Sidebar / Slide transition",
+          "width": 1440,
+          "height": 1200,
+          "x": 1600,
+          "y": 3100,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-8-0/1GJJ-0"
+        }
+      ]
+    },
+    {
+      "id": "p-9-0",
+      "name": "08 · Hugeicons",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-9-0",
+      "artboards": [
+        {
+          "id": "N4S-0",
+          "name": "Hugeicons · Stroke Rounded · UI library",
+          "width": 1200,
+          "height": null,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-9-0/N4S-0"
+        }
+      ]
+    },
+    {
+      "id": "p-A-0",
+      "name": "90 · Archive · Accent exploration",
+      "status": "archive",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0",
+      "artboards": [
+        {
+          "id": "14VY-0",
+          "name": "Selected · Clean fuchsia · key actions only / light",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 1660,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/14VY-0"
+        },
+        {
+          "id": "17DU-0",
+          "name": "D · Slate blue / light",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 4480,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/17DU-0"
+        },
+        {
+          "id": "15A7-0",
+          "name": "B · Raspberry / light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 1660,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/15A7-0"
+        },
+        {
+          "id": "17S3-0",
+          "name": "E · Mineral teal / light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 4480,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/17S3-0"
+        },
+        {
+          "id": "15OG-0",
+          "name": "C · Neutral actions / light",
+          "width": 1440,
+          "height": 900,
+          "x": 3200,
+          "y": 1660,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/15OG-0"
+        },
+        {
+          "id": "186C-0",
+          "name": "F · Sand amber / light",
+          "width": 1440,
+          "height": 900,
+          "x": 3200,
+          "y": 4480,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/186C-0"
+        },
+        {
+          "id": "13P4-0",
+          "name": "Selected · Clean fuchsia · key actions only / dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 600,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/13P4-0"
+        },
+        {
+          "id": "1670-0",
+          "name": "D · Slate blue / dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 3420,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/1670-0"
+        },
+        {
+          "id": "143E-0",
+          "name": "B · Raspberry / dark",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 600,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/143E-0"
+        },
+        {
+          "id": "16LA-0",
+          "name": "E · Mineral teal / dark",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 3420,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/16LA-0"
+        },
+        {
+          "id": "14HO-0",
+          "name": "C · Neutral actions / dark",
+          "width": 1440,
+          "height": 900,
+          "x": 3200,
+          "y": 600,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/14HO-0"
+        },
+        {
+          "id": "16ZK-0",
+          "name": "F · Sand amber / dark",
+          "width": 1440,
+          "height": 900,
+          "x": 3200,
+          "y": 3420,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/16ZK-0"
+        },
+        {
+          "id": "162P-0",
+          "name": "Accent comparison · A / B / C",
+          "width": 1440,
+          "height": null,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/162P-0"
+        },
+        {
+          "id": "1650-0",
+          "name": "Accent comparison · D / E / F",
+          "width": 1440,
+          "height": null,
+          "x": 0,
+          "y": 2820,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-A-0/1650-0"
+        }
+      ]
+    },
+    {
+      "id": "p-B-0",
+      "name": "09 · Onboarding & Project",
+      "status": "current",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0",
+      "artboards": [
+        {
+          "id": "1B5O-0",
+          "name": "O07 / Product tour / Cover / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 6360,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1B5O-0"
+        },
+        {
+          "id": "1ARS-0",
+          "name": "O07 / Product tour / Cover / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 6360,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1ARS-0"
+        },
+        {
+          "id": "1G41-0",
+          "name": "O13 / Product tour / Export / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 12720,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1G41-0"
+        },
+        {
+          "id": "1FP9-0",
+          "name": "O13 / Product tour / Export / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 12720,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1FP9-0"
+        },
+        {
+          "id": "1FAH-0",
+          "name": "O12 / Product tour / Brand / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 11660,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1FAH-0"
+        },
+        {
+          "id": "1EVP-0",
+          "name": "O12 / Product tour / Brand / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 11660,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1EVP-0"
+        },
+        {
+          "id": "1EGX-0",
+          "name": "O11 / Product tour / Components / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 10600,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1EGX-0"
+        },
+        {
+          "id": "1E25-0",
+          "name": "O11 / Product tour / Components / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 10600,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1E25-0"
+        },
+        {
+          "id": "1DND-0",
+          "name": "O10 / Product tour / Assets / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 9540,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1DND-0"
+        },
+        {
+          "id": "1D8L-0",
+          "name": "O10 / Product tour / Assets / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 9540,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1D8L-0"
+        },
+        {
+          "id": "1CTT-0",
+          "name": "O09 / Product tour / Snapshot / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 8480,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1CTT-0"
+        },
+        {
+          "id": "1CF1-0",
+          "name": "O09 / Product tour / Snapshot / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 8480,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1CF1-0"
+        },
+        {
+          "id": "1C09-0",
+          "name": "O08 / Product tour / Inspect / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 7420,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1C09-0"
+        },
+        {
+          "id": "1BLH-0",
+          "name": "O08 / Product tour / Inspect / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 7420,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1BLH-0"
+        },
+        {
+          "id": "19VZ-0",
+          "name": "O04 / Brand import / Choose DESIGN.md / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 3180,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/19VZ-0"
+        },
+        {
+          "id": "19QV-0",
+          "name": "O04 / Brand import / Choose DESIGN.md / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 3180,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/19QV-0"
+        },
+        {
+          "id": "1AML-0",
+          "name": "O06 / Brand import / Draft / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 5300,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1AML-0"
+        },
+        {
+          "id": "1AIG-0",
+          "name": "O06 / Brand import / Draft / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 5300,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1AIG-0"
+        },
+        {
+          "id": "1A88-0",
+          "name": "O05 / Brand import / Review / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 4240,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1A88-0"
+        },
+        {
+          "id": "1A43-0",
+          "name": "O05 / Brand import / Review / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 4240,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1A43-0"
+        },
+        {
+          "id": "1J92-0",
+          "name": "O03 / New project / From sidebar / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 2120,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1J92-0"
+        },
+        {
+          "id": "1JR5-0",
+          "name": "O01 / Welcome / No open tabs / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1JR5-0"
+        },
+        {
+          "id": "1KA4-0",
+          "name": "O02 / New project / From welcome / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 1060,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1KA4-0"
+        },
+        {
+          "id": "1M1G-0",
+          "name": "O03 / New project / From sidebar / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 2120,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1M1G-0"
+        },
+        {
+          "id": "1KXE-0",
+          "name": "O01 / Welcome / No open tabs / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1KXE-0"
+        },
+        {
+          "id": "1LGD-0",
+          "name": "O02 / New project / From welcome / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 1060,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-B-0/1LGD-0"
+        }
+      ]
+    },
+    {
+      "id": "p-C-0",
+      "name": "91 · Archive · Superseded UI",
+      "status": "archive",
+      "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0",
+      "artboards": [
+        {
+          "id": "1IQR-0",
+          "name": "03 · Create project dialog · sidebar plus",
+          "width": 1440,
+          "height": 900,
+          "x": 3200,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/1IQR-0"
+        },
+        {
+          "id": "1J6V-0",
+          "name": "04 · New project · reusable dialog",
+          "width": 816,
+          "height": 516,
+          "x": 1600,
+          "y": 1080,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/1J6V-0"
+        },
+        {
+          "id": "1N1K-0",
+          "name": "Archive / Onboarding component specimens / Before dialog",
+          "width": 1600,
+          "height": null,
+          "x": 3200,
+          "y": 1800,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/1N1K-0"
+        },
+        {
+          "id": "1GWS-0",
+          "name": "01 · Welcome · folded ribbon",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/1GWS-0"
+        },
+        {
+          "id": "1H2J-0",
+          "name": "02 · Create project dialog · from welcome",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 0,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/1H2J-0"
+        },
+        {
+          "id": "1I49-0",
+          "name": "05 · Hint slider · states & behavior",
+          "width": 1064,
+          "height": 540,
+          "x": 0,
+          "y": 1080,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/1I49-0"
+        },
+        {
+          "id": "190A-0",
+          "name": "Archive / First launch / Replaced by current welcome",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 1800,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/190A-0"
+        },
+        {
+          "id": "19II-0",
+          "name": "Archive / Full-page project form / Replaced by dialog",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 1800,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/19II-0"
+        },
+        {
+          "id": "F8D-0",
+          "name": "Archive / Duplicate appearance / Light",
+          "width": 1440,
+          "height": 900,
+          "x": 0,
+          "y": 2860,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/F8D-0"
+        },
+        {
+          "id": "FCZ-0",
+          "name": "Archive / Duplicate appearance / Dark",
+          "width": 1440,
+          "height": 900,
+          "x": 1600,
+          "y": 2860,
+          "url": "https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-C-0/FCZ-0"
+        }
+      ]
+    }
+  ],
+  "componentSources": [
+    {
+      "id": "button",
+      "title": "Button · variants",
+      "source": "components/ui/button.tsx",
+      "paper": {
+        "light": "5X-0",
+        "dark": "7S-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "button-sizes",
+      "title": "Button · sizes & states",
+      "source": "components/ui/button.tsx",
+      "paper": {
+        "light": "6H-0",
+        "dark": "8C-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "badge",
+      "title": "Badge · variants",
+      "source": "components/ui/badge.tsx",
+      "paper": {
+        "light": "1Q6-0",
+        "dark": "1R1-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "avatar",
+      "title": "Avatar · fallback",
+      "source": "components/ui/avatar.tsx",
+      "paper": {
+        "light": "1RW-0",
+        "dark": "1SB-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "kbd",
+      "title": "Keyboard shortcuts",
+      "source": "components/ui/kbd.tsx",
+      "paper": {
+        "light": "1SQ-0",
+        "dark": "1TA-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "toggle",
+      "title": "Toggle · off / on / disabled",
+      "source": "components/ui/toggle.tsx",
+      "paper": {
+        "light": "33R-0",
+        "dark": "34A-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "toggle-group",
+      "title": "Toggle group",
+      "source": "components/ui/toggle-group.tsx",
+      "paper": {
+        "light": "1UW-0",
+        "dark": "1VI-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "button-group",
+      "title": "Button group",
+      "source": "components/ui/button-group.tsx",
+      "paper": {
+        "light": "44M-0",
+        "dark": "452-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "group",
+      "title": "Group · leading label",
+      "source": "components/ui/group.tsx",
+      "paper": {
+        "light": "1X0-0",
+        "dark": "1XE-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "input",
+      "title": "Input · default / filled / invalid / disabled",
+      "source": "components/ui/input.tsx",
+      "paper": {
+        "light": "1XS-0",
+        "dark": "1YF-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "textarea",
+      "title": "Textarea",
+      "source": "components/ui/textarea.tsx",
+      "paper": {
+        "light": "1Z2-0",
+        "dark": "1ZB-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "input-group",
+      "title": "Input group · leading & trailing actions",
+      "source": "components/ui/input-group.tsx",
+      "paper": {
+        "light": "45I-0",
+        "dark": "460-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "label",
+      "title": "Label",
+      "source": "components/ui/label.tsx",
+      "paper": {
+        "light": "20K-0",
+        "dark": "20T-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "field",
+      "title": "Field · label & description",
+      "source": "components/ui/field.tsx",
+      "paper": {
+        "light": "212-0",
+        "dark": "21I-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "fieldset",
+      "title": "Fieldset",
+      "source": "components/ui/fieldset.tsx",
+      "paper": {
+        "light": "21Y-0",
+        "dark": "22F-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "form",
+      "title": "Form · validation",
+      "source": "components/ui/form.tsx",
+      "paper": {
+        "light": "22W-0",
+        "dark": "23B-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "native-select",
+      "title": "Native select",
+      "source": "components/ui/native-select.tsx",
+      "paper": {
+        "light": "36P-0",
+        "dark": "371-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "select",
+      "title": "Select · trigger",
+      "source": "components/ui/select.tsx",
+      "paper": {
+        "light": "37D-0",
+        "dark": "37Q-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "combobox",
+      "title": "Combobox · search",
+      "source": "components/ui/combobox.tsx",
+      "paper": {
+        "light": "383-0",
+        "dark": "38J-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "autocomplete",
+      "title": "Autocomplete",
+      "source": "components/ui/autocomplete.tsx",
+      "paper": {
+        "light": "260-0",
+        "dark": "26B-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "number-field",
+      "title": "Number field",
+      "source": "components/ui/number-field.tsx",
+      "paper": {
+        "light": "26P-0",
+        "dark": "27B-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "checkbox",
+      "title": "Checkbox · states",
+      "source": "components/ui/checkbox.tsx",
+      "paper": {
+        "light": "27X-0",
+        "dark": "28O-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "checkbox-group",
+      "title": "Checkbox group",
+      "source": "components/ui/checkbox-group.tsx",
+      "paper": {
+        "light": "29F-0",
+        "dark": "2A0-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "radio-group",
+      "title": "Radio group",
+      "source": "components/ui/radio-group.tsx",
+      "paper": {
+        "light": "2AL-0",
+        "dark": "2B5-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "switch",
+      "title": "Switch · off / on / disabled",
+      "source": "components/ui/switch.tsx",
+      "paper": {
+        "light": "2BP-0",
+        "dark": "2C2-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "slider",
+      "title": "Slider · single / range",
+      "source": "components/ui/slider.tsx",
+      "paper": {
+        "light": "2CF-0",
+        "dark": "2CX-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "progress",
+      "title": "Progress · determinate",
+      "source": "components/ui/progress.tsx",
+      "paper": {
+        "light": "2DF-0",
+        "dark": "2DT-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "meter",
+      "title": "Meter",
+      "source": "components/ui/meter.tsx",
+      "paper": {
+        "light": "2E7-0",
+        "dark": "2EL-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "otp-field",
+      "title": "OTP field",
+      "source": "components/ui/otp-field.tsx",
+      "paper": {
+        "light": "2EZ-0",
+        "dark": "2FO-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "input-otp",
+      "title": "Input OTP",
+      "source": "components/ui/input-otp.tsx",
+      "paper": {
+        "light": "2GD-0",
+        "dark": "2H7-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "tabs",
+      "title": "Tabs · default",
+      "source": "components/ui/tabs.tsx",
+      "paper": {
+        "light": "2S7-0",
+        "dark": "2SR-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "breadcrumb",
+      "title": "Breadcrumb",
+      "source": "components/ui/breadcrumb.tsx",
+      "paper": {
+        "light": "46I-0",
+        "dark": "46Z-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "pagination",
+      "title": "Pagination",
+      "source": "components/ui/pagination.tsx",
+      "paper": {
+        "light": "2U9-0",
+        "dark": "2V5-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "toolbar",
+      "title": "Toolbar",
+      "source": "components/ui/toolbar.tsx",
+      "paper": {
+        "light": "2W1-0",
+        "dark": "2WN-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "navigation-menu",
+      "title": "Navigation menu",
+      "source": "components/ui/navigation-menu.tsx",
+      "paper": {
+        "light": "2X9-0",
+        "dark": "2XT-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "accordion",
+      "title": "Accordion · expanded",
+      "source": "components/ui/accordion.tsx",
+      "paper": {
+        "light": "39A-0",
+        "dark": "39W-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "collapsible",
+      "title": "Collapsible",
+      "source": "components/ui/collapsible.tsx",
+      "paper": {
+        "light": "3AI-0",
+        "dark": "3AU-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "card",
+      "title": "Card",
+      "source": "components/ui/card.tsx",
+      "paper": {
+        "light": "47G-0",
+        "dark": "47Z-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "frame",
+      "title": "Frame",
+      "source": "components/ui/frame.tsx",
+      "paper": {
+        "light": "3CJ-0",
+        "dark": "3D0-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "item",
+      "title": "Item",
+      "source": "components/ui/item.tsx",
+      "paper": {
+        "light": "3DH-0",
+        "dark": "3EA-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "separator",
+      "title": "Separator",
+      "source": "components/ui/separator.tsx",
+      "paper": {
+        "light": "3F3-0",
+        "dark": "3FF-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "scroll-area",
+      "title": "Scroll area",
+      "source": "components/ui/scroll-area.tsx",
+      "paper": {
+        "light": "3FR-0",
+        "dark": "3GB-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "aspect-ratio",
+      "title": "Aspect ratio · 16:9",
+      "source": "components/ui/aspect-ratio.tsx",
+      "paper": {
+        "light": "3GV-0",
+        "dark": "3HB-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "resizable",
+      "title": "Resizable panes",
+      "source": "components/ui/resizable.tsx",
+      "paper": {
+        "light": "3HR-0",
+        "dark": "3IA-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "empty",
+      "title": "Empty state",
+      "source": "components/ui/empty.tsx",
+      "paper": {
+        "light": "3OC-0",
+        "dark": "3P0-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "alert",
+      "title": "Alert",
+      "source": "components/ui/alert.tsx",
+      "paper": {
+        "light": "48I-0",
+        "dark": "48Y-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "skeleton",
+      "title": "Skeleton",
+      "source": "components/ui/skeleton.tsx",
+      "paper": {
+        "light": "3QK-0",
+        "dark": "3QU-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "spinner",
+      "title": "Spinner",
+      "source": "components/ui/spinner.tsx",
+      "paper": {
+        "light": "3R4-0",
+        "dark": "3RH-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "dotm-square-1",
+      "title": "Dot matrix · square 1",
+      "source": "components/ui/dotm-square-1.tsx",
+      "paper": {
+        "light": "3RU-0",
+        "dark": "3SR-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "dotm-square-11",
+      "title": "Dot matrix · square 11",
+      "source": "components/ui/dotm-square-11.tsx",
+      "paper": {
+        "light": "3TO-0",
+        "dark": "3UL-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "bubble",
+      "title": "Bubble · variants",
+      "source": "components/ui/bubble.tsx",
+      "paper": {
+        "light": "3X9-0",
+        "dark": "3Y1-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "message",
+      "title": "Message · sent / assistant",
+      "source": "components/ui/message.tsx",
+      "paper": {
+        "light": "3YT-0",
+        "dark": "3ZD-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "marker",
+      "title": "Marker · variants",
+      "source": "components/ui/marker.tsx",
+      "paper": {
+        "light": "3ZX-0",
+        "dark": "40D-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "attachment",
+      "title": "Attachment",
+      "source": "components/ui/attachment.tsx",
+      "paper": {
+        "light": "40T-0",
+        "dark": "41G-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "message-scroller",
+      "title": "Message scroller",
+      "source": "components/ui/message-scroller.tsx",
+      "paper": {
+        "light": "423-0",
+        "dark": "42K-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "direction",
+      "title": "Direction · LTR / RTL",
+      "source": "components/ui/direction.tsx",
+      "paper": {
+        "light": "431-0",
+        "dark": "43C-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "menu",
+      "title": "menu · open",
+      "source": "components/ui/menu.tsx",
+      "paper": {
+        "light": "49P-0",
+        "dark": "4B1-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "dropdown-menu",
+      "title": "dropdown-menu · open",
+      "source": "components/ui/dropdown-menu.tsx",
+      "paper": {
+        "light": "4CD-0",
+        "dark": "4DP-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "context-menu",
+      "title": "context-menu · open",
+      "source": "components/ui/context-menu.tsx",
+      "paper": {
+        "light": "4F1-0",
+        "dark": "4GD-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "menubar",
+      "title": "Menubar",
+      "source": "components/ui/menubar.tsx",
+      "paper": {
+        "light": "2YD-0",
+        "dark": "2YT-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "dialog",
+      "title": "Dialog",
+      "source": "components/ui/dialog.tsx",
+      "paper": {
+        "light": "4HP-0",
+        "dark": "4I8-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "alert-dialog",
+      "title": "Alert dialog",
+      "source": "components/ui/alert-dialog.tsx",
+      "paper": {
+        "light": "4IR-0",
+        "dark": "4JA-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "sheet",
+      "title": "Sheet",
+      "source": "components/ui/sheet.tsx",
+      "paper": {
+        "light": "4JT-0",
+        "dark": "4KB-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "drawer",
+      "title": "Drawer",
+      "source": "components/ui/drawer.tsx",
+      "paper": {
+        "light": "4KT-0",
+        "dark": "4LE-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "popover",
+      "title": "Popover",
+      "source": "components/ui/popover.tsx",
+      "paper": {
+        "light": "4LZ-0",
+        "dark": "4ML-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "tooltip",
+      "title": "tooltip",
+      "source": "components/ui/tooltip.tsx",
+      "paper": {
+        "light": "4N7-0",
+        "dark": "4NF-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "hover-card",
+      "title": "hover-card",
+      "source": "components/ui/hover-card.tsx",
+      "paper": {
+        "light": "4NN-0",
+        "dark": "4NZ-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "preview-card",
+      "title": "preview-card",
+      "source": "components/ui/preview-card.tsx",
+      "paper": {
+        "light": "4OB-0",
+        "dark": "4ON-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "command",
+      "title": "Command palette",
+      "source": "components/ui/command.tsx",
+      "paper": {
+        "light": "2Z9-0",
+        "dark": "30C-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "toast",
+      "title": "Toast · success / error",
+      "source": "components/ui/toast.tsx",
+      "paper": {
+        "light": "3VI-0",
+        "dark": "3W8-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "calendar",
+      "title": "Calendar",
+      "source": "components/ui/calendar.tsx",
+      "paper": {
+        "light": "2I1-0",
+        "dark": "2N4-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "carousel",
+      "title": "Carousel",
+      "source": "components/ui/carousel.tsx",
+      "paper": {
+        "light": "3IT-0",
+        "dark": "3JE-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "table",
+      "title": "Table",
+      "source": "components/ui/table.tsx",
+      "paper": {
+        "light": "3JZ-0",
+        "dark": "3L1-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "chart",
+      "title": "Chart · data visualization",
+      "source": "components/ui/chart.tsx",
+      "paper": {
+        "light": "3M3-0",
+        "dark": "3N2-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "sidebar",
+      "title": "Sidebar",
+      "source": "components/ui/sidebar.tsx",
+      "paper": {
+        "light": "31F-0",
+        "dark": "32L-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-logo-mark",
+      "title": "Logo mark & wordmark",
+      "source": "components/studio/logo-mark.tsx",
+      "paper": {
+        "light": "759-0",
+        "dark": "75N-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-thinking",
+      "title": "Thinking · live",
+      "source": "components/studio/thinking.tsx",
+      "paper": {
+        "light": "4PA-0",
+        "dark": "4QB-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-thinking-strip",
+      "title": "Thinking strip",
+      "source": "components/studio/thinking.tsx",
+      "paper": {
+        "light": "4RC-0",
+        "dark": "4TM-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-task-checklist",
+      "title": "Task checklist",
+      "source": "components/studio/task-checklist.tsx",
+      "paper": {
+        "light": "4VW-0",
+        "dark": "4XH-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-notice-card",
+      "title": "Notice card",
+      "source": "components/studio/notice-card.tsx",
+      "paper": {
+        "light": "7JM-0",
+        "dark": "7K3-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-provider-icon",
+      "title": "Provider icons",
+      "source": "components/studio/provider-icon.tsx",
+      "paper": {
+        "light": "761-0",
+        "dark": "76T-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-file-icon",
+      "title": "File icons",
+      "source": "components/studio/file-icon.tsx",
+      "paper": {
+        "light": "77L-0",
+        "dark": "78E-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-task-status-icon",
+      "title": "Task status · pending / working / complete",
+      "source": "components/studio/task-status-icon.tsx",
+      "paper": {
+        "light": "797-0",
+        "dark": "7AW-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-startup",
+      "title": "Startup · first project",
+      "source": "components/studio/startup.tsx",
+      "paper": {
+        "light": "1KXE-0",
+        "dark": "1JR5-0"
+      },
+      "supersedes": {
+        "light": "7KV-0",
+        "dark": "7MV-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-format-picker",
+      "title": "Format picker",
+      "source": "components/studio/format-picker.tsx",
+      "paper": {
+        "light": "7OV-0",
+        "dark": "7QA-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-new-video-wizard",
+      "title": "New video",
+      "source": "components/studio/new-video-wizard.tsx",
+      "paper": {
+        "light": "7RP-0",
+        "dark": "7TS-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-new-project-wizard",
+      "title": "New project",
+      "source": "components/studio/new-project-wizard.tsx",
+      "paper": {
+        "light": "1MHG-0",
+        "dark": "1JP2-0"
+      },
+      "supersedes": {
+        "light": "7VV-0",
+        "dark": "7Y6-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-composer-empty",
+      "title": "Composer · empty",
+      "source": "components/studio/composer.tsx",
+      "paper": {
+        "light": "5BB-0",
+        "dark": "5CM-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-composer-filled",
+      "title": "Composer · filled",
+      "source": "components/studio/composer.tsx",
+      "paper": {
+        "light": "5DX-0",
+        "dark": "5F8-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-composer-attached",
+      "title": "Composer · attached",
+      "source": "components/studio/composer.tsx",
+      "paper": {
+        "light": "5GJ-0",
+        "dark": "5IB-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-composer-running",
+      "title": "Composer · running",
+      "source": "components/studio/composer.tsx",
+      "paper": {
+        "light": "5K3-0",
+        "dark": "5LM-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-composer-waiting",
+      "title": "Composer · waiting",
+      "source": "components/studio/composer.tsx",
+      "paper": {
+        "light": "5N5-0",
+        "dark": "5OG-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-composer-add",
+      "title": "Composer · add menu",
+      "source": "components/studio/composer.tsx",
+      "paper": {
+        "light": "5PR-0",
+        "dark": "5QQ-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-model-menu",
+      "title": "Model menu · providers & models",
+      "source": "components/studio/model-menu.tsx",
+      "paper": {
+        "light": "5RP-0",
+        "dark": "5T2-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-mention-popup",
+      "title": "File mentions",
+      "source": "components/studio/mention-popup.tsx",
+      "paper": {
+        "light": "5UF-0",
+        "dark": "5VB-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-context-meter",
+      "title": "Context meter",
+      "source": "components/studio/context-meter.tsx",
+      "paper": {
+        "light": "5W7-0",
+        "dark": "5WJ-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-reasoning-steps",
+      "title": "Reasoning steps · live",
+      "source": "components/studio/reasoning-steps.tsx",
+      "paper": {
+        "light": "4Z2-0",
+        "dark": "50B-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-activity-done",
+      "title": "Activity line · done",
+      "source": "components/studio/activity-line.tsx",
+      "paper": {
+        "light": "51K-0",
+        "dark": "51X-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-activity-running",
+      "title": "Activity line · running",
+      "source": "components/studio/activity-line.tsx",
+      "paper": {
+        "light": "52A-0",
+        "dark": "52N-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-activity-failed",
+      "title": "Activity line · failed",
+      "source": "components/studio/activity-line.tsx",
+      "paper": {
+        "light": "530-0",
+        "dark": "53H-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-activity-run",
+      "title": "Activity run · collapsed",
+      "source": "components/studio/activity-run.tsx",
+      "paper": {
+        "light": "53Y-0",
+        "dark": "54F-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-task-dock",
+      "title": "Task dock · expanded",
+      "source": "components/studio/task-dock.tsx",
+      "paper": {
+        "light": "54W-0",
+        "dark": "56Y-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-queue-dock",
+      "title": "Queue dock · expanded",
+      "source": "components/studio/queue-dock.tsx",
+      "paper": {
+        "light": "590-0",
+        "dark": "5A0-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-permission-card",
+      "title": "Permission card · action",
+      "source": "components/studio/permission-card.tsx",
+      "paper": {
+        "light": "6TO-0",
+        "dark": "6UO-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-permission-gathered",
+      "title": "Permission card · grouped requests",
+      "source": "components/studio/permission-card.tsx",
+      "paper": {
+        "light": "6VO-0",
+        "dark": "6X4-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-transcript",
+      "title": "Transcript · user, work, assistant",
+      "source": "components/studio/transcript.tsx",
+      "paper": {
+        "light": "6YK-0",
+        "dark": "704-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-chat-result",
+      "title": "Chat result · ready",
+      "source": "components/studio/chat-result.tsx",
+      "paper": {
+        "light": "71O-0",
+        "dark": "72B-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-activity-detail",
+      "title": "Activity detail · code output",
+      "source": "components/studio/activity-detail.tsx",
+      "paper": {
+        "light": "72Y-0",
+        "dark": "736-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-design-review",
+      "title": "Design review · evidence",
+      "source": "components/studio/design-review.tsx",
+      "paper": {
+        "light": "73E-0",
+        "dark": "746-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-preview-controls",
+      "title": "Preview controls · playing",
+      "source": "components/studio/preview-controls.tsx",
+      "paper": {
+        "light": "5X6-0",
+        "dark": "5YT-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-canvas-toolbar",
+      "title": "Canvas toolbar",
+      "source": "components/studio/canvas-preview.tsx",
+      "paper": {
+        "light": "60G-0",
+        "dark": "61D-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-canvas-rulers",
+      "title": "Canvas rulers",
+      "source": "components/studio/canvas-rulers.tsx",
+      "paper": {
+        "light": "62A-0",
+        "dark": "62Z-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-inspect-overlay",
+      "title": "Inspect overlay · selected element",
+      "source": "components/studio/inspect-overlay.tsx",
+      "paper": {
+        "light": "63O-0",
+        "dark": "63Z-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-video-layers",
+      "title": "Video layers",
+      "source": "components/studio/canvas-preview.tsx",
+      "paper": {
+        "light": "64A-0",
+        "dark": "661-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-props-pane",
+      "title": "Properties inspector",
+      "source": "components/studio/props-pane.tsx",
+      "paper": {
+        "light": "68L-0",
+        "dark": "6CJ-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-managed-props-pane",
+      "title": "Managed object inspector",
+      "source": "components/studio/managed-props-pane.tsx",
+      "paper": {
+        "light": "6GH-0",
+        "dark": "6IT-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-tuning-controls",
+      "title": "Tuning controls · values",
+      "source": "components/studio/tuning-controls.tsx",
+      "paper": {
+        "light": "6L5-0",
+        "dark": "6M1-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-managed-fields",
+      "title": "Managed fields · grouped values",
+      "source": "components/studio/managed-fields.tsx",
+      "paper": {
+        "light": "6MX-0",
+        "dark": "6OA-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-property-disclosure",
+      "title": "Property disclosure",
+      "source": "components/studio/property-disclosure.tsx",
+      "paper": {
+        "light": "6PN-0",
+        "dark": "6Q7-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-managed-instruction",
+      "title": "Element instruction",
+      "source": "components/studio/managed-instruction.tsx",
+      "paper": {
+        "light": "6QR-0",
+        "dark": "6R7-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-dialkit-surface",
+      "title": "DialKit · easing & spring",
+      "source": "components/studio/dialkit-surface.tsx",
+      "paper": {
+        "light": "6RN-0",
+        "dark": "6SI-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-export-button",
+      "title": "Export button · ready / progress",
+      "source": "components/studio/export-button.tsx",
+      "paper": {
+        "light": "85C-0",
+        "dark": "85T-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-export-dialog",
+      "title": "Export dialog",
+      "source": "components/studio/export-dialog.tsx",
+      "paper": {
+        "light": "86A-0",
+        "dark": "88Q-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-export-status",
+      "title": "Export status · result / failure",
+      "source": "components/studio/preview-pane.tsx",
+      "paper": {
+        "light": "8B6-0",
+        "dark": "8BV-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-asset-grid",
+      "title": "Asset grid",
+      "source": "components/studio/asset-grid.tsx",
+      "paper": {
+        "light": "8CV-0",
+        "dark": "8E4-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-assets-pane",
+      "title": "Assets pane",
+      "source": "components/studio/assets-pane.tsx",
+      "paper": {
+        "light": "8FD-0",
+        "dark": "8GZ-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-assets-scope",
+      "title": "Asset scope",
+      "source": "components/studio/assets-scope.tsx",
+      "paper": {
+        "light": "8IL-0",
+        "dark": "8IY-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-asset-row",
+      "title": "Asset row",
+      "source": "components/studio/asset-row.tsx",
+      "paper": {
+        "light": "8JB-0",
+        "dark": "8K1-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-media-row",
+      "title": "Media attachments",
+      "source": "components/studio/media-row.tsx",
+      "paper": {
+        "light": "8KR-0",
+        "dark": "8LN-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-selection-row",
+      "title": "Selected elements",
+      "source": "components/studio/selection-row.tsx",
+      "paper": {
+        "light": "8MJ-0",
+        "dark": "8N3-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-asset-source-card",
+      "title": "Asset source choice",
+      "source": "components/studio/asset-source-card.tsx",
+      "paper": {
+        "light": "8NN-0",
+        "dark": "8O6-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-asset-offer-card",
+      "title": "Save asset offer",
+      "source": "components/studio/asset-offer-card.tsx",
+      "paper": {
+        "light": "8OP-0",
+        "dark": "8P7-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-stock-pane",
+      "title": "Stock search",
+      "source": "components/studio/stock-pane.tsx",
+      "paper": {
+        "light": "8PP-0",
+        "dark": "8R2-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-components-pane",
+      "title": "Component browser",
+      "source": "components/studio/components-pane.tsx",
+      "paper": {
+        "light": "8SF-0",
+        "dark": "8UZ-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-sound-prompt",
+      "title": "Sound prompt",
+      "source": "components/studio/sound-prompt.tsx",
+      "paper": {
+        "light": "8XU-0",
+        "dark": "8YH-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-audio-transport",
+      "title": "Audio transport",
+      "source": "components/studio/audio-transport.tsx",
+      "paper": {
+        "light": "8Z4-0",
+        "dark": "90L-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-sound-result-card",
+      "title": "Generated sound result",
+      "source": "components/studio/sound-result-card.tsx",
+      "paper": {
+        "light": "922-0",
+        "dark": "941-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-sound-asset",
+      "title": "Sound asset",
+      "source": "components/studio/sound-asset.tsx",
+      "paper": {
+        "light": "960-0",
+        "dark": "96M-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-settings-appearance",
+      "title": "Appearance",
+      "source": "components/studio/settings-page.tsx",
+      "paper": {
+        "light": "97J-0",
+        "dark": "99B-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-settings-behavior",
+      "title": "Behavior",
+      "source": "components/studio/settings-page.tsx",
+      "paper": {
+        "light": "9B3-0",
+        "dark": "9CQ-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-settings-notifications",
+      "title": "Notifications",
+      "source": "components/studio/settings-page.tsx",
+      "paper": {
+        "light": "9ED-0",
+        "dark": "9GI-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-settings-hotkeys",
+      "title": "Hotkeys",
+      "source": "components/studio/settings-page.tsx",
+      "paper": {
+        "light": "9IN-0",
+        "dark": "9PI-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-settings-accounts",
+      "title": "AI accounts",
+      "source": "components/studio/settings-page.tsx",
+      "paper": {
+        "light": "9WD-0",
+        "dark": "9Y1-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-integrations-section",
+      "title": "Integrations · services",
+      "source": "components/studio/integrations-section.tsx",
+      "paper": {
+        "light": "9ZP-0",
+        "dark": "A0O-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-integration-connect",
+      "title": "Integration · connect",
+      "source": "components/studio/integrations-section.tsx",
+      "paper": {
+        "light": "A1N-0",
+        "dark": "A2E-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-settings-updates",
+      "title": "Updates",
+      "source": "components/studio/settings-page.tsx",
+      "paper": {
+        "light": "A35-0",
+        "dark": "A46-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-settings-feedback",
+      "title": "Feedback",
+      "source": "components/studio/settings-page.tsx",
+      "paper": {
+        "light": "A57-0",
+        "dark": "A6D-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-project-settings-section",
+      "title": "Project settings",
+      "source": "components/studio/project-settings-section.tsx",
+      "paper": {
+        "light": "AB6-0",
+        "dark": "AC0-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-project-brand-editor",
+      "title": "Brand editor",
+      "source": "components/studio/project-brand-editor.tsx",
+      "paper": {
+        "light": "ACU-0",
+        "dark": "AEU-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-project-brand-color",
+      "title": "Brand color",
+      "source": "components/studio/project-brand-color.tsx",
+      "paper": {
+        "light": "AGU-0",
+        "dark": "AHE-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-project-brand-apply",
+      "title": "Apply brand to videos",
+      "source": "components/studio/project-brand-apply.tsx",
+      "paper": {
+        "light": "AHY-0",
+        "dark": "AIG-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-design-drop-zone",
+      "title": "Design import · drop zone",
+      "source": "components/studio/design-drop-zone.tsx",
+      "paper": {
+        "light": "AIY-0",
+        "dark": "AJI-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-design-import-review",
+      "title": "Design import · review",
+      "source": "components/studio/design-import-review.tsx",
+      "paper": {
+        "light": "AK2-0",
+        "dark": "ALL-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-doc-tabs",
+      "title": "Document tabs",
+      "source": "components/studio/doc-tabs.tsx",
+      "paper": {
+        "light": "ANF-0",
+        "dark": "AOI-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-docs-view",
+      "title": "Documents · markdown view",
+      "source": "components/studio/docs-view.tsx",
+      "paper": {
+        "light": "APL-0",
+        "dark": "AR4-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-markdown",
+      "title": "Markdown · prose, list, code",
+      "source": "components/studio/markdown.tsx",
+      "paper": {
+        "light": "ASN-0",
+        "dark": "AT1-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-failure-text",
+      "title": "Failure text · readable error",
+      "source": "components/studio/failure-text.tsx",
+      "paper": {
+        "light": "ATQ-0",
+        "dark": "AU3-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-write-failure-card",
+      "title": "Write failure card",
+      "source": "components/studio/write-failure-card.tsx",
+      "paper": {
+        "light": "AUG-0",
+        "dark": "AUY-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-environment-checklist",
+      "title": "Environment checklist",
+      "source": "components/studio/environment-checklist.tsx",
+      "paper": {
+        "light": "AVG-0",
+        "dark": "AWB-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-sidecar-status",
+      "title": "Helper status · starting / stopped",
+      "source": "components/studio/sidecar-status.tsx",
+      "paper": {
+        "light": "AX6-0",
+        "dark": "AXO-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-update-status",
+      "title": "Update notification",
+      "source": "components/studio/update-status.tsx",
+      "paper": {
+        "light": "AY6-0",
+        "dark": "AYM-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-quit-guard",
+      "title": "Quit guard",
+      "source": "components/studio/quit-guard.tsx",
+      "paper": {
+        "light": "AZ2-0",
+        "dark": "AZL-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-crash-boundary",
+      "title": "Crash recovery",
+      "source": "components/studio/crash-boundary.tsx",
+      "paper": {
+        "light": "B04-0",
+        "dark": "B0K-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-project-dialogs",
+      "title": "Project removal confirmation",
+      "source": "components/studio/project-dialogs.tsx",
+      "paper": {
+        "light": "B10-0",
+        "dark": "B1I-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-delete-action",
+      "title": "Delete element confirmation",
+      "source": "components/studio/delete-action.tsx",
+      "paper": {
+        "light": "B20-0",
+        "dark": "B2F-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-command-palette",
+      "title": "Studio command palette",
+      "source": "components/studio/command-palette.tsx",
+      "paper": {
+        "light": "B2U-0",
+        "dark": "B40-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-projects-pane",
+      "title": "Projects sidebar",
+      "source": "components/studio/projects-pane.tsx",
+      "paper": {
+        "light": "B6F-0",
+        "dark": "BBC-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-session-item",
+      "title": "Session item · active / idle",
+      "source": "components/studio/session-item.tsx",
+      "paper": {
+        "light": "BG9-0",
+        "dark": "BIR-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-video-group",
+      "title": "Video group",
+      "source": "components/studio/video-group.tsx",
+      "paper": {
+        "light": "BL9-0",
+        "dark": "BN6-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-video-menu",
+      "title": "Video menu",
+      "source": "components/studio/video-menu.tsx",
+      "paper": {
+        "light": "BP3-0",
+        "dark": "BQF-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-video-thumbnail",
+      "title": "Video thumbnail",
+      "source": "components/studio/video-thumbnail.tsx",
+      "paper": {
+        "light": "BRR-0",
+        "dark": "BS3-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-pane",
+      "title": "Pane anatomy",
+      "source": "components/studio/pane.tsx",
+      "paper": {
+        "light": "BSF-0",
+        "dark": "BSX-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-titlebar",
+      "title": "Title bar · quiet",
+      "source": "components/studio/titlebar.tsx",
+      "paper": {
+        "light": "7CL-0",
+        "dark": "7F0-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-splash",
+      "title": "Splash · resolved logo",
+      "source": "components/studio/splash.tsx",
+      "paper": {
+        "light": "80H-0",
+        "dark": "80T-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-onboarding-dialog",
+      "title": "Explore Studio",
+      "source": "components/studio/onboarding-dialog.tsx",
+      "paper": {
+        "light": "815-0",
+        "dark": "82H-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-template-list",
+      "title": "Prompt templates",
+      "source": "components/studio/template-list.tsx",
+      "paper": {
+        "light": "83T-0",
+        "dark": "84F-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "screen-ready",
+      "title": "Studio · ready",
+      "source": "components/studio/app-shell.tsx",
+      "paper": {
+        "light": "BUU-0",
+        "dark": "C5Q-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "screen-thinking",
+      "title": "Studio · thinking",
+      "source": "components/studio/app-shell.tsx",
+      "paper": {
+        "light": "CGM-0",
+        "dark": "CT6-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "screen-permission",
+      "title": "Studio · permission",
+      "source": "components/studio/app-shell.tsx",
+      "paper": {
+        "light": "D5Q-0",
+        "dark": "DLR-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "screen-new",
+      "title": "Studio · new",
+      "source": "components/studio/app-shell.tsx",
+      "paper": {
+        "light": "DXJ-0",
+        "dark": "E8X-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "screen-inspector",
+      "title": "Studio · canvas & inspector",
+      "source": "components/studio/canvas-preview.tsx",
+      "paper": {
+        "light": "EKB-0",
+        "dark": "EWC-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "screen-settings",
+      "title": "Settings · appearance",
+      "source": "components/studio/settings-page.tsx",
+      "paper": {
+        "light": "HVW-0",
+        "dark": "HYW-0"
+      },
+      "supersedes": {
+        "light": "F8D-0",
+        "dark": "FCZ-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "screen-documents",
+      "title": "Studio · documents",
+      "source": "components/studio/docs-view.tsx",
+      "paper": {
+        "light": "FHL-0",
+        "dark": "FQW-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "screen-export",
+      "title": "Studio · export dialog",
+      "source": "components/studio/export-dialog.tsx",
+      "paper": {
+        "light": "G07-0",
+        "dark": "GDH-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-asset-type-icon",
+      "title": "Asset type icons",
+      "source": "components/studio/asset-type-icon.tsx",
+      "paper": {
+        "light": "7HF-0",
+        "dark": "7ID-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-provider-steps",
+      "title": "Provider setup · install & sign in",
+      "source": "components/studio/provider-steps.tsx",
+      "paper": {
+        "light": "A7J-0",
+        "dark": "A97-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-canvas-frame-label",
+      "title": "Canvas frame label · idle / working",
+      "source": "components/studio/canvas-frame-label.tsx",
+      "paper": {
+        "light": "67S-0",
+        "dark": "681-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    },
+    {
+      "id": "studio-sidecar-stream-test",
+      "title": "Stream test · developer diagnostic",
+      "source": "components/studio/sidecar-stream-test.tsx",
+      "paper": {
+        "light": "B56-0",
+        "dark": "B5N-0"
+      },
+      "note": "Existing source API; Paper visuals may differ from current implementation."
+    }
+  ],
+  "dialog": {
+    "filled": {
+      "dark": "1JP2-0",
+      "light": "1MHG-0"
+    },
+    "empty": {
+      "dark": "1MXE-0",
+      "light": "1MZH-0"
+    },
+    "width": 816,
+    "height": 516,
+    "padding": 28,
+    "card": {
+      "width": 181,
+      "height": 176
+    },
+    "canCreate": "name.trim().length > 0 && parent !== null",
+    "submit": "Current hook closes dialog then starts creation; keep app-level feedback.",
+    "accessibleRatioNames": [
+      "16:9, 1920 × 1080, YouTube",
+      "9:16, 1080 × 1920, Shorts, TikTok, Reels",
+      "1:1, 1080 × 1080, Instagram feed",
+      "4:5, 1080 × 1350, Instagram portrait"
+    ]
+  },
+  "assets": {
+    "ribbon": "assets/welcome-ribbon.svg",
+    "socialIcons": [
+      "assets/youtube.svg",
+      "assets/youtubeshorts.svg",
+      "assets/tiktok.svg",
+      "assets/instagram.svg"
+    ],
+    "source": "https://github.com/simple-icons/simple-icons/tree/develop/icons"
+  },
+  "archivedSources": ["p-A-0", "p-C-0"],
+  "limitations": [
+    "Paper nodes are editable static groups, not linked component instances.",
+    "Fixed artboard geometry is a reference; implement responsive flex/grid, not exported absolute positioning.",
+    "Behavior specifications need runtime keyboard, screen reader, reduced-motion, loading/error and resize verification.",
+    "Native desktop is the primary target; 390px mobile screens are adaptation references.",
+    "SVGs and guide screenshots are assets; never flatten interactive UI into images."
+  ],
+  "originalExtraction": {
+    "repository": "remocn-studio",
+    "baseCommit": "86f64ee",
+    "state": "Working tree including pre-existing uncommitted changes; extraction was not an immutable commit snapshot."
+  },
+  "verification": {
+    "date": "2026-10-04",
+    "openComments": 0,
+    "activeTokens": 167,
+    "undefinedCssTokenReferences": 0,
+    "missingSourceFiles": 0,
+    "missingMappedPaperGroups": 0,
+    "fixedSizeArtboardOverlaps": 0,
+    "svgAssetsParsed": 5,
+    "scope": "Visual review of changed sections and representative primitives, inspector, settings, workspace and turns; runtime interactions are not implemented by this handoff."
+  }
+}

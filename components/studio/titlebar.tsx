@@ -19,7 +19,7 @@ const CONTRAST = 0.2;
 // Filtering preserves transparent pixels and lets mood changes transition.
 const TONES = {
   failed: "hue-rotate-100",
-  idle: "hue-rotate-0",
+  idle: "grayscale",
   waiting: "-hue-rotate-45",
 } satisfies Record<MoodTone, string>;
 
@@ -35,14 +35,10 @@ export function Titlebar({
   mood: ShellMood | null;
 }) {
   return (
-    // The window has no title bar of its own, so this band is where macOS
-    // draws its buttons. It is the same height whether or not it carries the
-    // shader, which is what lets an empty app grow into a busy one without
-    // anything below it moving. The inset shell overrides the height: there
-    // the band is a backdrop the content card rides over, not a strip.
+    // Window controls and activity share stationary chrome above the content.
     <div
       className={cn(
-        "relative h-(--titlebar-block-inset) shrink-0 overflow-hidden bg-sidebar",
+        "relative h-[46px] shrink-0 overflow-hidden bg-sidebar",
         className
       )}
       data-slot="titlebar"
@@ -85,6 +81,10 @@ export function MoodField({
     >
       <ShaderField
         brightness={BRIGHTNESS}
+        className={cn(
+          "transition-opacity duration-slow ease-out",
+          mood.tone === "idle" && !mood.isBusy ? "opacity-0" : "opacity-35"
+        )}
         contrast={CONTRAST}
         scale={SCALE}
         speed={speedOf(mood, isStill)}
@@ -94,7 +94,7 @@ export function MoodField({
 }
 
 function speedOf(mood: ShellMood, isStill: boolean): number {
-  if (isStill) {
+  if (isStill || (mood.tone === "idle" && !mood.isBusy)) {
     return 0;
   }
   return mood.isBusy ? BUSY : CALM;

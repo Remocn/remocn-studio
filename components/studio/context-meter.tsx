@@ -21,7 +21,7 @@ export function ContextMeter({ usage }: { usage: ContextUsage }) {
       <TooltipTrigger
         render={
           <button
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
             type="button"
           />
         }

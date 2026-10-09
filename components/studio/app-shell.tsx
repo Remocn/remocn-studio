@@ -1,7 +1,15 @@
 "use client";
-import { PanelRightOpenIcon } from "lucide-react";
-import { memo } from "react";
-import { useDefaultLayout } from "react-resizable-panels";
+import { memo, useCallback } from "react";
+import {
+  type Layout,
+  type LayoutChangedMeta,
+  useDefaultLayout,
+} from "react-resizable-panels";
+import {
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
+  PanelRightOpenIcon,
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   ResizableHandle,
@@ -34,6 +42,7 @@ import { PreviewPane } from "./preview-pane";
 import { ProjectsPane } from "./projects-pane";
 import { QuitGuard } from "./quit-guard";
 import { SettingsPage } from "./settings-page";
+import { SidebarSlide } from "./sidebar-slide";
 import { Splash } from "./splash";
 import { StudioProvider, useStudio, useStudioBoot } from "./studio-provider";
 import { Titlebar } from "./titlebar";
@@ -59,7 +68,6 @@ function StudioBoot() {
         <ToastProvider>
           <AnchoredToastProvider>
             <ShellLayout isBooting={isBooting} />
-            <SettingsPage />
             <OnboardingDialog suspended={isBooting} />
             <QuitGuard />
           </AnchoredToastProvider>
@@ -136,13 +144,20 @@ function ShellPanes({
     onLayoutChanged,
     panelRef: collapse.panelRef,
   });
+  const onLayout = useCallback(
+    (layout: Layout, meta: LayoutChangedMeta) => {
+      collapse.onLayoutChanged(layout, meta);
+      room.onLayoutChanged(layout, meta);
+    },
+    [collapse.onLayoutChanged, room.onLayoutChanged]
+  );
 
   return (
     <ResizablePanelGroup
       className={cn("min-h-0", className)}
       defaultLayout={defaultLayout}
       elementRef={room.groupRef}
-      onLayoutChanged={room.onLayoutChanged}
+      onLayoutChanged={onLayout}
     >
       <ResizablePanel
         className={cn(
@@ -161,7 +176,7 @@ function ShellPanes({
           className={cn(
             "h-full",
             !isChatShown && [
-              "motion-reduce:translate-none absolute inset-y-0 left-0 z-30 w-[min(26rem,calc(100%-3rem))] border-pane-border border-r bg-background shadow-xl transition-[translate] ease-out motion-reduce:transition-opacity",
+              "motion-reduce:translate-none absolute inset-y-0 left-0 z-30 w-[min(26rem,calc(100%-3rem))] bg-background transition-[translate] ease-out motion-reduce:transition-opacity",
               slideDuration(chatPeek.isExpanded),
               chatPeek.isExpanded
                 ? "translate-x-0"
@@ -175,15 +190,13 @@ function ShellPanes({
           <StillChatPane />
         </div>
       </ResizablePanel>
-
       <ResizableHandle
         className={cn(
-          "studio-boot-transition bg-pane-border transition-opacity duration-base",
+          "studio-boot-transition bg-transparent transition-opacity duration-base",
           isPreviewShown && isChatShown ? "opacity-100" : "opacity-0"
         )}
         disabled={!(isPreviewShown && isChatShown)}
       />
-
       <ResizablePanel
         className={cn(collapse.isAnimating && PANE_SLIDE)}
         collapsedSize="0%"
@@ -191,7 +204,6 @@ function ShellPanes({
         defaultSize="44%"
         id="preview"
         minSize={`${PREVIEW_MIN_WIDTH}px`}
-        onResize={collapse.onResize}
         panelRef={collapse.panelRef}
       >
         {collapse.isMounted ? (
@@ -208,27 +220,24 @@ function ShellLayout({ isBooting }: { isBooting: boolean }) {
   const {
     hasProjectsRoom,
     isProjectsShown,
+    isLibraryOpen,
     mood,
     preferences,
     projects,
     settingsView,
   } = useStudio();
-  const collapse = useSidebarCollapse(isProjectsShown, hasProjectsRoom);
-
+  const collapse = useSidebarCollapse(
+    isProjectsShown || isLibraryOpen,
+    hasProjectsRoom
+  );
   return (
-    // `inert` while Settings covers it: the shell keeps its state — the
-    // preview's iframe, a running turn — but takes no key and no focus.
     <div
       className="relative isolate flex h-full min-h-0 flex-col overflow-hidden bg-sidebar"
       data-studio-booting={isBooting ? "true" : undefined}
-      inert={settingsView.isOpen || undefined}
     >
-      {/* The band belongs to the window, not the sidebar: it runs the full
-          width underneath, and the content card rides over it — so there is
-          no seam where the sidebar ends. */}
       <div className="absolute inset-x-0 top-0">
         <Titlebar
-          className="h-24"
+          className="h-[46px]"
           isBooting={isBooting}
           isStill={!preferences.titlebarMotion}
           mood={
@@ -236,7 +245,7 @@ function ShellLayout({ isBooting }: { isBooting: boolean }) {
           }
         />
       </div>
-
+      <WindowSidebarToggle />
       <div
         className={cn(
           "studio-boot-transition relative z-10 grid min-h-0 flex-1",
@@ -246,17 +255,17 @@ function ShellLayout({ isBooting }: { isBooting: boolean }) {
             slideDuration(collapse.isExpanded),
           ],
           collapse.isExpanded
-            ? "grid-cols-[18rem_minmax(0,1fr)]"
+            ? "grid-cols-[238px_minmax(0,1fr)]"
             : "grid-cols-[0rem_minmax(0,1fr)]"
         )}
         data-tauri-drag-region
+        inert={settingsView.isOpen || undefined}
         onTransitionEnd={collapse.onTransitionEnd}
       >
         <SidebarSlot collapse={collapse} />
-
         <div
           className={cn(
-            "studio-boot-transition relative my-2 mr-2 flex min-h-0 min-w-0 overflow-hidden rounded-xl border border-pane-border bg-background",
+            "studio-boot-transition relative mt-[46px] mr-2 mb-2 flex min-h-0 min-w-0 overflow-hidden rounded-2xl bg-background",
             collapse.isAnimating && [
               "transition-[margin]",
               SIDEBAR_SLIDE,
@@ -264,31 +273,36 @@ function ShellLayout({ isBooting }: { isBooting: boolean }) {
             ],
             isProjectsShown ? "ml-0" : "ml-2"
           )}
+          data-slot="workspace-content"
         >
-          <ShellPanes className="flex-1" isSliding={collapse.isAnimating} />
-          <ShowPreviewButton />
+          <div className="relative flex min-h-0 min-w-0 flex-1">
+            <ShellPanes className="flex-1" isSliding={collapse.isAnimating} />
+            <ShowPreviewButton />
+          </div>
         </div>
       </div>
+      <SettingsPage />
     </div>
   );
 }
 
-/* The sidebar is not a panel: it holds fixed-width rows and a card grid that
-   gain nothing from resizing, so it only ever collapses — one width, no handle,
-   nothing for the layout store to remember. Its top offset tucks the brand row
-   under the traffic lights, inside the band's glow. */
 function SidebarSlot({ collapse }: { collapse: SidebarCollapse }) {
-  const { isProjectsPeeking, isProjectsShown, peekProjects } = useStudio();
+  const {
+    isProjectsPeeking,
+    isProjectsShown,
+    isLibraryOpen,
+    peekProjects,
+    settingsView,
+  } = useStudio();
   const isDocked = collapse.isMounted;
   const peek = useSidebarCollapse(isProjectsPeeking);
   const hover = useSidebarPeek(isProjectsPeeking, peekProjects);
-
   let pane: React.ReactNode = null;
   if (isDocked) {
     pane = (
       <div
         className={cn(
-          "mt-12 w-72 shrink-0",
+          "mt-[46px] w-[238px] shrink-0",
           collapse.isAnimating && [
             "motion-reduce:translate-none starting:-translate-x-full transition-[translate]",
             SIDEBAR_SLIDE,
@@ -296,16 +310,21 @@ function SidebarSlot({ collapse }: { collapse: SidebarCollapse }) {
           ],
           collapse.isExpanded ? "translate-x-0" : "-translate-x-full"
         )}
-        inert={!isProjectsShown}
+        inert={!(isProjectsShown || isLibraryOpen)}
       >
-        <ProjectsPane />
+        <SidebarSlide
+          animate={settingsView.animate}
+          offset={settingsView.isOpen ? -1 : 0}
+        >
+          <ProjectsPane />
+        </SidebarSlide>
       </div>
     );
   } else if (peek.isMounted) {
     pane = (
       <div
         className={cn(
-          "motion-reduce:translate-none absolute inset-y-2 left-2 z-40 w-72 starting:-translate-x-[calc(100%+1rem)] overflow-hidden rounded-xl border border-pane-border bg-sidebar pt-10 shadow-xl transition-[translate] ease-out motion-reduce:starting:opacity-0 motion-reduce:transition-opacity",
+          "motion-reduce:translate-none absolute top-[46px] bottom-2 left-2 z-40 w-[238px] starting:-translate-x-[calc(100%+1rem)] overflow-hidden rounded-2xl bg-sidebar transition-[translate] ease-out motion-reduce:starting:opacity-0 motion-reduce:transition-opacity",
           slideDuration(peek.isExpanded),
           peek.isExpanded
             ? "translate-x-0"
@@ -332,7 +351,7 @@ function SidebarSlot({ collapse }: { collapse: SidebarCollapse }) {
       {isProjectsShown ? null : (
         <div
           aria-hidden="true"
-          className="absolute top-12 bottom-0 left-0 z-20 w-3"
+          className="absolute top-[46px] bottom-0 left-0 z-20 w-3"
           onPointerEnter={hover.onEdgeEnter}
           onPointerLeave={hover.onEdgeLeave}
         />
@@ -342,7 +361,11 @@ function SidebarSlot({ collapse }: { collapse: SidebarCollapse }) {
 }
 
 function ShowPreviewButton() {
-  const { isPreviewShown, togglePreview } = useStudio();
+  const { isPreviewShown, openedProject, togglePreview } = useStudio();
+
+  if (openedProject === null) {
+    return null;
+  }
 
   return (
     <div
@@ -361,6 +384,26 @@ function ShowPreviewButton() {
       >
         <PanelRightOpenIcon data-icon="inline-start" />
         Preview
+      </Button>
+    </div>
+  );
+}
+
+function WindowSidebarToggle() {
+  const { isProjectsShown, isLibraryOpen, toggleProjects, settingsView } =
+    useStudio();
+  return (
+    <div className="absolute top-[6px] left-[92px] z-20 flex h-[46px] items-center">
+      <Button
+        aria-label={
+          isProjectsShown ? "Hide the project list" : "Show the project list"
+        }
+        disabled={settingsView.isOpen || isLibraryOpen}
+        onClick={toggleProjects}
+        size="icon-sm"
+        variant="ghost"
+      >
+        {isProjectsShown ? <PanelLeftCloseIcon /> : <PanelLeftOpenIcon />}
       </Button>
     </div>
   );

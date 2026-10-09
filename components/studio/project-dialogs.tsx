@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogPanel,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -44,13 +45,13 @@ export function ProjectDialogs({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename project</DialogTitle>
-            <DialogDescription className="break-all">
+            <DialogDescription className="break-words">
               {project.path}
             </DialogDescription>
           </DialogHeader>
 
           <form className="contents" onSubmit={menu.onRenameSubmit}>
-            <div className="flex flex-col gap-2">
+            <DialogPanel className="flex flex-col gap-2">
               <Label htmlFor={`rename-${project.id}`}>Name</Label>
               <Input
                 autoFocus
@@ -58,7 +59,7 @@ export function ProjectDialogs({
                 onChange={menu.onNameChange}
                 value={menu.name}
               />
-            </div>
+            </DialogPanel>
 
             <DialogFooter>
               <DialogClose render={<Button type="button" variant="outline" />}>

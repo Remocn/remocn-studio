@@ -94,6 +94,15 @@ describe("usePreviewRoom", () => {
     view.result.current.onLayoutChanged({}, LIBRARY);
 
     expect(preview.resize).not.toHaveBeenCalled();
+    expect(preview.expand).not.toHaveBeenCalled();
+  });
+
+  it("reopens a requested preview after the group temporarily collapsed it", () => {
+    const preview = panel(0, true);
+
+    mounted({ preview, width: 1024 });
+
+    expect(preview.expand).toHaveBeenCalledTimes(1);
   });
 
   it("waits for the sidebar to settle, then makes room once", () => {

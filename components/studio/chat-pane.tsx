@@ -1,7 +1,7 @@
 "use client";
 
-import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import type { ComponentProps } from "react";
+import { PanelLeftCloseIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -59,7 +59,6 @@ import { PermissionCard } from "./permission-card";
 import { QueueDock } from "./queue-dock";
 import { SoundPrompt } from "./sound-prompt";
 import { Startup } from "./startup";
-import { StartupBackdrop } from "./startup-backdrop";
 import { useStudio, useStudioQueue, useStudioTurn } from "./studio-provider";
 import { TaskDock } from "./task-dock";
 import { TemplateList } from "./template-list";
@@ -82,7 +81,6 @@ export function ChatPane() {
     isChatShown,
     isPreviewShown,
     isLoadingProjects,
-    isProjectsShown,
     library,
     listError,
     newProject,
@@ -94,7 +92,6 @@ export function ChatPane() {
     reloadProjects,
     settings,
     toggleChat,
-    toggleProjects,
   } = useStudio();
   const { locate } = useLocateProject(
     openedProject?.id ?? null,
@@ -103,70 +100,39 @@ export function ChatPane() {
 
   return (
     <Pane>
-      <PaneHeader
-        className={cn(
-          "transition-[padding] duration-base ease-out motion-reduce:transition-none",
-          isProjectsShown ? undefined : "pl-(--titlebar-inline-inset)"
-        )}
-        data-tauri-drag-region="deep"
-      >
-        <div
-          className={cn(
-            "flex min-w-0 items-center gap-1",
-            !isPreviewShown && "pr-28"
-          )}
-        >
+      <NewProjectWizard control={newProject} />
+      {openedProject !== null || isLoadingProjects || listError !== null ? (
+        <PaneHeader data-tauri-drag-region="deep">
           <div
             className={cn(
-              "flex shrink-0 items-center overflow-hidden transition-[width,margin,opacity,scale] duration-base ease-out motion-reduce:transition-none",
-              isProjectsShown
-                ? "-mr-1 w-0 scale-75 opacity-0"
-                : "mr-0 w-8 scale-100 opacity-100 sm:w-7"
+              "flex min-w-0 items-center gap-1",
+              !isPreviewShown && "pr-28"
             )}
-            inert={isProjectsShown}
           >
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label="Show the project list"
-                    className="shrink-0 text-muted-foreground"
-                    onClick={toggleProjects}
-                    size="icon-sm"
-                    variant="ghost"
-                  />
-                }
-              >
-                <PanelLeftOpenIcon />
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                Show the project list
-              </TooltipContent>
-            </Tooltip>
+            <PaneTitle>{titleOf(openedProject, activeSession)}</PaneTitle>
           </div>
-          <PaneTitle>{titleOf(openedProject, activeSession)}</PaneTitle>
-        </div>
-        {isChatShown ? null : (
-          <PaneActions>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label="Hide the chat"
-                    className="text-muted-foreground"
-                    onClick={toggleChat}
-                    size="icon-sm"
-                    variant="ghost"
-                  />
-                }
-              >
-                <PanelLeftCloseIcon />
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Hide the chat</TooltipContent>
-            </Tooltip>
-          </PaneActions>
-        )}
-      </PaneHeader>
+          {isChatShown ? null : (
+            <PaneActions>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label="Hide the chat"
+                      className="text-muted-foreground"
+                      onClick={toggleChat}
+                      size="icon-sm"
+                      variant="ghost"
+                    />
+                  }
+                >
+                  <PanelLeftCloseIcon />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Hide the chat</TooltipContent>
+              </Tooltip>
+            </PaneActions>
+          )}
+        </PaneHeader>
+      ) : null}
 
       <ChatBody
         cwd={openedProject?.path ?? null}
@@ -284,14 +250,8 @@ function Conversation({
   turn: OpenTurn;
 }) {
   const hasTranscript = turn.entries.length > 0 || turn.turnError !== null;
-  const isCreating = newProject.isOpen || newVideo.isOpen;
+  const isCreating = newVideo.isOpen;
   const isListFailed = !hasProject && listError !== null;
-  const isStartup = !(
-    isLoadingProjects ||
-    hasProject ||
-    hasTranscript ||
-    isListFailed
-  );
   const composerDisabled = [!hasProject, missing, environment.isBlocking].some(
     Boolean
   );
@@ -307,12 +267,6 @@ function Conversation({
     // `isolate` keeps the backdrop's negative z-index inside the pane; without
     // a stacking context here it would sink behind the pane itself.
     <PaneBody className="relative isolate">
-      {/* The shader is decoration on the two screens that replace the
-          conversation, and nothing else, so it reads the same flags those
-          screens do rather than a condition of its own that could drift into
-          rendering behind a transcript. */}
-      {isStartup || isCreating ? <StartupBackdrop /> : null}
-
       <MarkdownProvider>
         <MessageScrollerProvider>
           <MessageScroller>
@@ -320,7 +274,10 @@ function Conversation({
               aria-label={isCreating ? "New video" : "Conversation"}
             >
               <MessageScrollerContent
-                className="mx-auto w-full max-w-2xl gap-3 px-4 py-4"
+                className={cn(
+                  "mx-auto w-full max-w-2xl gap-3 px-4",
+                  hasProject ? "py-4" : "py-0"
+                )}
                 data-selectable
               >
                 <ConversationBody
@@ -410,32 +367,36 @@ function Conversation({
               disagree about what the plan is; the queue sits under it, against
               the composer, because it is the composer's own outbox and a
               message you just queued must land where you were typing. */}
-          <DockStack>
-            <TaskDock
-              documents={documentsByStage(docs.tabs)}
-              onOpenDocument={docs.onReveal}
-              settings={settings}
-              stages={turn.stages}
-              tasks={currentTasks(turn.entries)}
-              working={turn.isRunning}
-            />
-            <QueueDock queue={queue} />
-          </DockStack>
+          {hasProject ? (
+            <>
+              <DockStack>
+                <TaskDock
+                  documents={documentsByStage(docs.tabs)}
+                  onOpenDocument={docs.onReveal}
+                  settings={settings}
+                  stages={turn.stages}
+                  tasks={currentTasks(turn.entries)}
+                  working={turn.isRunning}
+                />
+                <QueueDock queue={queue} />
+              </DockStack>
 
-          <Composer
-            canPickProvider={turn.canPickProvider}
-            context={turn.context}
-            cwd={cwd}
-            disabled={composerDisabled}
-            isRunning={turn.isRunning}
-            isWaiting={Boolean(turn.permission ?? turn.source)}
-            mode={turn.mode}
-            onModeChange={turn.onModeChange}
-            onProviderChange={turn.onProviderChange}
-            onStop={turn.stop}
-            provider={turn.provider}
-            writesBlocked={turn.writesBlocked}
-          />
+              <Composer
+                canPickProvider={turn.canPickProvider}
+                context={turn.context}
+                cwd={cwd}
+                disabled={composerDisabled}
+                isRunning={turn.isRunning}
+                isWaiting={Boolean(turn.permission ?? turn.source)}
+                mode={turn.mode}
+                onModeChange={turn.onModeChange}
+                onProviderChange={turn.onProviderChange}
+                onStop={turn.stop}
+                provider={turn.provider}
+                writesBlocked={turn.writesBlocked}
+              />
+            </>
+          ) : null}
         </>
       )}
     </PaneBody>
@@ -469,11 +430,7 @@ function ConversationBody({
   projectName: string | null;
   turn: OpenTurn;
 }) {
-  const entrance = useEntrance(newProject.isOpen || newVideo.isOpen);
-
-  if (newProject.isOpen) {
-    return <NewProjectWizard control={newProject} entrance={entrance} />;
-  }
+  const entrance = useEntrance(newVideo.isOpen);
 
   if (newVideo.isOpen) {
     return (
@@ -600,7 +557,10 @@ function ChatEmptyState({
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent className="max-w-full items-start">
-        <TemplateList className="-mx-3 w-auto" onPick={composerActions.fill} />
+        <TemplateList
+          className="-mx-3 w-[calc(100%+1.5rem)]"
+          onPick={composerActions.fill}
+        />
       </EmptyContent>
     </Empty>
   );

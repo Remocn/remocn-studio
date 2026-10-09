@@ -3,12 +3,13 @@ import path from "node:path";
 import { Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { BuildOutcome } from "./build-state";
+import { shaderPrecisionRule, WATCH_CACHE, watched } from "./bundling";
 import { PreviewError, type WebpackConfig } from "./project";
 
 export const NATIVE_MANIFEST = "/__remocn/native";
 export const NATIVE_SCRIPT = "bundle.js";
 
-const STUDIO_OBJECTS_V5_INDEX = /[\\/]studio-objects-v5[\\/]index\.tsx$/;
+const STUDIO_OBJECTS_INDEX = /[\\/]studio-objects-v(?:5|7)[\\/]index\.tsx$/;
 
 interface Stats {
   hasErrors: () => boolean;
@@ -117,7 +118,8 @@ export function nativeBundle(
               new compile.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
               ...(options.plugins ?? []),
             ];
-            watcher = compile(configured).watch({}, (error, stats) => {
+            const watching = watched(configured).options;
+            watcher = compile(configured).watch(watching, (error, stats) => {
               const message = failureOf(error, stats) ?? take();
               if (message === null) {
                 result = Effect.succeed(generation);
@@ -212,7 +214,7 @@ function nativeConfig(
   }
   return {
     ...config,
-    cache: false,
+    cache: WATCH_CACHE,
     entry: [
       ...(
         (Array.isArray(config.entry) ? config.entry : []) as unknown[]
@@ -234,7 +236,7 @@ function nativeConfig(
         ),
         {
           enforce: "pre",
-          test: STUDIO_OBJECTS_V5_INDEX,
+          test: STUDIO_OBJECTS_INDEX,
           use: [
             {
               loader: path.join(directory, "managed-loader.cjs"),
@@ -244,6 +246,7 @@ function nativeConfig(
             },
           ],
         },
+        shaderPrecisionRule(directory),
       ],
     },
     output: {

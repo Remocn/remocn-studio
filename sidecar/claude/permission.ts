@@ -1,5 +1,6 @@
 import { Effect } from "effect";
-import { type PermissionReason, PLUGIN_DIR_ENV } from "@/shared/ipc";
+import type { PermissionReason } from "@/shared/ipc";
+import { shippedBundleDir } from "../agent/knowledge";
 import { type PermissionVerdict, signatureOf } from "../agent/verdict";
 import { escapee } from "../contained";
 import { isOutwardTool, TOOL_SERVERS } from "../tools/specs";
@@ -17,12 +18,17 @@ const PATH_FIELDS: Record<string, readonly string[]> = {
 
 const READING_TOOLS = new Set(["Glob", "Grep", "NotebookRead", "Read"]);
 
+// The agent's own bookkeeping, and the two tools that only read instructions:
+// loading a skill, and looking up a deferred tool's definition. Whatever a
+// skill then asks to run or read is judged on its own call.
 const FREE_TOOLS = new Set([
+  "Skill",
   "TaskCreate",
   "TaskGet",
   "TaskList",
   "TaskUpdate",
   "TodoWrite",
+  "ToolSearch",
 ]);
 
 export const EXIT_PLAN_TOOL = "ExitPlanMode";
@@ -84,12 +90,8 @@ function ask(
 }
 
 function readRootsFor(toolName: string): readonly string[] {
-  if (!READING_TOOLS.has(toolName)) {
-    return [];
-  }
-
-  const dir = process.env[PLUGIN_DIR_ENV];
-  return dir === undefined || dir === "" ? [] : [dir];
+  const dir = shippedBundleDir();
+  return READING_TOOLS.has(toolName) && dir !== null ? [dir] : [];
 }
 
 function text(input: Record<string, unknown>, key: string): string | null {

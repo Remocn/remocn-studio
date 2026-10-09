@@ -1,19 +1,243 @@
 import { describe, expect, it } from "bun:test";
 import { Exit, Schema } from "effect";
+import { shaderTargetFixture } from "@/test/fixtures/shaders";
 import {
   documentFixture,
   easingDocumentFixture,
   operationFixture,
 } from "@/test/fixtures/studio-document";
+import { MESH_GRADIENT, shaderCreation } from "./shaders";
 import {
   applyStudioOperation,
   inverseStudioOperation,
   isRemoved,
   removedIds,
   StudioDocument,
+  sameStudioValue,
 } from "./studio-document";
 
 const decode = Schema.decodeUnknownExit(StudioDocument);
+
+describe("shader palette and creation", () => {
+  const creation = shaderCreation(
+    MESH_GRADIENT,
+    shaderTargetFixture,
+    "insert-1",
+    "shader-1",
+    0
+  );
+  const create = () =>
+    applyStudioOperation(documentFixture, creation, shaderTargetFixture);
+  const paletteEdit = {
+    after: ["#ff0000", "#00000000", "#ff0000"],
+    before: creation.object.values.colors,
+    definition: creation.definition,
+    field: "colors",
+    id: "colors-1",
+    objectId: creation.objectId,
+  };
+
+  it("preserves duplicates and palette order across save and Undo", () => {
+    const saved = applyStudioOperation(create(), paletteEdit);
+    expect(Exit.isSuccess(decode(JSON.parse(JSON.stringify(saved))))).toBe(
+      true
+    );
+    expect(saved.objects.at(-1)?.values.colors).toEqual(paletteEdit.after);
+    expect(sameStudioValue(paletteEdit.after, [...paletteEdit.after])).toBe(
+      true
+    );
+    expect(
+      sameStudioValue(["#000000", "#ffffff"], ["#ffffff", "#000000"])
+    ).toBe(false);
+    const undone = applyStudioOperation(
+      saved,
+      inverseStudioOperation(paletteEdit, "undo-colors")
+    );
+    expect(undone.objects.at(-1)?.values.colors).toEqual(
+      creation.object.values.colors
+    );
+  });
+
+  it("rejects empty, oversized, mixed and invalid palettes and enforces per-shader limits", () => {
+    for (const colors of [
+      [],
+      new Array(11).fill("#000000"),
+      ["red"],
+      ["#fff"],
+      [1, 2, 3, 4],
+      ["#000000", 1],
+    ]) {
+      const current = create();
+      const objects = current.objects.map((object) =>
+        object.id === creation.objectId
+          ? { ...object, values: { ...object.values, colors } }
+          : object
+      );
+      expect(Exit.isFailure(decode({ ...current, objects }))).toBe(true);
+    }
+    const definition = {
+      ...creation.definition,
+      fields: creation.definition.fields.map((field) =>
+        field.id === "colors" ? { ...field, maxItems: 2 } : field
+      ),
+    };
+    expect(
+      Exit.isFailure(
+        decode({
+          ...create(),
+          definitions: [...documentFixture.definitions, definition],
+        })
+      )
+    ).toBe(true);
+    expect(Exit.isSuccess(decode(documentFixture))).toBe(true);
+  });
+
+  it("retries a committed creation after edits without replacing the live object", () => {
+    const edited = applyStudioOperation(create(), paletteEdit);
+    expect(
+      applyStudioOperation(edited, JSON.parse(JSON.stringify(creation)))
+    ).toBe(edited);
+    const reordered = {
+      ...creation,
+      object: {
+        ...creation.object,
+        values: Object.fromEntries(
+          Object.entries(creation.object.values).reverse()
+        ),
+      },
+    };
+    expect(applyStudioOperation(edited, reordered)).toBe(edited);
+    for (const changed of [
+      { ...creation, target: { ...creation.target, generation: "new-build" } },
+      { ...creation, object: { ...creation.object, label: "Another shader" } },
+      {
+        ...creation,
+        object: {
+          ...creation.object,
+          values: { ...creation.object.values, opacity: 0.5 },
+        },
+      },
+      {
+        ...creation,
+        object: {
+          ...creation.object,
+          shader: {
+            revision: "new-revision",
+            slotId: shaderTargetFixture.slotId,
+            slug: MESH_GRADIENT.slug,
+          },
+        },
+      },
+      { ...creation, definition: { ...creation.definition, version: 2 } },
+    ]) {
+      expect(() =>
+        applyStudioOperation(edited, changed, shaderTargetFixture)
+      ).toThrow("different change");
+    }
+  });
+
+  it("rejects unverified and stale targets, reused object IDs, mismatched definitions and missing scenes", () => {
+    expect(() => applyStudioOperation(documentFixture, creation)).toThrow(
+      "target changed"
+    );
+    expect(() =>
+      applyStudioOperation(documentFixture, creation, {
+        ...shaderTargetFixture,
+        generation: "new",
+      })
+    ).toThrow("target changed");
+    expect(() =>
+      applyStudioOperation(
+        create(),
+        { ...creation, id: "insert-again" },
+        shaderTargetFixture
+      )
+    ).toThrow("reserved");
+    expect(() =>
+      applyStudioOperation(
+        {
+          ...documentFixture,
+          definitions: [
+            ...documentFixture.definitions,
+            { ...creation.definition, version: 2 },
+          ],
+        },
+        creation,
+        shaderTargetFixture
+      )
+    ).toThrow("properties changed");
+    const target = { ...shaderTargetFixture, sceneId: "missing" };
+    expect(() =>
+      applyStudioOperation(
+        documentFixture,
+        shaderCreation(MESH_GRADIENT, target, "missing", "shader-2", 0),
+        target
+      )
+    ).toThrow("scene is no longer");
+  });
+
+  it("undoes creation without losing another instance and reserves its ID for restore", () => {
+    const second = shaderCreation(
+      MESH_GRADIENT,
+      shaderTargetFixture,
+      "insert-2",
+      "shader-2",
+      1
+    );
+    const both = applyStudioOperation(create(), second, shaderTargetFixture);
+    const inverse = inverseStudioOperation(creation, "undo-insert");
+    const undone = applyStudioOperation(both, inverse);
+    expect(isRemoved(undone.objects, "shader-1")).toBe(true);
+    expect(isRemoved(undone.objects, "shader-2")).toBe(false);
+    expect(undone.definitions).toEqual(both.definitions);
+    expect(applyStudioOperation(undone, inverse)).toBe(undone);
+    const restored = applyStudioOperation(
+      undone,
+      inverseStudioOperation(inverse, "redo-insert")
+    );
+    expect(restored.objects).toEqual(both.objects);
+    expect(Exit.isSuccess(decode(restored))).toBe(true);
+  });
+
+  it("refuses Undo after external edits or schema changes and rejects unchecked inverses", () => {
+    const inverse = inverseStudioOperation(creation, "undo-insert");
+    expect(() =>
+      applyStudioOperation(applyStudioOperation(create(), paletteEdit), inverse)
+    ).toThrow("changed elsewhere");
+    expect(() =>
+      applyStudioOperation(
+        {
+          ...create(),
+          definitions: [
+            ...documentFixture.definitions,
+            { ...creation.definition, version: 2 },
+          ],
+        },
+        inverse
+      )
+    ).toThrow("properties changed");
+    expect(() =>
+      applyStudioOperation(create(), {
+        id: "unchecked",
+        kind: "remove",
+        objectId: creation.objectId,
+        undoOf: creation.id,
+      })
+    ).toThrow("original object");
+    expect(() =>
+      applyStudioOperation(create(), {
+        ...paletteEdit,
+        after: 2,
+        before: 0,
+        changes: [
+          { after: false, before: true, field: "followSceneEnd" },
+          { after: 1, before: 150, field: "endFrame" },
+        ],
+        field: "startFrame",
+      })
+    ).toThrow("timing");
+  });
+});
 
 describe("managed object contract", () => {
   it("edits one repeated instance after reorder, keeps independent edits and undoes only its own field", () => {

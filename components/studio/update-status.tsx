@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleArrowUpIcon, RefreshCwIcon, TagIcon } from "lucide-react";
+import { CircleArrowUpIcon, RefreshCwIcon, TagIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Popover,

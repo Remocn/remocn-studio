@@ -130,6 +130,29 @@ describe("mentions in the composer", () => {
     });
   });
 
+  it("does not select a mention while confirming IME composition", async () => {
+    install();
+    const { result } = await opened("fix @intro");
+
+    for (const state of [
+      { isComposing: true, keyCode: 13 },
+      { isComposing: false, keyCode: 229 },
+    ]) {
+      const event = {
+        ...pressing("Enter", "fix @intro"),
+        keyCode: state.keyCode,
+        nativeEvent: { isComposing: state.isComposing },
+      } as React.KeyboardEvent<HTMLTextAreaElement>;
+      act(() => result.current.onKeyDown(event));
+      expect(result.current.value).toBe("fix @intro");
+      expect(result.current.mentions.isOpen).toBe(true);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    }
+    act(() => result.current.onKeyDown(pressing("Enter", "fix @intro")));
+    expect(result.current.value).toContain("`src/scenes/Intro.tsx`");
+    expect(result.current.mentions.isOpen).toBe(false);
+  });
+
   it("writes the chosen file into the message as a backticked path", async () => {
     install();
     const { result } = await opened("fix @intro");

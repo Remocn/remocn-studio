@@ -12,21 +12,19 @@ export function SettingsGroup({
   children: ReactNode;
 }) {
   return (
-    <section aria-label={title} className="grid min-w-0 gap-3">
-      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4">
-        <div className="grid min-w-0 flex-1 gap-1">
-          <h3 className="font-medium text-sm">{title}</h3>
+    <section aria-label={title} className="grid min-w-0 gap-4">
+      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="grid min-w-0 flex-1 gap-1.5">
+          <h3 className="font-medium text-[14px] leading-5">{title}</h3>
           {description ? (
-            <p className="text-muted-foreground text-xs leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-[18px]">
               {description}
             </p>
           ) : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </header>
-      <div className="min-w-0 divide-y divide-border/60 rounded-xl bg-muted/70 px-4 ring-1 ring-border/30">
-        {children}
-      </div>
+      <div className="min-w-0">{children}</div>
     </section>
   );
 }
@@ -37,7 +35,7 @@ export function SettingsPanel({
 }: Parameters<typeof SettingsGroup>[0]) {
   return (
     <SettingsGroup {...props}>
-      <div className="grid min-w-0 gap-4 py-4">{children}</div>
+      <div className="grid min-w-0 gap-4">{children}</div>
     </SettingsGroup>
   );
 }

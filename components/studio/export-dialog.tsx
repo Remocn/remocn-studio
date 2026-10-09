@@ -1,15 +1,7 @@
 "use client";
 
-import SiInstagram from "@icons-pack/react-simple-icons/icons/SiInstagram";
-import SiTiktok from "@icons-pack/react-simple-icons/icons/SiTiktok";
-import SiYoutube from "@icons-pack/react-simple-icons/icons/SiYoutube";
-import SiYoutubeshorts from "@icons-pack/react-simple-icons/icons/SiYoutubeshorts";
-import {
-  FolderOpenIcon,
-  SlidersHorizontalIcon,
-  TriangleAlertIcon,
-} from "lucide-react";
 import { type ChangeEvent, useCallback, useState } from "react";
+import { FolderOpenIcon, TriangleAlertIcon } from "@/components/icons";
 import { MiddleTruncation } from "@/components/middle-truncation";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,7 +35,7 @@ import {
 const NAME_FIELD = "export-file-name";
 
 const CHOICE_STYLE =
-  "min-w-0 cursor-pointer justify-center rounded-lg border border-input bg-background text-center font-normal text-sm hover:bg-accent has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/8 has-[[data-checked]]:text-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-foreground/60 has-[:focus-visible]:outline-offset-2";
+  "min-h-7 min-w-0 cursor-pointer justify-center rounded-md bg-control px-3 py-1 text-center font-normal text-sm hover:bg-accent has-[[data-checked]]:bg-accent has-[[data-checked]]:text-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring has-[:focus-visible]:outline-offset-2 pointer-coarse:min-h-11";
 
 export function ExportDialog({
   composition,
@@ -59,11 +51,11 @@ export function ExportDialog({
     <Dialog onOpenChange={exporting.close} open={exporting.isOpen}>
       <DialogPopup
         bottomStickOnMobile={false}
-        className="max-h-[calc(100dvh-2rem)] max-w-2xl"
-        closeProps={{ className: "absolute end-2 top-2 size-10" }}
+        className="max-h-[calc(100dvh-2rem)] w-[min(560px,calc(100vw-2rem))] max-w-none"
+        closeProps={{ className: "absolute end-3 top-3 size-8" }}
       >
-        <DialogHeader className="shrink-0 gap-1 p-5 pr-14">
-          <DialogTitle className="text-balance font-medium text-lg">
+        <DialogHeader className="shrink-0 gap-1 px-5 pt-5 pr-14 pb-3">
+          <DialogTitle className="text-balance font-semibold text-xl/7">
             Export video
           </DialogTitle>
           <DialogDescription
@@ -74,7 +66,10 @@ export function ExportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <DialogPanel className="grid min-w-0 gap-4 p-5" scrollFade={false}>
+        <DialogPanel
+          className="grid min-w-0 gap-5 px-5 py-0"
+          scrollFade={false}
+        >
           <section aria-labelledby="export-preset-label" className="grid gap-2">
             <h3 className="font-medium text-sm" id="export-preset-label">
               Preset
@@ -90,10 +85,7 @@ export function ExportDialog({
             </p>
           </section>
 
-          <section
-            aria-label="Video settings"
-            className="grid gap-2 border-y py-4"
-          >
+          <section aria-label="Video settings" className="grid gap-3">
             <Setting
               label="Format"
               name="export-format"
@@ -163,7 +155,7 @@ export function ExportDialog({
                 </Label>
                 <Button
                   aria-labelledby="export-folder-label export-folder-path"
-                  className="h-11 w-full min-w-0 justify-start font-normal sm:h-10"
+                  className="h-9 pointer-coarse:h-11 w-full min-w-0 justify-start rounded-xl bg-control font-normal dark:bg-field"
                   id="export-folder"
                   onClick={exporting.chooseFolder}
                   type="button"
@@ -205,7 +197,7 @@ export function ExportDialog({
           ) : null}
         </DialogPanel>
 
-        <DialogFooter className="shrink-0 flex-col gap-3 px-5 py-3 sm:items-center sm:justify-between">
+        <DialogFooter className="shrink-0 flex-col gap-3 bg-transparent px-5 py-5 sm:items-center sm:justify-between">
           <Summary exporting={exporting} />
           <div className="flex shrink-0 justify-end gap-2">
             <Button onClick={exporting.close} size="sm" variant="outline">
@@ -216,6 +208,7 @@ export function ExportDialog({
               className="aria-disabled:opacity-50"
               onClick={exporting.render}
               size="sm"
+              variant="key-action"
             >
               Export
             </Button>
@@ -247,13 +240,14 @@ function FileNameInput({
   return (
     <Input
       autoComplete="off"
-      className="h-11 sm:h-10"
+      className="pointer-coarse:[&_[data-slot=input]]:h-11"
       data-1p-ignore
       data-lpignore="true"
       id={NAME_FIELD}
       name="fileName"
       onBlur={onBlur}
       onChange={onChange}
+      size="lg"
       spellCheck="false"
       value={draft ?? fileName}
       {...VERBATIM_INPUT}
@@ -298,25 +292,6 @@ function presetLabel(preset: ExportPreset): string {
   return preset === "custom" ? "Custom" : PRESET_SPECS[preset].label;
 }
 
-function PresetIcons({ preset }: { preset: ExportPreset }) {
-  if (preset === "youtube") {
-    return <SiYoutube className="size-4 shrink-0" />;
-  }
-  if (preset === "instagram") {
-    return <SiInstagram className="size-4 shrink-0" />;
-  }
-  if (preset === "shorts") {
-    return (
-      <>
-        <SiYoutubeshorts className="size-4 shrink-0" />
-        <SiInstagram className="size-4 shrink-0" />
-        <SiTiktok className="size-4 shrink-0" />
-      </>
-    );
-  }
-  return <SlidersHorizontalIcon className="size-4 shrink-0" />;
-}
-
 function PresetChoice({
   onChange,
   value,
@@ -327,23 +302,14 @@ function PresetChoice({
   return (
     <RadioGroup
       aria-labelledby="export-preset-label"
-      className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+      className="flex flex-row flex-wrap gap-2"
       onValueChange={onChange}
       value={value}
     >
       {EXPORT_PRESETS.map((preset) => (
-        <Label
-          className={cn(CHOICE_STYLE, "min-h-16 flex-col gap-2 px-2 py-2.5")}
-          key={preset}
-        >
+        <Label className={CHOICE_STYLE} key={preset}>
           <span className="sr-only">
             <RadioGroupItem value={preset} />
-          </span>
-          <span
-            aria-hidden="true"
-            className="pointer-events-none flex h-4 items-center gap-2 text-muted-foreground"
-          >
-            <PresetIcons preset={preset} />
           </span>
           {preset === "shorts" ? (
             <>
@@ -396,11 +362,8 @@ function Setting({
   readonly value: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-      <p
-        className="text-muted-foreground text-sm sm:w-20 sm:shrink-0"
-        id={name}
-      >
+    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+      <p className="text-sm sm:w-21 sm:shrink-0" id={name}>
         {label}
       </p>
       <Choice
@@ -427,15 +390,12 @@ function Choice({
   return (
     <RadioGroup
       aria-label={label}
-      className="grid min-w-0 flex-1 grid-cols-2 gap-1.5 sm:grid-cols-4"
+      className="flex min-w-0 flex-1 flex-row flex-wrap gap-2"
       onValueChange={onChange}
       value={value}
     >
       {options.map((option) => (
-        <Label
-          className={cn(CHOICE_STYLE, "min-h-11 px-2 py-2 sm:min-h-10")}
-          key={option.value}
-        >
+        <Label className={CHOICE_STYLE} key={option.value}>
           <span className="sr-only">
             <RadioGroupItem value={option.value} />
           </span>

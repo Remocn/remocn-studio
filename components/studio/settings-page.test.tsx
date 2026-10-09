@@ -11,6 +11,7 @@ import Page from "@/app/page";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { EnvironmentCheck } from "@/shared/ipc";
 import { stubGlobal, unstubAllGlobals } from "@/test/stub-global";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
 
 const STORE_RID = 7;
 const REMOCN_ACCOUNT = /Remocn account/;
@@ -39,10 +40,12 @@ const CODEX_ROW: EnvironmentCheck = {
   title: "Codex is not logged in",
 };
 
-const REFUSED_WORDING =
+const NOT_ALLOWED = /Your desktop has not allowed the studio to notify/;
+
+const REFUSED_ON_MAC =
   /Notifications are off for the studio in System Settings/;
 
-const NEVER_ASKED = /macOS has not allowed the studio to notify yet/;
+const NEVER_ASKED_ON_MAC = /macOS has not allowed the studio to notify yet/;
 
 function notificationShim(permission: "default" | "denied" | "granted") {
   return {
@@ -105,7 +108,7 @@ async function renderShell() {
       <Page />
     </ThemeProvider>
   );
-  await screen.findByRole("heading", { name: "Videos" });
+  await screen.findByRole("navigation", { name: "Library views" });
 }
 
 async function openSettings() {
@@ -126,6 +129,7 @@ describe("the settings page", () => {
 
   afterEach(() => {
     unstubAllGlobals();
+    withAgent(MAC);
   });
 
   it("opens from the gear on Appearance", async () => {
@@ -136,6 +140,16 @@ describe("the settings page", () => {
     expect(screen.getByRole("button", { name: "Dark" })).toBeVisible();
   });
 
+  it("names the system rather than macOS on Linux", async () => {
+    withAgent(LINUX);
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "Updates" }));
+    expect(await screen.findByText("System")).toBeVisible();
+    expect(screen.queryByText("macOS")).toBeNull();
+  });
+
   it("opens on Cmd+comma", async () => {
     await renderShell();
 
@@ -144,6 +158,23 @@ describe("the settings page", () => {
     expect(
       await screen.findByRole("region", { name: "Settings" })
     ).toBeVisible();
+  });
+
+  it("moves focus to Back and restores it without making the window chrome inert", async () => {
+    await renderShell();
+    const opener = screen.getByRole("button", { name: "Settings" });
+    opener.focus();
+    await openSettings();
+    expect(document.activeElement?.textContent).toBe("Back");
+    expect(
+      Boolean(
+        screen
+          .getByRole("button", { name: "Hide the project list" })
+          .closest("[inert]")
+      )
+    ).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    await waitFor(() => expect(document.activeElement === opener).toBe(true));
   });
 
   it("switches sections from the rail", async () => {
@@ -169,7 +200,7 @@ describe("the settings page", () => {
     expect(screen.queryByText(REMOCN_ACCOUNT)).toBeNull();
   });
 
-  it("lists every shortcut under Hotkeys, read-only", async () => {
+  it("lists and filters shortcuts without changing their bindings", async () => {
     await renderShell();
     await openSettings();
 
@@ -184,8 +215,22 @@ describe("the settings page", () => {
     expect(
       screen
         .getByRole("region", { name: "Settings" })
-        .querySelectorAll("input, button[role=switch], [role=switch]")
+        .querySelectorAll(
+          "input:not([type=search]), button[role=switch], [role=switch]"
+        )
     ).toHaveLength(0);
+    const search = screen.getByRole("searchbox", { name: "Find a shortcut" });
+    fireEvent.change(search, { target: { value: "export" } });
+    expect(video.getByText("Export")).toBeVisible();
+    expect(video.queryByText("Snapshot") === null).toBe(true);
+    fireEvent.change(search, { target: { value: "not-a-shortcut" } });
+    expect(
+      within(screen.getByRole("region", { name: "Settings" })).getByRole(
+        "status"
+      ).textContent
+    ).toBe("No shortcuts match “not-a-shortcut”.");
+    fireEvent.change(search, { target: { value: "" } });
+    expect(screen.getByLabelText("⇧⌘S")).toBeVisible();
   });
 
   it("keeps the notifications switch unavailable without the desktop app", async () => {
@@ -256,7 +301,8 @@ describe("the settings page", () => {
     await waitFor(() => expect(turn).toBeChecked());
   });
 
-  it("offers Grant permission with the refused wording when macOS said no", async () => {
+  it("offers Grant permission when the desktop said no", async () => {
+    withAgent(LINUX);
     stubGlobal("Notification", notificationShim("denied"));
     mockStudio(written, [["notifications", "enabled"]]);
     await renderShell();
@@ -264,24 +310,48 @@ describe("the settings page", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
 
-    expect(await screen.findByText(REFUSED_WORDING)).toBeVisible();
+    expect(await screen.findByText(NOT_ALLOWED)).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Grant permission" })
     ).toBeVisible();
     expect(screen.getByRole("switch", { name: "Notify me" })).toBeChecked();
   });
 
-  it("offers Grant permission while macOS has never been asked", async () => {
+  it("offers Grant permission while the desktop has never been asked", async () => {
+    withAgent(LINUX);
     stubGlobal("Notification", notificationShim("default"));
     await renderShell();
     await openSettings();
 
     fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
 
-    expect(await screen.findByText(NEVER_ASKED)).toBeVisible();
+    expect(await screen.findByText(NOT_ALLOWED)).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Grant permission" })
     ).toBeVisible();
+  });
+
+  it("words a refusal on macOS as System Settings", async () => {
+    withAgent(MAC);
+    stubGlobal("Notification", notificationShim("denied"));
+    mockStudio(written, [["notifications", "enabled"]]);
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+
+    expect(await screen.findByText(REFUSED_ON_MAC)).toBeVisible();
+  });
+
+  it("words a first ask on macOS as macOS's own", async () => {
+    withAgent(MAC);
+    stubGlobal("Notification", notificationShim("default"));
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+
+    expect(await screen.findByText(NEVER_ASKED_ON_MAC)).toBeVisible();
   });
 
   // Opt-in, and the wording that earns the switch is part of what is being
@@ -306,7 +376,11 @@ describe("the settings page", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Integrations" }));
 
-    expect(await screen.findByText("Claude Code is logged in")).toBeVisible();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Manage Claude Code" })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Set up Codex" }));
+    expect(screen.getByText("Claude Code is logged in")).toBeVisible();
     expect(screen.getByText("Codex is not logged in")).toBeVisible();
     expect(screen.getByText("codex login")).toBeVisible();
     // Grok has no row in the mock: unknown must never read as signed out.
@@ -334,8 +408,10 @@ describe("the settings page", () => {
     await renderShell();
     await openSettings();
 
-    const motion = screen.getByRole("switch", { name: "Animate it" });
-    const shader = screen.getByRole("switch", { name: "Show the shader" });
+    const motion = screen.getByRole("switch", { name: "Animate activity" });
+    const shader = screen.getByRole("switch", {
+      name: "Show activity in title bar",
+    });
     expect(shader).toBeChecked();
     expect(motion).toBeChecked();
 

@@ -2,13 +2,17 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { Data, Effect, Schema } from "effect";
 import { errorMessage } from "@/lib/error-message";
+import type { ShaderTarget } from "@/shared/shader-target";
 import {
   applyStudioOperation,
+  isCreationOperation,
+  type StudioCreateOperation,
   StudioDocument,
   type StudioObjectOperation,
   type StudioOperation,
   type StudioSnapshot,
 } from "@/shared/studio-document";
+import type { ShaderError } from "../library/shaders";
 import { remotionRootOf } from "../preview/project";
 import { installRuntime } from "../scaffold/registry";
 import {
@@ -90,6 +94,14 @@ export function writeStudioDocument(
   video: string,
   operation: StudioOperation
 ) {
+  if (isCreationOperation(operation)) {
+    return Effect.fail(
+      new StudioDocumentError({
+        message:
+          "Create shaders through the prepared insertion request, not a property patch.",
+      })
+    );
+  }
   const root = remotionRootOf(folder);
   return attempt(() =>
     serialized(root, () =>
@@ -114,6 +126,44 @@ export function writeStudioDocument(
       })
     )
   );
+}
+
+export function commitStudioCreation(
+  folder: string,
+  video: string,
+  operation: StudioCreateOperation,
+  verifyTarget: Effect.Effect<ShaderTarget, ShaderError>
+) {
+  const root = remotionRootOf(folder);
+  return attempt(() =>
+    serialized(root, () =>
+      withConfigLock(root, async () => {
+        const current = await Effect.runPromise(read(root, video));
+        if (
+          current.document.operations.some((item) => item.id === operation.id)
+        ) {
+          applyStudioOperation(current.document, operation);
+          return { document: current.document, revision: current.revision };
+        }
+        const target = await Effect.runPromise(verifyTarget);
+        const next = applyStudioOperation(current.document, operation, target);
+        await Effect.runPromise(decode(next, { onExcessProperty: "error" }));
+        const path = documentPath(video);
+        const now = await readFile(await contained(root, path), "utf8");
+        if (now !== current.text) {
+          throw new StudioDocumentError({
+            message:
+              "The video changed while adding the shader. Reload the preview and retry.",
+          });
+        }
+        await atomicJson(root, path, next);
+        return {
+          document: next,
+          revision: hashBytes(`${JSON.stringify(next, null, 2)}\n`),
+        };
+      })
+    )
+  ).pipe(Effect.uninterruptible);
 }
 
 const SOURCE_FILE = /\.[cm]?[jt]sx?$/;

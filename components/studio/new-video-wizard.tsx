@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeftIcon } from "lucide-react";
+import { ChevronLeftIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,7 +35,7 @@ export function NewVideoWizard({
           </Button>
 
           <div className="flex flex-col gap-1">
-            <h3 className="text-balance font-semibold text-2xl leading-tight tracking-tight">
+            <h3 className="text-balance font-semibold text-xl leading-7 tracking-[-0.03em]">
               New video
             </h3>
             <p className="text-pretty text-muted-foreground text-sm/relaxed">
@@ -67,6 +67,7 @@ export function NewVideoWizard({
 
           <FormatPicker
             id={RATIO_LABEL}
+            layout="video"
             onChange={control.onFormatChange}
             value={control.format}
           />

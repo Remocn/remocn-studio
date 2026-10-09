@@ -1,8 +1,8 @@
 "use client";
 
-import { Trash2Icon } from "lucide-react";
 import type { MouseEvent } from "react";
 import { memo } from "react";
+import { Trash2Icon } from "@/components/icons";
 import {
   Attachment,
   AttachmentAction,
@@ -13,6 +13,7 @@ import {
   AttachmentTitle,
   AttachmentTrigger,
 } from "@/components/ui/attachment";
+import { Button } from "@/components/ui/button";
 import {
   HoverCard,
   HoverCardContent,
@@ -22,6 +23,7 @@ import { useClipFallback } from "@/hooks/use-hover-clip";
 import { usePreviewImage } from "@/hooks/use-preview-image";
 import { previewUrl } from "@/lib/studio/attachments";
 import { clipTime } from "@/lib/studio/time";
+import { cn } from "@/lib/utils";
 import {
   ASSET_TYPE_LABELS,
   type Asset,
@@ -41,18 +43,28 @@ export function AssetGrid({
   onPick: (event: MouseEvent<HTMLButtonElement>) => void;
   onRemove?: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
+  const grouped = [
+    ...assets.filter((asset) => asset.type !== "audio"),
+    ...assets.filter((asset) => asset.type === "audio"),
+  ];
   return (
-    <div className="columns-2 gap-2 px-1 pb-1">
-      {assets.map((asset) => (
-        <div className="mb-2 break-inside-avoid" key={asset.slug}>
+    <ul
+      aria-label="Asset library"
+      className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,160px),1fr))] items-start gap-3 px-1 pb-1"
+    >
+      {grouped.map((asset) => (
+        <li
+          className={cn("min-w-0", asset.type === "audio" && "col-span-full")}
+          key={asset.slug}
+        >
           <AssetItem
             asset={asset}
             onPick={onPick}
             onRemove={isBundledSlug(asset.slug) ? undefined : onRemove}
           />
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -87,7 +99,7 @@ function AssetTile({
   }
 
   return (
-    <AssetTypeIcon className="size-4 text-muted-foreground" type={asset.type} />
+    <AssetTypeIcon className="size-6 text-muted-foreground" type={asset.type} />
   );
 }
 
@@ -103,10 +115,17 @@ function AssetRowItem({
   const preview = usePreviewImage(asset.preview ?? "");
   const length = asset.duration === null ? null : clipTime(asset.duration);
 
+  if (asset.type === "audio") {
+    return <SoundAsset asset={asset} onPick={onPick} onRemove={onRemove} />;
+  }
+
   const card = (
     // No `title` here on purpose: the native tooltip pops over the hover
     // preview card, and the name is already printed under the tile.
-    <Attachment className="border-none bg-transparent" orientation="vertical">
+    <Attachment
+      className="w-full gap-2 bg-transparent has-data-[slot=attachment-content]:w-full has-data-[slot=attachment-content]:p-0 has-data-[slot=attachment-media]:p-0"
+      orientation="vertical"
+    >
       <AttachmentTrigger
         aria-label={`${asset.name}, ${ASSET_TYPE_LABELS[asset.type]}`}
         onClick={onPick}
@@ -114,10 +133,10 @@ function AssetRowItem({
       />
 
       {onRemove === undefined ? null : (
-        <AttachmentActions>
+        <AttachmentActions className="group-data-[orientation=vertical]/attachment:top-1 group-data-[orientation=vertical]/attachment:right-1">
           <AttachmentAction
             aria-label={`Delete ${asset.name}`}
-            className="relative bg-black/60 text-white opacity-0 after:absolute after:-inset-1 hover:bg-black/80 hover:text-white focus-visible:opacity-100 group-hover/attachment:opacity-100"
+            className="relative bg-black/60 text-white opacity-0 pointer-coarse:opacity-100 after:absolute after:-inset-1 hover:bg-black/80 hover:text-white focus-visible:opacity-100 group-hover/attachment:opacity-100"
             onClick={onRemove}
             value={asset.slug}
           >
@@ -126,19 +145,25 @@ function AssetRowItem({
         </AttachmentActions>
       )}
 
-      <AttachmentMedia variant="image">
+      <AttachmentMedia
+        className="aspect-[5/3] rounded-xl *:[img]:aspect-auto *:[img]:h-full *:[video]:h-full *:[video]:w-full *:[video]:object-cover"
+        variant="image"
+      >
         <AssetTile asset={asset} preview={preview} />
+        {length === null ? null : (
+          <span className="absolute top-1 left-1 rounded-sm bg-black/70 px-1 py-px font-medium text-2xs text-white tabular-nums">
+            {length}
+          </span>
+        )}
       </AttachmentMedia>
 
-      <AttachmentContent>
-        <AttachmentTitle>{asset.name}</AttachmentTitle>
-        {length === null ? null : (
-          <AttachmentDescription>
-            <span className="absolute top-1 left-1 rounded-sm bg-black/70 px-1 py-px font-medium text-2xs text-white tabular-nums">
-              {length}
-            </span>
-          </AttachmentDescription>
-        )}
+      <AttachmentContent className="w-full group-data-[orientation=vertical]/attachment:px-0">
+        <AttachmentTitle className="font-normal text-xs/4">
+          {asset.name}
+        </AttachmentTitle>
+        <AttachmentDescription className="mt-2 text-xs/4">
+          {ASSET_TYPE_LABELS[asset.type]}
+        </AttachmentDescription>
       </AttachmentContent>
     </Attachment>
   );
@@ -146,14 +171,7 @@ function AssetRowItem({
   const clipSource = asset.clip === null ? null : previewUrl(asset.clip);
 
   if (clipSource === null) {
-    return asset.type === "audio" ? (
-      <div className="min-w-0">
-        {card}
-        <SoundAsset asset={asset} />
-      </div>
-    ) : (
-      card
-    );
+    return card;
   }
 
   return (
@@ -180,12 +198,14 @@ function ClipPopover({
 
   let shown: React.ReactNode = (
     <video
-      autoPlay
+      autoPlay={clip.isPlaying}
       className="w-full rounded-sm"
+      controls={!clip.isPlaying}
       loop
       muted
       onError={clip.onError}
       playsInline
+      poster={poster ?? undefined}
       ref={clip.ref}
       src={src}
     />
@@ -201,12 +221,22 @@ function ClipPopover({
   }
 
   return (
-    <HoverCard>
+    <HoverCard onOpenChange={clip.onOpenChange}>
       <HoverCardTrigger delay={150} render={<div className="min-w-0" />}>
         {children}
       </HoverCardTrigger>
       <HoverCardContent className="w-80 overflow-hidden p-1" side="right">
         {shown}
+        {clip.isPlaying || clip.isBroken ? null : (
+          <Button
+            className="w-full"
+            onClick={clip.play}
+            size="sm"
+            variant="ghost"
+          >
+            Play preview
+          </Button>
+        )}
       </HoverCardContent>
     </HoverCard>
   );

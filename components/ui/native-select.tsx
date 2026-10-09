@@ -1,5 +1,5 @@
-import { ChevronDownIcon } from "lucide-react";
 import * as React from "react";
+import { ChevronDownIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 type NativeSelectProps = Omit<React.ComponentProps<"select">, "size"> & {
@@ -14,14 +14,14 @@ function NativeSelect({
   return (
     <div
       className={cn(
-        "group/native-select relative w-fit has-[select:disabled]:opacity-50",
+        "group/native-select relative w-fit has-[select:disabled]:opacity-45",
         className
       )}
       data-size={size}
       data-slot="native-select-wrapper"
     >
       <select
-        className="h-9 w-full min-w-0 appearance-none rounded-md border border-input bg-transparent py-1 pr-8 pl-2.5 text-sm shadow-xs transition-[color,box-shadow] outline-none select-none selection:bg-primary selection:text-primary-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-[size=sm]:h-8 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
+        className="h-8 w-full min-w-0 appearance-none rounded-xl bg-control py-1 pr-8 pl-3 text-sm text-foreground outline-none transition-colors focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-2 hover:bg-accent disabled:pointer-events-none aria-invalid:bg-destructive/10 data-[size=sm]:h-7 pointer-coarse:min-h-11"
         data-size={size}
         data-slot="native-select"
         {...props}

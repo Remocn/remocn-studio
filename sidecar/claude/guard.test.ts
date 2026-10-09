@@ -223,6 +223,16 @@ describe("gateHooks", () => {
     expect(decisionOf(decision)).toBe("ask");
   });
 
+  it("lets a skill load untouched in acceptEdits and in plan", async () => {
+    const decisions = await Promise.all(
+      (["acceptEdits", "plan"] as const).map((mode) =>
+        hookFor(mode)("Skill", { skill: "motion-design" })
+      )
+    );
+
+    expect(decisions.map(decisionOf)).toEqual([null, null]);
+  });
+
   it("leaves a file tool inside the folder to run untouched", async () => {
     const decision = await hookFor("acceptEdits")("Read", {
       file_path: `${process.cwd()}/package.json`,

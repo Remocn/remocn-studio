@@ -1,7 +1,11 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { IntegrationsSection } from "@/components/studio/integrations-section";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
+
+const KEYCHAIN_LINE = /Keys stay in this Mac’s keychain/;
+const KEYRING_LINE = /Keys stay in your system keyring/;
 
 const ELEVENLABS = {
   authorization: ["api-key"],
@@ -101,6 +105,21 @@ describe("the services group", () => {
 
     expect(await screen.findByText("Nothing is connected yet")).toBeVisible();
     expect(screen.getByRole("button", { name: ADD })).toBeVisible();
+    expect(screen.getByText(KEYCHAIN_LINE)).toBeVisible();
+  });
+
+  describe("on Linux", () => {
+    afterEach(() => {
+      withAgent(MAC);
+    });
+
+    it("says the keys stay in the system keyring", async () => {
+      withAgent(LINUX);
+      studio();
+      render(<IntegrationsSection />);
+
+      expect(await screen.findByText(KEYRING_LINE)).toBeVisible();
+    });
   });
 
   it("offers nothing to add when this build carries no service", async () => {
@@ -161,6 +180,9 @@ describe("the services group", () => {
 
     expect(await screen.findByText("Off")).toBeVisible();
     expect(screen.queryByText("Connected")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Manage My ElevenLabs" })
+    );
     expect(screen.getByRole("button", { name: "Enable" })).toBeVisible();
   });
 });
@@ -171,6 +193,9 @@ describe("removing a connection", () => {
     render(<IntegrationsSection />);
     await screen.findByText("My ElevenLabs");
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "Manage My ElevenLabs" })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
 
     expect(screen.getByText(KEY_GOES)).toBeVisible();
@@ -182,6 +207,9 @@ describe("removing a connection", () => {
     render(<IntegrationsSection />);
     await screen.findByText("My ElevenLabs");
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "Manage My ElevenLabs" })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
 
@@ -201,6 +229,9 @@ describe("removing a connection", () => {
     render(<IntegrationsSection />);
     await screen.findByText("My ElevenLabs");
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "Manage My ElevenLabs" })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     fireEvent.click(
       screen.getAllByRole("button", { name: "Remove" }).at(-1) as HTMLElement

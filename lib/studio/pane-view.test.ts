@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
+  captionAssets,
+  captionSelectionUnavailable,
   componentGroups,
   filterAssets,
   isPaneView,
@@ -39,10 +41,12 @@ function bundled(
 }
 
 describe("isPaneView", () => {
-  it("accepts the three views and nothing else", () => {
+  it("accepts the workspace and sidebar views and nothing else", () => {
     expect(isPaneView("videos")).toBe(true);
+    expect(isPaneView("projects")).toBe(true);
     expect(isPaneView("assets")).toBe(true);
     expect(isPaneView("components")).toBe(true);
+    expect(isPaneView("shaders")).toBe(true);
     expect(isPaneView("drawer")).toBe(false);
     expect(isPaneView(undefined)).toBe(false);
   });
@@ -101,7 +105,7 @@ describe("componentGroups", () => {
     ]);
   });
 
-  it("orders a role's tiles by category, so Scene reads shaders before filters", () => {
+  it("keeps filters in Components and moves shaders to their own pane", () => {
     const [scene] = componentGroups(
       [],
       [
@@ -110,10 +114,7 @@ describe("componentGroups", () => {
       ]
     );
 
-    expect(scene?.assets.map((found) => found.name)).toEqual([
-      "Shader Water",
-      "VHS Filter",
-    ]);
+    expect(scene?.assets.map((found) => found.name)).toEqual(["VHS Filter"]);
   });
 
   it("puts the person's own behaviours ahead of the shipped ones in their role", () => {
@@ -140,4 +141,33 @@ describe("componentGroups", () => {
   it("renders no heading for a role nothing is in", () => {
     expect(componentGroups([], [])).toEqual([]);
   });
+});
+
+it("keeps Captions after Shaders and out of motion groups", () => {
+  const caption = {
+    ...asset("Karaoke"),
+    category: "Captions",
+    role: null,
+    slug: "remocn/caption-karaoke",
+  };
+  expect(isPaneView("captions")).toBe(true);
+  expect(slideDirection("shaders", "captions")).toBe("push");
+  expect(captionAssets([caption, asset("Other")])).toEqual([caption]);
+  expect(componentGroups([], [caption])).toEqual([]);
+  expect(
+    captionSelectionUnavailable({
+      blocked: false,
+      hasProject: true,
+      missing: false,
+      waiting: false,
+    })
+  ).toBeNull();
+  expect(
+    captionSelectionUnavailable({
+      blocked: false,
+      hasProject: true,
+      missing: false,
+      waiting: true,
+    })
+  ).toContain("Answer");
 });

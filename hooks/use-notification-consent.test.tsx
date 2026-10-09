@@ -4,6 +4,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { useNotificationConsent } from "@/hooks/use-notification-consent";
 import type { StudioSettings } from "@/lib/studio/settings";
 import { stubGlobal, unstubAllGlobals } from "@/test/stub-global";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
 
 type Permission = "default" | "denied" | "granted";
 
@@ -81,6 +82,7 @@ describe("useNotificationConsent", () => {
 
   afterEach(() => {
     unstubAllGlobals();
+    withAgent(MAC);
   });
 
   it("is off until asked, and asks the OS when the master switch goes on", async () => {
@@ -98,7 +100,59 @@ describe("useNotificationConsent", () => {
     expect(ipc.written).toContainEqual(["notifications", "enabled"]);
   });
 
-  it("keeps the wish when the OS says no, and opens System Settings", async () => {
+  it("keeps the wish when the OS says no, and opens nothing on Linux", async () => {
+    withAgent(LINUX);
+    shim("default", "denied");
+    const { result } = renderHook(() => useNotificationConsent(settings(null)));
+    await waitFor(() => expect(result.current.permission).toBe("default"));
+
+    act(() => result.current.toggle(true));
+
+    await waitFor(() => expect(result.current.permission).toBe("denied"));
+    expect(result.current.isEnabled).toBe(true);
+    expect(result.current.isOn).toBe(false);
+    expect(ipc.opened).toHaveLength(0);
+  });
+
+  it("reads a remembered switch as on once the OS agrees", async () => {
+    shim("granted");
+    const { result } = renderHook(() => useNotificationConsent(settings(true)));
+
+    await waitFor(() => expect(result.current.isOn).toBe(true));
+  });
+
+  it("grants by asking on Linux, whether never asked or refused before", async () => {
+    withAgent(LINUX);
+    const asked = shim("default", "granted");
+    const first = renderHook(() => useNotificationConsent(settings(true)));
+    await waitFor(() =>
+      expect(first.result.current.permission).toBe("default")
+    );
+
+    act(() => first.result.current.grant());
+
+    await waitFor(() =>
+      expect(first.result.current.permission).toBe("granted")
+    );
+    expect(asked.requestPermission).toHaveBeenCalledTimes(1);
+    expect(ipc.opened).toHaveLength(0);
+
+    const refused = shim("denied");
+    const second = renderHook(() => useNotificationConsent(settings(true)));
+    await waitFor(() =>
+      expect(second.result.current.permission).toBe("denied")
+    );
+
+    act(() => second.result.current.grant());
+
+    await waitFor(() =>
+      expect(refused.requestPermission).toHaveBeenCalledTimes(1)
+    );
+    expect(ipc.opened).toHaveLength(0);
+  });
+
+  it("keeps the wish when macOS says no, and opens System Settings", async () => {
+    withAgent(MAC);
     shim("default", "denied");
     const { result } = renderHook(() => useNotificationConsent(settings(null)));
     await waitFor(() => expect(result.current.permission).toBe("default"));
@@ -111,14 +165,8 @@ describe("useNotificationConsent", () => {
     await waitFor(() => expect(ipc.opened).toHaveLength(1));
   });
 
-  it("reads a remembered switch as on once the OS agrees", async () => {
-    shim("granted");
-    const { result } = renderHook(() => useNotificationConsent(settings(true)));
-
-    await waitFor(() => expect(result.current.isOn).toBe(true));
-  });
-
-  it("grants by asking while never asked, and by System Settings once refused", async () => {
+  it("grants on macOS by asking while never asked, and by System Settings once refused", async () => {
+    withAgent(MAC);
     const asked = shim("default", "granted");
     const first = renderHook(() => useNotificationConsent(settings(true)));
     await waitFor(() =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { CornerDownLeftIcon, LibraryBigIcon } from "lucide-react";
+import { CornerDownLeftIcon, LibraryBigIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useComment } from "@/hooks/use-comment";

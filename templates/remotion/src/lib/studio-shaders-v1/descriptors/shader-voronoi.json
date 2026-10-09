@@ -1,0 +1,218 @@
+{
+  "adapter": "paper",
+  "definition": {
+    "fields": [
+      {
+        "id": "colors",
+        "label": "Colors",
+        "type": "palette",
+        "default": ["#3a3a5c", "#52527a"],
+        "group": "Colors",
+        "minItems": 1,
+        "maxItems": 5
+      },
+      {
+        "id": "stepsPerColor",
+        "label": "Steps Per Color",
+        "type": "number",
+        "default": 3,
+        "min": 1,
+        "max": 3,
+        "step": 1,
+        "group": "Appearance",
+        "integer": true
+      },
+      {
+        "id": "colorGlow",
+        "label": "Color Glow",
+        "type": "color",
+        "default": "#ffffff",
+        "group": "Colors",
+        "availableWhen": {
+          "field": "glow",
+          "operator": "greaterThan",
+          "value": 0,
+          "reason": "Increase Glow to tint the inner shadow."
+        }
+      },
+      {
+        "id": "colorGap",
+        "label": "Color Gap",
+        "type": "color",
+        "default": "#12121a",
+        "group": "Colors"
+      },
+      {
+        "id": "distortion",
+        "label": "Distortion",
+        "type": "number",
+        "default": 0.4,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "gap",
+        "label": "Gap",
+        "type": "number",
+        "default": 0.04,
+        "min": 0,
+        "max": 0.1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "glow",
+        "label": "Glow",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "default": 1,
+        "group": "Animation",
+        "id": "speed",
+        "label": "Speed",
+        "max": 5,
+        "min": -5,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0.5,
+        "group": "Pattern",
+        "id": "scale",
+        "label": "Scale",
+        "max": 4,
+        "min": 0.01,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Pattern",
+        "id": "rotation",
+        "label": "Rotation",
+        "max": 360,
+        "min": 0,
+        "step": 1,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Pattern",
+        "id": "offsetX",
+        "label": "Horizontal offset",
+        "max": 1,
+        "min": -1,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Pattern",
+        "id": "offsetY",
+        "label": "Vertical offset",
+        "max": 1,
+        "min": -1,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0.5,
+        "group": "Pattern",
+        "id": "originX",
+        "label": "Horizontal origin",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0.5,
+        "group": "Pattern",
+        "id": "originY",
+        "label": "Vertical origin",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": "cover",
+        "group": "Pattern",
+        "id": "fit",
+        "label": "Fit",
+        "options": ["none", "contain", "cover"],
+        "type": "enum"
+      },
+      {
+        "default": 1,
+        "group": "Layer",
+        "id": "opacity",
+        "label": "Opacity",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Layer",
+        "id": "order",
+        "integer": true,
+        "label": "Layer order",
+        "min": 0,
+        "step": 1,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Timing",
+        "id": "startFrame",
+        "integer": true,
+        "label": "Start",
+        "min": 0,
+        "step": 1,
+        "type": "number",
+        "unit": "frames"
+      },
+      {
+        "default": true,
+        "group": "Timing",
+        "id": "followSceneEnd",
+        "label": "Follow scene end",
+        "type": "boolean"
+      },
+      {
+        "availableWhen": {
+          "field": "followSceneEnd",
+          "operator": "equals",
+          "reason": "Turn off Follow scene end to trim the end.",
+          "value": false
+        },
+        "default": 1,
+        "group": "Timing",
+        "id": "endFrame",
+        "integer": true,
+        "label": "End",
+        "min": 1,
+        "step": 1,
+        "type": "number",
+        "unit": "frames"
+      }
+    ],
+    "id": "shader-voronoi-paper-0-0-78-v1",
+    "version": 1
+  },
+  "exportName": "Voronoi",
+  "packageVersion": "0.0.78",
+  "revision": "paper-0-0-78-v1",
+  "slug": "shader-voronoi",
+  "title": "Voronoi",
+  "version": 1
+}

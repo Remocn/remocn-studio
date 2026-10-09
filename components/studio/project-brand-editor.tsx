@@ -2,18 +2,26 @@
 
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { ChevronDownIcon } from "lucide-react";
 import Image from "next/image";
 import {
   type ChangeEvent,
   type MouseEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useState,
 } from "react";
+import { ChevronDownIcon, PlusIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { TabsPanel } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { errorMessage } from "@/lib/error-message";
@@ -42,17 +50,22 @@ export function ProjectBrandEditor({
   onBusyChange,
   projectId,
   root,
+  brandActions,
 }: {
   value: ProjectBrand | null;
   onChange: (brand: ProjectBrand | null) => void;
   onBusyChange: (busy: boolean) => void;
   projectId: string;
   root: string;
+  brandActions?: ReactNode;
 }) {
   const brand = value ?? emptyBrand();
   const { run, error } = useAsyncAction();
   const [fileError, setFileError] = useState<string | null>(null);
   const [colorName, setColorName] = useState("");
+  const [addingColor, setAddingColor] = useState(false);
+  const [importAtTop] = useState(value === null);
+  const [reviewingImport, setReviewingImport] = useState(false);
   const [weights, setWeights] = useState("400;700");
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -76,6 +89,7 @@ export function ProjectBrandEditor({
     }
     update({ colors: { ...brand.colors, [name]: "#808080" } });
     setColorName("");
+    setAddingColor(false);
   }, [brand.colors, colorName, update]);
   const changeColor = useCallback(
     (role: string, color: string) => {
@@ -279,381 +293,434 @@ export function ProjectBrandEditor({
     [brand, update]
   );
   return (
-    <fieldset className="grid min-w-0 gap-10" disabled={loading}>
+    <fieldset className="contents" disabled={loading}>
       <legend className="sr-only">Brand settings</legend>
-      <ProjectDesignImport
-        onBusyChange={setImporting}
-        onChange={onChange}
-        projectId={projectId}
-        value={value}
-      />
-      <ProjectSettingsGroup
-        description="Used for new videos. Existing videos keep their current appearance."
-        title="Brand identity"
-      >
-        <ProjectSettingsRow
-          description="The product or brand featured in your videos."
-          htmlFor="brand-name"
-          title="Brand name"
+      <TabsPanel className="grid gap-4" keepMounted value="brand">
+        <div
+          className={importAtTop || reviewingImport ? "order-first" : "order-1"}
         >
-          <Input
-            className="max-w-full sm:w-60"
-            id="brand-name"
-            name="name"
-            onChange={changeText}
-            value={brand.name ?? ""}
+          <ProjectDesignImport
+            compact={!importAtTop}
+            onBusyChange={setImporting}
+            onChange={onChange}
+            onReviewChange={setReviewingImport}
+            projectId={projectId}
+            value={value}
           />
-        </ProjectSettingsRow>
-        <div className="py-4">
-          <div className="mb-4 grid gap-1">
-            <h4 className="text-sm">Colors</h4>
-            <p className="text-muted-foreground text-xs">
-              The core palette for your videos.
-            </p>
-          </div>
-          <DialKitSurface targetId={`project-brand-colors-${projectId}`}>
-            {[
-              ...new Set([
-                "background",
-                "foreground",
-                "accent",
-                ...Object.keys(brand.colors),
-              ]),
-            ].map((role) => (
-              <ProjectBrandColor
-                key={role}
-                onChange={changeColor}
-                role={role}
-                value={brand.colors[role]}
-              />
-            ))}
-          </DialKitSurface>
-          <div className="mt-4 flex flex-wrap items-end gap-2">
-            <Label className="grid flex-1 gap-2 text-sm">
-              Additional color name
-              <Input onChange={changeColorName} value={colorName} />
-            </Label>
-            <Button
-              disabled={!colorName.trim()}
-              onClick={addColor}
-              type="button"
-              variant="outline"
-            >
-              Add color
-            </Button>
-          </div>
         </div>
-        <div className="py-4">
-          <div className="mb-4 grid gap-1">
-            <h4 className="text-sm">Logos</h4>
-            <p className="text-muted-foreground text-xs">
-              Variants for light backgrounds, dark backgrounds and small
-              placements.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {LOGO_ROLES.map((role) => (
-              <div className="grid gap-2" key={role}>
-                <span className="text-sm">
-                  {
-                    {
-                      mark: "Brand mark",
-                      onDark: "On dark",
-                      onLight: "On light",
-                    }[role]
+        <div className={reviewingImport ? "hidden" : "grid gap-4"}>
+          <ProjectSettingsRow
+            description="Used for new videos in this project."
+            htmlFor="brand-name"
+            title="Brand name"
+          >
+            <Input
+              className="w-full"
+              id="brand-name"
+              name="name"
+              onChange={changeText}
+              size="sm"
+              value={brand.name ?? ""}
+            />
+          </ProjectSettingsRow>
+          <ProjectSettingsGroup
+            action={
+              <Popover onOpenChange={setAddingColor} open={addingColor}>
+                <PopoverTrigger
+                  render={
+                    <Button size="sm" type="button" variant="secondary" />
                   }
-                </span>
-                <div
-                  className="flex h-24 items-center justify-center rounded border p-3"
-                  style={{
-                    background: role === "onDark" ? "#181818" : "#ffffff",
-                  }}
                 >
-                  {brand.logos[role] ? (
-                    <Image
-                      alt={`${role} logo preview`}
-                      className="max-h-full max-w-full object-contain"
-                      height={80}
-                      onError={imageError}
-                      src={convertFileSrc(`${root}/${brand.logos[role].path}`)}
-                      unoptimized
-                      width={160}
-                    />
-                  ) : (
-                    <span className="text-neutral-500 text-xs">No logo</span>
-                  )}
-                </div>
-                <Button
-                  onClick={chooseFile}
-                  type="button"
-                  value={`logo:${role}`}
-                  variant="outline"
-                >
-                  Choose…
-                </Button>
-                {brand.logos[role] ? (
-                  <Button
-                    onClick={removeFile}
-                    type="button"
-                    value={`logo:${role}`}
-                    variant="ghost"
+                  <PlusIcon />
+                  Add color
+                </PopoverTrigger>
+                <PopoverContent className="grid w-64 gap-3 p-3">
+                  <Label
+                    className="grid gap-2 text-sm"
+                    htmlFor="brand-color-name"
                   >
-                    Remove
-                  </Button>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="py-4">
-          <BrandPreview brand={brand} root={root} />
-        </div>
-      </ProjectSettingsGroup>
-      <ProjectSettingsGroup
-        description="Choose a font for each role. Expand a row to manage files, styles and licenses."
-        title="Typography"
-      >
-        {FONT_ROLES.map((role) => {
-          const font = brand.typography[role];
-          return (
-            <details className="group min-w-0" key={role}>
-              <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm outline-offset-4 [&::-webkit-details-marker]:hidden">
-                <span>
-                  {
-                    {
-                      body: "Body text",
-                      display: "Headings",
-                      mono: "Code & numbers",
-                    }[role]
-                  }
-                </span>
-                <span className="flex min-w-0 items-center gap-3 text-muted-foreground">
-                  <span className="truncate">{font?.family || "Not set"}</span>
-                  <ChevronDownIcon
-                    aria-hidden="true"
-                    className="size-4 shrink-0 group-open:rotate-180"
-                  />
-                </span>
-              </summary>
-              <div className="grid gap-4 pb-5">
-                <Label className="grid gap-2 text-sm capitalize">
-                  {role} font
-                  <Input
-                    name={`font:${role}:family`}
-                    onChange={changeText}
-                    placeholder="Not set"
-                    value={font?.family ?? ""}
-                  />
-                </Label>
-                {font ? (
-                  <Label className="grid gap-1 text-sm">
-                    Fallback
-                    <Input
-                      name={`font:${role}:fallback`}
-                      onChange={changeText}
-                      value={font.fallback}
-                    />
+                    Additional color name
                   </Label>
-                ) : null}
-                <Label className="grid gap-2 text-sm">
-                  Download weights
                   <Input
-                    onChange={changeWeights}
-                    placeholder="400;700 or 100..900"
-                    value={weights}
+                    id="brand-color-name"
+                    onChange={changeColorName}
+                    value={colorName}
                   />
-                </Label>
-                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={
+                      !colorName.trim() ||
+                      Object.hasOwn(brand.colors, colorName.trim())
+                    }
+                    onClick={addColor}
+                    size="sm"
+                    type="button"
+                  >
+                    Add color
+                  </Button>
+                </PopoverContent>
+              </Popover>
+            }
+            description="The core palette for your videos."
+            title="Colors"
+          >
+            <DialKitSurface targetId={`project-brand-colors-${projectId}`}>
+              <div className="grid @min-[480px]:grid-cols-3 grid-cols-1 gap-3">
+                {[
+                  ...new Set([
+                    "background",
+                    "foreground",
+                    "accent",
+                    ...Object.keys(brand.colors),
+                  ]),
+                ].map((role) => (
+                  <ProjectBrandColor
+                    key={role}
+                    onChange={changeColor}
+                    role={role}
+                    value={brand.colors[role]}
+                  />
+                ))}
+              </div>
+            </DialKitSurface>
+          </ProjectSettingsGroup>
+          <ProjectSettingsGroup title="Logos">
+            <div className="grid @min-[480px]:grid-cols-3 grid-cols-1 gap-3">
+              {LOGO_ROLES.map((role) => (
+                <div className="grid gap-2" key={role}>
+                  <span className="text-muted-foreground text-sm">
+                    {
+                      {
+                        mark: "Brand mark",
+                        onDark: "On dark",
+                        onLight: "On light",
+                      }[role]
+                    }
+                  </span>
+                  <div
+                    className="flex h-16 items-center justify-center rounded-md p-3"
+                    style={{
+                      background: role === "onDark" ? "#181818" : "#ffffff",
+                    }}
+                  >
+                    {brand.logos[role] ? (
+                      <Image
+                        alt={`${role} logo preview`}
+                        className="max-h-full max-w-full object-contain"
+                        height={80}
+                        onError={imageError}
+                        src={convertFileSrc(
+                          `${root}/${brand.logos[role].path}`
+                        )}
+                        unoptimized
+                        width={160}
+                      />
+                    ) : (
+                      <span className="text-neutral-500 text-xs">No logo</span>
+                    )}
+                  </div>
                   <Button
                     onClick={chooseFile}
+                    size="sm"
                     type="button"
-                    value={`font:${role}`}
-                    variant="outline"
+                    value={`logo:${role}`}
+                    variant="secondary"
                   >
-                    Add font file…
+                    Choose file
                   </Button>
-                  <Button
-                    disabled={!font?.family}
-                    onClick={downloadFont}
-                    type="button"
-                    value={role}
-                    variant="outline"
-                  >
-                    Download from Google Fonts
-                  </Button>
-                  <Button
-                    disabled={!font?.family}
-                    onClick={downloadFont}
-                    type="button"
-                    value={`${role}:italic`}
-                    variant="outline"
-                  >
-                    Download italic
-                  </Button>
-                </div>
-                {font?.files.map((file, index) => (
-                  <div
-                    className="grid gap-3 rounded-lg bg-background/60 p-3 text-sm"
-                    key={file.path}
-                  >
-                    <span className="break-all">
-                      {file.path.split("/").at(-1)}
-                    </span>
-                    <span className="break-all text-muted-foreground text-xs">
-                      Source: {file.source ?? "Local file"}
-                    </span>
-                    <Label>
-                      Weight or variable range
-                      <Input
-                        name={`face:${role}:${index}:weight`}
-                        onChange={changeText}
-                        value={file.weight}
-                      />
-                    </Label>
-                    <Label>
-                      Style
-                      <select
-                        className="ml-2 rounded border p-2"
-                        name={`face:${role}:${index}:style`}
-                        onChange={changeText}
-                        value={file.style}
-                      >
-                        <option>normal</option>
-                        <option>italic</option>
-                        <option>oblique</option>
-                      </select>
-                    </Label>
+                  {brand.logos[role] ? (
                     <Button
                       onClick={removeFile}
+                      size="sm"
                       type="button"
-                      value={`face:${role}:${index}`}
+                      value={`logo:${role}`}
                       variant="ghost"
                     >
-                      Remove file
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </ProjectSettingsGroup>
+        </div>
+        <div className={reviewingImport ? "hidden" : "order-2"}>
+          {brandActions}
+        </div>
+      </TabsPanel>
+      <TabsPanel className="grid gap-4" keepMounted value="typography">
+        <ProjectSettingsGroup
+          description="Choose a family for each role. Open a row to manage styles and licenses."
+          title="Fonts"
+        >
+          {FONT_ROLES.map((role) => {
+            const font = brand.typography[role];
+            return (
+              <details className="group min-w-0" key={role}>
+                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 text-[14px] leading-5 outline-offset-4 [&::-webkit-details-marker]:hidden">
+                  <span>
+                    {
+                      {
+                        body: "Body text",
+                        display: "Headings",
+                        mono: "Code & numbers",
+                      }[role]
+                    }
+                  </span>
+                  <span className="flex w-[min(280px,50%)] min-w-0 items-center justify-between gap-3 text-muted-foreground text-sm">
+                    <span className="truncate">
+                      {font?.family || "Not set"}
+                    </span>
+                    <ChevronDownIcon
+                      aria-hidden="true"
+                      className="size-4 shrink-0 group-open:rotate-180"
+                    />
+                  </span>
+                </summary>
+                <div className="grid gap-4 pb-5">
+                  <Label className="grid gap-2 text-sm capitalize">
+                    {role} font
+                    <Input
+                      name={`font:${role}:family`}
+                      onChange={changeText}
+                      placeholder="Not set"
+                      value={font?.family ?? ""}
+                    />
+                  </Label>
+                  {font ? (
+                    <Label className="grid gap-1 text-sm">
+                      Fallback
+                      <Input
+                        name={`font:${role}:fallback`}
+                        onChange={changeText}
+                        value={font.fallback}
+                      />
+                    </Label>
+                  ) : null}
+                  <Label className="grid gap-2 text-sm">
+                    Download weights
+                    <Input
+                      onChange={changeWeights}
+                      placeholder="400;700 or 100..900"
+                      value={weights}
+                    />
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={chooseFile}
+                      type="button"
+                      value={`font:${role}`}
+                      variant="outline"
+                    >
+                      Add font file…
+                    </Button>
+                    <Button
+                      disabled={!font?.family}
+                      onClick={downloadFont}
+                      type="button"
+                      value={role}
+                      variant="outline"
+                    >
+                      Download from Google Fonts
+                    </Button>
+                    <Button
+                      disabled={!font?.family}
+                      onClick={downloadFont}
+                      type="button"
+                      value={`${role}:italic`}
+                      variant="outline"
+                    >
+                      Download italic
                     </Button>
                   </div>
-                ))}
-                {font ? (
-                  <>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={chooseFile}
-                        type="button"
-                        value={`license:${role}`}
-                        variant="ghost"
-                      >
-                        Add license file…
-                      </Button>
+                  {font?.files.map((file, index) => (
+                    <div
+                      className="grid gap-3 rounded-lg bg-background/60 p-3 text-sm"
+                      key={file.path}
+                    >
+                      <span className="break-all">
+                        {file.path.split("/").at(-1)}
+                      </span>
+                      <span className="break-all text-muted-foreground text-xs">
+                        Source: {file.source ?? "Local file"}
+                      </span>
+                      <Label>
+                        Weight or variable range
+                        <Input
+                          name={`face:${role}:${index}:weight`}
+                          onChange={changeText}
+                          value={file.weight}
+                        />
+                      </Label>
+                      <Label>
+                        Style
+                        <NativeSelect
+                          className="ml-2"
+                          name={`face:${role}:${index}:style`}
+                          onChange={changeText}
+                          value={file.style}
+                        >
+                          <option>normal</option>
+                          <option>italic</option>
+                          <option>oblique</option>
+                        </NativeSelect>
+                      </Label>
                       <Button
                         onClick={removeFile}
                         type="button"
-                        value={`font:${role}`}
+                        value={`face:${role}:${index}`}
                         variant="ghost"
                       >
-                        Clear font
+                        Remove file
                       </Button>
                     </div>
-                    {font.licenses.map((file) => (
-                      <p
-                        className="break-all text-muted-foreground text-xs"
-                        key={file.path}
-                      >
-                        License: {file.path.split("/").at(-1)}
-                      </p>
-                    ))}
-                  </>
-                ) : null}
-                {font && font.files.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">
-                    No local files. Add the required styles for portable
-                    rendering.
-                  </p>
-                ) : null}
-              </div>
-            </details>
-          );
-        })}
-      </ProjectSettingsGroup>
-      <ProjectSettingsGroup
-        description="Guide the wording, logo placement and movement in your videos."
-        title="Voice & guidelines"
-      >
-        {(["description", "preferred", "avoided"] as const).map((key) => (
+                  ))}
+                  {font ? (
+                    <>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={chooseFile}
+                          type="button"
+                          value={`license:${role}`}
+                          variant="ghost"
+                        >
+                          Add license file…
+                        </Button>
+                        <Button
+                          onClick={removeFile}
+                          type="button"
+                          value={`font:${role}`}
+                          variant="ghost"
+                        >
+                          Clear font
+                        </Button>
+                      </div>
+                      {font.licenses.map((file) => (
+                        <p
+                          className="break-all text-muted-foreground text-xs"
+                          key={file.path}
+                        >
+                          License: {file.path.split("/").at(-1)}
+                        </p>
+                      ))}
+                    </>
+                  ) : null}
+                  {font && font.files.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      No local files. Add the required styles for portable
+                      rendering.
+                    </p>
+                  ) : null}
+                </div>
+              </details>
+            );
+          })}
+        </ProjectSettingsGroup>
+        <div className="grid gap-[9px] rounded-md p-4">
+          <BrandFontPreview
+            className="font-medium text-2xl leading-8 tracking-[-.025em]"
+            font={brand.typography.display}
+            root={root}
+            text="Make something worth watching."
+          />
+          <BrandFontPreview
+            className="text-[14px] text-muted-foreground leading-5"
+            font={brand.typography.body}
+            root={root}
+            text="A preview of your heading and body type. Font files and licenses stay with this project."
+          />
+        </div>
+      </TabsPanel>
+      <TabsPanel className="grid gap-4" keepMounted value="guidelines">
+        <ProjectSettingsGroup
+          description="Guide the wording, logo placement and movement in your videos."
+          title="Voice & guidelines"
+        >
+          {(["description", "preferred", "avoided"] as const).map((key) => (
+            <ProjectSettingsRow
+              htmlFor={`brand-tone-${key}`}
+              key={key}
+              layout="multiline"
+              title={
+                {
+                  avoided: "Wording to avoid",
+                  description: "Tone of voice",
+                  preferred: "Preferred wording",
+                }[key]
+              }
+            >
+              <Textarea
+                className="min-h-15 w-full rounded-md px-[9px] py-2.5 leading-[18px]"
+                id={`brand-tone-${key}`}
+                name={`tone:${key}`}
+                onChange={changeText}
+                value={brand.tone[key]}
+              />
+            </ProjectSettingsRow>
+          ))}
           <ProjectSettingsRow
-            htmlFor={`brand-tone-${key}`}
-            key={key}
-            title={
-              {
-                avoided: "Wording to avoid",
-                description: "Tone of voice",
-                preferred: "Preferred wording",
-              }[key]
-            }
+            htmlFor="brand-logo-rules"
+            layout="multiline"
+            title="Logo usage rules"
           >
             <Textarea
-              className="min-h-20 max-w-full sm:w-72"
-              id={`brand-tone-${key}`}
-              name={`tone:${key}`}
+              className="min-h-15 w-full rounded-md px-[9px] py-2.5 leading-[18px]"
+              id="brand-logo-rules"
+              name="logoRules"
               onChange={changeText}
-              value={brand.tone[key]}
+              value={brand.logoRules ?? ""}
             />
           </ProjectSettingsRow>
-        ))}
-        <ProjectSettingsRow htmlFor="brand-logo-rules" title="Logo usage rules">
-          <Textarea
-            className="min-h-20 max-w-full sm:w-72"
-            id="brand-logo-rules"
-            name="logoRules"
-            onChange={changeText}
-            value={brand.logoRules ?? ""}
-          />
-        </ProjectSettingsRow>
-        <ProjectSettingsRow htmlFor="brand-motion" title="Motion character">
-          <Textarea
-            className="min-h-20 max-w-full sm:w-72"
-            id="brand-motion"
-            name="motion"
-            onChange={changeText}
-            value={brand.motion ?? ""}
-          />
-        </ProjectSettingsRow>
-      </ProjectSettingsGroup>
-      <ProjectSettingsGroup title="Brand management">
-        <ProjectSettingsRow
-          description="Remove the brand settings from this project."
-          title="Clear brand"
-        >
-          <Button
-            disabled={!value}
-            onClick={clear}
-            type="button"
-            variant="ghost"
+          <ProjectSettingsRow
+            htmlFor="brand-motion"
+            layout="multiline"
+            title="Motion character"
           >
-            Clear brand
-          </Button>
-        </ProjectSettingsRow>
-        {brand.provenance.length ? (
-          <details className="group">
-            <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-4 text-muted-foreground text-sm outline-offset-4 [&::-webkit-details-marker]:hidden">
-              <span>Imported sources</span>
-              <ChevronDownIcon
-                aria-hidden="true"
-                className="size-4 shrink-0 group-open:rotate-180"
-              />
-            </summary>
-            <div className="grid gap-2 pb-4">
-              {brand.provenance.map((entry) => (
-                <p
-                  className="break-all text-muted-foreground text-xs"
-                  key={`${entry.field}:${entry.source}`}
-                >
-                  {entry.field}: {entry.source}
-                </p>
-              ))}
-            </div>
-          </details>
-        ) : null}
-      </ProjectSettingsGroup>
+            <Textarea
+              className="min-h-15 w-full rounded-md px-[9px] py-2.5 leading-[18px]"
+              id="brand-motion"
+              name="motion"
+              onChange={changeText}
+              value={brand.motion ?? ""}
+            />
+          </ProjectSettingsRow>
+        </ProjectSettingsGroup>
+        <ProjectSettingsGroup title="Brand management">
+          <ProjectSettingsRow
+            description="Remove the brand settings from this project."
+            title="Clear brand"
+          >
+            <Button
+              disabled={!value}
+              onClick={clear}
+              type="button"
+              variant="ghost"
+            >
+              Clear brand
+            </Button>
+          </ProjectSettingsRow>
+          {brand.provenance.length ? (
+            <details className="group">
+              <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-4 py-1 text-muted-foreground text-sm outline-offset-4 [&::-webkit-details-marker]:hidden">
+                <span>Imported sources</span>
+                <ChevronDownIcon
+                  aria-hidden="true"
+                  className="size-4 shrink-0 group-open:rotate-180"
+                />
+              </summary>
+              <div className="grid gap-2 pb-4">
+                {brand.provenance.map((entry) => (
+                  <p
+                    className="break-all text-muted-foreground text-xs"
+                    key={`${entry.field}:${entry.source}`}
+                  >
+                    {entry.field}: {entry.source}
+                  </p>
+                ))}
+              </div>
+            </details>
+          ) : null}
+        </ProjectSettingsGroup>
+      </TabsPanel>
       {loading ? (
         <p className="text-sm" role="status">
           Importing brand files…
@@ -668,7 +735,17 @@ export function ProjectBrandEditor({
   );
 }
 
-function BrandPreview({ brand, root }: { brand: ProjectBrand; root: string }) {
+function BrandFontPreview({
+  font,
+  root,
+  text,
+  className,
+}: {
+  font: ProjectBrand["typography"][FontRole];
+  root: string;
+  text: string;
+  className: string;
+}) {
   const [family, setFamily] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -676,7 +753,6 @@ function BrandPreview({ brand, root }: { brand: ProjectBrand; root: string }) {
     const loaded: FontFace[] = [];
     setFamily(undefined);
     setError(null);
-    const font = brand.typography.display;
     if (!font) {
       return;
     }
@@ -715,14 +791,13 @@ function BrandPreview({ brand, root }: { brand: ProjectBrand; root: string }) {
         document.fonts.delete(face);
       }
     };
-  }, [brand.typography.display, root]);
-  const previewText = `Aa — ${brand.name || "Your next story"}`;
-  const files = brand.typography.display?.files ?? [];
+  }, [font, root]);
+  const files = font?.files ?? [];
   const missing =
     files.length && files.every((file) => file.font)
       ? [
           ...new Set(
-            [...previewText].filter(
+            [...text].filter(
               (char) =>
                 char.trim() &&
                 !files.some((file) =>
@@ -736,30 +811,19 @@ function BrandPreview({ brand, root }: { brand: ProjectBrand; root: string }) {
         ].join(" ")
       : "";
   return (
-    <div
-      className="min-w-0 rounded-lg border p-6"
-      style={{
-        background: brand.colors.background,
-        color: brand.colors.foreground,
-      }}
-    >
-      <p className="mb-3 text-xs">Preview</p>
+    <div className="min-w-0">
       <p
-        className="text-balance break-words text-2xl leading-tight sm:text-3xl"
-        style={{ fontFamily: family ?? brand.typography.display?.fallback }}
+        className={className}
+        style={{
+          fontFamily:
+            family ??
+            (font
+              ? `${JSON.stringify(font.family)}, ${font.fallback}`
+              : undefined),
+        }}
       >
-        {previewText}
+        {text}
       </p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        {Object.entries(brand.colors).map(([role, color]) => (
-          <span
-            className="size-8 shrink-0 rounded-full border"
-            key={role}
-            style={{ background: color }}
-            title={`${role}: ${color}`}
-          />
-        ))}
-      </div>
       {missing ? (
         <p className="mt-3 break-words text-xs leading-relaxed" role="status">
           Missing glyphs: {missing}. These characters use the fallback.
