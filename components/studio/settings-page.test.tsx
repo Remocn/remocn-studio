@@ -9,7 +9,8 @@ import {
 } from "@testing-library/react";
 import Page from "@/app/page";
 import { ThemeProvider } from "@/components/theme-provider";
-import type { EnvironmentCheck } from "@/shared/ipc";
+import { INSTALLED_ELSEWHERE } from "@/hooks/use-updates";
+import type { EnvironmentCheck, StudioBuild } from "@/shared/ipc";
 import { stubGlobal, unstubAllGlobals } from "@/test/stub-global";
 import { LINUX, MAC, withAgent } from "@/test/user-agent";
 
@@ -54,9 +55,17 @@ function notificationShim(permission: "default" | "denied" | "granted") {
   };
 }
 
+const DEVELOPMENT_BUILD: StudioBuild = {
+  environment: "development",
+  os: "15.5",
+  updatesInPlace: true,
+  version: "0.3.0",
+};
+
 function mockStudio(
   written: [string, unknown][],
-  entries: readonly [string, unknown][] = []
+  entries: readonly [string, unknown][] = [],
+  build: StudioBuild = DEVELOPMENT_BUILD
 ) {
   mockIPC(
     (cmd, payload) => {
@@ -78,12 +87,7 @@ function mockStudio(
         return false;
       }
       if (cmd === "studio_build") {
-        return {
-          environment: "development",
-          os: "15.5",
-          updatesInPlace: true,
-          version: "0.3.0",
-        };
+        return build;
       }
       if (cmd === "sidecar_status") {
         return SIDECAR_READY;
@@ -124,6 +128,7 @@ async function openSettings() {
 const OPT_IN_WORDING = /Off unless you turn it on/;
 const NEVER_SENT_WORDING = /prompts, your conversations with the agent/;
 const COMMAND_GLYPH = /⌘/;
+const INSTALL_ADVICE = /Installing an update restarts the app/;
 
 describe("the settings page", () => {
   let written: [string, unknown][];
@@ -154,6 +159,30 @@ describe("the settings page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Updates" }));
     expect(await screen.findByText("System")).toBeVisible();
     expect(screen.queryByText("macOS")).toBeNull();
+  });
+
+  it("leaves a Linux package's updates to its package manager", async () => {
+    withAgent(LINUX);
+    mockStudio(written, [], {
+      environment: "production",
+      os: "Arch Linux",
+      updatesInPlace: false,
+      version: "1.1.0",
+    });
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "Updates" }));
+
+    expect(await screen.findByText(INSTALLED_ELSEWHERE)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Check now" })).toBeDisabled();
+    // `=== null`, not toBeNull(): handed a rendered node, bun's matcher walks
+    // its React fiber to word the failure and can pass instead of failing.
+    expect(
+      screen.queryByText("The studio checks for updates when it opens.") ===
+        null
+    ).toBe(true);
+    expect(screen.queryByText(INSTALL_ADVICE) === null).toBe(true);
   });
 
   it("opens on Cmd+comma", async () => {
@@ -257,7 +286,7 @@ describe("the settings page", () => {
     expect(
       await screen.findByText("Shortcuts follow your platform.")
     ).toBeVisible();
-    expect(screen.queryByText(COMMAND_GLYPH)).toBeNull();
+    expect(screen.queryByText(COMMAND_GLYPH) === null).toBe(true);
   });
 
   it("keeps the notifications switch unavailable without the desktop app", async () => {
