@@ -4,19 +4,19 @@
       "source": "Remocn/remocn",
       "sourceType": "github",
       "skillPath": "skills/remocn/SKILL.md",
-      "computedHash": "8366e50178d9f2169a9f89b3c07a56968a7abc5f3b12d8a3673542097ffc63bd"
+      "computedHash": "d0a134e232d282bca1af0cbc88185a57b72aef5c7146a903bbbabece536cfe86"
     },
     "remotion-best-practices": {
       "source": "remotion-dev/skills",
       "sourceType": "github",
       "skillPath": "skills/remotion-best-practices/SKILL.md",
-      "computedHash": "bac35fc4933aedc4d971ba2e6254e6f8d5b1d987c26503726e29f7237a7b7205"
+      "computedHash": "a40e3a83b43ac27b202c219509d758e42094f866ba036875a1568364b36f1854"
     },
     "remotion-interactivity": {
       "source": "remotion-dev/skills",
       "sourceType": "github",
       "skillPath": "skills/remotion-interactivity/SKILL.md",
-      "computedHash": "46a5ea4f510d0b66fe3c899b39bc41a809adf1d9697577bb328076f800573a98"
+      "computedHash": "f536bb62093066d21935788b001b1d1327d991384ef433d2b14f222686178730"
     }
   },
   "version": 1
