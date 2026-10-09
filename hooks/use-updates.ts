@@ -20,6 +20,8 @@ import type { AppEnvironment, StudioBuild } from "@/shared/ipc";
 const CORE_PENDING = "Waiting for the Tauri core";
 const IS_DEVELOPMENT =
   "This is a development build — it updates when you rebuild it";
+export const INSTALLED_ELSEWHERE =
+  "Your package manager installed this build, and it brings the updates";
 
 export interface Updates {
   check: () => Promise<void>;
@@ -60,8 +62,10 @@ export function useUpdates(): Updates {
     };
   }, []);
 
+  const unavailable = unavailableOf(build);
+
   const check = useCallback(async () => {
-    if (busy.current) {
+    if (busy.current || unavailable !== null) {
       return;
     }
 
@@ -82,7 +86,7 @@ export function useUpdates(): Updates {
 
     offered.current = exit.value;
     setRelease(exit.value === null ? null : releaseOf(exit.value));
-  }, []);
+  }, [unavailable]);
 
   const install = useCallback(async () => {
     const update = offered.current;
@@ -111,15 +115,13 @@ export function useUpdates(): Updates {
     await Effect.runPromiseExit(restartStudio);
   }, []);
 
-  const isProduction = build?.environment === "production";
-
   useEffect(() => {
-    if (!isProduction || hasChecked) {
+    if (unavailable !== null || hasChecked) {
       return;
     }
 
     check().catch(() => undefined);
-  }, [check, hasChecked, isProduction]);
+  }, [check, hasChecked, unavailable]);
 
   return useMemo(
     () => ({
@@ -133,17 +135,35 @@ export function useUpdates(): Updates {
       isInstalling: download !== null,
       os: build?.os ?? null,
       release,
-      unavailable: unavailableOf(build),
+      unavailable,
       version: build?.version ?? null,
     }),
-    [build, check, download, error, hasChecked, install, isChecking, release]
+    [
+      build,
+      check,
+      download,
+      error,
+      hasChecked,
+      install,
+      isChecking,
+      release,
+      unavailable,
+    ]
   );
 }
 
-function unavailableOf(build: StudioBuild | null): string | null {
+// Each answer is also why nothing is checked. A Linux build a distribution
+// packaged carries no bundle marker, and asked anyway the updater would try to
+// put a downloaded AppImage in place of the executable its package manager
+// owns, so it never asks GitHub.
+export function unavailableOf(build: StudioBuild | null): string | null {
   if (build === null) {
     return CORE_PENDING;
   }
 
-  return build.environment === "development" ? IS_DEVELOPMENT : null;
+  if (build.environment === "development") {
+    return IS_DEVELOPMENT;
+  }
+
+  return build.updatesInPlace ? null : INSTALLED_ELSEWHERE;
 }

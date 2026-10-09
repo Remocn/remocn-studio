@@ -76,8 +76,20 @@ pub async fn studio_build(app: AppHandle) -> StudioBuild {
             AppEnvironment::Production
         },
         os,
+        updates_in_place: updates_in_place(),
         version: app.package_info().version.to_string(),
     }
+}
+
+/// Whether the updater can replace this build. It installs only what a
+/// release ships — the `.app`, an AppImage, a `.deb`, an `.rpm` — and tells
+/// which from the marker tauri-bundler writes into the binary; on a Mac it
+/// always answers the `.app`. A Linux binary without the marker was installed
+/// some other way — a distribution's package clears it — and replacing it is
+/// that package manager's job: the updater would put an AppImage in place of
+/// the executable it owns.
+fn updates_in_place() -> bool {
+    tauri::utils::platform::bundle_type().is_some()
 }
 
 static OS_VERSION: OnceLock<String> = OnceLock::new();
@@ -153,5 +165,24 @@ mod os_tests {
     #[test]
     fn nothing_usable_is_none() {
         assert_eq!(os_name_in("ID=arch\nPRETTY_NAME=\"\"\n"), None);
+    }
+}
+
+#[cfg(test)]
+mod update_tests {
+    use super::updates_in_place;
+
+    // A test binary is never bundled, so it carries no marker: the state a
+    // Linux build installed by a package manager is in.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_linux_build_without_a_bundle_marker_is_not_updated_in_place() {
+        assert!(!updates_in_place());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_mac_build_is_always_updated_in_place() {
+        assert!(updates_in_place());
     }
 }

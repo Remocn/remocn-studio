@@ -91,5 +91,6 @@ pub enum AppEnvironment {
 pub struct StudioBuild {
     pub environment: AppEnvironment,
     pub os: String,
+    pub updates_in_place: bool,
     pub version: String,
 }

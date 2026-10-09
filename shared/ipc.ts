@@ -1742,6 +1742,9 @@ export type AppEnvironment = (typeof AppEnvironment)["Type"];
 export const StudioBuild = Schema.Struct({
   environment: AppEnvironment,
   os: Schema.String,
+  // False for a Linux build installed some other way than a release's
+  // AppImage, .deb or .rpm, which the updater cannot replace.
+  updatesInPlace: Schema.Boolean,
   version: Schema.String,
 });
 
