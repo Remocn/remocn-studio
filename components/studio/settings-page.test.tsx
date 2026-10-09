@@ -118,6 +118,7 @@ async function openSettings() {
 
 const OPT_IN_WORDING = /Off unless you turn it on/;
 const NEVER_SENT_WORDING = /prompts, your conversations with the agent/;
+const COMMAND_GLYPH = /⌘/;
 
 describe("the settings page", () => {
   let written: [string, unknown][];
@@ -231,6 +232,27 @@ describe("the settings page", () => {
     ).toBe("No shortcuts match “not-a-shortcut”.");
     fireEvent.change(search, { target: { value: "" } });
     expect(screen.getByLabelText("⇧⌘S")).toBeVisible();
+    expect(
+      screen.getByText(
+        "Shortcuts follow your platform. Use Ctrl instead of ⌘ on Windows."
+      )
+    ).toBeVisible();
+  });
+
+  it("lists Ctrl shortcuts on Linux and says nothing of ⌘", async () => {
+    withAgent(LINUX);
+    await renderShell();
+    await openSettings();
+
+    fireEvent.click(screen.getByRole("button", { name: "Hotkeys" }));
+
+    const video = within(screen.getByRole("region", { name: "Video" }));
+    expect(video.getByLabelText("Ctrl+E")).toBeVisible();
+    expect(video.getByLabelText("Ctrl+Shift+S")).toBeVisible();
+    expect(
+      await screen.findByText("Shortcuts follow your platform.")
+    ).toBeVisible();
+    expect(screen.queryByText(COMMAND_GLYPH)).toBeNull();
   });
 
   it("keeps the notifications switch unavailable without the desktop app", async () => {

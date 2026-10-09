@@ -264,15 +264,22 @@ const FOOTNOTES: Record<SectionId, string | null> = {
   appearance: "Changes are saved automatically",
   behavior: "Changes are saved automatically",
   feedback: "Esc · Back to studio",
-  hotkeys: "Shortcuts follow your platform. Use Ctrl instead of ⌘ on Windows.",
+  hotkeys: "Shortcuts follow your platform.",
   integrations: "Changes are saved automatically",
   notifications: "Changes are saved automatically",
   project: null,
   updates: "Esc · Back to studio",
 };
 
+// A Mac keeps the line it had. Elsewhere the list already reads Ctrl, so a
+// sentence about ⌘ would describe keys the person does not have.
+const MAC_HOTKEYS_FOOTNOTE =
+  "Shortcuts follow your platform. Use Ctrl instead of ⌘ on Windows.";
+
 function SettingsFooter({ section }: { section: SectionId }) {
-  const text = FOOTNOTES[section];
+  const isMac = useIsMac();
+  const text =
+    section === "hotkeys" && isMac ? MAC_HOTKEYS_FOOTNOTE : FOOTNOTES[section];
   if (text === null) {
     return null;
   }
