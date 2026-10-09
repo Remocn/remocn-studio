@@ -145,6 +145,12 @@ export function updateSummary(updates: Updates): string {
     return `${updates.release.version} is out, and this build is older`;
   }
 
+  // A check that failed has checked nothing; the error under this line says
+  // why.
+  if (updates.error !== null) {
+    return "Could not tell whether a newer build is out";
+  }
+
   return updates.hasChecked
     ? "This is the newest release"
     : "Not checked yet since the studio opened";
