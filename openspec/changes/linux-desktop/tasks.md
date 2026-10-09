@@ -121,3 +121,13 @@
 - [x] 11.4 `test/register-dom.ts` keeps the macOS user agent; Linux tests switch with `withAgent(LINUX)` (design §9). Verify: the `⌘` assertions are back and every Linux test names its platform.
 - [x] 11.5 A Mac keeps its own wording and Linux gets the general sentence (design §9 table); `os_version` answers the bare `sw_vers` version on macOS. Verify: settings-page, feedback, failure-text and platform tests cover both.
 - [x] 11.6 ⌘⌫ on a row and ⌘Z on the canvas read `isModKey()`, so Linux takes Ctrl. Verify: `use-row-menus.test.tsx` and `use-canvas-layers.test.tsx` cover Linux.
+
+## 12. Runtime check follow-ups (9.3, measured 2026-10-09; results under *Risks* in design.md)
+
+- [x] 12.1 `tauri.linux.conf.json` takes the redesign's window background, `#0a0a0a`; it replaces the whole window object, so it had kept `#181818`.
+- [x] 12.2 The Hotkeys footnote reads "Shortcuts follow your platform." off a Mac (design §9). Verify: `settings-page.test.tsx` covers both platforms.
+- [x] 12.3 The checklist waits for a new project's scaffold (`isSettingUp`, `projects/environment-checklist` delta). Verify: `use-scaffold.test.tsx`.
+- [x] 12.4 A release without this platform's build is worded, and a failed check is not summarised as the newest release (decision 8, `shell/quit-and-updates` delta). Verify: `updates.test.ts`, `update-status.test.tsx`.
+- [x] 12.5 `studio_build` answers `updatesInPlace`; a markerless Linux build never checks and Updates says its package manager brings the updates, without the launch-check and install lines (decision 8). Verify: `cargo test update_tests`, `use-updates.test.tsx`, `settings-page.test.tsx`.
+- [ ] 12.6 On Linux, post notifications with a default action and bring the window forward when it is invoked (9.3 i): the plugin sends none today.
+- [ ] 12.7 Check footage playback (9.3 h) on a host with gst-plugins-good, -bad and gst-libav, and window drag, resize and Maximise (9.3 a) on GNOME or Plasma.
