@@ -257,3 +257,51 @@ jobs:
           xcrun stapler staple "$dmg"
           spctl -a -vv -t open --context context:primary-signature "$dmg"
           gh release upload "v${{ needs.version.outputs.version }}" "$dmg" --clobber
+
+  # Linear Releases (scheduled pipeline). Every push to main that does not cut a
+  # version adds the REM-xxx issues its commits reference to the open release in
+  # Linear. Once a version is tagged and both macOS builds are on GitHub, that
+  # release gets the version and is marked complete. Release notes are generated
+  # by Linear from the pipeline settings, not from CHANGELOG.md.
+  linear-sync:
+    name: Linear release (sync)
+    needs: version
+    if: needs.version.outputs.released != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The action scans commit history for issue identifiers.
+          fetch-depth: 0
+      - uses: linear/linear-release-action@v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          # TODO: remove after the first successful run. Issues were renumbered
+          # when moving to the new Linear workspace (same REM key), so commits
+          # before v1.0.1 must not be scanned. Left in place, it would rescan
+          # from v1.0.1 on every run.
+          base_ref: v1.0.1
+
+  linear-complete:
+    name: Linear release (complete)
+    needs: [version, release-macos]
+    if: needs.version.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # Per the action's README: sync again with the version (sets it on the
+      # open release), then complete that same version.
+      - uses: linear/linear-release-action@v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          version: v${{ needs.version.outputs.version }}
+          name: Remocn Studio v${{ needs.version.outputs.version }}
+          links: |
+            GitHub release=https://github.com/Remocn/remocn-studio/releases/tag/v${{ needs.version.outputs.version }}
+      - uses: linear/linear-release-action@v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          command: complete
+          version: v${{ needs.version.outputs.version }}
