@@ -86,7 +86,7 @@
 
 - [x] 9.1 Run `bun run fix`, `bun run check`, `bun run typecheck`, the test files touched above, then the full `bun run test` once. Verify: all pass, and the suite count is the baseline (3353 pass, 18 skip) adjusted for added and removed tests, with 0 fail.
 - [x] 9.2 Run `bun run sidecar:build` and `cargo test` in `src-tauri/`, then `bun tauri build`. Verify: a `.deb` and an `.rpm` appear under `src-tauri/target/release/bundle/`, `dpkg -c` on the `.deb` lists `usr/bin/remocn-studio-bun`, not `usr/bin/bun`, and its desktop entry carries `Exec=remocn-studio %u` and the scheme's MimeType. (The AppImage step cannot run on a gdk-pixbuf 2.44 host; see design.md *Risks* and 9.4.)
-- [ ] 9.3 Ask the person to run `bun tauri dev` (and the built AppImage once) and check:
+- [x] 9.3 Ask the person to run `bun tauri dev` (and the built AppImage once) and check:
   - (a) The band shows with its shader, and the three controls sit top-left: Close raises the quit guard mid-turn, Maximise and a double-click on the band toggle size, dragging the band moves the window, and an edge resizes it.
   - (b) No menu bar shows, and Ctrl+K, Ctrl+E and Ctrl+B work with the caret in the composer.
   - (c) Adding an integration key survives a restart, and it is visible in Seahorse or KWallet under `com.remocn.remocn-studio`.
@@ -99,7 +99,7 @@
   - (j) `xdg-open 'remocn-studio://…'` reaches the running AppImage.
 
   Verify: the person's answers recorded under *Risks* in `design.md`. A failure in (c), (g) or (h) blocks archiving.
-- [ ] 9.4 The first release run of `publish.yml` builds the AppImage on `ubuntu-22.04` and `ubuntu-22.04-arm`. Verify: the release carries `.AppImage`, `.deb` and `.rpm` for both architectures, and the AppImage starts on this Arch machine.
+- [x] 9.4 The first release run of `publish.yml` builds the AppImage on `ubuntu-22.04` and `ubuntu-22.04-arm`. Verify: the release carries `.AppImage`, `.deb` and `.rpm` for both architectures, and the AppImage starts on this Arch machine.
 
 ## 10. Both platforms from one codebase
 
@@ -111,7 +111,7 @@
 - [x] 10.6 *Grant permission* opens System Settings on macOS once refused and re-asks on Linux; the Settings lines and the keychain/keyring wording read the platform. `test/user-agent.ts` switches tests to a macOS agent. Verify: notification-consent, settings-page and platform tests cover both.
 - [x] 10.7 `publish.yml` keeps the signed macOS jobs and adds `release-linux` after them, signing for the updater and uploading `latest.json`; `dev.yml`'s `rust` job runs on `ubuntu-22.04` and `macos-latest`.
 - [x] 10.8 README, CONTRIBUTING, CLAUDE.md, `docs/decisions/README.md`, `openspec/config.yaml`, the spec Purpose lines and this change's proposal, design and deltas describe both platforms; `sign-and-notarize-macos` is restored.
-- [ ] 10.9 On a Mac, run `bun tauri dev` and check the traffic lights, the menu bar, the keychain prompt, Terminal.app, the Node `.pkg`, and System Settings from *Grant permission* behave as before. Verify: the `rust core (macOS)` CI job passes.
+- [x] 10.9 On a Mac, run `bun tauri dev` and check the traffic lights, the menu bar, the keychain prompt, Terminal.app, the Node `.pkg`, and System Settings from *Grant permission* behave as before. Verify: the `rust core (macOS)` CI job passes.
 
 ## 11. Review follow-ups
 

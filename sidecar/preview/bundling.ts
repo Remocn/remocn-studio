@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import type { WebpackConfig } from "./project";
 
 // The flags handed to Remotion's `webpackConfig`, apart from the values the
@@ -96,7 +97,21 @@ function withoutRefresh(rules: Rule[]): Rule[] {
   });
 }
 
-export function renderOnly(config: WebpackConfig): WebpackConfig {
+const CUSTOM_SHADER_FRAGMENT =
+  /[/\\]studio-shaders-v1[/\\](?:caustics|strata|weave)-fragment\.ts$/;
+
+export function shaderPrecisionRule(directory: string) {
+  return {
+    enforce: "pre",
+    test: CUSTOM_SHADER_FRAGMENT,
+    use: [join(directory, "shader-precision-loader.cjs")],
+  };
+}
+
+export function renderOnly(
+  config: WebpackConfig,
+  directory: string
+): WebpackConfig {
   const plugins = (config.plugins ?? []) as {
     constructor?: { name?: string };
   }[];
@@ -111,7 +126,10 @@ export function renderOnly(config: WebpackConfig): WebpackConfig {
       : config.entry,
     module: {
       ...modules,
-      rules: withoutRefresh((modules.rules ?? []) as Rule[]),
+      rules: [
+        ...withoutRefresh((modules.rules ?? []) as Rule[]),
+        shaderPrecisionRule(directory),
+      ],
     },
     output: { ...(config.output as object), clean: true },
     plugins: plugins.filter(

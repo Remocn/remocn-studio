@@ -11,6 +11,7 @@ import type {
   PromptResult,
   SourceAssetResolution,
 } from "@/shared/ipc";
+import { REMOCN_DIR_ENV } from "@/shared/ipc";
 import { PROVIDER_INFO, type ProviderInfo } from "@/shared/providers";
 import type { AgentAdapter, TurnServices } from "@/sidecar/agent/adapter";
 import {
@@ -299,11 +300,13 @@ function harness(
     brand = fakeBrand(null).brand,
     gate = makeGate(),
     history = setup.history,
+    workspace,
   }: {
     adapter: AgentAdapter;
     brand?: BrandLifecycle;
     gate?: PermissionGate;
     history?: HistoryStore;
+    workspace?: TurnPorts["workspace"];
   }
 ) {
   const events: AgentEvent[] = [];
@@ -323,6 +326,7 @@ function harness(
       contexts.push(turn);
       return STUB_TOOLS;
     },
+    workspace,
   };
 
   const run = (params: PromptParams) =>
@@ -794,4 +798,90 @@ describe("openTurn", () => {
     expect(blocks).toHaveLength(1);
     expect(blocks[0]).toMatchObject({ kind: "user", text: params.prompt });
   });
+});
+
+it("uses the isolated shader workspace with normal tools and history without retaining its SDK resume token", async () => {
+  const setup = await studio();
+  const workspace = {
+    brief: "SHADER PREPARATION SCOPE",
+    path: setup.project.path,
+  };
+  const { adapter, turns } = fakeAdapter(Effect.succeed(DONE));
+  const preparationAdapter: AgentAdapter = {
+    ...adapter,
+    turn: (input, services) =>
+      Effect.gen(function* () {
+        yield* services.emit({
+          mode: "auto",
+          model: "test",
+          sessionId: "temporary-sdk",
+          type: "session",
+        });
+        yield* services.record({
+          mode: "auto",
+          model: "test",
+          sessionId: "temporary-sdk",
+          type: "session",
+        });
+        yield* services.record({ text: "Connected the scenes", type: "text" });
+        return yield* adapter.turn(input, services);
+      }),
+  };
+  const { run, contexts, events } = harness(setup, {
+    adapter: preparationAdapter,
+    workspace,
+  });
+  const params = paramsFor(setup, {
+    shaderPreparation: { revision: "source" },
+  });
+  const result = await Effect.runPromise(run(params));
+  expect(result.sessionId).toBeNull();
+  expect(events.some((event) => event.type === "session")).toBe(false);
+  expect(contexts[0].project.path).toBe(workspace.path);
+  expect(turns[0].services.cwd).toBe(workspace.path);
+  expect(JSON.stringify(turns[0].services.instructions(false))).toContain(
+    workspace.brief
+  );
+  const blocks = await Effect.runPromise(
+    setup.history.blocks(params.historyId)
+  );
+  expect(JSON.stringify(blocks)).toContain("Connected the scenes");
+  const session = await openSession(setup, params);
+  expect(session.sdkSessionId).toBeNull();
+});
+
+it("delivers the selected caption workflow through a normal asset-only turn", async () => {
+  const previous = process.env[REMOCN_DIR_ENV];
+  process.env[REMOCN_DIR_ENV] = join(import.meta.dirname, "../../remocn");
+  try {
+    const setup = await studio();
+    const { adapter, turns } = fakeAdapter(Effect.succeed(DONE));
+    const { run } = harness(setup, { adapter });
+    const params = {
+      ...paramsFor(setup),
+      assets: [
+        {
+          name: "Karaoke",
+          preview: null,
+          slug: "remocn/caption-karaoke",
+          type: "component" as const,
+        },
+      ],
+      text: "[Asset #1]",
+    };
+    await Effect.runPromise(run(params));
+    expect(turns).toHaveLength(1);
+    expect(turns[0].services.instructions(true).trailer).toContain(
+      "Selected caption style: caption-karaoke"
+    );
+    expect(turns[0].services.instructions(false).trailer).toContain(
+      "local transcription"
+    );
+  } finally {
+    if (previous === undefined) {
+      delete process.env[REMOCN_DIR_ENV];
+    } else {
+      process.env[REMOCN_DIR_ENV] = previous;
+    }
+  }
 });

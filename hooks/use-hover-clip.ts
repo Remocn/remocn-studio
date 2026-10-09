@@ -1,38 +1,51 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 export interface ClipFallback {
   isBroken: boolean;
+  isPlaying: boolean;
   onError: () => void;
+  onOpenChange: (open: boolean) => void;
+  play: () => void;
   ref: (node: HTMLVideoElement | null) => void;
 }
 
-// A clip that fails to play is remembered for the card's lifetime, so the
-// popover settles on the poster instead of retrying the decode on every
-// hover.
-//
-// The ref exists because the `autoPlay` attribute alone does not start the
-// clip: React never writes `muted` into the DOM (a long-standing quirk), so
-// the autoplay policy sees an unmuted video and blocks it. Muting the element
-// by hand and calling play() is the reliable path; a rejected play falls
-// through to onError's poster.
 export function useClipFallback(): ClipFallback {
+  const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [isBroken, setBroken] = useState(false);
-
+  const [requested, setRequested] = useState(false);
+  const video = useRef<HTMLVideoElement | null>(null);
+  const isPlaying = !reduced || requested;
   const onError = useCallback(() => setBroken(true), []);
-
-  // The rejection is swallowed on purpose: closing the popover mid-start
-  // rejects play() with an AbortError, and treating that as a broken clip
-  // permanently demoted every briefly-hovered card to its poster. A clip
-  // that genuinely cannot decode reports through onError instead.
-  const ref = useCallback((node: HTMLVideoElement | null) => {
-    if (node === null) {
-      return;
+  const play = useCallback(() => setRequested(true), []);
+  const onOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      video.current?.pause();
+      setRequested(false);
     }
-    node.muted = true;
-    node.play().catch(() => undefined);
   }, []);
-
-  return useMemo(() => ({ isBroken, onError, ref }), [isBroken, onError, ref]);
+  const ref = useCallback(
+    (node: HTMLVideoElement | null) => {
+      if (video.current !== node) {
+        video.current?.pause();
+      }
+      video.current = node;
+      if (node && isPlaying) {
+        node.muted = true;
+        node.play().catch((cause: unknown) => {
+          if (cause instanceof DOMException && cause.name === "AbortError") {
+            return;
+          }
+          setBroken(true);
+        });
+      }
+    },
+    [isPlaying]
+  );
+  return useMemo(
+    () => ({ isBroken, isPlaying, onError, onOpenChange, play, ref }),
+    [isBroken, isPlaying, onError, onOpenChange, play, ref]
+  );
 }

@@ -337,7 +337,8 @@ function boot(root: string, preferred: string | null) {
           userDefinedComponent,
           webpackOverride: async (input: WebpackConfig) =>
             renderOnly(
-              ours(await override(input), { playerPath, renderEntry })
+              ours(await override(input), { playerPath, renderEntry }),
+              path.dirname(entry)
             ),
         }),
     });

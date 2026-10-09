@@ -579,7 +579,7 @@ function InspectorPanel({
       <InspectorBar hasSelection={hasSelection} layers={layers} />
       <div
         className={cn(
-          "flex min-w-0 flex-1 flex-col",
+          "flex min-h-0 min-w-0 flex-1 flex-col",
           !layers.shown && "hidden"
         )}
       >

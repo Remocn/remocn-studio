@@ -261,6 +261,25 @@ describe("useCommands", () => {
     expect(spies.showPane).toHaveBeenCalledWith("projects");
   });
 
+  it("exposes Shaders in the native View menu without taking an existing shortcut", () => {
+    const { result, spies } = sources({ paneView: "shaders" });
+    const command = byId(result, "pane-shaders");
+    expect(command.checked).toBe(true);
+    expect(command.menu).toBe("view");
+    expect(command.shortcut).toBeUndefined();
+    command.run();
+    expect(spies.showPane).toHaveBeenCalledWith("shaders");
+  });
+  it("exposes Captions in the native View menu without taking an existing shortcut", () => {
+    const { result, spies } = sources({ paneView: "captions" });
+    const command = byId(result, "pane-captions");
+    expect(command.checked).toBe(true);
+    expect(command.menu).toBe("view");
+    expect(command.shortcut).toBeUndefined();
+    command.run();
+    expect(spies.showPane).toHaveBeenCalledWith("captions");
+  });
+
   it("checks the sidebar view that is showing", () => {
     const { result } = sources({ paneView: "components" });
 

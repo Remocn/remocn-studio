@@ -25,6 +25,7 @@ import { VideoStore } from "./history/videos";
 import { HandlerError, type Handlers } from "./host";
 import { recoverSounds } from "./integrations/sounds";
 import { listBundled } from "./library/bundled";
+import { listShaders } from "./library/shaders";
 import {
   type StockError,
   saveStock,
@@ -70,6 +71,11 @@ import {
   moveProjectFiles,
   prepareMove,
 } from "./projects/move";
+import { makeShaderInsertions } from "./projects/shader-insertion";
+import {
+  makeShaderPreparations,
+  preparationOffer,
+} from "./projects/shader-preparation";
 import {
   readStudioDocument,
   removeStudioObject,
@@ -153,6 +159,34 @@ const insideProject = (root: string, files: readonly string[]) =>
 const located = (projectId: string) =>
   locate(projectId).pipe(Effect.mapError(unstored));
 
+const shaderServices = new Map<
+  string,
+  ReturnType<typeof makeShaderInsertions> & {
+    preparation: ReturnType<typeof makeShaderPreparations>;
+  }
+>();
+function shaderService() {
+  const directory = process.env[DATA_DIR_ENV];
+  if (!directory) {
+    return Effect.fail(
+      new HandlerError({
+        message:
+          "Studio's data folder is unavailable; shader preparation cannot be recovered safely.",
+      })
+    );
+  }
+  const known = shaderServices.get(directory);
+  if (known) {
+    return Effect.succeed(known);
+  }
+  const service = {
+    ...makeShaderInsertions(directory),
+    preparation: makeShaderPreparations(directory),
+  };
+  shaderServices.set(directory, service);
+  return Effect.succeed(service);
+}
+
 export const handlers: Handlers<HistoryStore | ProjectStore | VideoStore> = {
   // One row per provider, for the model picker to mark who is actually
   // reachable. The probes share project.check's cache, so a warm answer
@@ -175,15 +209,81 @@ export const handlers: Handlers<HistoryStore | ProjectStore | VideoStore> = {
     ),
 
   "agent.prompt": ({ ask, emit, log, params }) =>
-    runTurn(params, {
-      adapterFor,
-      brand: projectBrand,
-      emit,
-      gate,
-      gateway,
-      log,
-      tools: (turn) => turnTools(turn, { ask }),
-    }).pipe(Effect.mapError(unstored)),
+    Effect.gen(function* () {
+      const ports = {
+        adapterFor,
+        brand: projectBrand,
+        emit,
+        gate,
+        gateway,
+        log,
+        tools: (turn: import("./agent/turn").TurnContext) =>
+          turnTools(turn, { ask }),
+      };
+      if (!params.shaderPreparation) {
+        return yield* runTurn(params, ports).pipe(Effect.mapError(unstored));
+      }
+      const project = yield* located(params.projectId);
+      const videos = yield* VideoStore;
+      const video = yield* videos
+        .find(params.videoId)
+        .pipe(Effect.mapError(unstored));
+      if (video.projectId !== project.id) {
+        return yield* Effect.fail(
+          new HandlerError({
+            message: "This video belongs to another project.",
+          })
+        );
+      }
+      const store = yield* HistoryStore;
+      const blocks = yield* store
+        .blocks(params.historyId)
+        .pipe(Effect.mapError(unstored));
+      if (
+        params.sessionId !== null ||
+        blocks.length > 0 ||
+        params.assets.length ||
+        params.media.length ||
+        params.elements.length ||
+        params.attachments.length ||
+        params.brandRevision !== undefined
+      ) {
+        return yield* Effect.fail(
+          new HandlerError({
+            message:
+              "Start shader preparation in a new chat without attachments.",
+          })
+        );
+      }
+      const service = yield* shaderService();
+      yield* service
+        .invalidate(project.path, video.compositionId)
+        .pipe(Effect.mapError(unstored));
+      return yield* service.preparation
+        .run(
+          {
+            historyId: params.historyId,
+            revision: params.shaderPreparation.revision,
+            root: remotionRootOf(project.path),
+            video: video.compositionId,
+          },
+          (workspace) =>
+            runTurn(
+              { ...params, prompt: workspace.feedback ?? params.prompt },
+              {
+                ...ports,
+                brand: {
+                  begin: () =>
+                    Effect.succeed({ application: null, brief: null }),
+                  finish: () => Effect.void,
+                },
+                workspace,
+              }
+            ),
+          service.waitForPrepared(project.path, project.id, video.compositionId)
+        )
+        .pipe(Effect.mapError(unstored));
+    }),
 
   "agent.source": ({ params }) =>
     answerSourceAsset(params).pipe(
@@ -772,6 +872,90 @@ export const handlers: Handlers<HistoryStore | ProjectStore | VideoStore> = {
       );
 
       return { upgraded: true };
+    }),
+  "shader.insert": ({ params, emit }) =>
+    Effect.gen(function* () {
+      const project = yield* located(params.target.projectId);
+      const service = yield* shaderService();
+      const preparation = yield* service.preparation
+        .status(remotionRootOf(project.path), params.target.video)
+        .pipe(Effect.mapError(unstored));
+      if (
+        preparation &&
+        preparation.phase !== "ready" &&
+        preparation.phase !== "failed"
+      ) {
+        return yield* Effect.fail(
+          new HandlerError({
+            message:
+              "Wait for video preparation and preview validation before inserting a shader.",
+          })
+        );
+      }
+      return yield* service
+        .insert(project.path, params, emit)
+        .pipe(
+          Effect.mapError(
+            (error) => new HandlerError({ message: error.message })
+          )
+        );
+    }),
+  "shader.insertionStatus": ({ params }) =>
+    Effect.gen(function* () {
+      const project = yield* located(params.projectId);
+      const service = yield* shaderService();
+      return yield* service
+        .status(project.path, params.video, params.operationId)
+        .pipe(
+          Effect.mapError(
+            (error) => new HandlerError({ message: error.message })
+          )
+        );
+    }),
+  "shader.list": () =>
+    listShaders().pipe(
+      Effect.mapError((error) => new HandlerError({ message: error.message }))
+    ),
+  "shader.targets": ({ params }) =>
+    Effect.gen(function* () {
+      const project = yield* located(params.projectId);
+      const service = yield* shaderService();
+      const root = remotionRootOf(project.path);
+      const preparation = yield* service.preparation
+        .status(root, params.video)
+        .pipe(Effect.mapError(unstored));
+      const result = yield* service.targets(project.path, params).pipe(
+        Effect.catch((error) =>
+          preparationOffer(root, params.video).pipe(
+            Effect.map((revision) => ({
+              adaptation: false,
+              preparationRevision: revision,
+              reason: error.message,
+              targets: [],
+            })),
+            Effect.catch(() =>
+              Effect.succeed({
+                adaptation: false,
+                reason: error.message,
+                targets: [],
+              })
+            )
+          )
+        )
+      );
+      if (
+        preparation &&
+        preparation.phase !== "ready" &&
+        preparation.phase !== "failed"
+      ) {
+        return {
+          ...result,
+          preparation,
+          reason: preparation.message,
+          targets: [],
+        };
+      }
+      return { ...result, ...(preparation ? { preparation } : {}) };
     }),
 
   "sidecar.emit": ({ emit, params }) =>

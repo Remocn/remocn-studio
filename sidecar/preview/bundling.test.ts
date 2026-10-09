@@ -57,7 +57,7 @@ describe("renderOnly", () => {
   };
 
   it("keeps nothing a render never reads: no HMR, no React Refresh, no progress", () => {
-    const rendered = renderOnly(config);
+    const rendered = renderOnly(config, "/preview");
 
     expect(
       (rendered.plugins as object[]).map((plugin) => plugin.constructor.name)
@@ -71,8 +71,34 @@ describe("renderOnly", () => {
     expect(JSON.stringify(rendered.module)).toContain("style-loader");
   });
 
+  it("applies the same scoped precision compatibility to export as native preview", () => {
+    const rendered = renderOnly(config, "/preview");
+    const { rules } = rendered.module as {
+      rules: { enforce?: string; test?: RegExp; use?: string[] }[];
+    };
+    const precision = rules.at(-1);
+    expect(precision?.enforce).toBe("pre");
+    expect(precision?.use).toEqual(["/preview/shader-precision-loader.cjs"]);
+    for (const name of ["caustics", "strata", "weave"]) {
+      expect(
+        precision?.test?.test(
+          `/project/src/lib/studio-shaders-v1/${name}-fragment.ts`
+        )
+      ).toBe(true);
+    }
+    expect(
+      precision?.test?.test("/project/src/authored/caustics-fragment.ts")
+    ).toBe(false);
+    expect(
+      precision?.test?.test(
+        "/project/src/lib/studio-shaders-v1/mesh-gradient.tsx"
+      )
+    ).toBe(false);
+    expect(config.module.rules).toHaveLength(2);
+  });
+
   it("cleans its output folder on every emit", () => {
-    expect(renderOnly(config).output).toEqual({
+    expect(renderOnly(config, "/preview").output).toEqual({
       clean: true,
       filename: "bundle.js",
       path: "/out",

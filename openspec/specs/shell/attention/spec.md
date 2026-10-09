@@ -41,7 +41,7 @@ A notification SHALL carry the video's name as its title and one worded sentence
 
 #### Scenario: The click cannot be attributed
 
-- **WHEN** macOS activates the studio from a notification without saying which one
+- **WHEN** the desktop's notification service activates the studio without saying which notification was clicked
 - **THEN** the window comes to the front, the open chat stays as it was, and the ended chat's row carries its unread mark
 
 #### Scenario: A failure is worded
@@ -78,14 +78,14 @@ Notifications SHALL be off until the person turns the master switch on in Settin
 - **WHEN** the studio runs without the notification transport, such as in a browser
 - **THEN** the master switch is unavailable with the reason worded beside it, and nothing else about attention changes
 
-### Requirement: The Dock badge counts what waits on an answer
+### Requirement: The launcher badge counts what waits on an answer
 
-The Dock icon SHALL carry a badge with the number of permission cards and source questions waiting across every video, regardless of the window's focus, and SHALL clear the badge when nothing waits. The badge SHALL count cards, not turns, and SHALL need no consent since it leaves the app.
+The studio SHALL publish a badge count with the number of permission cards and source questions waiting across every video, regardless of the window's focus, and SHALL clear it when nothing waits. On macOS the Dock SHALL show it on the studio's icon; on Linux a dock or task manager that shows launcher badges SHALL. The badge SHALL count cards, not turns, and SHALL need no consent since it leaves the app.
 
 #### Scenario: Two chats are waiting
 
 - **WHEN** one chat has a permission card and another has a source question outstanding
-- **THEN** the Dock icon shows 2
+- **THEN** the published count is 2
 
 #### Scenario: A card is answered
 
@@ -97,6 +97,11 @@ The Dock icon SHALL carry a badge with the number of permission cards and source
 - **WHEN** turns are running but none has asked anything
 - **THEN** there is no badge
 
+#### Scenario: A desktop without badges
+
+- **WHEN** the desktop shows no launcher badges
+- **THEN** publishing the count changes nothing visible and reports nothing
+
 ### Requirement: Attention never fails the work it reports on
 
 A notification or badge that cannot be posted SHALL be logged and dropped; it SHALL never surface as an error in the pane, and SHALL never change the state of the turn, the export or the sidecar it reports on.
@@ -105,3 +110,22 @@ A notification or badge that cannot be posted SHALL be logged and dropped; it SH
 
 - **WHEN** the notification transport rejects a post
 - **THEN** the turn's result is shown exactly as it would have been, and the failure goes to the log only
+
+### Requirement: On Linux, notifications go through the desktop's notification service
+
+On Linux the studio SHALL post notifications through the desktop's notification service over D-Bus, under the same master switch and per-event switches as on macOS. Because that service keeps no per-app settings row, a refusal SHALL be asked about again rather than answered by opening anything, and a desktop with no service running SHALL change nothing else about attention.
+
+#### Scenario: Turning the switch on
+
+- **WHEN** the person turns the master switch on for the first time on Linux
+- **THEN** notifications are on, and the next event is posted through the desktop's notification service
+
+#### Scenario: No notification service is running
+
+- **WHEN** the desktop runs no notification service, as a bare window manager may not
+- **THEN** posting fails without a message, the row is still marked unread, and nothing else about attention changes
+
+#### Scenario: The desktop refused
+
+- **WHEN** the desktop reports that the studio may not notify and *Grant permission* is pressed
+- **THEN** the studio asks again, and no settings page is opened

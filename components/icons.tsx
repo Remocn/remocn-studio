@@ -39,6 +39,7 @@ import {
   FileAudioIcon as FileAudioIconData,
   FileImageIcon as FileImageIconData,
   FilePlusIcon as FilePlusIconData,
+  Files02Icon as Files02IconData,
   FileTextIcon as FileTextIconData,
   FileTypeIcon as FileTypeIconData,
   FileUnknownIcon as FileUnknownIconData,
@@ -50,6 +51,7 @@ import {
   FolderOpenIcon as FolderOpenIconData,
   FolderPlusIcon as FolderPlusIconData,
   FolderSearchIcon as FolderSearchIconData,
+  FoldersIcon as FoldersIconData,
   GlobeIcon as GlobeIconData,
   GraduationCapIcon as GraduationCapIconData,
   HandIcon as HandIconData,
@@ -75,6 +77,7 @@ import {
   MusicNote01Icon as MusicNote01IconData,
   NotebookIcon as NotebookIconData,
   NotebookPenIcon as NotebookPenIconData,
+  Package01Icon as Package01IconData,
   PanelLeftCloseIcon as PanelLeftCloseIconData,
   PanelLeftIcon as PanelLeftIconData,
   PanelLeftOpenIcon as PanelLeftOpenIconData,
@@ -85,6 +88,7 @@ import {
   PlayIcon as PlayIconData,
   PlugZapIcon as PlugZapIconData,
   PlusIcon as PlusIconData,
+  Prism01Icon as Prism01IconData,
   QuoteIcon as QuoteIconData,
   RefreshCwIcon as RefreshCwIconData,
   RocketIcon as RocketIconData,
@@ -183,6 +187,7 @@ export const FileIcon = studioIcon(File01IconData);
 export const FileImageIcon = studioIcon(FileImageIconData);
 export const FilePlusIcon = studioIcon(FilePlusIconData);
 export const FileQuestionIcon = studioIcon(FileUnknownIconData);
+export const FilesIcon = studioIcon(Files02IconData);
 export const FileTextIcon = studioIcon(FileTextIconData);
 export const FileTypeIcon = studioIcon(FileTypeIconData);
 export const FileVideoIcon = studioIcon(FileVideoIconData);
@@ -193,6 +198,7 @@ export const FolderIcon = studioIcon(Folder01IconData);
 export const FolderOpenIcon = studioIcon(FolderOpenIconData);
 export const FolderPlusIcon = studioIcon(FolderPlusIconData);
 export const FolderSearchIcon = studioIcon(FolderSearchIconData);
+export const FoldersIcon = studioIcon(FoldersIconData);
 export const GlobeIcon = studioIcon(GlobeIconData);
 export const GraduationCapIcon = studioIcon(GraduationCapIconData);
 export const HandIcon = studioIcon(HandIconData);
@@ -222,6 +228,7 @@ export const Music2Icon = studioIcon(MusicNote01IconData);
 export const MusicIcon = studioIcon(MusicIconData);
 export const NotebookIcon = studioIcon(NotebookIconData);
 export const NotebookPenIcon = studioIcon(NotebookPenIconData);
+export const PackageIcon = studioIcon(Package01IconData);
 export const PanelLeftCloseIcon = studioIcon(PanelLeftCloseIconData);
 export const PanelLeftIcon = studioIcon(PanelLeftIconData);
 export const PanelLeftOpenIcon = studioIcon(PanelLeftOpenIconData);
@@ -233,6 +240,7 @@ export const PencilLineIcon = studioIcon(Edit02IconData);
 export const PlayIcon = studioIcon(PlayIconData);
 export const PlugZapIcon = studioIcon(PlugZapIconData);
 export const PlusIcon = studioIcon(PlusIconData);
+export const PrismIcon = studioIcon(Prism01IconData);
 export const QuoteIcon = studioIcon(QuoteIconData);
 export const RefreshCwIcon = studioIcon(RefreshCwIconData);
 export const RocketIcon = studioIcon(RocketIconData);

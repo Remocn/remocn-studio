@@ -171,7 +171,7 @@ function viewCommands(sources: CommandSources): readonly Command[] {
     togglePreview,
     toggleProjects,
   } = sources;
-  const paneRow = (id: ShortcutId, target: PaneView, title: string) =>
+  const paneRow = (id: string, target: PaneView, title: string) =>
     action(
       id,
       title,
@@ -203,6 +203,8 @@ function viewCommands(sources: CommandSources): readonly Command[] {
     },
     paneRow("pane-assets", "assets", "Assets"),
     paneRow("pane-components", "components", "Components"),
+    paneRow("pane-shaders", "shaders", "Shaders"),
+    paneRow("pane-captions", "captions", "Captions"),
     action(
       "docs",
       docsMode === "docs" ? "Switch to Preview" : "Switch to Docs",

@@ -315,6 +315,7 @@ function StudioStateProvider({
     playing,
     projectId: workspace.activeProject?.id ?? null,
     session: workspace.openedSession,
+    startSession: workspace.startSession,
     states: turns,
     turns: workspace,
     videoId: workspace.openedVideo?.id ?? null,
@@ -351,6 +352,7 @@ function StudioStateProvider({
     isTurnRunning: turn.isRunning,
     isWaiting: turn.permission !== null || turn.source !== null,
     openedProjectId: openedId,
+    prepareShader: turn.prepareShader,
     preview,
     previewProjectId,
     projectPath: workspace.projects.find(

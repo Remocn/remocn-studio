@@ -11,6 +11,80 @@ const v1Document = documentFixture as React.ComponentProps<
   typeof StudioObjects
 >["document"];
 
+mock.module("remotion", () => ({ useCurrentFrame: () => 12 }));
+
+it("v7 preserves geometry, text, switch and easing readers", async () => {
+  const v7 = await import("../templates/remotion/src/lib/studio-objects-v7");
+  const data = {
+    ...documentFixture,
+    definitions: [
+      {
+        fields: [
+          ...["x", "y", "width", "height"].map((id) => ({
+            id,
+            type: "number",
+            unit: "px",
+          })),
+          { id: "text", type: "text" },
+          { id: "curve", type: "easing" },
+          { id: "visible", type: "boolean" },
+        ],
+        id: "box",
+        version: 1,
+      },
+    ],
+    objects: [
+      {
+        definition: "box",
+        id: "box-1",
+        label: "Box",
+        parentId: null,
+        values: {
+          curve: [0, 0, 1, 1],
+          height: 40,
+          text: "Hello",
+          visible: true,
+          width: 100,
+          x: 10,
+          y: 20,
+        },
+      },
+    ],
+  };
+  function Box() {
+    const object = v7.useStudioObject("box-1");
+    const geometry = object.geometry(
+      { height: "height", width: "width", x: "x", y: "y" },
+      { offset: { x: 5 }, scale: 2 }
+    );
+    return (
+      <div
+        {...object.bind}
+        {...object.bindText("text")}
+        {...geometry.bind}
+        data-curve={object.easing("curve").join(",")}
+        data-visible={object.flag("visible")}
+        style={geometry.style}
+      >
+        {object.text("text")}
+      </div>
+    );
+  }
+  render(
+    <v7.StudioObjects document={data}>
+      <Box />
+    </v7.StudioObjects>
+  );
+  const box = screen.getByText("Hello");
+  expect(box.style.left).toBe("15px");
+  expect(box.style.width).toBe("100px");
+  expect(box.style.scale).toBe("2");
+  expect(box.getAttribute("data-studio-geometry-frame")).toBe("12");
+  expect(box.getAttribute("data-studio-text-field")).toBe("text");
+  expect(box.getAttribute("data-curve")).toBe("0,0,1,1");
+  expect(box.getAttribute("data-visible")).toBe("true");
+});
+
 function Heading({ id }: { id: string }) {
   const object = useStudioObject(id);
   return (
