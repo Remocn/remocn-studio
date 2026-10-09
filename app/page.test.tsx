@@ -1025,6 +1025,10 @@ describe("app shell", () => {
     await within(screen.getByRole("region", { name: "Videos" })).findByText(
       "Second video"
     );
+    await within(screen.getByRole("region", { name: "Videos" })).findByRole(
+      "button",
+      { name: "Hide the chats about My video" }
+    );
 
     fireEvent.click(
       within(screen.getByRole("region", { name: "Videos" })).getByRole(
