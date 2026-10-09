@@ -46,6 +46,7 @@ import {
 } from "@/hooks/use-provider-accounts";
 import { type Queue, useQueue } from "@/hooks/use-queue";
 import { useReconciledVideos } from "@/hooks/use-reconciled-videos";
+import { isSettingUp } from "@/hooks/use-scaffold";
 import { type SettingsView, useSettingsView } from "@/hooks/use-settings-view";
 import { useShortcuts } from "@/hooks/use-shortcuts";
 import { useSidecar } from "@/hooks/use-sidecar";
@@ -437,8 +438,13 @@ function StudioStateProvider({
     videos: workspace.videos,
   });
 
+  // Checked mid-scaffold, the checklist reported the dependencies missing,
+  // offered a second install beside the running one, and was never asked
+  // again once the first one landed.
   const environment = useEnvironment(
-    openedMissing ? null : openedId,
+    openedMissing || isSettingUp(workspace.scaffolds, openedId)
+      ? null
+      : openedId,
     previewProjectId === opened?.id ? tools.preview.pick : null,
     turn.provider
   );
