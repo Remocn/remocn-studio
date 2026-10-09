@@ -1038,7 +1038,7 @@ describe("app shell", () => {
     // The chat is listed under the video, but it is not the open one: the
     // pane's heading still names the chat that was open before.
     expect(
-      within(screen.getByRole("region", { name: "Videos" })).getByText(
+      await within(screen.getByRole("region", { name: "Videos" })).findByText(
         STORED_SESSION.title
       )
     ).toBeVisible();
