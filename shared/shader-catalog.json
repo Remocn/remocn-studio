@@ -1,0 +1,4721 @@
+[
+  {
+    "adapter": "custom",
+    "definition": {
+      "fields": [
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#0a0a0a", "#2e2e33"],
+          "minItems": 2,
+          "maxItems": 2,
+          "group": "Colors"
+        },
+        {
+          "id": "accent",
+          "label": "Accent",
+          "type": "color",
+          "default": "#7F57FF",
+          "group": "Colors"
+        },
+        {
+          "id": "accentAmount",
+          "label": "Accent Amount",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "scale",
+          "label": "Scale",
+          "type": "number",
+          "default": 5.2,
+          "min": 0.1,
+          "max": 20,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "intensity",
+          "label": "Intensity",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 5,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 1,
+          "min": -5,
+          "max": 5,
+          "step": 0.01,
+          "group": "Animation"
+        },
+        {
+          "id": "patternScale",
+          "label": "Pattern Scale",
+          "type": "number",
+          "default": 1,
+          "min": 0.1,
+          "max": 4,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "rotation",
+          "label": "Rotation",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 360,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "offsetX",
+          "label": "Offset X",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "offsetY",
+          "label": "Offset Y",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-caustics-remocn-8ae853e-v1",
+      "version": 1
+    },
+    "exportName": "Caustics",
+    "revision": "remocn-8ae853e-v1",
+    "slug": "shader-caustics",
+    "title": "Caustics",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#3a3a52", "#4a4a68", "#52527a", "#5a5a8a"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 7
+        },
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "angle1",
+          "label": "Angle1",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "angle2",
+          "label": "Angle2",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "length",
+          "label": "Length",
+          "type": "number",
+          "default": 1.1,
+          "min": 0,
+          "max": 3,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "edges",
+          "label": "Edges",
+          "type": "boolean",
+          "default": false,
+          "group": "Appearance"
+        },
+        {
+          "id": "blur",
+          "label": "Blur",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 0.5,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "fadeIn",
+          "label": "Fade In",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "fadeOut",
+          "label": "Fade Out",
+          "type": "number",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "density",
+          "label": "Density",
+          "type": "number",
+          "default": 3,
+          "min": 0.25,
+          "max": 7,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "gradient",
+          "label": "Gradient",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.8,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-color-panels-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "ColorPanels",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-color-panels",
+    "title": "Color Panels",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colorFront",
+          "label": "Color Front",
+          "type": "color",
+          "default": "#6a6a85",
+          "group": "Colors"
+        },
+        {
+          "id": "shape",
+          "label": "Shape",
+          "type": "enum",
+          "default": "wave",
+          "group": "Appearance",
+          "options": [
+            "simplex",
+            "warp",
+            "dots",
+            "wave",
+            "ripple",
+            "swirl",
+            "sphere"
+          ]
+        },
+        {
+          "id": "type",
+          "label": "Type",
+          "type": "enum",
+          "default": "4x4",
+          "group": "Appearance",
+          "options": ["random", "2x2", "4x4", "8x8"]
+        },
+        {
+          "id": "size",
+          "label": "Size",
+          "type": "number",
+          "default": 2,
+          "min": 0.5,
+          "max": 20,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.6,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-dithering-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "Dithering",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-dithering",
+    "title": "Dithering",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#4a4a68", "#52527a", "#3a3a5c"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 10
+        },
+        {
+          "id": "size",
+          "label": "Size",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "sizeRange",
+          "label": "Size Range",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "spreading",
+          "label": "Spreading",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "stepsPerColor",
+          "label": "Steps Per Color",
+          "type": "number",
+          "default": 4,
+          "min": 1,
+          "max": 4,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 1,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-dot-orbit-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "DotOrbit",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-dot-orbit",
+    "title": "Dot Orbit",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#3a3a5c", "#52527a"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 6
+        },
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#0a0a10",
+          "group": "Colors"
+        },
+        {
+          "id": "innerDistortion",
+          "label": "Inner Distortion",
+          "type": "number",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "outerDistortion",
+          "label": "Outer Distortion",
+          "type": "number",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "outerGlow",
+          "label": "Outer Glow",
+          "type": "number",
+          "default": 0.55,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "innerGlow",
+          "label": "Inner Glow",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "colorInner",
+          "label": "Color Inner",
+          "type": "color",
+          "default": "#fafaf5",
+          "group": "Colors"
+        },
+        {
+          "id": "offset",
+          "label": "Offset",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "angle",
+          "label": "Angle",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 360,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "size",
+          "label": "Size",
+          "type": "number",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "shape",
+          "label": "Shape",
+          "type": "enum",
+          "default": "diamond",
+          "group": "Appearance",
+          "options": ["none", "circle", "daisy", "diamond", "metaballs"]
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.6,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-gem-smoke-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "GemSmoke",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-gem-smoke",
+    "title": "Gem Smoke",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBloom",
+          "label": "Color Bloom",
+          "type": "color",
+          "default": "#3a3a5c",
+          "group": "Colors"
+        },
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#5a5a7e", "#8a8a95", "#ffffff", "#3a3a5c"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 5
+        },
+        {
+          "id": "density",
+          "label": "Density",
+          "type": "number",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "spotty",
+          "label": "Spotty",
+          "type": "number",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "midIntensity",
+          "label": "Mid Intensity",
+          "type": "number",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "midSize",
+          "label": "Mid Size",
+          "type": "number",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "intensity",
+          "label": "Intensity",
+          "type": "number",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "bloom",
+          "label": "Bloom",
+          "type": "number",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 1,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": -0.55,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-god-rays-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "GodRays",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-god-rays",
+    "title": "God Rays",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#3a3a52", "#4a4a68", "#5a5a7e"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 7
+        },
+        {
+          "id": "softness",
+          "label": "Softness",
+          "type": "number",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "intensity",
+          "label": "Intensity",
+          "type": "number",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "noise",
+          "label": "Noise",
+          "type": "number",
+          "default": 0.15,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "shape",
+          "label": "Shape",
+          "type": "enum",
+          "default": "corners",
+          "group": "Appearance",
+          "options": [
+            "wave",
+            "dots",
+            "truchet",
+            "corners",
+            "ripple",
+            "blob",
+            "sphere"
+          ]
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 1,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-grain-gradient-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "GrainGradient",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-grain-gradient",
+    "title": "Grain Gradient",
+    "version": 1
+  },
+  {
+    "adapter": "custom",
+    "definition": {
+      "fields": [
+        {
+          "id": "twist",
+          "label": "Twist",
+          "type": "number",
+          "default": 0.7,
+          "min": 0,
+          "max": 2,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "spirals",
+          "label": "Spirals",
+          "type": "number",
+          "default": 3,
+          "min": 1,
+          "max": 6,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true
+        },
+        {
+          "id": "glow",
+          "label": "Glow",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 3,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "depth",
+          "label": "Depth",
+          "type": "number",
+          "default": 1,
+          "min": 0.5,
+          "max": 2,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "timeOffset",
+          "label": "Time Offset",
+          "type": "number",
+          "default": 0,
+          "min": -10000,
+          "max": 10000,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 1,
+          "min": -5,
+          "max": 5,
+          "step": 0.01,
+          "group": "Animation"
+        },
+        {
+          "id": "patternScale",
+          "label": "Pattern Scale",
+          "type": "number",
+          "default": 1,
+          "min": 0.1,
+          "max": 4,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "rotation",
+          "label": "Rotation",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 360,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "offsetX",
+          "label": "Offset X",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "offsetY",
+          "label": "Offset Y",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-light-tunnel-remocn-8ae853e-v1",
+      "version": 1
+    },
+    "exportName": "LightTunnel",
+    "revision": "remocn-8ae853e-v1",
+    "slug": "shader-light-tunnel",
+    "title": "Light Tunnel",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#2a2a30",
+          "group": "Colors"
+        },
+        {
+          "id": "colorTint",
+          "label": "Color Tint",
+          "type": "color",
+          "default": "#8a8a95",
+          "group": "Colors"
+        },
+        {
+          "id": "contour",
+          "label": "Contour",
+          "type": "number",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "distortion",
+          "label": "Distortion",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "softness",
+          "label": "Softness",
+          "type": "number",
+          "default": 0.05,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "repetition",
+          "label": "Repetition",
+          "type": "number",
+          "default": 1.5,
+          "min": 1,
+          "max": 10,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "shiftRed",
+          "label": "Shift Red",
+          "type": "number",
+          "default": 0.3,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "shiftBlue",
+          "label": "Shift Blue",
+          "type": "number",
+          "default": 0.3,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "angle",
+          "label": "Angle",
+          "type": "number",
+          "default": 70,
+          "min": 0,
+          "max": 360,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "shape",
+          "label": "Shape",
+          "type": "enum",
+          "default": "none",
+          "group": "Appearance",
+          "options": ["none", "circle", "daisy", "diamond", "metaballs"]
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.6,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-liquid-metal-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "LiquidMetal",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-liquid-metal",
+    "title": "Liquid Metal",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#3a3a5c", "#52527a", "#8a8a95"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 8
+        },
+        {
+          "id": "size",
+          "label": "Size",
+          "type": "number",
+          "default": 0.83,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "count",
+          "label": "Count",
+          "type": "number",
+          "default": 10,
+          "min": 1,
+          "max": 20,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 1,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-metaballs-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "Metaballs",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-metaballs",
+    "title": "Metaballs",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorFront",
+          "label": "Color Front",
+          "type": "color",
+          "default": "#8a8a95",
+          "group": "Colors"
+        },
+        {
+          "id": "colorMid",
+          "label": "Color Mid",
+          "type": "color",
+          "default": "#4a4a68",
+          "group": "Colors"
+        },
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "brightness",
+          "label": "Brightness",
+          "type": "number",
+          "default": 0.05,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "contrast",
+          "label": "Contrast",
+          "type": "number",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 1,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-neuro-noise-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "NeuroNoise",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-neuro-noise",
+    "title": "Neuro Noise",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colorFront",
+          "label": "Color Front",
+          "type": "color",
+          "default": "#6a6a85",
+          "group": "Colors"
+        },
+        {
+          "id": "proportion",
+          "label": "Proportion",
+          "type": "number",
+          "default": 0.35,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "softness",
+          "label": "Softness",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "octaveCount",
+          "label": "Octave Count",
+          "type": "number",
+          "default": 1,
+          "min": 1,
+          "max": 8,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true
+        },
+        {
+          "id": "persistence",
+          "label": "Persistence",
+          "type": "number",
+          "default": 1,
+          "min": 0.3,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance",
+          "availableWhen": {
+            "field": "octaveCount",
+            "operator": "greaterThan",
+            "value": 1,
+            "reason": "Add another octave to adjust this setting."
+          }
+        },
+        {
+          "id": "lacunarity",
+          "label": "Lacunarity",
+          "type": "number",
+          "default": 1.5,
+          "min": 1.5,
+          "max": 10,
+          "step": 0.01,
+          "group": "Appearance",
+          "availableWhen": {
+            "field": "octaveCount",
+            "operator": "greaterThan",
+            "value": 1,
+            "reason": "Add another octave to adjust this setting."
+          }
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 1,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-perlin-noise-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "PerlinNoise",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-perlin-noise",
+    "title": "Perlin Noise",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#52527a", "#8a8a95", "#3a3a5c"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 5
+        },
+        {
+          "id": "roundness",
+          "label": "Roundness",
+          "type": "number",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "thickness",
+          "label": "Thickness",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "marginLeft",
+          "label": "Margin Left",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "marginRight",
+          "label": "Margin Right",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "marginTop",
+          "label": "Margin Top",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "marginBottom",
+          "label": "Margin Bottom",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "aspectRatio",
+          "label": "Aspect Ratio",
+          "type": "enum",
+          "default": "auto",
+          "group": "Appearance",
+          "options": ["auto", "square"]
+        },
+        {
+          "id": "softness",
+          "label": "Softness",
+          "type": "number",
+          "default": 0.75,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "intensity",
+          "label": "Intensity",
+          "type": "number",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "bloom",
+          "label": "Bloom",
+          "type": "number",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "spots",
+          "label": "Spots",
+          "type": "number",
+          "default": 5,
+          "min": 1,
+          "max": 20,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true
+        },
+        {
+          "id": "spotSize",
+          "label": "Spot Size",
+          "type": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "pulse",
+          "label": "Pulse",
+          "type": "number",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "smoke",
+          "label": "Smoke",
+          "type": "number",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "smokeSize",
+          "label": "Smoke Size",
+          "type": "number",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance",
+          "availableWhen": {
+            "field": "smoke",
+            "operator": "greaterThan",
+            "value": 0,
+            "reason": "Increase Smoke to adjust its size."
+          }
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.6,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-pulsing-border-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "PulsingBorder",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-pulsing-border",
+    "title": "Pulsing Border",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#12121a", "#3a3a5c", "#52527a", "#8a8a95"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 10
+        },
+        {
+          "id": "stepsPerColor",
+          "label": "Steps Per Color",
+          "type": "number",
+          "default": 2,
+          "min": 1,
+          "max": 10,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true
+        },
+        {
+          "id": "softness",
+          "label": "Softness",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.6,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-simplex-noise-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "SimplexNoise",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-simplex-noise",
+    "title": "Simplex Noise",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#c8c8d0"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 10
+        },
+        {
+          "id": "noiseScale",
+          "label": "Noise Scale",
+          "type": "number",
+          "default": 3,
+          "min": 0.01,
+          "max": 5,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "thickness",
+          "label": "Thickness",
+          "type": "number",
+          "default": 0.65,
+          "min": 0.01,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "radius",
+          "label": "Radius",
+          "type": "number",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "innerShape",
+          "label": "Inner Shape",
+          "type": "number",
+          "default": 0.7,
+          "min": 0,
+          "max": 4,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "noiseIterations",
+          "label": "Noise Iterations",
+          "type": "number",
+          "default": 8,
+          "min": 1,
+          "max": 8,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.8,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-smoke-ring-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "SmokeRing",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-smoke-ring",
+    "title": "Smoke Ring",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colorFront",
+          "label": "Color Front",
+          "type": "color",
+          "default": "#52527a",
+          "group": "Colors"
+        },
+        {
+          "id": "density",
+          "label": "Density",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "distortion",
+          "label": "Distortion",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "strokeWidth",
+          "label": "Stroke Width",
+          "type": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "strokeTaper",
+          "label": "Stroke Taper",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "strokeCap",
+          "label": "Stroke Cap",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "noiseFrequency",
+          "label": "Noise Frequency",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance",
+          "availableWhen": {
+            "field": "noise",
+            "operator": "greaterThan",
+            "value": 0,
+            "reason": "Increase Noise to adjust its frequency."
+          }
+        },
+        {
+          "id": "noise",
+          "label": "Noise",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "softness",
+          "label": "Softness",
+          "type": "number",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 1,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-spiral-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "Spiral",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-spiral",
+    "title": "Spiral",
+    "version": 1
+  },
+  {
+    "adapter": "custom",
+    "definition": {
+      "fields": [
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#050507", "#0a0a0d", "#111014", "#17161b"],
+          "minItems": 4,
+          "maxItems": 4,
+          "group": "Colors"
+        },
+        {
+          "id": "accent",
+          "label": "Accent",
+          "type": "color",
+          "default": "#6733FF",
+          "group": "Colors"
+        },
+        {
+          "id": "accentAmount",
+          "label": "Accent Amount",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "layers",
+          "label": "Layers",
+          "type": "number",
+          "default": 14,
+          "min": 1,
+          "max": 60,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true
+        },
+        {
+          "id": "amplitude",
+          "label": "Amplitude",
+          "type": "number",
+          "default": 0.16,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 1,
+          "min": -5,
+          "max": 5,
+          "step": 0.01,
+          "group": "Animation"
+        },
+        {
+          "id": "patternScale",
+          "label": "Pattern Scale",
+          "type": "number",
+          "default": 1,
+          "min": 0.1,
+          "max": 4,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "rotation",
+          "label": "Rotation",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 360,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "offsetX",
+          "label": "Offset X",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "offsetY",
+          "label": "Offset Y",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-strata-remocn-8ae853e-v1",
+      "version": 1
+    },
+    "exportName": "Strata",
+    "revision": "remocn-8ae853e-v1",
+    "slug": "shader-strata",
+    "title": "Strata",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#52527a", "#3a3a5c", "#232338"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 10
+        },
+        {
+          "id": "bandCount",
+          "label": "Band Count",
+          "type": "number",
+          "default": 4,
+          "min": 0,
+          "max": 15,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "twist",
+          "label": "Twist",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "center",
+          "label": "Center",
+          "type": "number",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "proportion",
+          "label": "Proportion",
+          "type": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "softness",
+          "label": "Softness",
+          "type": "number",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "noiseFrequency",
+          "label": "Noise Frequency",
+          "type": "number",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance",
+          "availableWhen": {
+            "field": "noise",
+            "operator": "greaterThan",
+            "value": 0,
+            "reason": "Increase Noise to adjust its frequency."
+          }
+        },
+        {
+          "id": "noise",
+          "label": "Noise",
+          "type": "number",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 1,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-swirl-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "Swirl",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-swirl",
+    "title": "Swirl",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#3a3a5c", "#52527a"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 5
+        },
+        {
+          "id": "stepsPerColor",
+          "label": "Steps Per Color",
+          "type": "number",
+          "default": 3,
+          "min": 1,
+          "max": 3,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true
+        },
+        {
+          "id": "colorGlow",
+          "label": "Color Glow",
+          "type": "color",
+          "default": "#ffffff",
+          "group": "Colors",
+          "availableWhen": {
+            "field": "glow",
+            "operator": "greaterThan",
+            "value": 0,
+            "reason": "Increase Glow to tint the inner shadow."
+          }
+        },
+        {
+          "id": "colorGap",
+          "label": "Color Gap",
+          "type": "color",
+          "default": "#12121a",
+          "group": "Colors"
+        },
+        {
+          "id": "distortion",
+          "label": "Distortion",
+          "type": "number",
+          "default": 0.4,
+          "min": 0,
+          "max": 0.5,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "gap",
+          "label": "Gap",
+          "type": "number",
+          "default": 0.04,
+          "min": 0,
+          "max": 0.1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "glow",
+          "label": "Glow",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-voronoi-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "Voronoi",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-voronoi",
+    "title": "Voronoi",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#12121a", "#3a3a5c", "#12121a", "#52527a"],
+          "group": "Colors",
+          "minItems": 1,
+          "maxItems": 10
+        },
+        {
+          "id": "proportion",
+          "label": "Proportion",
+          "type": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "softness",
+          "label": "Softness",
+          "type": "number",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "distortion",
+          "label": "Distortion",
+          "type": "number",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "swirl",
+          "label": "Swirl",
+          "type": "number",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "swirlIterations",
+          "label": "Swirl Iterations",
+          "type": "number",
+          "default": 10,
+          "min": 0,
+          "max": 20,
+          "step": 1,
+          "group": "Appearance",
+          "integer": true,
+          "availableWhen": {
+            "field": "swirl",
+            "operator": "greaterThan",
+            "value": 0,
+            "reason": "Increase Swirl to adjust its passes."
+          }
+        },
+        {
+          "id": "shapeScale",
+          "label": "Shape Scale",
+          "type": "number",
+          "default": 0.1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "shape",
+          "label": "Shape",
+          "type": "enum",
+          "default": "checks",
+          "group": "Appearance",
+          "options": ["checks", "stripes", "edge"]
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 1,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-warp-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "Warp",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-warp",
+    "title": "Warp",
+    "version": 1
+  },
+  {
+    "adapter": "paper",
+    "definition": {
+      "fields": [
+        {
+          "id": "colorBack",
+          "label": "Color Back",
+          "type": "color",
+          "default": "#16202b",
+          "group": "Colors"
+        },
+        {
+          "id": "colorHighlight",
+          "label": "Color Highlight",
+          "type": "color",
+          "default": "#5a6a7a",
+          "group": "Colors"
+        },
+        {
+          "id": "highlights",
+          "label": "Highlights",
+          "type": "number",
+          "default": 0.06,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "layering",
+          "label": "Layering",
+          "type": "number",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "waves",
+          "label": "Waves",
+          "type": "number",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "edges",
+          "label": "Edges",
+          "type": "number",
+          "default": 0.8,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "caustic",
+          "label": "Caustic",
+          "type": "number",
+          "default": 0.08,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "size",
+          "label": "Size",
+          "type": "number",
+          "default": 1,
+          "min": 0.01,
+          "max": 7,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "default": 1,
+          "group": "Animation",
+          "id": "speed",
+          "label": "Speed",
+          "max": 5,
+          "min": -5,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.8,
+          "group": "Pattern",
+          "id": "scale",
+          "label": "Scale",
+          "max": 4,
+          "min": 0.01,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "rotation",
+          "label": "Rotation",
+          "max": 360,
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetX",
+          "label": "Horizontal offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Pattern",
+          "id": "offsetY",
+          "label": "Vertical offset",
+          "max": 1,
+          "min": -1,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originX",
+          "label": "Horizontal origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0.5,
+          "group": "Pattern",
+          "id": "originY",
+          "label": "Vertical origin",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": "cover",
+          "group": "Pattern",
+          "id": "fit",
+          "label": "Fit",
+          "options": ["none", "contain", "cover"],
+          "type": "enum"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-water-paper-0-0-78-v1",
+      "version": 1
+    },
+    "exportName": "Water",
+    "packageVersion": "0.0.78",
+    "revision": "paper-0-0-78-v1",
+    "slug": "shader-water",
+    "title": "Water",
+    "version": 1
+  },
+  {
+    "adapter": "custom",
+    "definition": {
+      "fields": [
+        {
+          "id": "colors",
+          "label": "Colors",
+          "type": "palette",
+          "default": ["#050506", "#0a0a0c", "#111015", "#1b1a22"],
+          "minItems": 4,
+          "maxItems": 4,
+          "group": "Colors"
+        },
+        {
+          "id": "accent",
+          "label": "Accent",
+          "type": "color",
+          "default": "#6733FF",
+          "group": "Colors"
+        },
+        {
+          "id": "accentAmount",
+          "label": "Accent Amount",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "scale",
+          "label": "Scale",
+          "type": "number",
+          "default": 22,
+          "min": 1,
+          "max": 100,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "warp",
+          "label": "Warp",
+          "type": "number",
+          "default": 0.03,
+          "min": 0,
+          "max": 0.5,
+          "step": 0.01,
+          "group": "Appearance"
+        },
+        {
+          "id": "speed",
+          "label": "Speed",
+          "type": "number",
+          "default": 1,
+          "min": -5,
+          "max": 5,
+          "step": 0.01,
+          "group": "Animation"
+        },
+        {
+          "id": "patternScale",
+          "label": "Pattern Scale",
+          "type": "number",
+          "default": 1,
+          "min": 0.1,
+          "max": 4,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "rotation",
+          "label": "Rotation",
+          "type": "number",
+          "default": 0,
+          "min": 0,
+          "max": 360,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "offsetX",
+          "label": "Offset X",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "id": "offsetY",
+          "label": "Offset Y",
+          "type": "number",
+          "default": 0,
+          "min": -1,
+          "max": 1,
+          "step": 0.01,
+          "group": "Pattern"
+        },
+        {
+          "default": 1,
+          "group": "Layer",
+          "id": "opacity",
+          "label": "Opacity",
+          "max": 1,
+          "min": 0,
+          "step": 0.01,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Layer",
+          "id": "order",
+          "integer": true,
+          "label": "Layer order",
+          "min": 0,
+          "step": 1,
+          "type": "number"
+        },
+        {
+          "default": 0,
+          "group": "Timing",
+          "id": "startFrame",
+          "integer": true,
+          "label": "Start",
+          "min": 0,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        },
+        {
+          "default": true,
+          "group": "Timing",
+          "id": "followSceneEnd",
+          "label": "Follow scene end",
+          "type": "boolean"
+        },
+        {
+          "availableWhen": {
+            "field": "followSceneEnd",
+            "operator": "equals",
+            "reason": "Turn off Follow scene end to trim the end.",
+            "value": false
+          },
+          "default": 1,
+          "group": "Timing",
+          "id": "endFrame",
+          "integer": true,
+          "label": "End",
+          "min": 1,
+          "step": 1,
+          "type": "number",
+          "unit": "frames"
+        }
+      ],
+      "id": "shader-weave-remocn-8ae853e-v1",
+      "version": 1
+    },
+    "exportName": "Weave",
+    "revision": "remocn-8ae853e-v1",
+    "slug": "shader-weave",
+    "title": "Weave",
+    "version": 1
+  }
+]

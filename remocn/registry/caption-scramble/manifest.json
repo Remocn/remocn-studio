@@ -1,0 +1,41 @@
+{
+  "category": "Captions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/captions"
+  ],
+  "description": "Each word arrives as random glyphs at the moment it is spoken and decodes left to right into the real letters.",
+  "files": [
+    {
+      "file": "caption-scramble.tsx",
+      "target": "src/components/remocn/caption-scramble.tsx"
+    }
+  ],
+  "name": "caption-scramble",
+  "preview": {
+    "durationInFrames": 279,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "defaults": {
+      "captions": "So here's the thing. Most demo videos lose people in the first three seconds. Captions keep them watching, even with the sound off.",
+      "fontSize": 64,
+      "fontWeight": 800,
+      "color": "#ffffff",
+      "glyphColor": "#a3a3a3",
+      "combineTokensWithinMilliseconds": 1200,
+      "holdMs": 600,
+      "shadow": true
+    }
+  },
+  "registryDependencies": [
+    "caption-core"
+  ],
+  "sourcePin": "d6cd742fa4f3ab0a74fecf2ac93f1542fa2ea8f7",
+  "title": "Caption Scramble"
+}

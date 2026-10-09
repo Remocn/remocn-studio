@@ -5,8 +5,11 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { StudioObjects, useStudioObject } from "../../lib/studio-objects-v6";
+import { StudioObjects, useStudioObject } from "../../lib/studio-objects-v7";
+import { StudioShaderSlot } from "../../lib/studio-objects-v7/shaders";
+import { shaderRegistry } from "./shader-registry";
 import document from "./studio.json";
+import shaderManifest from "./studio-shaders.json";
 
 export const meta = {
   durationInFrames: 150,
@@ -71,6 +74,7 @@ function Backdrop() {
 }
 
 export default function Video() {
+  const { durationInFrames } = useVideoConfig();
   return (
     <StudioObjects document={document}>
       <AbsoluteFill
@@ -79,6 +83,13 @@ export default function Video() {
         }}
       >
         <Backdrop />
+        <StudioShaderSlot
+          durationInFrames={durationInFrames}
+          id="root-shaders"
+          label="Whole video"
+          registry={shaderRegistry}
+          sourceRevision={shaderManifest.sourceRevision}
+        />
         <Heading id="heading" />
         <Heading id="subtitle" />
       </AbsoluteFill>

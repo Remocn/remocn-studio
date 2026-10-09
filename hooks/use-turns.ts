@@ -52,6 +52,7 @@ export interface StartTurn {
   playing: PromptFrame | null;
   projectId: string;
   prompt: string;
+  shaderPreparation?: { revision: string; provider: AgentProvider };
   videoId: string;
 }
 
@@ -403,7 +404,10 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
     (input: StartTurn) => {
       const trimmed = input.prompt.trim();
       const { historyId } = input;
-      const started = snapshot.current.get(historyId) ?? IDLE_TURN;
+      const stored = snapshot.current.get(historyId) ?? IDLE_TURN;
+      const started = input.shaderPreparation
+        ? { ...stored, provider: input.shaderPreparation.provider }
+        : stored;
 
       update(historyId, (current) => ({
         ...current,
@@ -420,6 +424,7 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
         error: null,
         isRunning: true,
         live: [],
+        provider: started.provider,
         startedAt: Date.now(),
         unread: false,
         workedMs: null,
@@ -429,6 +434,13 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
 
       const request = promptAgent(
         {
+          ...(input.shaderPreparation
+            ? {
+                shaderPreparation: {
+                  revision: input.shaderPreparation.revision,
+                },
+              }
+            : {}),
           ...(input.brandRevision === undefined
             ? {}
             : { brandRevision: input.brandRevision }),
@@ -562,6 +574,9 @@ export function useTurns(onSession: (session: HistorySession) => void): Turns {
       videos.current.set(input.historyId, input.videoId);
 
       if (isVideoBusy(input.videoId)) {
+        if (input.shaderPreparation) {
+          return false;
+        }
         update(input.historyId, (current) =>
           enqueue(current, queuedOf(input, crypto.randomUUID()))
         );

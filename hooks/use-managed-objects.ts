@@ -21,6 +21,7 @@ import type { PreviewChannel } from "@/lib/studio/preview-channel";
 import {
   fieldProblem,
   inverseStudioOperation,
+  isCreationOperation,
   isObjectOperation,
   isRemoved,
   SCENE_DEFINITION,
@@ -846,6 +847,67 @@ export function useManagedObjects({
     "studio.text.request": requestInline,
   };
   const commit = useCallback(() => commitOwner(active.current), [commitOwner]);
+  const resetShader = useCallback(() => {
+    const owner = active.current;
+    if (
+      !(owner && allowed.current) ||
+      owner.drafts.size ||
+      owner.writing ||
+      owner.undoing ||
+      geometry.current ||
+      inline.current
+    ) {
+      return;
+    }
+    const object = owner.snapshot?.document.objects.find(
+      (item) => item.id === owner.selected
+    );
+    const declared = owner.snapshot?.document.definitions.find(
+      (item) => item.id === object?.definition
+    );
+    if (!(object?.shader && declared)) {
+      return;
+    }
+    const created = owner.snapshot?.document.operations.find(
+      (item) => isCreationOperation(item) && item.objectId === object.id
+    );
+    const defaults =
+      created && isCreationOperation(created)
+        ? created.object.values
+        : Object.fromEntries(
+            declared.fields.map((field) => [field.id, field.default])
+          );
+    const changes = declared.fields.flatMap((field) =>
+      sameStudioValue(object.values[field.id], defaults[field.id])
+        ? []
+        : [
+            {
+              after: defaults[field.id],
+              before: object.values[field.id],
+              field: field.id,
+            },
+          ]
+    );
+    const [first, ...rest] = changes;
+    if (!first) {
+      return;
+    }
+    const operation: StudioFieldOperation = {
+      ...first,
+      definition: declared,
+      id: crypto.randomUUID(),
+      objectId: object.id,
+      ...(rest.length ? { changes: rest } : {}),
+    };
+    owner.drafts.set(JSON.stringify([object.id, first.field]), {
+      attempted: false,
+      error: null,
+      operation,
+      saving: false,
+    });
+    broadcast(owner, operation);
+    commitOwner(owner);
+  }, [broadcast, commitOwner]);
   const acceptsPreview = useCallback((ready: StagedDocument | null) => {
     const owner = active.current;
     if (ready === null || owner === null || owner.video !== ready.video) {
@@ -939,7 +1001,10 @@ export function useManagedObjects({
         owner.snapshot = result.value;
         owner.awaitingOperation =
           result.value.document.operations.at(-1)?.id ?? null;
-        if (isObjectOperation(target)) {
+        if (isCreationOperation(target)) {
+          owner.selected = null;
+          owner.open = false;
+        } else if (isObjectOperation(target)) {
           owner.selected = target.objectId;
           owner.open = true;
           owner.dismissed = false;
@@ -956,6 +1021,42 @@ export function useManagedObjects({
     (): Promise<string | null> =>
       undoable ? undoOperation(undoable) : Promise.resolve(null),
     [undoOperation, undoable]
+  );
+
+  const acceptInserted = useCallback(
+    (
+      snapshot: StudioSnapshot,
+      objectId: string,
+      renderedGeneration: string
+    ) => {
+      const owner = active.current;
+      if (
+        !owner ||
+        owner.video !== snapshot.document.video ||
+        owner.generation !== renderedGeneration ||
+        owner.drafts.size > 0
+      ) {
+        return false;
+      }
+      const known = owner.snapshot?.document.objects.some(
+        (object) => object.id === objectId
+      );
+      if (!known) {
+        if (
+          owner.renderedOperation !== snapshot.document.operations.at(-1)?.id
+        ) {
+          return false;
+        }
+        owner.snapshot = snapshot;
+      }
+      owner.selected = objectId;
+      owner.open = true;
+      owner.dismissed = false;
+      owner.awaitingOperation = null;
+      publish();
+      return true;
+    },
+    [publish]
   );
 
   const remove = useCallback(
@@ -1105,6 +1206,7 @@ export function useManagedObjects({
 
   return useMemo(
     () => ({
+      acceptInserted,
       acceptsPreview,
       awaitingPreview,
       busy,
@@ -1125,6 +1227,7 @@ export function useManagedObjects({
       pending,
       reload,
       remove,
+      resetShader,
       retry,
       select,
       selected,
@@ -1134,6 +1237,7 @@ export function useManagedObjects({
     }),
     [
       acceptsPreview,
+      acceptInserted,
       awaitingPreview,
       busy,
       canUndo,
@@ -1152,6 +1256,7 @@ export function useManagedObjects({
       open,
       pending,
       reload,
+      resetShader,
       remove,
       retry,
       select,

@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@remotion/bundler": "4.0.520",
+    "@remotion/captions": "4.0.520",
     "@remotion/cli": "4.0.520",
     "@remotion/player": "4.0.520",
     "@remotion/renderer": "4.0.520",

@@ -14,6 +14,7 @@ import { AGENT_PROVIDERS, PROVIDER_INFO } from "@/shared/providers";
 import {
   conventionsFor,
   instructionsFor,
+  MANAGED_OBJECTS,
   STUDIO_CONVENTIONS,
   stageBrief,
 } from "@/sidecar/agent/instructions";
@@ -424,11 +425,11 @@ it("gives managed videos precedence over legacy Interactive authoring rules", ()
   expect(text).toContain("takes precedence over the legacy Interactive");
 });
 
-it("teaches the v6 provider and what a removed object means", () => {
+it("teaches coherent v7 providers and what a removed object means", () => {
   const text = conventionsFor(true, "intro");
   expect(text).toContain("src/lib/studio-objects-v6/README.md");
   expect(text).toContain(
-    "Import the provider and hook from src/lib/studio-objects-v6"
+    "Import the provider and hook from src/lib/studio-objects-v7"
   );
   expect(text).toContain('"removed": true');
   expect(text).toContain(
@@ -455,22 +456,22 @@ const CHOREOGRAPHY: readonly PipelineStage[] = [
 
 const NO_BRIEFS = { assets: null, brand: null, media: null };
 
-describe("the words, as they were before the move", () => {
+describe("versioned instruction snapshots", () => {
   it("keeps the conventions with the skills byte for byte", () => {
     const text = conventionsFor(true, "intro");
 
-    expect(text).toHaveLength(20_583);
+    expect(text).toHaveLength(23_203);
     expect(sha256(text)).toBe(
-      "402c8c9eb3060e39121d7cc523fb8bc69b72e4eb2477abf33399905e5ce70cc4"
+      "2b4e469c2ff08f484428a94ad9238c6227c2841d8697becce42d61ceab23a5e4"
     );
   });
 
   it("keeps the conventions alone byte for byte", () => {
     const text = conventionsFor(false, null);
 
-    expect(text).toHaveLength(18_600);
+    expect(text).toHaveLength(21_220);
     expect(sha256(text)).toBe(
-      "03b8db94e3df0b7c570b950ebce1dbc7255c9f520d7456ef2b8bc76845da6c35"
+      "4bdf332382bc1a93b8da62c1e80dd12bd743bd7d19d8e1fc24a1f21fd507ac1d"
     );
   });
 
@@ -665,4 +666,21 @@ describe("instructionsFor, across the providers", () => {
 
     expect(trailer).toBeNull();
   });
+});
+
+it("preserves inserted shader identities and keeps scene slots below foreground content", () => {
+  const text = MANAGED_OBJECTS;
+  expect(text).toContain("Scene IDs and slot IDs are permanent");
+  expect(text).toContain(
+    "after the opaque background and before foreground content"
+  );
+  expect(text).toContain("Preserve user-created shader records");
+  expect(text).toContain("Preserve its original createdWithStudioVersion");
+  expect(text).toContain("never backfill or change it");
+  expect(text).toContain(
+    "Existing videos without studio-origin.json are checked by structure"
+  );
+  expect(text).toContain("never invent their creation version");
+  expect(text).toContain("sourceRevision is the SHA-256");
+  expect(text).toContain("never mix v5/v6 hooks");
 });

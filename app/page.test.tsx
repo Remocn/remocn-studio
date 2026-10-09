@@ -81,6 +81,7 @@ const STORED_SESSION: HistorySession = {
 function mockStudio(
   options: {
     assets?: Asset[];
+    bundled?: Asset[];
     blocks?: TranscriptEntry[];
     folder?: string | null;
     projects?:
@@ -112,6 +113,9 @@ function mockStudio(
         }
         if (method === "library.list") {
           return options.assets ?? [];
+        }
+        if (method === "library.bundled") {
+          return options.bundled ?? [];
         }
         if (method === "project.list") {
           const { projects } = options;
@@ -887,6 +891,74 @@ describe("app shell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Back to chat" }));
     expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
       "Editing with the library open [Asset #1] "
+    );
+  });
+
+  it("selects caption styles through the library while preserving the chat draft", async () => {
+    const caption: Asset = {
+      audiomap: null,
+      category: "Captions",
+      clip: null,
+      createdAt: 1,
+      dependencies: [],
+      description: "",
+      duration: null,
+      files: [],
+      name: "Karaoke",
+      path: "/bundled/caption-karaoke",
+      preview: null,
+      proxied: false,
+      role: null,
+      slug: "remocn/caption-karaoke",
+      source: null,
+      type: "component",
+    };
+    mockStudio({
+      bundled: [
+        caption,
+        { ...caption, name: "Subtitle", slug: "remocn/caption-subtitle" },
+      ],
+      projects: [PROJECT],
+      sessions: [STORED_SESSION],
+    });
+    await renderShell();
+    fireEvent.click(await screen.findByRole("button", { name: SESSION_ROW }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "Message" }), {
+      target: { value: "Keep my draft" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Captions" }));
+    const pane = await screen.findByRole("complementary", {
+      name: "Captions navigation",
+    });
+    const karaoke = await within(pane).findByRole("button", {
+      name: "Karaoke, Component",
+    });
+    fireEvent.click(karaoke);
+    fireEvent.click(
+      within(pane).getByRole("button", { name: "Subtitle, Component" })
+    );
+    fireEvent.click(karaoke);
+    expect(
+      screen.getAllByRole("button", { name: "Remove Karaoke" })
+    ).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: "Remove Subtitle" })
+    ).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "Keep my draft [Asset #1] [Asset #2] [Asset #1] "
+    );
+    fireEvent.click(within(pane).getByRole("button", { name: "Back to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Components" }));
+    expect(
+      screen.queryByRole("button", { name: "Karaoke, Component" })
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Back to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Shaders" }));
+    expect(
+      await screen.findByRole("complementary", { name: "Shaders navigation" })
+    ).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue(
+      "Keep my draft [Asset #1] [Asset #2] [Asset #1] "
     );
   });
 

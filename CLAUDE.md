@@ -698,3 +698,38 @@ vendored source, and it records where the upstream docs drift from the actual co
   writing any Schema code. v4 rewrote Schema, so v3 knowledge from training data is wrong rather
   than merely stale — e.g. `Schema.decode` is no longer a decoder, and the `effect/schema` import
   path in the upstream guide does not resolve.
+
+### Shader insertion runtime (REM-724)
+
+New videos use `studio-objects-v7` and a source-bound `studio-shaders.json`.
+Studio-created videos also carry `studio-origin.json` with their original
+`createdWithStudioVersion`. Preserve it; never backfill it from the running app
+or the project's package version. Structural shader preparation accepts verified 1.0.0-format videos without
+origin metadata. A known creation version below stable 1.0.0 or invalid recorded
+metadata blocks adaptation; never infer a missing creation version. Structured
+adapters bind local scene/timing dependencies and migrate participating hooks
+with the provider. Already-connected compatible slots remain usable without origin.
+Provider and hooks must use the same context; v5/v6 hooks cannot read a v7
+provider. Keep old runtimes immutable and preserve inserted shader records,
+permanent scene/slot IDs and operation history when editing a video. The first
+implementation slice exposes Mesh Gradient; the remaining catalogue is gated
+on the first complete preview/export proof in `add-shaders-to-video`.
+
+`REMOCN_SHADER_RENDER=1 bun test sidecar/preview/shader-render.test.ts` runs the
+one-shot Chromium frame proof using the installed `test/fixtures/render-smoke`
+renderer. `REMOCN_SHADER_CAPTURE_DIR` optionally retains PNG evidence. This does
+not start the app's dev server and does not replace WebKit or encoded-export
+verification. A sandboxed macOS Chromium launch may require escalation.
+
+### Assisted shader preparation
+
+- `agent.prompt.shaderPreparation` starts only from the explicit Prepare video action, in a new chat. The sidecar chooses a temporary workspace; IPC never accepts a caller-supplied workspace path. Keep the selected provider and its normal permission gate.
+- Validate the copied source, document, origin and project bundle before activating source edits. Wait for checked live shader targets before completing preparation; an agent's final response is not readiness. Shader card clicks remain agent-free.
+- Structural/compiler failures return to the configured agent in the same preparation chat and copy, for at most three total attempts. Restore generated connections before repair while keeping agent edits. Cancellation, provider/scope failures and activation/preview failures are terminal. The automatic connector requires direct AbsoluteFill scene roots with local managed bindings; preparation instructions must explain custom wrapper expansion as well as static timing.
+- A temporary workspace's SDK session must not be bound to the original project. Keep its transcript, discard its resume token, and recover interrupted activation from the preparation journal using content checks. Preserve independently changed source and retain installed versioned shared resources.
+
+### Caption catalogue tooling
+
+- `bun scripts/remocn-sync.ts --captions` imports the separately pinned caption batch without refreshing other categories. `remocn/lock.json` records `captionsPin`; new manifests carry `sourcePin`. `REMOCN_SOURCE` can point at a local remocn Git checkout: tooling reads the pinned commit, not working-tree files.
+- Preview examples resolve `.tsx` and `.ts` helpers at each manifest's pin. Each revision has its own example directory. `bun run remocn:check` verifies source hashes; posters and clips remain outside the lock.
+- Studio caption guidance and the transcript helper live under our own `agent/skills/motion-design/rules/`, reached by the selected asset's scoped brief. Keep upstream skill copies unchanged so `skills:sync` preserves Studio guidance.

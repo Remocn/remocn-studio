@@ -129,6 +129,7 @@ function assetOf(
 }
 
 export interface BundledPlan {
+  readonly captionStyle?: string;
   readonly dependencies: readonly string[];
   readonly files: readonly { from: string; target: string }[];
   readonly role: MotionRole | null;
@@ -199,6 +200,7 @@ export function bundledPlan(
       }
 
       return {
+        ...(first.category === "Captions" ? { captionStyle: first.name } : {}),
         dependencies: [...dependencies],
         files,
         role: bundledRoleOf(first.name),

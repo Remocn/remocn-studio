@@ -1,9 +1,17 @@
 import { beforeAll, describe, expect, it } from "bun:test";
-import { mkdtemp, readdir, readFile, stat } from "node:fs/promises";
+import {
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { Effect, Exit } from "effect";
 import { causeMessage } from "@/lib/error-message";
+import { version } from "@/package.json";
 import { TEMPLATE_DIR_ENV } from "@/shared/ipc";
 import { PROJECT_TEMPLATES } from "@/shared/templates";
 import { ensureRegistry } from "@/sidecar/scaffold/registry";
@@ -100,6 +108,26 @@ describe("the welcome template", () => {
     const slug = await run(
       expandTemplateVideo(target, "welcome-early-member", PROPS)
     );
+    const originPath = join(
+      target,
+      "src",
+      "videos",
+      slug,
+      "studio-origin.json"
+    );
+    expect(
+      JSON.parse(await readFile(originPath, "utf8")).createdWithStudioVersion
+    ).toBe(process.env.REMOCN_STUDIO_VERSION ?? version);
+    const original = JSON.stringify({
+      createdWithStudioVersion: "0.8.0",
+      version: 1,
+    });
+    await writeFile(originPath, original);
+    await run(expandTemplateVideo(target, "welcome-early-member", PROPS));
+    expect(await readFile(originPath, "utf8")).toBe(original);
+    await rm(originPath);
+    await run(expandTemplateVideo(target, "welcome-early-member", PROPS));
+    await expect(readFile(originPath)).rejects.toThrow();
     const module = await readFile(
       join(target, "src", "videos", slug, "index.tsx"),
       "utf8"

@@ -3,6 +3,8 @@ import { basename, join } from "node:path";
 import { Data, Effect } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import { TEMPLATE_DIR_ENV, type VideoSize } from "@/shared/ipc";
+import { hashBytes, hashSources } from "../projects/config";
+import { stampVideoOrigin } from "./video-origin";
 
 export class ScaffoldError extends Data.TaggedError("ScaffoldError")<{
   message: string;
@@ -51,18 +53,58 @@ export function expandVideo(
   const folder = join(target, "src", VIDEOS_DIR, draft.slug);
 
   return template(async (source) => {
+    const existing = await access(join(folder, "index.tsx")).then(
+      () => true,
+      () => false
+    );
     await copyInto(
       join(source, VIDEO_TEMPLATE),
       folder,
-      (entry) => (content) =>
-        entry === "studio.json"
-          ? content
-              .replace(/"__VIDEO_NAME__"/g, JSON.stringify(draft.name))
-              .replace(/"__VIDEO_ID__"/g, JSON.stringify(draft.slug))
-          : stamped(content, draft),
+      (entry) => (content) => {
+        if (entry === "studio.json") {
+          return content
+            .replace(/"__VIDEO_NAME__"/g, JSON.stringify(draft.name))
+            .replace(/"__VIDEO_ID__"/g, JSON.stringify(draft.slug));
+        }
+        return entry === "index.tsx" ? stamped(content, draft) : content;
+      },
       () => false
     );
 
+    if (existing) {
+      return folder;
+    }
+    await stampVideoOrigin(folder);
+    const indexPath = `src/videos/${draft.slug}/index.tsx`;
+    const sources = {
+      [indexPath]: hashBytes(await readFile(join(folder, "index.tsx"), "utf8")),
+      [`src/videos/${draft.slug}/shader-registry.ts`]: hashBytes(
+        await readFile(join(folder, "shader-registry.ts"), "utf8")
+      ),
+    };
+    await writeFile(
+      join(folder, "studio-shaders.json"),
+      `${JSON.stringify(
+        {
+          implementations: [],
+          slots: [
+            {
+              id: "root-shaders",
+              label: "Whole video",
+              sceneId: null,
+              source: indexPath,
+            },
+          ],
+          sourceRevision: hashSources(sources),
+          sources,
+          version: 1,
+          video: draft.slug,
+        },
+        null,
+        2
+      )}\n`,
+      { flag: "wx" }
+    );
     return folder;
   });
 }

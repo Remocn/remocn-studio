@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { Effect } from "effect";
@@ -7,6 +7,7 @@ import { TEMPLATE_DIR_ENV } from "@/shared/ipc";
 import type { ProjectTemplate, TemplateProps } from "@/shared/templates";
 import { remotionRootOf } from "../preview/project";
 import { copyInto, ScaffoldError, VIDEOS_DIR } from "./template";
+import { stampVideoOrigin } from "./video-origin";
 
 export const VIDEO_TEMPLATES = "video-templates";
 
@@ -61,6 +62,10 @@ export function expandTemplateVideo(
     return Effect.tryPromise({
       catch: (cause) => new ScaffoldError({ message: errorMessage(cause) }),
       try: async () => {
+        const existing = await access(join(folder, VIDEO_MODULE)).then(
+          () => true,
+          () => false
+        );
         await copyInto(
           join(source, VIDEO_TEMPLATES, spec.folder),
           folder,
@@ -70,6 +75,9 @@ export function expandTemplateVideo(
               : null,
           () => false
         );
+        if (!existing) {
+          await stampVideoOrigin(folder);
+        }
         await addDependencies(root, spec);
         return spec.slug;
       },

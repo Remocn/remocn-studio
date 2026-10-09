@@ -40,7 +40,20 @@ export type StudioValue =
   | boolean
   | number
   | string
+  | readonly string[]
   | readonly [number, number, number, number];
+
+export interface ShaderSlotReport {
+  readonly contract: 1;
+  readonly durationInFrames: number;
+  readonly fps: number;
+  readonly from: number;
+  readonly label: string;
+  readonly occurrences: number;
+  readonly sceneId: string | null;
+  readonly slotId: string;
+  readonly sourceRevision: string;
+}
 
 export interface PreviewRect {
   readonly height: number;
@@ -319,6 +332,27 @@ export type PreviewMessage =
   | { readonly requestId: string; readonly type: "studio.text.cancel" }
   | { readonly type: "inspect.ready" }
   | { readonly type: "inspect.clear" }
+  | {
+      readonly generation: string;
+      readonly video: string;
+      readonly type: "shader.targets";
+      readonly targets: readonly ShaderSlotReport[];
+    }
+  | {
+      readonly generation: string;
+      readonly video: string;
+      readonly objectId: string;
+      readonly operationId: string;
+      readonly slotId: string;
+      readonly type: "shader.ready";
+    }
+  | {
+      readonly generation: string;
+      readonly video: string;
+      readonly objectId: string;
+      readonly message: string;
+      readonly type: "shader.error";
+    }
   | {
       readonly generation: string;
       readonly lastOperationId: string | null;
