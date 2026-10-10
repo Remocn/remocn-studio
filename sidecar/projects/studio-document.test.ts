@@ -13,12 +13,17 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
 import { TEMPLATE_DIR_ENV } from "@/shared/ipc";
+import { MESH_GRADIENT, shaderCreation } from "@/shared/shaders";
+import { inverseStudioOperation } from "@/shared/studio-document";
+import { shaderTargetFixture } from "@/test/fixtures/shaders";
 import {
   documentFixture,
   easingDocumentFixture,
   operationFixture,
 } from "@/test/fixtures/studio-document";
+import { ShaderError } from "../library/shaders";
 import {
+  commitStudioCreation,
   readStudioDocument,
   removeStudioObject,
   writeStudioDocument,
@@ -35,6 +40,92 @@ beforeEach(async () => {
   await writeFile(file, JSON.stringify(documentFixture));
 });
 afterEach(() => rm(root, { force: true, recursive: true }));
+
+describe("prepared shader creation persistence", () => {
+  const creation = shaderCreation(
+    MESH_GRADIENT,
+    shaderTargetFixture,
+    "insert-1",
+    "shader-1",
+    0
+  );
+  it("writes the complete object and receipt once, reconciles a lost reply, and preserves unrelated edits on Undo", async () => {
+    const saved = await Effect.runPromise(
+      commitStudioCreation(
+        root,
+        "intro",
+        creation,
+        Effect.succeed(shaderTargetFixture)
+      )
+    );
+    expect(saved.document.objects.at(-1)?.id).toBe("shader-1");
+    const edited = await Effect.runPromise(
+      writeStudioDocument(root, "intro", operationFixture())
+    );
+    const retry = await Effect.runPromise(
+      commitStudioCreation(
+        root,
+        "intro",
+        creation,
+        Effect.fail(new ShaderError({ message: "stale report" }))
+      )
+    );
+    expect(retry).toEqual(edited);
+    expect(
+      retry.document.operations.filter(
+        (operation) => operation.id === creation.id
+      )
+    ).toHaveLength(1);
+    const undone = await Effect.runPromise(
+      writeStudioDocument(
+        root,
+        "intro",
+        inverseStudioOperation(creation, "undo-insert")
+      )
+    );
+    expect(undone.document.objects.at(-1)?.removed).toBe(true);
+    expect(
+      undone.document.objects.find((object) => object.id === "third")?.values
+        .size
+    ).toBe(72);
+    expect(undone.document.definitions).toEqual(saved.document.definitions);
+  });
+  it("refuses generic creation, stale final targets and changed retry payloads without saving", async () => {
+    const before = await readFile(file, "utf8");
+    await expect(
+      Effect.runPromise(writeStudioDocument(root, "intro", creation))
+    ).rejects.toThrow("prepared insertion request");
+    await expect(
+      Effect.runPromise(
+        commitStudioCreation(
+          root,
+          "intro",
+          creation,
+          Effect.succeed({ ...shaderTargetFixture, generation: "new" })
+        )
+      )
+    ).rejects.toThrow("target changed");
+    expect(await readFile(file, "utf8")).toBe(before);
+    await Effect.runPromise(
+      commitStudioCreation(
+        root,
+        "intro",
+        creation,
+        Effect.succeed(shaderTargetFixture)
+      )
+    );
+    await expect(
+      Effect.runPromise(
+        commitStudioCreation(
+          root,
+          "intro",
+          { ...creation, object: { ...creation.object, label: "Other" } },
+          Effect.succeed(shaderTargetFixture)
+        )
+      )
+    ).rejects.toThrow("different change");
+  });
+});
 
 describe("managed document persistence", () => {
   it("persists receipts with values and accepts a retry after rereading the file", async () => {
@@ -151,19 +242,25 @@ describe("removing an object", () => {
     expect(read.revision).toBe(removed.revision);
   });
 
-  it("writes only the document for a video already on v6, and once on retry", async () => {
-    const v6 = V5.replace('studio-objects-v5"', 'studio-objects-v6"');
-    await writeFile(entry(), v6);
-    const first = await Effect.runPromise(
-      removeStudioObject(root, "intro", remove)
-    );
-    const retried = await Effect.runPromise(
-      removeStudioObject(root, "intro", remove)
-    );
-    expect(first.upgraded).toBeNull();
-    expect(retried.document.operations).toHaveLength(1);
-    expect(await readFile(entry(), "utf8")).toBe(v6);
-  });
+  it.each([6, 7])(
+    "writes only the document for a video already on v%s, and once on retry",
+    async (version) => {
+      const v6 = V5.replace(
+        'studio-objects-v5"',
+        `studio-objects-v${version}"`
+      );
+      await writeFile(entry(), v6);
+      const first = await Effect.runPromise(
+        removeStudioObject(root, "intro", remove)
+      );
+      const retried = await Effect.runPromise(
+        removeStudioObject(root, "intro", remove)
+      );
+      expect(first.upgraded).toBeNull();
+      expect(retried.document.operations).toHaveLength(1);
+      expect(await readFile(entry(), "utf8")).toBe(v6);
+    }
+  );
 
   it("refuses a video with no provider or two, and writes nothing", async () => {
     const before = await readFile(file, "utf8");

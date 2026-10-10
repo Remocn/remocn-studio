@@ -136,9 +136,9 @@ The sidebar SHALL be collapsible from the button on its own brand row and from a
 - **WHEN** the sidebar is hidden or hiding
 - **THEN** nothing inside it can be reached by keyboard
 
-### Requirement: The sidebar shows one of three views
+### Requirement: The sidebar remembers the selected view
 
-The sidebar SHALL show exactly one of Videos, Assets or Components at a time, SHALL remember which across launches as `paneView` in `settings.json`, and SHALL move between them with a direction taken from their order — Videos is the root, so entering another view pushes and coming back pops.
+The sidebar SHALL show exactly one of Videos, Projects, Assets (labelled Library in navigation), Components, Shaders or Captions at a time, SHALL remember which across launches as `paneView` in `settings.json`, and SHALL move between them with a direction taken from their order — Videos is the root, so entering another view pushes and coming back pops.
 
 #### Scenario: Opening Assets
 
@@ -150,6 +150,19 @@ The sidebar SHALL show exactly one of Videos, Assets or Components at a time, SH
 
 - **WHEN** the person picks the view that is already showing
 - **THEN** nothing moves and nothing is written
+
+#### Scenario: Opening Shaders and relaunching
+- **WHEN** the person opens Shaders and relaunches Studio
+- **THEN** Shaders is restored through the existing paneView preference
+
+#### Scenario: A saved view is unknown
+- **WHEN** a saved view is unsupported by the running version
+- **THEN** navigation falls back to Videos without preventing the app from opening
+
+#### Scenario: Opening Captions and relaunching
+- **WHEN** the person opens Captions and relaunches Studio
+- **THEN** Captions is restored through the existing paneView preference
+- **AND** Captions follows Shaders in navigation order
 
 ### Requirement: The preview's header switches between Preview and Docs
 
@@ -195,7 +208,7 @@ The theme SHALL be dark until a choice is made, and Appearance SHALL offer Dark,
 
 ### Requirement: The title bar band carries a shader that can be turned off
 
-The band under the traffic lights SHALL carry an animated field whose speed and hue follow what the studio is doing — calm while idle, faster while a turn runs, another hue while something waits or has failed. Showing the field SHALL be a preference (`titlebarShader`), animating it SHALL be a second preference (`titlebarMotion`), both on by default and both remembered. The band SHALL keep the same height either way, so nothing below it moves.
+The band at the top of the window — under the traffic lights on macOS, carrying the window's own controls on Linux — SHALL carry an animated field whose speed and hue follow what the studio is doing — calm while idle, faster while a turn runs, another hue while something waits or has failed. Showing the field SHALL be a preference (`titlebarShader`), animating it SHALL be a second preference (`titlebarMotion`), both on by default and both remembered. The band SHALL keep the same height either way, so nothing below it moves.
 
 #### Scenario: Turning the shader off
 
@@ -221,7 +234,7 @@ The band under the traffic lights SHALL carry an animated field whose speed and 
 
 ### Requirement: The app menu carries the studio's own File and Project menus
 
-The application menu SHALL offer New Video (⌘N), New Project (⇧⌘N) and Open Folder (⌘O) under File, followed by every known project as a checkable row that switches to it, and a Project menu with Project Settings, Rename, Locate Folder, Reveal in the file manager and Remove from Studio. A View menu SHALL offer Show or hide the sidebar (⌘B), Show or hide the preview (⌘\), the three sidebar views Videos, Assets and Components (⌘1, ⌘2, ⌘3) as checkable rows, Preview or Docs (⌘D), and Restart the studio's helper (⇧⌘R). A Video menu SHALL offer Export (⌘E), Inspect (⌘I), Snapshot (⇧⌘S), Stop the turn (⌘.), Previous video and Next video (⌥⌘↑, ⌥⌘↓). Every row SHALL come from the command registry in `shell/command-palette` with its shortcut beside it. A row that does not apply SHALL be disabled rather than dropped, so the menu keeps one shape. The standard Edit and Window menus SHALL be present, so the webview keeps its clipboard and window shortcuts.
+On macOS, the application menu SHALL offer New Video (⌘N), New Project (⇧⌘N) and Open Folder (⌘O) under File, followed by every known project as a checkable row that switches to it, and a Project menu with Project Settings, Rename, Locate Folder, Reveal in the file manager and Remove from Studio. A View menu SHALL offer Show or hide the sidebar (⌘B), Show or hide the preview (⌘\), the existing Videos, Assets and Components views (⌘1, ⌘2, ⌘3) and Shaders and Captions as checkable rows, Preview or Docs (⌘D), and Restart the studio's helper (⇧⌘R). A Video menu SHALL offer Export (⌘E), Inspect (⌘I), Snapshot (⇧⌘S), Stop the turn (⌘.), Previous video and Next video (⌥⌘↑, ⌥⌘↓). Every row SHALL come from the command registry in `shell/command-palette` with its shortcut beside it. A row that does not apply SHALL be disabled rather than dropped, so the menu keeps one shape. The standard Edit and Window menus SHALL be present, so the webview keeps its clipboard and window shortcuts. On Linux no application menu SHALL be installed: a GTK menu bar would sit above the title bar band and duplicate the palette, so every row's command is reached from the palette with the same title, reason and shortcut, and projects are switched from the sidebar or the palette's Projects group.
 
 #### Scenario: Switching project from the menu
 
@@ -252,3 +265,53 @@ The application menu SHALL offer New Video (⌘N), New Project (⇧⌘N) and Ope
 
 - **WHEN** the page runs without the core
 - **THEN** the install fails silently and the app keeps whatever menu it had
+
+#### Scenario: Linux has no menu bar
+
+- **WHEN** the studio runs on Linux
+- **THEN** no menu bar is shown, and New Video, Export and every other row are in the palette with their Ctrl shortcuts
+
+#### Scenario: Opening Shaders from the command registry
+- **WHEN** the person invokes Shaders from the palette or the native View menu where available
+- **THEN** the same Shaders view opens and its checked state agrees across navigation readers
+- **AND** existing shortcuts are unchanged; Shaders adds no shortcut in this change
+
+#### Scenario: Opening Captions from the command registry
+- **WHEN** the person invokes Captions from the palette or the native View menu where available
+- **THEN** the same Captions view opens and its checked state agrees across navigation readers
+- **AND** existing shortcuts are unchanged; Captions adds no shortcut in this change
+
+### Requirement: On Linux the window draws its own frame
+
+On Linux the window SHALL carry no frame or title bar from the desktop, and the title bar band at the top of the sidebar SHALL hold the studio's own Close, Minimise and Maximise controls at its left edge. Dragging the band SHALL move the window, double-clicking it SHALL toggle maximise, and dragging any edge SHALL resize it. Close SHALL go through the same quit guard as any other quit (see `shell/quit-and-updates`).
+
+#### Scenario: On macOS
+
+- **WHEN** the studio runs on macOS
+- **THEN** the window keeps the overlay title bar and its traffic lights, and none of this applies
+
+#### Scenario: Closing from the band
+
+- **WHEN** the person presses the band's Close control while a turn is running
+- **THEN** the quit confirmation appears, exactly as for any other quit, and the window stays open
+
+#### Scenario: Maximising
+
+- **WHEN** the person double-clicks an empty part of the band, or presses Maximise
+- **THEN** the window fills the screen's work area
+- **AND** the same gesture again restores its previous size and position
+
+#### Scenario: Moving and resizing
+
+- **WHEN** the person drags the band or an edge of the window
+- **THEN** the window moves or resizes, and no part of the band but its controls swallows the drag
+
+#### Scenario: The sidebar is hidden
+
+- **WHEN** the sidebar is collapsed
+- **THEN** the controls stay at the top-left corner of the window, and the chat pane's header keeps clear of them by the same inline inset the layout already reserves
+
+#### Scenario: A window manager that ignores a request
+
+- **WHEN** the desktop does not honour minimise or maximise, as some tiling window managers do
+- **THEN** pressing the control changes nothing and reports nothing; the studio never shows an error for a window operation

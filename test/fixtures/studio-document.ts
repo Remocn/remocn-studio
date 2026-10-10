@@ -45,8 +45,8 @@ export function operationFixture(
 }
 
 
-export const easingDocumentFixture: StudioDocument = {
+export const easingDocumentFixture = {
   version: 1, video: "intro", operations: [],
   definitions: [{ id: "motion", version: 1, fields: [{id: "entryEasing", label: "Entry easing", type: "easing", default: [0, 0, 0.58, 1]}] }],
   objects: [{id: "title", label: "Title", definition: "motion", parentId: null, values: {entryEasing: [0, 0, 0.58, 1]}}],
-};
+} satisfies StudioDocument;

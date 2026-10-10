@@ -23,7 +23,7 @@ const OUTER_HTML_LIMIT = 400;
 // assertion on an element took 2.6 s to word, measured with JSC's sampler —
 // which `waitFor` pays on every poll until the element goes away. Nodes are
 // printed as their markup instead, the way pretty-format's DOM plugin does.
-function printingNodes(stringify: Utils["stringify"]): Utils["stringify"] {
+function printingNodes(print: Utils["stringify"]): Utils["stringify"] {
   return (value) => {
     if (value instanceof Element) {
       const html = value.outerHTML;
@@ -34,21 +34,8 @@ function printingNodes(stringify: Utils["stringify"]): Utils["stringify"] {
     if (value instanceof Node) {
       return value.nodeName;
     }
-    return stringify(value);
+    return print(value);
   };
-}
-
-// `printReceived` and `printExpected` are bun's own and never reach
-// `stringify`, and they are what most matchers word an element with —
-// `toBeEnabled` prints a clone of it. Left alone, each failed poll of
-// `waitFor(() => expect(button).toBeEnabled())` held the event loop for two
-// seconds alone and eight to twenty on CI, past the test's timeout, while
-// `waitFor` could not even look at its own clock.
-function printingNodesIn(
-  print: Utils["printReceived"],
-  stringify: Utils["stringify"]
-): Utils["printReceived"] {
-  return (value) => (value instanceof Node ? stringify(value) : print(value));
 }
 
 const patched = new WeakSet<Utils>();
@@ -58,14 +45,8 @@ function withCheapReceived(matcher: Matcher): Matcher {
     const { utils } = this;
     if (!patched.has(utils)) {
       utils.stringify = printingNodes(utils.stringify);
-      utils.printReceived = printingNodesIn(
-        utils.printReceived,
-        utils.stringify
-      );
-      utils.printExpected = printingNodesIn(
-        utils.printExpected,
-        utils.stringify
-      );
+      utils.printReceived = printingNodes(utils.printReceived);
+      utils.printExpected = printingNodes(utils.printExpected);
       patched.add(utils);
     }
     return matcher.apply(this, args);

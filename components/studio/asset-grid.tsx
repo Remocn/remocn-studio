@@ -13,6 +13,7 @@ import {
   AttachmentTitle,
   AttachmentTrigger,
 } from "@/components/ui/attachment";
+import { Button } from "@/components/ui/button";
 import {
   HoverCard,
   HoverCardContent,
@@ -197,12 +198,14 @@ function ClipPopover({
 
   let shown: React.ReactNode = (
     <video
-      autoPlay
+      autoPlay={clip.isPlaying}
       className="w-full rounded-sm"
+      controls={!clip.isPlaying}
       loop
       muted
       onError={clip.onError}
       playsInline
+      poster={poster ?? undefined}
       ref={clip.ref}
       src={src}
     />
@@ -218,12 +221,22 @@ function ClipPopover({
   }
 
   return (
-    <HoverCard>
+    <HoverCard onOpenChange={clip.onOpenChange}>
       <HoverCardTrigger delay={150} render={<div className="min-w-0" />}>
         {children}
       </HoverCardTrigger>
       <HoverCardContent className="w-80 overflow-hidden p-1" side="right">
         {shown}
+        {clip.isPlaying || clip.isBroken ? null : (
+          <Button
+            className="w-full"
+            onClick={clip.play}
+            size="sm"
+            variant="ghost"
+          >
+            Play preview
+          </Button>
+        )}
       </HoverCardContent>
     </HoverCard>
   );

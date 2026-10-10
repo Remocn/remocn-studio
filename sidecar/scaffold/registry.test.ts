@@ -196,6 +196,16 @@ describe("ensureRegistry", () => {
     expect(await readFile(v2, "utf8")).toBe("// authored v2\n");
   });
 
+  it("installs v7 alongside old contexts and preserves authored v7 resources on reopen", async () => {
+    const root = await project();
+    await run(ensureRegistry(root));
+    const path = join(root, "src/lib/studio-objects-v7/shaders.tsx");
+    expect(await readFile(path, "utf8")).toContain("StudioShaderSlot");
+    await writeFile(path, "authored runtime");
+    await run(ensureRegistry(root));
+    expect(await readFile(path, "utf8")).toBe("authored runtime");
+  });
+
   it("leaves a registry the project already has alone", async () => {
     const root = await project();
     await mkdir(join(root, "src", "videos"), { recursive: true });

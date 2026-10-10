@@ -485,3 +485,33 @@ describe("useComposer", () => {
     expect(result.current.counts).toEqual({ asset: 0, element: 0, image: 0 });
   });
 });
+
+it("keeps distinct caption styles and reuses a repeated style attachment until Send", async () => {
+  const submit = mock(() => true);
+  const { result } = renderHook(() =>
+    useComposer({ onSubmit: submit, projectId: "project" })
+  );
+  const karaoke = {
+    ...asset("remocn/caption-karaoke", "Karaoke"),
+    category: "Captions",
+  };
+  const subtitle = {
+    ...asset("remocn/caption-subtitle", "Subtitle"),
+    category: "Captions",
+  };
+  act(() => {
+    result.current.pick(karaoke);
+    result.current.pick(subtitle);
+    result.current.pick(karaoke);
+  });
+  expect(result.current.assets.items.map((item) => item.slug)).toEqual([
+    karaoke.slug,
+    subtitle.slug,
+  ]);
+  expect(submit).not.toHaveBeenCalled();
+  expect(result.current.canSubmit).toBe(true);
+  await act(async () => {
+    await result.current.submit();
+  });
+  expect(submit).toHaveBeenCalledTimes(1);
+});

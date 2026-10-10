@@ -74,6 +74,16 @@ export function ManagedPropsPane({
               />
             </DialKitSurface>
             <PaneActions>
+              {objects.selected?.shader ? (
+                <Button
+                  disabled={objects.busy || objects.pending > 0}
+                  onClick={objects.resetShader}
+                  size="xs"
+                  variant="ghost"
+                >
+                  Reset shader
+                </Button>
+              ) : null}
               {onDelete === undefined ? null : (
                 <DeleteAction onDelete={onDelete} target={deletion} />
               )}

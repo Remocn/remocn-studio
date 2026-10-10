@@ -294,17 +294,46 @@ describe("nativeBundle", () => {
     const modules = firstConfig(calls).module as {
       rules: Record<string, unknown>[];
     };
-    const managed = modules.rules.at(-1) as {
+    const managed = modules.rules.find(
+      (rule) =>
+        rule.test instanceof RegExp &&
+        rule.test.test("/r/src/studio-objects-v7/index.tsx")
+    ) as {
       test: RegExp;
       use: { loader: string; options: { transport: string } }[];
     };
     expect(managed.test.test("/r/src/studio-objects-v5/index.tsx")).toBe(true);
+    expect(managed.test.test("/r/src/studio-objects-v7/index.tsx")).toBe(true);
+    expect(managed.test.test("/r/src/studio-objects-v6/index.tsx")).toBe(false);
     expect(managed.use[0]?.loader).toBe(
       path.join(PREVIEW_DIR, "managed-loader.cjs")
     );
     expect(managed.use[0].options.transport).toBe(
       path.join(PREVIEW_DIR, "managed-transport.ts")
     );
+    const precision = modules.rules.find(
+      (rule) =>
+        rule.test instanceof RegExp &&
+        rule.test.test("/r/src/lib/studio-shaders-v1/caustics-fragment.ts")
+    ) as { test: RegExp; use: string[]; enforce: string };
+    expect(precision.enforce).toBe("pre");
+    expect(precision.use).toEqual([
+      path.join(PREVIEW_DIR, "shader-precision-loader.cjs"),
+    ]);
+    expect(
+      precision.test.test("/r/src/lib/studio-shaders-v1/strata-fragment.ts")
+    ).toBe(true);
+    expect(
+      precision.test.test(
+        "C:\\project\\src\\lib\\studio-shaders-v1\\weave-fragment.ts"
+      )
+    ).toBe(true);
+    expect(precision.test.test("/r/src/custom/caustics-fragment.ts")).toBe(
+      false
+    );
+    expect(
+      precision.test.test("/r/src/lib/studio-shaders-v1/tunnel-renderer.ts")
+    ).toBe(false);
   });
 
   it("aliases remotion to the native shim and keeps the project's own reachable", async () => {

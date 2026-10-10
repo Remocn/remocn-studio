@@ -311,3 +311,136 @@ describe("a sampled tuning change", () => {
     ).toEqual([CHANGE]);
   });
 });
+
+describe("shader IPC", () => {
+  const target = {
+    contract: 1,
+    durationInFrames: 150,
+    fps: 24,
+    from: 0,
+    generation: "build-1",
+    label: "Whole video",
+    projectId: "project-1",
+    sceneId: null,
+    slotId: "root-shaders",
+    sourceRevision: "hash",
+    video: "intro",
+  };
+  it("requires scoped live target identity on direct insertion", () => {
+    const request = {
+      objectId: "shader-one",
+      operationId: "insert-one",
+      slug: "shader-mesh-gradient",
+      target,
+    };
+    expect(Exit.isSuccess(codecsFor("shader.insert").params(request))).toBe(
+      true
+    );
+    expect(
+      Exit.isFailure(
+        codecsFor("shader.insert").params({
+          ...request,
+          target: { ...target, generation: null },
+        })
+      )
+    ).toBe(true);
+    expect(
+      Exit.isFailure(
+        codecsFor("shader.insert").params({
+          ...request,
+          target: { ...target, fps: 0 },
+        })
+      )
+    ).toBe(true);
+    expect(
+      Exit.isFailure(
+        codecsFor("shader.insert").params({
+          ...request,
+          target: { ...target, video: "../outside" },
+        })
+      )
+    ).toBe(true);
+  });
+  it("decodes capability queries, progress and restart lookup", () => {
+    expect(
+      Exit.isSuccess(
+        codecsFor("shader.targets").params({
+          generation: null,
+          projectId: "project-1",
+          video: "intro",
+        })
+      )
+    ).toBe(true);
+    expect(
+      Exit.isSuccess(
+        codecsFor("shader.insert").stream({
+          message: "Waiting for the scene",
+          operationId: "insert-one",
+          phase: "capability",
+          projectId: "project-1",
+          video: "intro",
+        })
+      )
+    ).toBe(true);
+    expect(
+      Exit.isFailure(
+        codecsFor("shader.insert").stream({
+          message: "Done",
+          operationId: "insert-one",
+          phase: "rendered",
+          projectId: "project-1",
+          video: "intro",
+        })
+      )
+    ).toBe(true);
+    expect(
+      Exit.isSuccess(
+        codecsFor("shader.insertionStatus").result({ state: "unknown" })
+      )
+    ).toBe(true);
+  });
+});
+
+it("decodes explicit shader preparation and refuses incomplete revisions and statuses", () => {
+  expect(
+    Exit.isSuccess(
+      codecsFor("agent.prompt").params({
+        ...TURN,
+        shaderPreparation: { revision: "source-revision" },
+      })
+    )
+  ).toBe(true);
+  expect(
+    Exit.isFailure(
+      codecsFor("agent.prompt").params({
+        ...TURN,
+        shaderPreparation: { revision: "" },
+      })
+    )
+  ).toBe(true);
+  expect(
+    Exit.isSuccess(
+      codecsFor("shader.targets").result({
+        adaptation: false,
+        preparation: {
+          historyId: "chat",
+          message: "Waiting for preview",
+          phase: "activating",
+        },
+        preparationRevision: "source-revision",
+        reason: "Prepare scene slots",
+        targets: [],
+      })
+    )
+  ).toBe(true);
+  expect(
+    Exit.isFailure(
+      codecsFor("shader.targets").result({
+        adaptation: false,
+        preparation: { message: "Ready", phase: "ready" },
+        reason: null,
+        targets: [],
+      })
+    )
+  ).toBe(true);
+});

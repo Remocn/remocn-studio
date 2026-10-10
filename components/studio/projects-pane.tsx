@@ -4,11 +4,14 @@ import type { MouseEvent, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   ArrowLeftIcon,
-  ComponentIcon,
-  FolderIcon,
-  LibraryBigIcon,
+  FilesIcon,
+  FoldersIcon,
+  type Icon,
   MessageSquareIcon,
+  PackageIcon,
   PlusIcon,
+  PrismIcon,
+  ScrollTextIcon,
   SearchIcon,
   SettingsIcon,
 } from "@/components/icons";
@@ -25,30 +28,38 @@ import {
 import { stockKindOf } from "@/hooks/use-assets-scope";
 
 import { usePickAsset } from "@/hooks/use-pick-asset";
-import { isPaneView, type PaneView } from "@/lib/studio/pane-view";
+import {
+  captionSelectionUnavailable,
+  isPaneView,
+  type PaneView,
+} from "@/lib/studio/pane-view";
 import { isMediaAsset } from "@/shared/library";
 import { AssetsPane } from "./assets-pane";
 import { AssetsScopeSwitch } from "./assets-scope";
+import { CaptionsPane } from "./captions-pane";
 import { ComponentsPane } from "./components-pane";
 import { LogoWordmark } from "./logo-mark";
 import { ProjectBrowser } from "./project-browser";
+import { ShadersPane } from "./shaders-pane";
 import { SidebarSlide } from "./sidebar-slide";
 import { StockPane } from "./stock-pane";
-import { useStudio } from "./studio-provider";
+import { useStudio, useStudioTurn } from "./studio-provider";
 import { WorkspaceLists } from "./workspace-lists";
 
 const VIEW_ITEMS: readonly {
-  icon: typeof ComponentIcon;
+  icon: Icon;
   label: string;
   view: PaneView;
 }[] = [
-  { icon: FolderIcon, label: "Projects", view: "projects" },
-  { icon: LibraryBigIcon, label: "Assets", view: "assets" },
+  { icon: FoldersIcon, label: "Projects", view: "projects" },
+  { icon: FilesIcon, label: "Assets", view: "assets" },
   {
-    icon: ComponentIcon,
+    icon: PackageIcon,
     label: "Components",
     view: "components",
   },
+  { icon: PrismIcon, label: "Shaders", view: "shaders" },
+  { icon: ScrollTextIcon, label: "Captions", view: "captions" },
 ];
 
 export function ProjectsPane() {
@@ -237,6 +248,9 @@ function WorkspaceSidebar() {
 function WorkspaceLibrary({ active }: { active: boolean }) {
   const {
     actionError,
+    openedProject,
+    openedVideo,
+    environment,
     folderError,
     assetsScope,
     componentScope,
@@ -244,7 +258,15 @@ function WorkspaceLibrary({ active }: { active: boolean }) {
     drops,
     library,
     paneView,
+    tools,
   } = useStudio();
+  const turn = useStudioTurn();
+  const captionUnavailable = captionSelectionUnavailable({
+    blocked: environment.isBlocking,
+    hasProject: Boolean(openedProject && openedVideo),
+    missing: openedProject?.missing ?? false,
+    waiting: Boolean(turn.permission ?? turn.source),
+  });
   const paneError = actionError ?? folderError;
   const pickable = useMemo(
     () => [...library.assets, ...library.bundled],
@@ -263,6 +285,17 @@ function WorkspaceLibrary({ active }: { active: boolean }) {
   );
 
   let content: ReactNode = null;
+  if (paneView === "shaders" && tools.shaders) {
+    content = (
+      <ShadersPane
+        assets={library.bundled}
+        error={library.error}
+        insertion={tools.shaders}
+        isLoading={library.isLoading}
+        onRetry={library.reload}
+      />
+    );
+  }
   if (paneView === "assets") {
     content =
       stockKind === null ? (
@@ -278,6 +311,19 @@ function WorkspaceLibrary({ active }: { active: boolean }) {
       ) : (
         <StockPane kind={stockKind} onSaved={library.refresh} />
       );
+  }
+
+  if (paneView === "captions") {
+    content = (
+      <CaptionsPane
+        assets={library.bundled}
+        error={library.bundledError}
+        isLoading={library.bundledLoading}
+        onPick={pickAsset}
+        onRetry={library.reloadBundled}
+        unavailable={captionUnavailable}
+      />
+    );
   }
 
   if (paneView === "components") {

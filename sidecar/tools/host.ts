@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Effect, Exit } from "effect";
 import { TOOLS_HOST_FLAG } from "../flags";
+import { untilBroken } from "../pipes";
 import type { Ask, ToolAnswer, ToolExecution } from "./execute";
 import {
   decodeToolReply,
@@ -186,7 +187,11 @@ async function main(): Promise<void> {
   transport.onclose = () => stopped.resolve();
   await server.connect(transport);
 
-  await Promise.race([link.closed, stopped.promise]);
+  await Promise.race([
+    link.closed,
+    stopped.promise,
+    Effect.runPromise(untilBroken(process.stdout, "the agent closed stdout")),
+  ]);
   link.end();
 }
 
