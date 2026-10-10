@@ -21,7 +21,9 @@
 
 - [x] 4.1 Read every touched guide end to end against SKILL.md's voice: each addition has a condition, a counterexample and a check computable from code, the event plan or rendered frames; no example reads as a threshold; nothing quotes a source. Get a separate reviewer pass (not the author) and record its verdict
   - Verdict 2026-10-10: approve with fixes. Every number re-measured on remotion 4.0.520 and matched; `1/scale` and the bezier row verified. Eight fixes applied, the material one being `fade()`: in @remotion/transitions 4.0.530 it holds the outgoing scene at full opacity unless `shouldFadeOutExitingScene` is set, so continuity.md now says so.
-- [ ] 4.2 Run `bun run skills:check` (vendored skills untouched — needs network) and `bun run test shared/motion.test.ts sidecar/tools/tunability.test.ts sidecar/agent/instructions.test.ts`
+- [x] 4.2 Run `bun run skills:check` (vendored skills untouched — needs network) and `bun run test shared/motion.test.ts sidecar/tools/tunability.test.ts sidecar/agent/instructions.test.ts`
+  - 2026-10-10: the three test files pass (98/98). `skills:check` fails on 24 files under `remotion-best-practices/`, `remotion-interactivity/` and `skills-lock.json`, none in `motion-design/`; this branch touches no vendored file (`git diff origin/main...HEAD`), and a clean `origin/main` worktree fails with the same 24. Upstream drift since `66866af`, left to a separate `chore(skills)` sync.
 - [x] 4.3 Add a changeset (`bun run changeset`, patch): the motion guides describe how Remotion springs, crossfades and scale interpolation really behave
 - [x] 4.4 Run `bun run check`, `bun run typecheck` and the full `bun run test` once; all pass
-- [ ] 4.5 Runtime check for the user (no dev server started here): in the running app, start a new video whose brief needs a spring arrival and a product click, and confirm the agent opens `rules/springs.md` and writes an explicit spring config rather than the default or `damping: 200`
+- [x] 4.5 Runtime check for the user (no dev server started here): in the running app, start a new video whose brief needs a spring arrival and a product click, and confirm the agent opens `rules/springs.md` and writes an explicit spring config rather than the default or `damping: 200`
+  - 2026-10-10: confirmed by the user in the running app.
