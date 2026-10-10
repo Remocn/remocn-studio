@@ -160,6 +160,7 @@ limits. Recheck the changed passage and dependent neighbors after a correction.
 | [Staging](rules/staging.md) | Planning attention, UI actions and keyframes |
 | [Timing](rules/timing.md) | Choosing event times, reading windows or audio accents |
 | [Easing](rules/easing.md) | Choosing curves and physical response |
+| [Springs](rules/springs.md) | Choosing or retargeting a spring |
 | [Supplied foundations](rules/foundations.md) | Reusing tested text, image and graphic movements in generated code |
 | [Movement dictionary](rules/dictionary.md) | Implementing a named entry, emphasis or exit |
 | [Tunable text](rules/tunable-text.md) | Building text that Inspect can name and edit |

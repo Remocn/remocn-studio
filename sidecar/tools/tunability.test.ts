@@ -396,18 +396,39 @@ describe("raw-export", () => {
   });
 });
 
+async function shippedBlocks(page: string): Promise<string[]> {
+  const text = await readFile(page, "utf8");
+  return [...text.matchAll(/```tsx\n([\s\S]*?)```/g)].map(
+    (block) => block[1] ?? ""
+  );
+}
+
 describe("the worked component the motion-design skill ships", () => {
   it("scores nothing against the rule set", async () => {
-    const page = await readFile(WORKED, "utf8");
-    const blocks = [...page.matchAll(/```tsx\n([\s\S]*?)```/g)].map(
-      (block) => block[1] ?? ""
-    );
+    const blocks = await shippedBlocks(WORKED);
 
     expect(blocks.length).toBeGreaterThan(0);
     expect(
       tunabilityFindings(
         blocks.map((source, index) => ({
           path: `tunable-text-${index}.tsx`,
+          source,
+        }))
+      )
+    ).toEqual([]);
+  });
+});
+
+describe("the springs guide the motion-design skill ships", () => {
+  // The guide teaches the config; its example must not nail one shut.
+  it("scores nothing against the rule set", async () => {
+    const blocks = await shippedBlocks(join(WORKED, "..", "springs.md"));
+
+    expect(blocks.length).toBeGreaterThan(0);
+    expect(
+      tunabilityFindings(
+        blocks.map((source, index) => ({
+          path: `springs-${index}.tsx`,
           source,
         }))
       )

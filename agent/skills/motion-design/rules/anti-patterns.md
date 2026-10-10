@@ -40,6 +40,8 @@ continuous playback quality or an audio audition.
 | Text shakes or glyphs change | Font readiness, layout shifts, transforms or wall-clock CSS | Reproduce on consecutive rendered frames and apply a scoped technical fix | Required vertical text motion is not automatically forbidden |
 | Fine detail disappears | Source resolution, crop, contrast or encoding | Inspect the delivery encode at normal viewing size | Decorative detail need not meet a fixed opacity quota |
 | Audio and picture feel separate | Visual peak mapped to onset, wrong cue or unreviewed final mix | Align the intended event and listen to the exported fragment | Many valid edits do not cut on every beat |
+| Arrival hits an invisible wall | Per-frame deltas over the last frames before rest; a clamped underdamped spring stops dead, then pulls back ([springs](springs.md)) | Choose the stop: a cushioned settle, or a hard accent on a beat | Words snapping in on the beat in a brutalist direction |
+| Subject jitters against a smooth background | Layers on different cadences: a stepped layer over a smooth pan, 24 fps footage in a 30 fps video, rounded time | Give layers that move against each other one cadence (`interpolate`'s `posterize` on both or neither) | A stepped character over a locked background |
 
 Report technical coverage separately from the creative comparison. For the latter,
 cite the rendered passage and the reference relationship or declared direction
