@@ -489,6 +489,12 @@ One seam per line: what it owns, the specs that define it, the records that expl
   `bun build --env` takes exactly one glob (`REMOCN_STUDIO_*`) and silently drops a second;
   runtime env vars are read by bracket access so the substitution never touches them.
   `--preview-host`, `--tools-host` and `--render-config` re-exec the same bundle.
+  In bun a write into a pipe whose reader is gone **does not throw**: `write` returns
+  false and the stream emits `error`, which bun raises as an unhandled rejection
+  (REM-651), so no `try`/`catch` or `Effect.try` can catch it. `guardPipes`
+  (`sidecar/pipes.ts`) covers stdout and stderr for all four entry points from
+  `index.ts`; any other stream the sidecar writes to for its whole life needs its
+  own `error` listener.
 - **Notifications in dev on macOS**: `tauri-plugin-notification` signs a development post with
   `com.apple.Terminal`, whatever terminal launched `bun tauri dev`, so nothing arrives until
   Terminal is allowed under System Settings › Notifications. A bundle posts under the app's own

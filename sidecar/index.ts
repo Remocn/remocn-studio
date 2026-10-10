@@ -1,6 +1,7 @@
 import { Cause, Effect, Exit } from "effect";
 import { startCrashReporting } from "./crash";
 import { CONFIG_HOST_FLAG, PREVIEW_HOST_FLAG, TOOLS_HOST_FLAG } from "./flags";
+import { guardPipes } from "./pipes";
 
 const chosen = Effect.flatten(
   Effect.promise(async () => {
@@ -20,7 +21,11 @@ const chosen = Effect.flatten(
 // Ahead of all three, because all three are this same bundle: the preview
 // host's webpack compile and the tool host's gateway crash the same way the
 // sidecar does, and one call covers them because they share an environment.
-const main = Effect.andThen(startCrashReporting, chosen);
+// The pipes are guarded before even that, since its first act is a write.
+const main = guardPipes.pipe(
+  Effect.andThen(startCrashReporting),
+  Effect.andThen(chosen)
+);
 
 const exit = await Effect.runPromiseExit(main);
 

@@ -15,6 +15,7 @@ import {
 import { type Idle, makeIdle } from "../idle";
 import { libraryRoot } from "../library/store";
 import { untilGone, untilOrphaned, untilSignalled } from "../lifecycle";
+import { untilBroken } from "../pipes";
 import {
   type BrowserReading,
   browserOptionsOf,
@@ -244,6 +245,7 @@ export const runPreviewHost: Effect.Effect<void> = Effect.gen(function* () {
 
   const reason = yield* Effect.raceAll([
     untilStdinClosed,
+    untilBroken(process.stdout, "the sidecar closed stdout"),
     untilSignalled,
     untilGone(PREVIEW_PARENT_ENV),
     untilOrphaned,
