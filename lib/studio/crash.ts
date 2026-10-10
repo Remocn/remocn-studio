@@ -104,6 +104,19 @@ export function applyCrashConsent(input: {
   return decision;
 }
 
+/**
+ * `@remotion/webcodecs` aborts its own controller when a conversion fails, and
+ * the frames already on their way through it then throw this from promises the
+ * library never awaits. The failure that caused the abort has by then rejected
+ * `convertMedia` and been handled by its caller, so what reaches the global
+ * handler is an echo of an expected failure, not a crash. Matched by name, as
+ * media-parser's own `hasBeenAborted` does, so the check costs no import of the
+ * 1.4MB chunk it lives in.
+ */
+export function isStrayAbort(error: unknown): boolean {
+  return error instanceof Error && error.name === "MediaParserAbortError";
+}
+
 export function reportRenderCrash(error: unknown, componentStack: string) {
   if (!(started && consented)) {
     return;
@@ -143,7 +156,10 @@ function init(
     // person was doing rather than what broke, and the console is where a
     // prompt would end up. Crashes only, in v1.
     beforeBreadcrumb: () => null,
-    beforeSend: (event) => (consented ? scrub(event, NO_KNOWN_HOME) : null),
+    beforeSend: (event, hint) =>
+      consented && !isStrayAbort(hint.originalException)
+        ? scrub(event, NO_KNOWN_HOME)
+        : null,
     dsn: input.dsn,
     environment: input.environment,
     // The default set carries the breadcrumb collectors and a session ping;
