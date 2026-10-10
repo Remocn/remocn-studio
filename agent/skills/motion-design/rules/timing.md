@@ -35,6 +35,12 @@ unrelated background moves. A reading window starts when masking, movement and
 occlusion stop preventing that task; it does not start merely when the scene or
 wrapper mounts. Budget entry, action, reading and transition overlap together.
 
+A spring-driven arrival is ready when its remaining distance stays below what shows
+at delivery size (for example 1 px); sample `spring()` to find that frame. Neither
+`durationInFrames` nor an underdamped spring's first crossing marks it
+([springs](springs.md)). Wait for the full settle only where residual drift would
+show, as in a match cut or geometry handed to the next object.
+
 After changing copy, item count, stagger or duration, recompute group completion
 and every dependent event. Inspect the last child and the next arrival together,
 including the frames around their computed boundaries. Keep code and review on

@@ -30,6 +30,16 @@ Make the interaction point visible before it matters. Choose camera targets from
 actual UI geometry. Retain enough context to identify a detail; an isolated macro
 can work after that context is established.
 
+Order a click as cursor arrival < press ≤ first visible response, with the cursor
+resting on the target for at least a frame; dead frames after the press read as
+latency. A montage may cut from cursor-on-button straight to the result. While a
+cursor drags, compute the object and any property the gesture drives (a slider
+fill, a reveal width) from the cursor position plus its grab offset, not from a
+curve of its own; check that the offset is constant on every drag frame. A sticker
+meant to trail the cursor is the exception. Change content at rest, not during fast
+travel, unless the motion is meant to hide the swap: the swap frame should fall
+where the per-frame deltas are near zero.
+
 For a morph, place the starting object at the geometry needed for the handoff.
 Avoid an unexplained font-size or padding change immediately before the morph.
 Derive the next object's anchor from the first instead of maintaining unrelated
