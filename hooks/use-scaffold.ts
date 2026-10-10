@@ -24,6 +24,17 @@ export interface Scaffolds {
 
 type Running = Fiber.Fiber<Project, unknown>;
 
+// A new project opens while its scaffold is still copying the template and
+// installing. Whatever reads the folder then sees it half written, so it waits
+// for this to turn false. A scaffold that failed or was cancelled is no longer
+// running, and the folder can be read for what it lacks.
+export function isSettingUp(
+  scaffolds: ReadonlyMap<string, ScaffoldState>,
+  projectId: string | null
+): boolean {
+  return projectId !== null && scaffolds.get(projectId)?.isRunning === true;
+}
+
 export function useScaffold(
   onScaffolded: (project: Project) => void
 ): Scaffolds {

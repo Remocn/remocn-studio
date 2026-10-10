@@ -34,9 +34,27 @@ export const fetchStudioBuild: Effect.Effect<StudioBuild, UpdateError> =
     try: () => invoke<unknown>("studio_build"),
   }).pipe(Effect.flatMap(decodeStudioBuild), Effect.mapError(fail));
 
+// The updater looks this platform up in the release before it compares
+// versions, so a release published without a build for it fails every check,
+// newer or not: the newest release before Linux shipped, or one whose Linux
+// job failed while the macOS ones went out. Its words for that name the
+// manifest's internals.
+const NO_PLATFORM = /in the response `platforms` object/;
+
+export const NO_BUILD_HERE =
+  "The newest release has no build for this system yet. Check again later.";
+
+export function checkFailure(cause: unknown): UpdateError {
+  const message = errorMessage(cause);
+
+  return new UpdateError({
+    message: NO_PLATFORM.test(message) ? NO_BUILD_HERE : message,
+  });
+}
+
 export const checkForUpdate: Effect.Effect<Update | null, UpdateError> =
   Effect.tryPromise({
-    catch: fail,
+    catch: checkFailure,
     try: () => check(),
   });
 

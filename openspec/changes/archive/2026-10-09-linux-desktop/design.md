@@ -233,6 +233,27 @@ the format from how the running build was bundled. So the plugin, its capability
 jobs sign their bundles with the same `TAURI_SIGNING_PRIVATE_KEY` and merge their
 entries into the same `latest.json`. `hooks/use-updates.ts` is unchanged.
 
+A build the updater cannot replace does not ask. `studio_build` answers
+`updatesInPlace`, which is `tauri::utils::platform::bundle_type().is_some()`: the
+marker tauri-bundler stamps into the binary (`__TAURI_BUNDLE_TYPE_VAR_DEB` and so
+on), always the `.app` on a Mac. A distribution's package — the AUR's
+`remocn-studio-bin` first — repacks the release's `.deb` and clears the marker,
+because with `DEB` the updater would run `pkexec dpkg -i` over files pacman owns,
+then fall back to a zenity password prompt and `sudo`. Cleared, the plugin is not
+safe either: with no marker it falls through to `install_appimage` and tries to put
+the AppImage in place of `/usr/bin/remocn-studio`. So `useUpdates` treats a
+markerless production build like a development one — no launch check, `check`
+refuses, *Check now* is unavailable — and says the package manager brings the
+updates.
+
+The plugin looks the platform up in `latest.json` before it compares versions
+(`get_urls` runs ahead of the comparator), so a release without this platform's
+entry fails every check, current or not. That is every release before the first
+Linux one, and any release whose Linux job fails after the macOS jobs published.
+`checkFailure` words the plugin's two `platforms` messages as *The newest release
+has no build for this system yet*, and a failed check no longer reads as *This is
+the newest release*.
+
 *Alternative:* leave the updater off on Linux. Every Linux person would then be told
 to fetch new versions by hand, for no gain: the key and the manifest already exist.
 
@@ -256,6 +277,7 @@ from the platform — `useIsMac()` in a component, which answers true until moun
 | `macOS 15.5` in feedback | `System: Ubuntu 24.04.1 LTS` |
 | "Show in Finder" | `Show in ${fileManagerName()}` |
 | `⌘−`, `⌘0`, `⌘+` in `canvas-preview.tsx` | `Ctrl+…` through `modKeyCombo` |
+| Hotkeys footnote: "…Use Ctrl instead of ⌘ on Windows." | "Shortcuts follow your platform." |
 
 The two shortcuts that read `metaKey` alone — ⌘⌫ on a video or chat row and ⌘Z
 after a canvas deletion — read `isModKey()`, which is ⌘ on a Mac and Ctrl
@@ -359,6 +381,42 @@ other never compiles.
   the app a `remocn-studio://` link.
   → `src-tauri/linux/remocn-studio.desktop` is the `desktopTemplate` for deb and
   rpm, with `Exec={{exec}} %u` and the scheme's `MimeType`.
+
+- **[Runtime checks of task 9.3, measured 2026-10-09]** A release `.deb` of
+  `linux-runtime-fixes`, run in place and as the installed AUR package, on Omarchy
+  (Hyprland 0.56, Wayland), webkit2gtk-4.1 2.52.6, quickshell as the notification
+  service, gnome-keyring 50. Driven through WebKitGTK's remote inspector on a
+  headless output so the desktop kept its focus.
+  - (a) The band, shader and controls render; Close raises the quit guard mid-turn
+    and *Keep working* keeps the turn. Maximise and the band's double-click do
+    nothing here because Omarchy sets `suppress_event = "maximize"` on every
+    window; minimise does not exist on Hyprland. Dragging and edge resizing were
+    not exercised (no pointer could be synthesised). **Still to check on GNOME or
+    Plasma.**
+  - (b) No menu bar; Ctrl+K, Ctrl+B, Ctrl+E, Ctrl+, , Ctrl+Shift+R and Ctrl+Shift+S
+    work with the caret in the composer.
+  - (c) The Secret Service backend round-trips across processes and `secret-tool`
+    sees the entry under the service name; a rejected ElevenLabs key is worded and
+    stores nothing. A real key surviving a restart was not tried (no key).
+  - (d) `open_terminal` spawns `$TERMINAL`, and with it unset `xdg-terminal-exec`,
+    detached, without arguments, in the home folder.
+  - (e) Not reachable: a bun project needs no Node, so the Node row never shows.
+  - (f) The OS reads `Omarchy`; the check failed with the plugin's raw `platforms`
+    message, now worded (decision 8).
+  - (g) A Claude Code turn ran and edited the project, from the session `PATH` and
+    with providers still found from a bare `/usr/local/bin:/usr/bin:/bin`.
+  - (h) An mp4 export finished (H.264 1920×1080, 150 frames, swangle) and Snapshot
+    attached its still. Footage was not tried: this host lacks gst-plugins-good,
+    -bad and gst-libav. **Still to check.**
+  - (i) The notification is posted (`Notify` with app `remocn-studio`, the video's
+    name and *The turn finished.*), but with no actions and no hints, so on most
+    desktops a click cannot bring the window forward. **Open.**
+  - (j) A second launch with a `remocn-studio://` argument reached the running
+    instance, which worded the unknown route.
+- **[A new project's checklist read the folder mid-scaffold]** It reported all
+  dependencies missing while the scaffold was installing them, offered a second
+  install, and stayed until Recheck. `isSettingUp` holds the checklist until the
+  scaffold stops running, as `previewTarget` already held the preview.
 
 ## Migration Plan
 

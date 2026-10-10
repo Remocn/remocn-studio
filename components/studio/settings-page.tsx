@@ -264,15 +264,22 @@ const FOOTNOTES: Record<SectionId, string | null> = {
   appearance: "Changes are saved automatically",
   behavior: "Changes are saved automatically",
   feedback: "Esc · Back to studio",
-  hotkeys: "Shortcuts follow your platform. Use Ctrl instead of ⌘ on Windows.",
+  hotkeys: "Shortcuts follow your platform.",
   integrations: "Changes are saved automatically",
   notifications: "Changes are saved automatically",
   project: null,
   updates: "Esc · Back to studio",
 };
 
+// A Mac keeps the line it had. Elsewhere the list already reads Ctrl, so a
+// sentence about ⌘ would describe keys the person does not have.
+const MAC_HOTKEYS_FOOTNOTE =
+  "Shortcuts follow your platform. Use Ctrl instead of ⌘ on Windows.";
+
 function SettingsFooter({ section }: { section: SectionId }) {
-  const text = FOOTNOTES[section];
+  const isMac = useIsMac();
+  const text =
+    section === "hotkeys" && isMac ? MAC_HOTKEYS_FOOTNOTE : FOOTNOTES[section];
   if (text === null) {
     return null;
   }
@@ -922,11 +929,16 @@ function UpdatesSection() {
   const { hasRunningTurns, updates } = useStudio();
   const isMac = useIsMac();
   const { download, release } = updates;
+  // A development build, or a Linux one its package manager installed, never
+  // checks and never installs; the summary says why instead.
+  const updatesItself = updates.unavailable === null;
 
   return (
     <>
       <Group
-        description="The studio checks for updates when it opens."
+        description={
+          updatesItself ? "The studio checks for updates when it opens." : null
+        }
         title="This build"
       >
         <div className="grid min-w-0 gap-4">
@@ -976,10 +988,12 @@ function UpdatesSection() {
             />
             {updateSummary(updates)}
           </p>
-          <p className="text-muted-foreground text-sm leading-[18px]">
-            Installing an update restarts the app. Finish active turns before
-            installing.
-          </p>
+          {updatesItself ? (
+            <p className="text-muted-foreground text-sm leading-[18px]">
+              Installing an update restarts the app. Finish active turns before
+              installing.
+            </p>
+          ) : null}
 
           {updates.error === null ? null : (
             <p className="text-destructive text-xs">{updates.error}</p>
