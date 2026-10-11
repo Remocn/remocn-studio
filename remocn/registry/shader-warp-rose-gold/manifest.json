@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarpRoseGold",
+  "dependencies": [],
+  "description": "Satin rose-gold folds with a soft sheen.",
+  "files": [
+    {
+      "file": "shader-warp-rose-gold.tsx",
+      "target": "src/components/remocn/shader-warp-rose-gold.tsx"
+    }
+  ],
+  "name": "shader-warp-rose-gold",
+  "presetOf": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.1,
+      "swirl": 0.9,
+      "softness": 1,
+      "proportion": 0.5
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Shader Warp Rose Gold"
+}

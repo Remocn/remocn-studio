@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSwirlCitrus",
+  "dependencies": [],
+  "description": "Juicy yellow, pink and green bands spiralling on cream.",
+  "files": [
+    {
+      "file": "shader-swirl-citrus.tsx",
+      "target": "src/components/remocn/shader-swirl-citrus.tsx"
+    }
+  ],
+  "name": "shader-swirl-citrus",
+  "presetOf": "shader-swirl",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "bandCount": 3,
+      "twist": 0.25,
+      "softness": 0.4,
+      "colorBack": "#fff8e1"
+    }
+  },
+  "registryDependencies": [
+    "shader-swirl"
+  ],
+  "title": "Shader Swirl Citrus"
+}

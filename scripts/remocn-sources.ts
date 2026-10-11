@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-export const BASE_PIN = "8ae853e4c08108105684d4b8cac7f22400840d2a";
+export const BASE_PIN = "fd2d3010a8183985553f9ddeb364313d57fb36b9";
 export const CAPTIONS_PIN = "d6cd742fa4f3ab0a74fecf2ac93f1542fa2ea8f7";
 export const CAPTION_NAMES = [
   "caption-active-pop",

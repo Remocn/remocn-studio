@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarpDeepSea",
+  "dependencies": [],
+  "description": "Diagonal teal bands rippling through midnight blue.",
+  "files": [
+    {
+      "file": "shader-warp-deep-sea.tsx",
+      "target": "src/components/remocn/shader-warp-deep-sea.tsx"
+    }
+  ],
+  "name": "shader-warp-deep-sea",
+  "presetOf": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.15,
+      "swirl": 0.3,
+      "softness": 1,
+      "proportion": 0.6
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Shader Warp Deep Sea"
+}

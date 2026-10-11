@@ -7,6 +7,7 @@ import { dirname, join, resolve } from "node:path";
 import { CryptoHasher } from "bun";
 import { Effect } from "effect";
 import { REMOCN_DIR_ENV, TEMPLATE_DIR_ENV } from "@/shared/ipc";
+import { shaderCatalogueEntry } from "@/shared/shader-presets";
 import { SHADER_DESCRIPTORS, shaderCreation } from "@/shared/shaders";
 import {
   applyStudioOperation,
@@ -14,6 +15,13 @@ import {
 } from "@/shared/studio-document";
 import { shaderTargetFixture } from "@/test/fixtures/shaders";
 import { shaderResourcePlan } from "../library/shaders";
+
+const PRESETS = [
+  "shader-grain-gradient-sunrise",
+  "shader-mesh-gradient-aurora",
+  "shader-swirl-candy",
+  "shader-warp-silk",
+];
 
 it.skipIf(process.env.REMOCN_SHADER_CATALOG_RENDER !== "1")(
   "renders the entire installed catalogue, deterministic seeks and frozen clocks",
@@ -43,6 +51,13 @@ it.skipIf(process.env.REMOCN_SHADER_CATALOG_RENDER !== "1")(
       const imports: string[] = [];
       const entries: string[] = [];
       const documents: Record<string, StudioDocument> = {};
+      const empty: StudioDocument = {
+        definitions: [],
+        objects: [],
+        operations: [],
+        version: 1,
+        video: "intro",
+      };
       for (const descriptor of SHADER_DESCRIPTORS) {
         const plan = await Effect.runPromise(
           shaderResourcePlan(descriptor.slug)
@@ -58,13 +73,6 @@ it.skipIf(process.env.REMOCN_SHADER_CATALOG_RENDER !== "1")(
         entries.push(
           `'${descriptor.slug}': {revision:'${descriptor.revision}', component:${descriptor.exportName}Adapter}`
         );
-        const empty: StudioDocument = {
-          definitions: [],
-          objects: [],
-          operations: [],
-          version: 1,
-          video: "intro",
-        };
         documents[descriptor.slug] = applyStudioOperation(
           empty,
           shaderCreation(
@@ -73,6 +81,24 @@ it.skipIf(process.env.REMOCN_SHADER_CATALOG_RENDER !== "1")(
             "create",
             "shader",
             0
+          ),
+          shaderTargetFixture
+        );
+      }
+      for (const slug of PRESETS) {
+        const entry = shaderCatalogueEntry(slug);
+        if (!entry) {
+          throw new Error(`${slug} is not described`);
+        }
+        documents[slug] = applyStudioOperation(
+          empty,
+          shaderCreation(
+            entry.descriptor,
+            shaderTargetFixture,
+            "create",
+            "shader",
+            0,
+            entry
           ),
           shaderTargetFixture
         );
@@ -117,60 +143,76 @@ registerRoot(() => <Composition id="Catalogue" component={Video} width={320} hei
         width: 320,
       };
       try {
-        for (const descriptor of SHADER_DESCRIPTORS) {
-          async function frame(at: number, speed: number, suffix: string) {
-            const output = join(root, `${descriptor.slug}-${suffix}.png`);
-            const props = { slug: descriptor.slug, speed };
-            await renderStill({
-              chromiumOptions: { gl: "swangle" },
-              composition: { ...composition, props },
-              frame: at,
-              inputProps: props,
-              logLevel: "error",
-              output,
-              puppeteerInstance: browser,
-              serveUrl,
-            });
-            const { data, info } = await sharp(output)
-              .removeAlpha()
-              .raw()
-              .toBuffer({ resolveWithObject: true });
-            const pixel = (x: number, y: number) => [
-              ...data.subarray(
-                (y * info.width + x) * 3,
-                (y * info.width + x) * 3 + 3
-              ),
-            ];
-            expect(pixel(10, 10)).toEqual([0, 255, 0]);
-            expect(pixel(160, 90)).not.toEqual([255, 0, 0]);
-            const samples = new Set<string>();
-            for (let y = 30; y < 180; y += 5) {
-              for (let x = 30; x < 320; x += 5) {
-                samples.add(pixel(x, y).join(","));
-              }
+        async function frame(
+          slug: string,
+          at: number,
+          speed: number,
+          suffix: string
+        ) {
+          const output = join(root, `${slug}-${suffix}.png`);
+          const props = { slug, speed };
+          await renderStill({
+            chromiumOptions: { gl: "swangle" },
+            composition: { ...composition, props },
+            frame: at,
+            inputProps: props,
+            logLevel: "error",
+            output,
+            puppeteerInstance: browser,
+            serveUrl,
+          });
+          const { data, info } = await sharp(output)
+            .removeAlpha()
+            .raw()
+            .toBuffer({ resolveWithObject: true });
+          const pixel = (x: number, y: number) => [
+            ...data.subarray(
+              (y * info.width + x) * 3,
+              (y * info.width + x) * 3 + 3
+            ),
+          ];
+          expect(pixel(10, 10)).toEqual([0, 255, 0]);
+          expect(pixel(160, 90)).not.toEqual([255, 0, 0]);
+          const samples = new Set<string>();
+          for (let y = 30; y < 180; y += 5) {
+            for (let x = 30; x < 320; x += 5) {
+              samples.add(pixel(x, y).join(","));
             }
-            expect(samples.size, descriptor.slug).toBeGreaterThan(1);
-            if (process.env.REMOCN_SHADER_CAPTURE_DIR) {
-              await mkdir(process.env.REMOCN_SHADER_CAPTURE_DIR, {
-                recursive: true,
-              });
-              await cp(
-                output,
-                join(
-                  process.env.REMOCN_SHADER_CAPTURE_DIR,
-                  `${descriptor.slug}-${suffix}.png`
-                )
-              );
-            }
-            return new CryptoHasher("sha256").update(data).digest("hex");
           }
-          const middle = await frame(72, 1, "middle");
-          const start = await frame(0, 1, "start");
+          expect(samples.size, slug).toBeGreaterThan(1);
+          if (process.env.REMOCN_SHADER_CAPTURE_DIR) {
+            await mkdir(process.env.REMOCN_SHADER_CAPTURE_DIR, {
+              recursive: true,
+            });
+            await cp(
+              output,
+              join(
+                process.env.REMOCN_SHADER_CAPTURE_DIR,
+                `${slug}-${suffix}.png`
+              )
+            );
+          }
+          return new CryptoHasher("sha256").update(data).digest("hex");
+        }
+        const middles = new Map<string, string>();
+        for (const descriptor of SHADER_DESCRIPTORS) {
+          const middle = await frame(descriptor.slug, 72, 1, "middle");
+          middles.set(descriptor.slug, middle);
+          const start = await frame(descriptor.slug, 0, 1, "start");
           expect(start).not.toBe(middle);
-          expect(await frame(72, 1, "repeat")).toBe(middle);
-          expect(await frame(149, 0, "frozen-end")).toBe(
-            await frame(0, 0, "frozen-start")
+          expect(await frame(descriptor.slug, 72, 1, "repeat")).toBe(middle);
+          expect(await frame(descriptor.slug, 149, 0, "frozen-end")).toBe(
+            await frame(descriptor.slug, 0, 0, "frozen-start")
           );
+        }
+        for (const slug of PRESETS) {
+          const entry = shaderCatalogueEntry(slug);
+          const speed = Number(entry?.values.speed ?? 1);
+          const middle = await frame(slug, 72, speed, "middle");
+          expect(middle, slug).not.toBe(
+            middles.get(entry?.descriptor.slug ?? "")
+          );
+          expect(await frame(slug, 72, speed, "repeat")).toBe(middle);
         }
       } finally {
         await browser.close({ silent: true });

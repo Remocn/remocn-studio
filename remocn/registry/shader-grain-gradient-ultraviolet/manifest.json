@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGrainGradientUltraviolet",
+  "dependencies": [],
+  "description": "Electric magenta and blue blob morphing on ultraviolet black.",
+  "files": [
+    {
+      "file": "shader-grain-gradient-ultraviolet.tsx",
+      "target": "src/components/remocn/shader-grain-gradient-ultraviolet.tsx"
+    }
+  ],
+  "name": "shader-grain-gradient-ultraviolet",
+  "presetOf": "shader-grain-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "softness": 0.5,
+      "intensity": 0.45,
+      "noise": 0.25,
+      "colorBack": "#0d0221"
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Shader Grain Gradient Ultraviolet"
+}

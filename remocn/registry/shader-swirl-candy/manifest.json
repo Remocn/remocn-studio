@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSwirlCandy",
+  "dependencies": [],
+  "description": "Pastel pink, lilac and sky-blue spiral, soft and sweet.",
+  "files": [
+    {
+      "file": "shader-swirl-candy.tsx",
+      "target": "src/components/remocn/shader-swirl-candy.tsx"
+    }
+  ],
+  "name": "shader-swirl-candy",
+  "presetOf": "shader-swirl",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "bandCount": 3,
+      "twist": 0.15,
+      "softness": 1,
+      "colorBack": "#ffe3f1"
+    }
+  },
+  "registryDependencies": [
+    "shader-swirl"
+  ],
+  "title": "Shader Swirl Candy"
+}

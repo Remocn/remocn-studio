@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarpStorm",
+  "dependencies": [],
+  "description": "Deep violet and lavender storm of marbled fluid.",
+  "files": [
+    {
+      "file": "shader-warp-storm.tsx",
+      "target": "src/components/remocn/shader-warp-storm.tsx"
+    }
+  ],
+  "name": "shader-warp-storm",
+  "presetOf": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.3,
+      "swirl": 1,
+      "softness": 1,
+      "proportion": 0.5
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Shader Warp Storm"
+}

@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarpAcid",
+  "dependencies": [],
+  "description": "Loud lime and cyan fluid swirling over black.",
+  "files": [
+    {
+      "file": "shader-warp-acid.tsx",
+      "target": "src/components/remocn/shader-warp-acid.tsx"
+    }
+  ],
+  "name": "shader-warp-acid",
+  "presetOf": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.2,
+      "swirl": 0.7,
+      "softness": 0.3,
+      "proportion": 0.5
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Shader Warp Acid"
+}

@@ -4,6 +4,7 @@ import {
   ShaderManifest as Manifest,
   type ShaderManifest,
 } from "@/shared/shader-manifest";
+import { shaderCatalogueEntry } from "@/shared/shader-presets";
 import { type ShaderTarget, sameShaderTarget } from "@/shared/shader-target";
 import {
   type ShaderInserted,
@@ -69,11 +70,15 @@ function inserted(
   };
 }
 
+function shaderOf(slug: string) {
+  return shaderCatalogueEntry(slug)?.descriptor.slug ?? slug;
+}
+
 function requestMatches(left: ShaderInsertRequest, right: ShaderInsertRequest) {
   return (
     left.objectId === right.objectId &&
     left.operationId === right.operationId &&
-    left.slug === right.slug &&
+    shaderOf(left.slug) === shaderOf(right.slug) &&
     sameShaderTarget(left.target, right.target)
   );
 }
@@ -319,6 +324,10 @@ export function makeShaderInsertions(
           "validate",
           "Checking the target scene and saved insertion."
         );
+        const entry = shaderCatalogueEntry(request.slug);
+        if (!entry) {
+          return yield* shaderFailure("This shader cannot be added.");
+        }
         const saved = yield* read(root, request.target.video);
         const previous = yield* journal.read(
           root,
@@ -344,7 +353,7 @@ export function makeShaderInsertions(
             "The target scene changed. Refresh the preview before adding a shader."
           );
         }
-        const plan = yield* shaderResourcePlan(request.slug);
+        const plan = yield* shaderResourcePlan(entry.descriptor.slug);
         const resources = {
           ...plan,
           files: yield* checkShaderResources(root, plan),
@@ -418,7 +427,8 @@ export function makeShaderInsertions(
             target,
             request.operationId,
             request.objectId,
-            order
+            order,
+            entry
           );
           yield* report("commit", "Saving the shader instance.");
           const snapshot = yield* commitStudioCreation(
@@ -619,7 +629,7 @@ function recoverReceipt(
     if (
       !isCreationOperation(receipt) ||
       receipt.objectId !== request.objectId ||
-      receipt.object.shader?.slug !== request.slug ||
+      receipt.object.shader?.slug !== shaderOf(request.slug) ||
       receipt.target.slotId !== request.target.slotId ||
       receipt.target.sceneId !== request.target.sceneId ||
       receipt.target.projectId !== request.target.projectId

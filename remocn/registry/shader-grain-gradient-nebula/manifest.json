@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGrainGradientNebula",
+  "dependencies": [],
+  "description": "Magenta and cyan glow blooming from the corners of deep space.",
+  "files": [
+    {
+      "file": "shader-grain-gradient-nebula.tsx",
+      "target": "src/components/remocn/shader-grain-gradient-nebula.tsx"
+    }
+  ],
+  "name": "shader-grain-gradient-nebula",
+  "presetOf": "shader-grain-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "softness": 1,
+      "intensity": 0.7,
+      "noise": 0.2,
+      "colorBack": "#05010f"
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Shader Grain Gradient Nebula"
+}

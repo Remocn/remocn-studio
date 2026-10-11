@@ -7,10 +7,12 @@ import {
 } from "./shader-target";
 import {
   definitionProblem,
+  fieldProblem,
   type StudioCreateOperation,
   StudioDefinition,
   type StudioField,
   StudioSnapshot,
+  StudioValue,
 } from "./studio-document";
 
 export const PAPER_SHADER_VERSION = "0.0.78";
@@ -244,12 +246,53 @@ export const SHADER_DESCRIPTORS: readonly ShaderDescriptor[] = [
   ...catalog.map((entry) => Schema.decodeUnknownSync(ShaderDescriptor)(entry)),
 ];
 
+export const ShaderPresetValues = Schema.Record(ShaderIdentifier, StudioValue);
+export type ShaderPresetValues = typeof ShaderPresetValues.Type;
+
+export interface ShaderStart {
+  readonly title: string;
+  readonly values: ShaderPresetValues;
+}
+
+export function presetProblem(preset: {
+  readonly base: string;
+  readonly title: string;
+  readonly values: ShaderPresetValues;
+}): string | null {
+  const descriptor = SHADER_DESCRIPTORS.find(
+    (item) => item.slug === preset.base
+  );
+  if (!descriptor) {
+    return `${preset.title} starts from a shader Studio cannot add.`;
+  }
+  for (const [id, value] of Object.entries(preset.values)) {
+    const field = descriptor.definition.fields.find((item) => item.id === id);
+    if (!field || SHADER_INSTANCE_FIELDS.some((item) => item.id === id)) {
+      return `${preset.title} sets ${id}, which is not a ${descriptor.title} control.`;
+    }
+    const problem = fieldProblem(field, value);
+    if (problem) {
+      return `${preset.title}: ${problem}`;
+    }
+  }
+  return null;
+}
+
+export const ShaderPreset = Schema.Struct({
+  base: ShaderIdentifier,
+  slug: ShaderIdentifier,
+  title: Schema.NonEmptyString,
+  values: ShaderPresetValues,
+}).check(Schema.makeFilter((preset) => presetProblem(preset) ?? true));
+export type ShaderPreset = typeof ShaderPreset.Type;
+
 export function shaderCreation(
   descriptor: ShaderDescriptor,
   target: ShaderTarget,
   operationId: string,
   objectId: string,
-  order: number
+  order: number,
+  start: ShaderStart = { title: descriptor.title, values: {} }
 ): StudioCreateOperation {
   return {
     definition: descriptor.definition,
@@ -258,7 +301,7 @@ export function shaderCreation(
     object: {
       definition: descriptor.definition.id,
       id: objectId,
-      label: descriptor.title,
+      label: start.title,
       parentId: target.sceneId,
       shader: {
         revision: descriptor.revision,
@@ -269,6 +312,7 @@ export function shaderCreation(
         ...Object.fromEntries(
           descriptor.definition.fields.map((field) => [field.id, field.default])
         ),
+        ...start.values,
         endFrame: target.durationInFrames,
         order,
       },

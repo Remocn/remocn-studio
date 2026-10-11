@@ -12,8 +12,6 @@ import {
   LayersIcon,
   MaximizeIcon,
   MinusIcon,
-  PanelRightCloseIcon,
-  PanelRightOpenIcon,
   PlusIcon,
   RulerIcon,
   SlidersHorizontalIcon,
@@ -536,22 +534,36 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
             <CameraIcon className="size-4" />
           )}
         </HintTooltip>
-        {layers.shown ? null : (
-          <Button
-            aria-label="Expand inspector"
-            onClick={layers.toggle}
-            size="icon"
-            variant="ghost"
-          >
-            <PanelRightOpenIcon />
-          </Button>
-        )}
+        <InspectorToggle layers={layers} />
       </div>
     </div>
   );
 }
 
-function InspectorPanel({
+export function InspectorToggle({ layers }: { layers: CanvasLayers }) {
+  return (
+    <HintTooltip
+      label={
+        layers.shown
+          ? "Hide layers and properties"
+          : "Show layers and properties"
+      }
+      render={
+        <Button
+          aria-label="Inspector"
+          aria-pressed={layers.shown}
+          onClick={layers.toggle}
+          size="icon"
+          variant={layers.shown ? "secondary" : "ghost"}
+        />
+      }
+    >
+      <SlidersHorizontalIcon />
+    </HintTooltip>
+  );
+}
+
+export function InspectorPanel({
   duration,
   hasSelection,
   layers,
@@ -570,8 +582,9 @@ function InspectorPanel({
       className={cn(
         "absolute inset-y-0 right-0 z-20 flex w-(--canvas-inspector-panel) flex-col overflow-hidden bg-muted",
         !layers.shown && "hidden",
-        layers.floating &&
-          "top-[calc(var(--canvas-ruler)+3.5rem)] z-30 rounded-tl-xl"
+        layers.floating
+          ? "top-[calc(var(--canvas-ruler)+3.5rem)] z-30 rounded-tl-xl"
+          : "top-(--canvas-ruler)"
       )}
       data-canvas-chrome
       data-canvas-occludes="right"
@@ -615,7 +628,10 @@ function InspectorBar({
   return (
     <nav
       aria-label="Inspector views"
-      className="flex h-11 shrink-0 items-center gap-1 px-3"
+      className={cn(
+        "box-content flex h-10 shrink-0 items-center gap-1 px-3",
+        !layers.floating && "pt-2"
+      )}
     >
       <Button
         aria-pressed={layers.active === "layers"}
@@ -652,16 +668,6 @@ function InspectorBar({
         <SlidersHorizontalIcon data-icon="inline-start" />
         Inspect
       </HintTooltip>
-      <Button
-        aria-expanded
-        aria-label="Collapse inspector"
-        className="ml-auto"
-        onClick={layers.toggle}
-        size="icon-sm"
-        variant="ghost"
-      >
-        <PanelRightCloseIcon />
-      </Button>
     </nav>
   );
 }

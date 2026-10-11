@@ -25,6 +25,7 @@ export const VendoredManifest = Schema.Struct({
   description: Schema.String,
   files: Schema.Array(VendoredFile),
   name: Schema.NonEmptyString,
+  presetOf: Schema.optionalKey(Schema.NonEmptyString),
   registryDependencies: Schema.Array(Schema.NonEmptyString),
   title: Schema.NonEmptyString,
 });
@@ -121,7 +122,7 @@ function assetOf(
     path,
     preview: existsSync(poster) ? poster : null,
     proxied: false,
-    role: bundledRoleOf(name),
+    role: bundledRoleOf(name, manifest.presetOf),
     slug: `${BUNDLED_PREFIX}${name}`,
     source: null,
     type: "component",
@@ -203,7 +204,7 @@ export function bundledPlan(
         ...(first.category === "Captions" ? { captionStyle: first.name } : {}),
         dependencies: [...dependencies],
         files,
-        role: bundledRoleOf(first.name),
+        role: bundledRoleOf(first.name, first.presetOf),
         title: first.title,
       };
     },

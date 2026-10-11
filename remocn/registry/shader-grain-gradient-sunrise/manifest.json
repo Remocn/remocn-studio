@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGrainGradientSunrise",
+  "dependencies": [],
+  "description": "Grainy wave of coral and gold rising over a plum night.",
+  "files": [
+    {
+      "file": "shader-grain-gradient-sunrise.tsx",
+      "target": "src/components/remocn/shader-grain-gradient-sunrise.tsx"
+    }
+  ],
+  "name": "shader-grain-gradient-sunrise",
+  "presetOf": "shader-grain-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "softness": 0.8,
+      "intensity": 0.2,
+      "noise": 0.2,
+      "colorBack": "#1b0b2e"
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Shader Grain Gradient Sunrise"
+}

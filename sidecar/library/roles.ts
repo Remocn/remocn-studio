@@ -143,6 +143,12 @@ export const BUNDLED_ROLES: Record<string, MotionRole> = {
   "zoom-words": "entry",
 };
 
-export function bundledRoleOf(name: string): MotionRole | null {
-  return BUNDLED_ROLES[name] ?? null;
+export function bundledRoleOf(
+  name: string,
+  presetOf?: string
+): MotionRole | null {
+  return (
+    BUNDLED_ROLES[name] ??
+    (presetOf === undefined ? null : (BUNDLED_ROLES[presetOf] ?? null))
+  );
 }

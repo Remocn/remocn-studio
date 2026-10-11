@@ -5,7 +5,7 @@ import { Effect, Schema } from "effect";
 import { CAPTION_NAMES } from "@/scripts/remocn-sources";
 import { REMOCN_DIR_ENV } from "@/shared/ipc";
 import { Asset, PromptAsset, promptAssetOf } from "@/shared/library";
-import { bundledPlan, listBundled } from "./bundled";
+import { bundledPlan, listBundled, VendoredManifest } from "./bundled";
 
 const old = process.env[REMOCN_DIR_ENV];
 beforeEach(() => {
@@ -59,5 +59,33 @@ describe("bundled captions", () => {
         expect(readFileSync(file.from, "utf8").length).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe("VendoredManifest", () => {
+  const manifest = {
+    category: "Shaders",
+    dependencies: [],
+    description: "Violet and pink liquid silk folding in slow waves.",
+    files: [
+      {
+        file: "shader-warp-silk.tsx",
+        target: "src/components/remocn/shader-warp-silk.tsx",
+      },
+    ],
+    name: "shader-warp-silk",
+    registryDependencies: ["shader-warp"],
+    title: "Shader Warp Silk",
+  };
+  const decode = Schema.decodeUnknownSync(VendoredManifest);
+
+  it("reads the base shader a preset starts from", () => {
+    expect(decode({ ...manifest, presetOf: "shader-warp" }).presetOf).toBe(
+      "shader-warp"
+    );
+  });
+
+  it("reads a manifest written before presets existed", () => {
+    expect("presetOf" in decode(manifest)).toBe(false);
   });
 });

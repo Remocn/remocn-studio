@@ -3,8 +3,8 @@
     "remocn": {
       "source": "Remocn/remocn",
       "sourceType": "github",
-      "skillPath": "skills/remocn/SKILL.md",
-      "computedHash": "d0a134e232d282bca1af0cbc88185a57b72aef5c7146a903bbbabece536cfe86"
+      "skillPath": "plugins/remocn/skills/remocn/SKILL.md",
+      "computedHash": "e74f3fbceedf27c166e867a1208f760ba36917a25ee82921662cf612181acd41"
     },
     "remotion-best-practices": {
       "source": "remotion-dev/skills",
