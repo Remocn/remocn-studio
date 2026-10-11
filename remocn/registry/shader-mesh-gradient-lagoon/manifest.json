@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderMeshGradientLagoon",
+  "dependencies": [],
+  "description": "Bright aqua and teal shallows with a deep-blue undertow.",
+  "files": [
+    {
+      "file": "shader-mesh-gradient-lagoon.tsx",
+      "target": "src/components/remocn/shader-mesh-gradient-lagoon.tsx"
+    }
+  ],
+  "name": "shader-mesh-gradient-lagoon",
+  "presetOf": "shader-mesh-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.7,
+      "swirl": 0.35
+    }
+  },
+  "registryDependencies": [
+    "shader-mesh-gradient"
+  ],
+  "title": "Shader Mesh Gradient Lagoon"
+}

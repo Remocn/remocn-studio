@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarpSunset",
+  "dependencies": [],
+  "description": "Marbled coral, peach and wine flowing like warm liquid.",
+  "files": [
+    {
+      "file": "shader-warp-sunset.tsx",
+      "target": "src/components/remocn/shader-warp-sunset.tsx"
+    }
+  ],
+  "name": "shader-warp-sunset",
+  "presetOf": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.2,
+      "swirl": 0.8,
+      "softness": 1,
+      "proportion": 0.5
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Shader Warp Sunset"
+}

@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSwirlEmber",
+  "dependencies": [],
+  "description": "Gold and orange fire bands spinning around a dark core.",
+  "files": [
+    {
+      "file": "shader-swirl-ember.tsx",
+      "target": "src/components/remocn/shader-swirl-ember.tsx"
+    }
+  ],
+  "name": "shader-swirl-ember",
+  "presetOf": "shader-swirl",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "bandCount": 4,
+      "twist": 0.3,
+      "softness": 0.8,
+      "colorBack": "#1a0000"
+    }
+  },
+  "registryDependencies": [
+    "shader-swirl"
+  ],
+  "title": "Shader Swirl Ember"
+}

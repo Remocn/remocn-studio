@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarpSilk",
+  "dependencies": [],
+  "description": "Violet and pink liquid silk folding in slow waves.",
+  "files": [
+    {
+      "file": "shader-warp-silk.tsx",
+      "target": "src/components/remocn/shader-warp-silk.tsx"
+    }
+  ],
+  "name": "shader-warp-silk",
+  "presetOf": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.15,
+      "swirl": 0.6,
+      "softness": 1,
+      "proportion": 0.45
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Shader Warp Silk"
+}

@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSwirlHypno",
+  "dependencies": [],
+  "description": "High-contrast black and white hypnotic spiral.",
+  "files": [
+    {
+      "file": "shader-swirl-hypno.tsx",
+      "target": "src/components/remocn/shader-swirl-hypno.tsx"
+    }
+  ],
+  "name": "shader-swirl-hypno",
+  "presetOf": "shader-swirl",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "bandCount": 6,
+      "twist": 0.25,
+      "softness": 0,
+      "colorBack": "#0b0b0b"
+    }
+  },
+  "registryDependencies": [
+    "shader-swirl"
+  ],
+  "title": "Shader Swirl Hypno"
+}

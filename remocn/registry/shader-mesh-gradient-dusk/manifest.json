@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderMeshGradientDusk",
+  "dependencies": [],
+  "description": "Violet dusk with coral and peach light drifting through deep indigo.",
+  "files": [
+    {
+      "file": "shader-mesh-gradient-dusk.tsx",
+      "target": "src/components/remocn/shader-mesh-gradient-dusk.tsx"
+    }
+  ],
+  "name": "shader-mesh-gradient-dusk",
+  "presetOf": "shader-mesh-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.9,
+      "swirl": 0.3
+    }
+  },
+  "registryDependencies": [
+    "shader-mesh-gradient"
+  ],
+  "title": "Shader Mesh Gradient Dusk"
+}

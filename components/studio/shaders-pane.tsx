@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAssetSearch } from "@/hooks/use-asset-search";
 import type { ShaderInsertion } from "@/hooks/use-shader-insertion";
-import type { Asset } from "@/shared/library";
-import { SHADER_DESCRIPTORS } from "@/shared/shaders";
+import { type Asset, BUNDLED_PREFIX } from "@/shared/library";
+import { shaderCatalogueEntry } from "@/shared/shader-presets";
 import { AssetGrid } from "./asset-grid";
 import { AssetSearchField, NothingFound } from "./assets-pane";
 import { PaneScreen } from "./pane-screen";
@@ -31,9 +31,8 @@ export function ShadersPane({
       assets.filter(
         (asset) =>
           asset.category === "Shaders" &&
-          SHADER_DESCRIPTORS.some(
-            (descriptor) => asset.slug === `remocn/${descriptor.slug}`
-          )
+          asset.slug.startsWith(BUNDLED_PREFIX) &&
+          shaderCatalogueEntry(asset.slug.slice(BUNDLED_PREFIX.length)) !== null
       ),
     [assets]
   );

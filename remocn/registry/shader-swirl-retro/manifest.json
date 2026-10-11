@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSwirlRetro",
+  "dependencies": [],
+  "description": "Seventies spiral in orange, sand and teal.",
+  "files": [
+    {
+      "file": "shader-swirl-retro.tsx",
+      "target": "src/components/remocn/shader-swirl-retro.tsx"
+    }
+  ],
+  "name": "shader-swirl-retro",
+  "presetOf": "shader-swirl",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "bandCount": 4,
+      "twist": 0.2,
+      "softness": 0,
+      "colorBack": "#f4e9d8"
+    }
+  },
+  "registryDependencies": [
+    "shader-swirl"
+  ],
+  "title": "Shader Swirl Retro"
+}

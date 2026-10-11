@@ -5,6 +5,10 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { Effect } from "effect";
 import { REMOCN_DIR_ENV, TEMPLATE_DIR_ENV } from "@/shared/ipc";
+import {
+  EXCLUDED_SHADER_PRESETS,
+  SHADER_PRESETS,
+} from "@/shared/shader-presets";
 import { MESH_GRADIENT, SHADER_DESCRIPTORS } from "@/shared/shaders";
 import { hashBytes } from "../projects/config";
 import { listBundled } from "./bundled";
@@ -100,9 +104,18 @@ describe("shader resources", () => {
     const descriptors = (await Effect.runPromise(listShaders())).map(
       (entry) => entry.descriptor
     );
+    const presets = [...SHADER_PRESETS, ...EXCLUDED_SHADER_PRESETS].map(
+      (preset) => `remocn/${preset.slug}`
+    );
     expect(descriptors).toHaveLength(23);
     expect(descriptors.map((d) => `remocn/${d.slug}`).sort()).toEqual(
-      assets.map((a) => a.slug).sort()
+      assets
+        .map((a) => a.slug)
+        .filter((slug) => !presets.includes(slug))
+        .sort()
+    );
+    expect(assets.filter((asset) => presets.includes(asset.slug))).toHaveLength(
+      36
     );
     const shared = new Map<string, string>();
     for (const descriptor of SHADER_DESCRIPTORS) {

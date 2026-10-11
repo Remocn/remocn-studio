@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGrainGradientHorizon",
+  "dependencies": [],
+  "description": "Peach horizon band rolling between navy and pale sky.",
+  "files": [
+    {
+      "file": "shader-grain-gradient-horizon.tsx",
+      "target": "src/components/remocn/shader-grain-gradient-horizon.tsx"
+    }
+  ],
+  "name": "shader-grain-gradient-horizon",
+  "presetOf": "shader-grain-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "softness": 0.9,
+      "intensity": 0.15,
+      "noise": 0.25,
+      "colorBack": "#0b1d3a"
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Shader Grain Gradient Horizon"
+}

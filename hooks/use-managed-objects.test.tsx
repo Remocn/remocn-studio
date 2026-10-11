@@ -566,3 +566,44 @@ it("edits an ordered shader palette independently and resets all changed default
       ?.values.distortion
   ).toBe(0.9);
 });
+
+it("resets a preset instance to the preset's look, not to its shader's defaults", async () => {
+  const { shaderCreation } = await import("@/shared/shaders");
+  const { shaderCatalogueEntry } = await import("@/shared/shader-presets");
+  const { shaderTargetFixture } = await import("@/test/fixtures/shaders");
+  const aurora = shaderCatalogueEntry("shader-mesh-gradient-aurora");
+  if (!aurora) {
+    throw new Error("Aurora is not described");
+  }
+  const created = shaderCreation(
+    aurora.descriptor,
+    shaderTargetFixture,
+    "insert-aurora",
+    "shader-aurora",
+    0,
+    aurora
+  );
+  const test = setup(
+    applyStudioOperation(documentFixture, created, shaderTargetFixture)
+  );
+  test.ready();
+  await waitFor(() => expect(test.result.current.objects).toHaveLength(4));
+  act(() => test.result.current.select("shader-aurora"));
+  act(() => {
+    test.result.current.change("colors", ["#ff0000", "#00ff00"]);
+    test.result.current.change("swirl", 0.1);
+    test.result.current.commit();
+  });
+  await waitFor(() => expect(test.result.current.pending).toBe(0));
+  act(() => test.result.current.resetShader());
+  await waitFor(() => expect(test.result.current.pending).toBe(0));
+  const values = test
+    .saved()
+    .document.objects.find((object) => object.id === "shader-aurora")?.values;
+  expect(values).toEqual(created.object.values);
+  expect(values?.swirl).toBe(0.8);
+  expect(values?.swirl).not.toBe(
+    aurora.descriptor.definition.fields.find((field) => field.id === "swirl")
+      ?.default
+  );
+});

@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderMeshGradientMint",
+  "dependencies": [],
+  "description": "Airy mint and sky-blue pastel wash around a deeper green core.",
+  "files": [
+    {
+      "file": "shader-mesh-gradient-mint.tsx",
+      "target": "src/components/remocn/shader-mesh-gradient-mint.tsx"
+    }
+  ],
+  "name": "shader-mesh-gradient-mint",
+  "presetOf": "shader-mesh-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.8,
+      "swirl": 0.2
+    }
+  },
+  "registryDependencies": [
+    "shader-mesh-gradient"
+  ],
+  "title": "Shader Mesh Gradient Mint"
+}

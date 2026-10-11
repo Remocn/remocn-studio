@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSwirlSunburst",
+  "dependencies": [],
+  "description": "Retro cream and orange bands sweeping in from above.",
+  "files": [
+    {
+      "file": "shader-swirl-sunburst.tsx",
+      "target": "src/components/remocn/shader-swirl-sunburst.tsx"
+    }
+  ],
+  "name": "shader-swirl-sunburst",
+  "presetOf": "shader-swirl",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "bandCount": 2,
+      "twist": 0.3,
+      "softness": 0.2,
+      "colorBack": "#ff7a3d"
+    }
+  },
+  "registryDependencies": [
+    "shader-swirl"
+  ],
+  "title": "Shader Swirl Sunburst"
+}

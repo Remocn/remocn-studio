@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSwirlNeon",
+  "dependencies": [],
+  "description": "Neon teal, purple and pink vortex around a dark core.",
+  "files": [
+    {
+      "file": "shader-swirl-neon.tsx",
+      "target": "src/components/remocn/shader-swirl-neon.tsx"
+    }
+  ],
+  "name": "shader-swirl-neon",
+  "presetOf": "shader-swirl",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "bandCount": 4,
+      "twist": 0.25,
+      "softness": 0.6,
+      "colorBack": "#07001a"
+    }
+  },
+  "registryDependencies": [
+    "shader-swirl"
+  ],
+  "title": "Shader Swirl Neon"
+}

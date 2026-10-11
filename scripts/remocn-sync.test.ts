@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type BundleLock, syncCaptions } from "./remocn-captions";
 import { CAPTION_NAMES, CAPTIONS_PIN } from "./remocn-sources";
+import { componentsOf, type DocsTree } from "./remocn-sync";
 
 const dirs: string[] = [];
 afterEach(async () => {
@@ -91,5 +92,80 @@ describe("caption batch vendoring", () => {
       "Conflicting registry target"
     );
     expect(await readFile(join(dir, "lock.json"), "utf8")).toBe(before);
+  });
+});
+
+describe("componentsOf", () => {
+  const page = (component?: string) =>
+    component === undefined
+      ? "---\ntitle: Introduction\n---\n"
+      : `---\ntitle: Silk\ncomponent: ${component}\nvibe: premium\n---\n`;
+  const docs = (
+    tree: Record<string, readonly { name: string; type: string }[]>,
+    pages: Record<string, string>
+  ): DocsTree => ({
+    list: (path) => Promise.resolve(tree[path] ?? []),
+    read: (path) =>
+      pages[path] === undefined
+        ? Promise.reject(new Error(`no ${path}`))
+        : Promise.resolve(pages[path]),
+  });
+  const file = (name: string) => ({ name, type: "file" });
+  const dir = (name: string) => ({ name, type: "dir" });
+
+  it("reads flat pages, components/ and family folders, and skips prose folders", async () => {
+    const tree = docs(
+      {
+        "content/docs/shaders": [
+          dir("components"),
+          dir("getting-started"),
+          file("index.mdx"),
+          file("meta.json"),
+        ],
+        "content/docs/shaders/components": [
+          file("shader-caustics.mdx"),
+          dir("shader-warp"),
+          file("meta.json"),
+        ],
+        "content/docs/shaders/components/shader-warp": [
+          file("index.mdx"),
+          file("deep-sea.mdx"),
+          file("silk.mdx"),
+          file("meta.json"),
+        ],
+        "content/docs/shaders/getting-started": [file("introduction.mdx")],
+      },
+      {
+        "content/docs/shaders/components/shader-warp/deep-sea.mdx": page(
+          "shader-warp-deep-sea"
+        ),
+        "content/docs/shaders/components/shader-warp/silk.mdx":
+          page("shader-warp-silk"),
+      }
+    );
+
+    expect(await componentsOf("shaders", tree)).toEqual([
+      "shader-caustics",
+      "shader-warp",
+      "shader-warp-deep-sea",
+      "shader-warp-silk",
+    ]);
+  });
+
+  it("fails by name when a family page names no component", async () => {
+    const tree = docs(
+      {
+        "content/docs/shaders": [dir("shader-warp")],
+        "content/docs/shaders/shader-warp": [
+          file("index.mdx"),
+          file("silk.mdx"),
+        ],
+      },
+      { "content/docs/shaders/shader-warp/silk.mdx": page() }
+    );
+
+    await expect(componentsOf("shaders", tree)).rejects.toThrow(
+      "content/docs/shaders/shader-warp/silk.mdx names no component"
+    );
   });
 });

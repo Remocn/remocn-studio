@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGrainGradientBlush",
+  "dependencies": [],
+  "description": "Pastel pink and apricot blob morphing on warm off-white.",
+  "files": [
+    {
+      "file": "shader-grain-gradient-blush.tsx",
+      "target": "src/components/remocn/shader-grain-gradient-blush.tsx"
+    }
+  ],
+  "name": "shader-grain-gradient-blush",
+  "presetOf": "shader-grain-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "softness": 0.9,
+      "intensity": 0.2,
+      "noise": 0.12,
+      "colorBack": "#fff4ef"
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Shader Grain Gradient Blush"
+}

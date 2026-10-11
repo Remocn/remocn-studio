@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarpCream",
+  "dependencies": [],
+  "description": "Soft peach-to-coral cream gradient with a gentle drift.",
+  "files": [
+    {
+      "file": "shader-warp-cream.tsx",
+      "target": "src/components/remocn/shader-warp-cream.tsx"
+    }
+  ],
+  "name": "shader-warp-cream",
+  "presetOf": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.1,
+      "swirl": 0.4,
+      "softness": 1.5,
+      "proportion": 0.55
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Shader Warp Cream"
+}

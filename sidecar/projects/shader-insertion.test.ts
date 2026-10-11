@@ -7,7 +7,15 @@ import {
   mock,
   spyOn,
 } from "bun:test";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { file as bunFile } from "bun";
@@ -509,6 +517,109 @@ describe("direct shader insertion service", () => {
     ]) {
       expect(registry).toContain(`${name}Adapter`);
     }
+  });
+
+  it("adds a preset as its prepared shader with the preset's name and values, writing no resource", async () => {
+    const service = makeShaderInsertions(
+      join(root, "app-data"),
+      () => Effect.void
+    );
+    const request = await requestFor(service);
+    const base = await Effect.runPromise(
+      service.insert(root, request, confirm(service))
+    );
+    const resources = join(root, "src/lib/studio-shaders-v1");
+    const snapshotOf = async () => {
+      const names = (await readdir(resources, { recursive: true })).sort();
+      return Promise.all(
+        names.map(async (name) => [
+          name,
+          await readFile(join(resources, name), "utf8").catch(() => "dir"),
+        ])
+      );
+    };
+    const before = await snapshotOf();
+    const registry = await readFile(
+      join(root, "src/videos/intro/shader-registry.ts"),
+      "utf8"
+    );
+
+    const result = await Effect.runPromise(
+      service.insert(
+        root,
+        {
+          objectId: "aurora",
+          operationId: "insert-aurora",
+          slug: "shader-mesh-gradient-aurora",
+          target: base.receipt.target,
+        },
+        confirm(service)
+      )
+    );
+
+    const aurora = result.snapshot.document.objects.at(-1);
+    expect(aurora?.label).toBe("Mesh Gradient Aurora");
+    expect(aurora?.shader?.slug).toBe("shader-mesh-gradient");
+    expect(aurora?.values).toMatchObject({
+      colors: ["#020617", "#0ea5a4", "#22d3ee", "#7c3aed", "#020617"],
+      distortion: 1,
+      grainOverlay: 0,
+      rotation: 270,
+      swirl: 0.8,
+    });
+    expect(await snapshotOf()).toEqual(before);
+    expect(
+      await readFile(join(root, "src/videos/intro/shader-registry.ts"), "utf8")
+    ).toBe(registry);
+  });
+
+  it("treats a retried preset insertion as the same one whether it names the preset or its shader", async () => {
+    const data = join(root, "app-data");
+    const service = makeShaderInsertions(data, () => Effect.void);
+    const request = {
+      ...(await requestFor(service)),
+      slug: "shader-mesh-gradient-aurora",
+    };
+    const result = await Effect.runPromise(
+      service.insert(root, request, confirm(service))
+    );
+    expect(result.snapshot.document.objects.at(-1)?.label).toBe(
+      "Mesh Gradient Aurora"
+    );
+    const restarted = makeShaderInsertions(data, () =>
+      Effect.die("Must not install on retry")
+    );
+    for (const slug of [
+      "shader-mesh-gradient-aurora",
+      "shader-mesh-gradient",
+    ]) {
+      expect(
+        // biome-ignore lint/performance/noAwaitInLoops: one retry at a time, as the webview sends them
+        await Effect.runPromise(
+          restarted.insert(root, { ...request, slug }, () => Effect.void)
+        )
+      ).toEqual(result);
+    }
+    const saved = JSON.parse(
+      await readFile(join(root, "src/videos/intro/studio.json"), "utf8")
+    );
+    expect(saved.operations).toHaveLength(1);
+  });
+
+  it("refuses a card it cannot resolve before journaling anything", async () => {
+    const service = makeShaderInsertions(join(root, "app-data"), () =>
+      Effect.die("Must not install")
+    );
+    const request = {
+      ...(await requestFor(service)),
+      slug: "shader-warp-cream",
+    };
+    await expect(
+      Effect.runPromise(service.insert(root, request, () => Effect.void))
+    ).rejects.toThrow("This shader cannot be added.");
+    expect(
+      await Effect.runPromise(service.status(root, "intro", "insert-1"))
+    ).toEqual({ state: "unknown" });
   });
 
   it("adds a provenance check when resuming a journal written before version gating", async () => {

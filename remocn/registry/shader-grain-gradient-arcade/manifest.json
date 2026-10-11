@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGrainGradientArcade",
+  "dependencies": [],
+  "description": "Retro grainy dots in orange, yellow and green on black.",
+  "files": [
+    {
+      "file": "shader-grain-gradient-arcade.tsx",
+      "target": "src/components/remocn/shader-grain-gradient-arcade.tsx"
+    }
+  ],
+  "name": "shader-grain-gradient-arcade",
+  "presetOf": "shader-grain-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "softness": 0.8,
+      "intensity": 0.6,
+      "noise": 0.35,
+      "colorBack": "#111111"
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Shader Grain Gradient Arcade"
+}

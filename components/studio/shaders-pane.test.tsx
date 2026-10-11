@@ -7,6 +7,7 @@ import { shaderTargetFixture } from "@/test/fixtures/shaders";
 import { ShadersPane } from "./shaders-pane";
 
 const ATTACH = /attach/i;
+const WARP_CARD = /^Shader Warp/;
 const asset: Asset = {
   audiomap: null,
   category: "Shaders",
@@ -207,4 +208,52 @@ it("offers preparation once, then returns to the scene target when ready", () =>
   expect(screen.getByText("Add to Intro")).toBeInTheDocument();
   expect(screen.queryByRole("status")).toBeNull();
   expect(screen.queryByRole("button", { name: "Prepare video" })).toBeNull();
+});
+it("lists presets as their own cards beside their shader and leaves out an excluded one", () => {
+  const card = (slug: string, name: string): Asset => ({
+    ...asset,
+    name,
+    path: `/remocn/${slug}`,
+    slug: `remocn/${slug}`,
+  });
+  const action = insertion();
+  render(
+    <SidebarProvider>
+      <ShadersPane
+        assets={[
+          card("shader-warp", "Shader Warp"),
+          card("shader-warp-silk", "Shader Warp Silk"),
+          card("shader-warp-cream", "Shader Warp Cream"),
+          card("shader-warp-plaid", "Shader Warp Plaid"),
+        ]}
+        error={null}
+        insertion={action}
+        isLoading={false}
+        onRetry={mock()}
+      />
+    </SidebarProvider>
+  );
+  expect(
+    screen.getByRole("button", { name: "Shader Warp, Component" })
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Shader Warp Cream, Component" })
+  ).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Shader Warp Plaid, Component" })
+  ).toBeNull();
+
+  const search = screen.getByRole("searchbox", { name: "Search by name" });
+  fireEvent.change(search, { target: { value: "warp" } });
+  expect(screen.getAllByRole("button", { name: WARP_CARD })).toHaveLength(2);
+  fireEvent.change(search, { target: { value: "silk" } });
+  expect(
+    screen.queryByRole("button", { name: "Shader Warp, Component" })
+  ).toBeNull();
+  const silk = screen.getByRole("button", {
+    name: "Shader Warp Silk, Component",
+  });
+  expect(silk).toHaveValue("remocn/shader-warp-silk");
+  fireEvent.click(silk);
+  expect(action.onPick).toHaveBeenCalledTimes(1);
 });
