@@ -20,9 +20,10 @@ starts at the top edge of the pane. With rulers on, the two rows are 26 px apart
 - The toggle uses the Inspect view's sliders icon. It is pressed while the
   inspector is open, like Rulers, and its hint says what it shows: *Show layers
   and properties* or *Hide layers and properties*.
-- When the inspector is docked, its bar lines up with the toolbar. Its row is
-  as tall as the toolbar's and sits the same ruler-plus-8 px below the pane's
-  top, so the two rows share one centre line with rulers on or off. A floating
+- When the inspector is docked, it starts below the rulers' band, which runs on
+  above it without marks. Its bar is as tall as the toolbar and sits the same
+  8 px below the band, so the two rows share one centre line with rulers on or
+  off, and there is no empty block above the tabs. A floating
   inspector, which opens below the toolbar on a narrow canvas, is unchanged.
 - The requirement that states this is restated to match the inspector as it is
   built. The current text describes a vertical icon bar, Snapshot inside it,
@@ -40,7 +41,8 @@ starts at the top edge of the pane. With rulers on, the two rows are 26 px apart
 ## Impact
 
 - Webview: `components/studio/canvas-preview.tsx`, where `InspectorToggle` is
-  new and `InspectorBar` changes, plus its test.
+  new and `InspectorPanel`/`InspectorBar` change, `components/studio/canvas-rulers.tsx`
+  (the band above the inspector), and the test.
 - Shared contract, sidecar, Rust core: none.
 
 ## Non-goals

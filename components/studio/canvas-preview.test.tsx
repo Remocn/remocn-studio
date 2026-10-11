@@ -129,15 +129,21 @@ describe("InspectorPanel", () => {
     ).toEqual(["Video details", "Inspect"]);
   });
 
-  it("sits its docked bar on the toolbar's line below the ruler, and a floating one at its top", () => {
+  it("starts a docked inspector below the ruler with its bar on the toolbar's line, and floats one below the toolbar", () => {
     const docked = panel(layersOf(true));
     expect(
+      screen.getByRole("complementary", { name: "Inspector" }).className
+    ).toContain("top-(--canvas-ruler)");
+    expect(
       screen.getByRole("navigation", { name: "Inspector views" }).className
-    ).toContain("pt-[calc(var(--canvas-ruler)+0.5rem)]");
+    ).toContain("pt-2");
     docked.unmount();
     panel(layersOf(true, true));
     expect(
+      screen.getByRole("complementary", { name: "Inspector" }).className
+    ).toContain("top-[calc(var(--canvas-ruler)+3.5rem)]");
+    expect(
       screen.getByRole("navigation", { name: "Inspector views" }).className
-    ).not.toContain("--canvas-ruler");
+    ).not.toContain("pt-2");
   });
 });

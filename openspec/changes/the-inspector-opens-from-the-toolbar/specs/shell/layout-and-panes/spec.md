@@ -19,8 +19,9 @@ open, and its hint SHALL say that it shows or hides the layers and properties.
 Hidden, the inspector SHALL keep selection and edits. The video SHALL NOT
 automatically reframe when the inspector opens or closes.
 
-While docked, the inspector's bar SHALL sit on the same line as the canvas
-toolbar, with rulers shown or hidden.
+While docked, the inspector SHALL start below the rulers' band, which SHALL run
+unbroken above it without marks, and its bar SHALL sit on the same line as the
+canvas toolbar, with rulers shown or hidden.
 
 Export SHALL be in the preview pane's header, in Preview and Docs alike.
 Playback controls SHALL remain beside the inspector without overlapping it.
@@ -54,6 +55,7 @@ What the properties controls edit belongs to preview/properties-pane.
 #### Scenario: The bar lines up with the toolbar
 - **WHEN** the inspector is docked, with rulers shown or hidden
 - **THEN** its views and the toolbar's controls share one centre line
+- **AND** with rulers shown, the rulers' band continues above the inspector with no empty gap between the band and its views
 
 #### Scenario: A narrow canvas
 - **WHEN** the canvas has no room to dock the inspector and the person presses the toggle

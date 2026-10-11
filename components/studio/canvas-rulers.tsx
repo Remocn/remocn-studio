@@ -23,6 +23,11 @@ export function CanvasRulers({ rulers }: { rulers: CanvasRulersState }) {
       </div>
       <div
         aria-hidden="true"
+        className="absolute top-0 right-0 z-[15] h-5 w-(--canvas-inspector-width) border-pane-border border-b bg-muted"
+        data-canvas-chrome
+      />
+      <div
+        aria-hidden="true"
         className="absolute top-5 bottom-0 left-0 z-[15] w-5 bg-muted"
         data-canvas-chrome
         data-canvas-occludes="left"

@@ -582,8 +582,9 @@ export function InspectorPanel({
       className={cn(
         "absolute inset-y-0 right-0 z-20 flex w-(--canvas-inspector-panel) flex-col overflow-hidden bg-muted",
         !layers.shown && "hidden",
-        layers.floating &&
-          "top-[calc(var(--canvas-ruler)+3.5rem)] z-30 rounded-tl-xl"
+        layers.floating
+          ? "top-[calc(var(--canvas-ruler)+3.5rem)] z-30 rounded-tl-xl"
+          : "top-(--canvas-ruler)"
       )}
       data-canvas-chrome
       data-canvas-occludes="right"
@@ -629,7 +630,7 @@ function InspectorBar({
       aria-label="Inspector views"
       className={cn(
         "box-content flex h-10 shrink-0 items-center gap-1 px-3",
-        !layers.floating && "pt-[calc(var(--canvas-ruler)+0.5rem)]"
+        !layers.floating && "pt-2"
       )}
     >
       <Button
