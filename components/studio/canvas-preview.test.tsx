@@ -1,8 +1,13 @@
-import { describe, expect, it } from "bun:test";
-import { act, render } from "@testing-library/react";
+import { describe, expect, it, mock } from "bun:test";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { createRef } from "react";
-import { CanvasStage } from "@/components/studio/canvas-preview";
+import {
+  CanvasStage,
+  InspectorPanel,
+  InspectorToggle,
+} from "@/components/studio/canvas-preview";
+import type { CanvasLayers } from "@/hooks/use-canvas-layers";
 import {
   type PreviewCameraControl,
   usePreviewCamera,
@@ -59,5 +64,80 @@ describe("CanvasStage", () => {
 
     toggle();
     expect(stage).not.toHaveClass("overflow-clip");
+  });
+});
+
+function layersOf(shown: boolean, floating = false) {
+  return {
+    active: shown ? "layers" : null,
+    enabled: false,
+    floating,
+    onView: mock(),
+    shown,
+    toggle: mock(),
+    view: "layers",
+  } as unknown as CanvasLayers;
+}
+
+describe("InspectorToggle", () => {
+  it("reads as pressed while the inspector is open and hides it on click", async () => {
+    const layers = layersOf(true);
+    render(<InspectorToggle layers={layers} />);
+    const toggle = screen.getByRole("button", { name: "Inspector" });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    fireEvent.focus(toggle);
+    expect(
+      await screen.findByText("Hide layers and properties")
+    ).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(layers.toggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays in place unpressed while the inspector is closed and shows it on click", async () => {
+    const layers = layersOf(false);
+    render(<InspectorToggle layers={layers} />);
+    const toggle = screen.getByRole("button", { name: "Inspector" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.focus(toggle);
+    expect(
+      await screen.findByText("Show layers and properties")
+    ).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(layers.toggle).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("InspectorPanel", () => {
+  const panel = (layers: CanvasLayers) =>
+    render(
+      <InspectorPanel
+        duration="0:03"
+        hasSelection={false}
+        layers={layers}
+        metadata={VIDEO}
+        videoName="Intro"
+      />
+    );
+
+  it("holds only its views, with no show or hide control of its own", () => {
+    panel(layersOf(true));
+    const bar = screen.getByRole("navigation", { name: "Inspector views" });
+    expect(
+      within(bar)
+        .getAllByRole("button")
+        .map((button) => button.textContent)
+    ).toEqual(["Video details", "Inspect"]);
+  });
+
+  it("sits its docked bar on the toolbar's line below the ruler, and a floating one at its top", () => {
+    const docked = panel(layersOf(true));
+    expect(
+      screen.getByRole("navigation", { name: "Inspector views" }).className
+    ).toContain("pt-[calc(var(--canvas-ruler)+0.5rem)]");
+    docked.unmount();
+    panel(layersOf(true, true));
+    expect(
+      screen.getByRole("navigation", { name: "Inspector views" }).className
+    ).not.toContain("--canvas-ruler");
   });
 });
