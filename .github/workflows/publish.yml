@@ -39,7 +39,17 @@ name: publish
 on:
   push:
     branches: [main]
+  # Run by hand with no input, it is a push to main. With `linux_tag` it builds
+  # only Linux, from that tag's source, into that tag's existing release: the
+  # way back when a version shipped for macOS and its Linux jobs failed. A
+  # re-run of the failed jobs cannot do that, since a re-run reads the workflow
+  # from the original commit and so repeats whatever broke it.
   workflow_dispatch:
+    inputs:
+      linux_tag:
+        description: "Build Linux only, for this existing release tag (e.g. v1.1.0)"
+        required: false
+        default: ""
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -48,6 +58,7 @@ concurrency:
 jobs:
   version:
     name: version PR
+    if: ${{ inputs.linux_tag == '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -271,9 +282,10 @@ jobs:
     name: Linux ${{ matrix.label }}
     # After macOS, never beside it: `latest.json` is merged by reading the
     # asset already on the release, so two jobs writing at once drop one
-    # platform. `!cancelled()` still releases Linux when a macOS job failed.
+    # platform. `!cancelled()` still releases Linux when a macOS job failed, and
+    # when `linux_tag` skipped both jobs before it.
     needs: [version, release-macos]
-    if: ${{ !cancelled() && needs.version.outputs.released == 'true' }}
+    if: ${{ !cancelled() && (needs.version.outputs.released == 'true' || inputs.linux_tag != '') }}
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
@@ -289,8 +301,12 @@ jobs:
             label: x86_64
           - runner: ubuntu-22.04-arm
             label: aarch64
+    env:
+      TAG: ${{ inputs.linux_tag || format('v{0}', needs.version.outputs.version) }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.linux_tag }}
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -300,12 +316,18 @@ jobs:
       # keyring, patchelf and file for the AppImage, and GStreamer with its
       # plugins because `bundleMediaFramework` copies them out of the build
       # host into the AppImage so footage plays in the preview.
+      #
+      # `libunwind-dev` is named on purpose. libgstreamer1.0-dev depends on it,
+      # and the runner image ships clang's `libunwind-14-dev`, which conflicts
+      # with it; apt will not remove a package to satisfy a dependency, only
+      # one it was asked for, so without the explicit name the install ends
+      # with "you have held broken packages" (v1.1.0, both architectures).
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
-            librsvg2-dev libdbus-1-dev libssl-dev patchelf file \
+            librsvg2-dev libdbus-1-dev libssl-dev patchelf file libunwind-dev \
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
             gstreamer1.0-plugins-bad gstreamer1.0-libav
@@ -339,8 +361,8 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
         with:
-          tagName: v${{ needs.version.outputs.version }}
-          releaseName: Remocn Studio v${{ needs.version.outputs.version }}
+          tagName: ${{ env.TAG }}
+          releaseName: Remocn Studio ${{ env.TAG }}
           releaseDraft: false
           prerelease: false
           args: --features crash-reports --bundles appimage,deb,rpm
