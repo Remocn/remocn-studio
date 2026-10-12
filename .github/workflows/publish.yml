@@ -297,19 +297,20 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 1
+      # 22.04 rather than latest: an AppImage runs on any glibc at least as new
+      # as the one it was built against, so the oldest supported runner is the
+      # widest reach. The pairs are made by `exclude`, not `include`, because
+      # `include` runs after `exclude` and would put back what `linux_arch`
+      # dropped; `linux_arch` is how a tag whose x86_64 already shipped rebuilds
+      # aarch64 alone. Excluding '' drops nothing.
       matrix:
         label: [x86_64, aarch64]
-        include:
-          # 22.04 rather than latest: an AppImage runs on any glibc at least as
-          # new as the one it was built against, so the oldest supported runner
-          # is the widest reach.
-          - label: x86_64
-            runner: ubuntu-22.04
-          - label: aarch64
-            runner: ubuntu-22.04-arm
-        # `linux_arch` drops the other architecture, so a tag whose x86_64
-        # already shipped rebuilds aarch64 alone. Excluding '' drops nothing.
+        runner: [ubuntu-22.04, ubuntu-22.04-arm]
         exclude:
+          - label: x86_64
+            runner: ubuntu-22.04-arm
+          - label: aarch64
+            runner: ubuntu-22.04
           - label: ${{ inputs.linux_arch == 'x86_64' && 'aarch64' || inputs.linux_arch == 'aarch64' && 'x86_64' || '' }}
     env:
       TAG: ${{ inputs.linux_tag || format('v{0}', needs.version.outputs.version) }}
