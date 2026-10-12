@@ -92,8 +92,18 @@ function askedId(events: AgentEvent[]): string {
   return event.id;
 }
 
-async function settled() {
-  await new Promise((resolve) => setTimeout(resolve, 10));
+// The card is raised after the gate has resolved the path, which for a
+// symlink means a realpath on disk: on a loaded CI runner that outlasted a
+// fixed 10 ms, so wait for the card itself.
+async function raised(events: readonly AgentEvent[]) {
+  const deadline = Date.now() + 5000;
+  while (events.length === 0) {
+    if (Date.now() > deadline) {
+      throw new Error("No permission card was raised within 5 s.");
+    }
+    // biome-ignore lint/performance/noAwaitInLoops: polling for the card, one tick at a time
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
 }
 
 describe("reviewAcp", () => {
@@ -251,7 +261,7 @@ describe("answerPermission", () => {
       },
     });
 
-    await settled();
+    await raised(events);
     expect(events.at(0)).toMatchObject({ reason: "outside" });
     await Effect.runPromise(gate.answer(askedId(events), "deny", null));
 
@@ -273,7 +283,7 @@ describe("answerPermission", () => {
       },
     });
 
-    await settled();
+    await raised(events);
     await Effect.runPromise(gate.answer(askedId(events), "allow", null));
 
     expect((await pending).outcome).toEqual({
@@ -289,7 +299,7 @@ describe("answerPermission", () => {
       options: OPTIONS,
       toolCall: { kind: "execute", title: "Run bun install" },
     });
-    await settled();
+    await raised(events);
     await Effect.runPromise(gate.answer(askedId(events), "always", null));
     expect((await first).outcome).toEqual({
       optionId: "always",
@@ -315,7 +325,7 @@ describe("answerPermission", () => {
       toolCall: { kind: "execute", title: "Run rm -rf /" },
     });
 
-    await settled();
+    await raised(events);
     await Effect.runPromise(gate.answer(askedId(events), "deny", null));
 
     expect((await pending).outcome).toEqual({
@@ -336,7 +346,7 @@ describe("answerPermission", () => {
       },
     });
 
-    await settled();
+    await raised(events);
     expect(events.at(0)).toMatchObject({
       input: { plan: "1. Build the title card" },
       reason: "plan",
@@ -353,7 +363,7 @@ describe("answerPermission", () => {
       toolCall: { kind: "switch_mode", title: "Ready to code?" },
     });
 
-    await settled();
+    await raised(events);
     expect(events.at(0)).toMatchObject({
       input: { plan: "Ready to code?" },
       reason: "plan",
@@ -374,7 +384,7 @@ describe("answerPermission", () => {
       },
     });
 
-    await settled();
+    await raised(events);
     await Effect.runPromise(
       gate.answer(askedId(events), "allow", "acceptEdits")
     );
@@ -435,7 +445,7 @@ describe("answerPermission", () => {
       }
     );
 
-    await settled();
+    await raised(events);
     await Effect.runPromise(
       gate.answer(askedId(events), "allow", "acceptEdits")
     );
