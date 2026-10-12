@@ -50,6 +50,11 @@ on:
         description: "Build Linux only, for this existing release tag (e.g. v1.1.0)"
         required: false
         default: ""
+      linux_arch:
+        description: "With linux_tag: which architectures to build"
+        type: choice
+        options: [both, x86_64, aarch64]
+        default: both
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -293,14 +298,19 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
+        label: [x86_64, aarch64]
         include:
           # 22.04 rather than latest: an AppImage runs on any glibc at least as
           # new as the one it was built against, so the oldest supported runner
           # is the widest reach.
-          - runner: ubuntu-22.04
-            label: x86_64
-          - runner: ubuntu-22.04-arm
-            label: aarch64
+          - label: x86_64
+            runner: ubuntu-22.04
+          - label: aarch64
+            runner: ubuntu-22.04-arm
+        # `linux_arch` drops the other architecture, so a tag whose x86_64
+        # already shipped rebuilds aarch64 alone. Excluding '' drops nothing.
+        exclude:
+          - label: ${{ inputs.linux_arch == 'x86_64' && 'aarch64' || inputs.linux_arch == 'aarch64' && 'x86_64' || '' }}
     env:
       TAG: ${{ inputs.linux_tag || format('v{0}', needs.version.outputs.version) }}
     steps:
@@ -335,6 +345,27 @@ jobs:
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
             gstreamer1.0-plugins-bad gstreamer1.0-libav
+
+      # The linuxdeploy Tauri downloads (built 2024-07) carries patchelf 0.15,
+      # and patchelf 0.18 and older corrupt the GNU hash table of a modern ELF
+      # when they rewrite its rpath. On aarch64 that broke the bundled bun:
+      # linuxdeploy set its rpath, then its own `ldd` on it failed and the
+      # AppImage step died (v1.1.0). linuxdeploy takes a patchelf from
+      # $PATCHELF, so this is the static 0.19.1 build — the version linuxdeploy
+      # itself moved to for this bug — checked against its known hash.
+      - name: Install patchelf 0.19.1 for linuxdeploy
+        run: |
+          case "$(uname -m)" in
+            x86_64) sum=a6818fef80128fb354423234ecacdcca3e993913d774e5d8346bc63f70fed4cf ;;
+            aarch64) sum=a2f8f5add5910a521d35062adf2c9f55d75b65ae5508d290758787004054e702 ;;
+          esac
+          curl -fsSL -o "$RUNNER_TEMP/patchelf.tar.gz" \
+            "https://github.com/NixOS/patchelf/releases/download/0.19.1/patchelf-0.19.1-$(uname -m).tar.gz"
+          echo "$sum  $RUNNER_TEMP/patchelf.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/patchelf"
+          tar xzf "$RUNNER_TEMP/patchelf.tar.gz" -C "$RUNNER_TEMP/patchelf"
+          "$RUNNER_TEMP/patchelf/bin/patchelf" --version
+          echo "PATCHELF=$RUNNER_TEMP/patchelf/bin/patchelf" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
