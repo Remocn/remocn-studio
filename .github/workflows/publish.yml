@@ -50,6 +50,11 @@ on:
         description: "Build Linux only, for this existing release tag (e.g. v1.1.0)"
         required: false
         default: ""
+      linux_arch:
+        description: "With linux_tag: which architectures to build"
+        type: choice
+        options: [both, x86_64, aarch64]
+        default: both
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -292,15 +297,21 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 1
+      # 22.04 rather than latest: an AppImage runs on any glibc at least as new
+      # as the one it was built against, so the oldest supported runner is the
+      # widest reach. The pairs are made by `exclude`, not `include`, because
+      # `include` runs after `exclude` and would put back what `linux_arch`
+      # dropped; `linux_arch` is how a tag whose x86_64 already shipped rebuilds
+      # aarch64 alone. Excluding '' drops nothing.
       matrix:
-        include:
-          # 22.04 rather than latest: an AppImage runs on any glibc at least as
-          # new as the one it was built against, so the oldest supported runner
-          # is the widest reach.
-          - runner: ubuntu-22.04
-            label: x86_64
-          - runner: ubuntu-22.04-arm
-            label: aarch64
+        label: [x86_64, aarch64]
+        runner: [ubuntu-22.04, ubuntu-22.04-arm]
+        exclude:
+          - label: x86_64
+            runner: ubuntu-22.04-arm
+          - label: aarch64
+            runner: ubuntu-22.04
+          - label: ${{ inputs.linux_arch == 'x86_64' && 'aarch64' || inputs.linux_arch == 'aarch64' && 'x86_64' || '' }}
     env:
       TAG: ${{ inputs.linux_tag || format('v{0}', needs.version.outputs.version) }}
     steps:
@@ -335,6 +346,39 @@ jobs:
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
             gstreamer1.0-plugins-bad gstreamer1.0-libav
+
+      # The AppImage step runs linuxdeploy, which sets an rpath on every ELF in
+      # usr/bin, the bundled bun included. Any patchelf (0.14 to 0.19.1, every
+      # one measured) that adds an rpath to bun's aarch64 build leaves a binary
+      # the loader segfaults on, so linuxdeploy's own `ldd` of it fails and the
+      # bundle dies (v1.1.0). bun needs no rpath — it links glibc alone, which
+      # an AppImage never carries — so linuxdeploy gets, through $PATCHELF, a
+      # wrapper that leaves bun as it is and passes everything else on. The
+      # patchelf behind it is the static 0.19.1, checked against its hash: the
+      # linuxdeploy Tauri downloads carries 0.15, which upstream replaced for
+      # corrupting GNU hash tables.
+      - name: Keep linuxdeploy's patchelf off the bundled bun
+        run: |
+          case "$(uname -m)" in
+            x86_64) sum=a6818fef80128fb354423234ecacdcca3e993913d774e5d8346bc63f70fed4cf ;;
+            aarch64) sum=a2f8f5add5910a521d35062adf2c9f55d75b65ae5508d290758787004054e702 ;;
+          esac
+          curl -fsSL -o "$RUNNER_TEMP/patchelf.tar.gz" \
+            "https://github.com/NixOS/patchelf/releases/download/0.19.1/patchelf-0.19.1-$(uname -m).tar.gz"
+          echo "$sum  $RUNNER_TEMP/patchelf.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/patchelf"
+          tar xzf "$RUNNER_TEMP/patchelf.tar.gz" -C "$RUNNER_TEMP/patchelf"
+          # linuxdeploy calls `patchelf --set-rpath <value> <path>`.
+          cat > "$RUNNER_TEMP/patchelf/linuxdeploy-patchelf" <<EOF
+          #!/bin/sh
+          if [ "\$1" = --set-rpath ]; then
+            case "\$3" in *-bun) exit 0 ;; esac
+          fi
+          exec "$RUNNER_TEMP/patchelf/bin/patchelf" "\$@"
+          EOF
+          chmod +x "$RUNNER_TEMP/patchelf/linuxdeploy-patchelf"
+          "$RUNNER_TEMP/patchelf/linuxdeploy-patchelf" --version
+          echo "PATCHELF=$RUNNER_TEMP/patchelf/linuxdeploy-patchelf" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
