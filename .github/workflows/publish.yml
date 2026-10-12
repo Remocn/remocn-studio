@@ -347,14 +347,17 @@ jobs:
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
             gstreamer1.0-plugins-bad gstreamer1.0-libav
 
-      # The linuxdeploy Tauri downloads (built 2024-07) carries patchelf 0.15,
-      # and patchelf 0.18 and older corrupt the GNU hash table of a modern ELF
-      # when they rewrite its rpath. On aarch64 that broke the bundled bun:
-      # linuxdeploy set its rpath, then its own `ldd` on it failed and the
-      # AppImage step died (v1.1.0). linuxdeploy takes a patchelf from
-      # $PATCHELF, so this is the static 0.19.1 build — the version linuxdeploy
-      # itself moved to for this bug — checked against its known hash.
-      - name: Install patchelf 0.19.1 for linuxdeploy
+      # The AppImage step runs linuxdeploy, which sets an rpath on every ELF in
+      # usr/bin, the bundled bun included. Any patchelf (0.14 to 0.19.1, every
+      # one measured) that adds an rpath to bun's aarch64 build leaves a binary
+      # the loader segfaults on, so linuxdeploy's own `ldd` of it fails and the
+      # bundle dies (v1.1.0). bun needs no rpath — it links glibc alone, which
+      # an AppImage never carries — so linuxdeploy gets, through $PATCHELF, a
+      # wrapper that leaves bun as it is and passes everything else on. The
+      # patchelf behind it is the static 0.19.1, checked against its hash: the
+      # linuxdeploy Tauri downloads carries 0.15, which upstream replaced for
+      # corrupting GNU hash tables.
+      - name: Keep linuxdeploy's patchelf off the bundled bun
         run: |
           case "$(uname -m)" in
             x86_64) sum=a6818fef80128fb354423234ecacdcca3e993913d774e5d8346bc63f70fed4cf ;;
@@ -365,8 +368,17 @@ jobs:
           echo "$sum  $RUNNER_TEMP/patchelf.tar.gz" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/patchelf"
           tar xzf "$RUNNER_TEMP/patchelf.tar.gz" -C "$RUNNER_TEMP/patchelf"
-          "$RUNNER_TEMP/patchelf/bin/patchelf" --version
-          echo "PATCHELF=$RUNNER_TEMP/patchelf/bin/patchelf" >> "$GITHUB_ENV"
+          # linuxdeploy calls `patchelf --set-rpath <value> <path>`.
+          cat > "$RUNNER_TEMP/patchelf/linuxdeploy-patchelf" <<EOF
+          #!/bin/sh
+          if [ "\$1" = --set-rpath ]; then
+            case "\$3" in *-bun) exit 0 ;; esac
+          fi
+          exec "$RUNNER_TEMP/patchelf/bin/patchelf" "\$@"
+          EOF
+          chmod +x "$RUNNER_TEMP/patchelf/linuxdeploy-patchelf"
+          "$RUNNER_TEMP/patchelf/linuxdeploy-patchelf" --version
+          echo "PATCHELF=$RUNNER_TEMP/patchelf/linuxdeploy-patchelf" >> "$GITHUB_ENV"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
