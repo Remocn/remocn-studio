@@ -11,6 +11,11 @@
 </p>
 
 <p align="center">
+  Free and open source. Download it and read the guides at
+  <a href="https://remocn.studio"><b>remocn.studio</b></a>.
+</p>
+
+<p align="center">
   <a href="https://github.com/Remocn/remocn-studio/releases/latest">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Download_for_macOS.svg?logo=apple&size=lg&theme=violet&mode=dark" />
