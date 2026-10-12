@@ -10,7 +10,7 @@ module.exports = function managedLoader(source) {
     )
   ) {
     throw new Error(
-      "This studio-objects-v5 runtime has a different transport. Restore the supported runtime before opening the canvas."
+      "This managed object runtime has a different transport. Restore the supported runtime before opening the canvas."
     );
   }
   return (

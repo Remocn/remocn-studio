@@ -26,7 +26,7 @@ function control(shape: Partial<NewProject> = {}): NewProject {
 
 function renderWizard(shape: Partial<NewProject> = {}) {
   const value = control(shape);
-  render(<NewProjectWizard control={value} entrance={null} />);
+  render(<NewProjectWizard control={value} />);
   return value;
 }
 
@@ -47,8 +47,10 @@ describe("NewProjectWizard", () => {
 
     expect(screen.getByText("16:9")).toBeVisible();
     expect(screen.getByText("1920×1080")).toBeVisible();
-    expect(screen.getByText("YouTube")).toBeVisible();
-    expect(screen.getByText("Shorts, TikTok, Reels")).toBeVisible();
+    expect(screen.getByRole("img", { name: "YouTube" })).toBeVisible();
+    expect(
+      screen.getByRole("img", { name: "Shorts, TikTok, Reels" })
+    ).toBeVisible();
 
     const [landscape, vertical] = screen.getAllByRole("radio");
 
@@ -90,20 +92,24 @@ describe("NewProjectWizard", () => {
   it("keeps Create out of reach until there is a name and a folder", () => {
     renderWizard();
 
-    expect(screen.getByRole("button", { name: "Create" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Create project" })
+    ).toBeDisabled();
   });
 
   it("shows the folder that was picked and lets the project be created", () => {
     renderWizard({ canCreate: true, name: "launch-film", parent: PARENT });
 
     expect(screen.getByTitle(PARENT)).toBeVisible();
-    expect(screen.getByRole("button", { name: "Create" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Create project" })
+    ).toBeEnabled();
   });
 
   it("goes back to where it was opened from", () => {
     const value = renderWizard();
 
-    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(value.close).toHaveBeenCalled();
   });

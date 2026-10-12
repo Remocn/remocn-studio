@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, mock } from "bun:test";
+import { beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
 import { render, screen } from "@testing-library/react";
 import type { ComponentType, ReactNode } from "react";
 import type { StudioDocument } from "@/shared/studio-document";
@@ -52,13 +52,21 @@ function Heading({ id, legacy = false }: { id: string; legacy?: boolean }) {
   );
 }
 
+let runtimeVersion = "6";
 function hidden(root: ParentNode): string {
   return (
-    root.querySelector('style[data-studio-runtime="6"]')?.textContent ?? ""
+    root.querySelector(`style[data-studio-runtime="${runtimeVersion}"]`)
+      ?.textContent ?? ""
   );
 }
 
-describe("studio-objects-v6", () => {
+describe.each(["6", "7"])("studio-objects-v%s", (version) => {
+  beforeEach(async () => {
+    runtimeVersion = version;
+    v6 = (await import(
+      `../templates/remotion/src/lib/studio-objects-v${version}`
+    )) as unknown as typeof v6;
+  });
   it("hides a removed object's root and keeps its values readable", () => {
     const { container } = render(
       <v6.StudioObjects document={removing("first")}>
@@ -98,17 +106,32 @@ describe("studio-objects-v6", () => {
       </v6.StudioObjects>
     );
     expect(
-      container.querySelector('style[data-studio-runtime="6"]')
+      container.querySelector(`style[data-studio-runtime="${runtimeVersion}"]`)
     ).not.toBeNull();
     expect(hidden(container)).toBe("");
   });
 
-  it("serves components that still import the hook from v5", () => {
-    render(
-      <v6.StudioObjects document={removing("first")}>
-        <Heading id="second" legacy />
-      </v6.StudioObjects>
-    );
-    expect(screen.getByText("second").getAttribute("data-size")).toBe("48");
-  });
+  it.skipIf(version === "7")(
+    "serves components that still import the hook from v5",
+    () => {
+      render(
+        <v6.StudioObjects document={removing("first")}>
+          <Heading id="second" legacy />
+        </v6.StudioObjects>
+      );
+      expect(screen.getByText("second").getAttribute("data-size")).toBe("48");
+    }
+  );
+  it.skipIf(version !== "7")(
+    "rejects a legacy hook under the new provider instead of mixing contexts",
+    () => {
+      expect(() =>
+        render(
+          <v6.StudioObjects document={grouped}>
+            <Heading id="first" legacy />
+          </v6.StudioObjects>
+        )
+      ).toThrow("inside StudioObjects");
+    }
+  );
 });

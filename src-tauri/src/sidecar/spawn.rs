@@ -1,7 +1,7 @@
 use std::{
     collections::HashSet,
     env,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     path::{Path, PathBuf},
     process::Stdio,
 };
@@ -16,7 +16,24 @@ use crate::ipc::{
 };
 
 const BUN_ENV: &str = "REMOCN_STUDIO_BUN";
-const FALLBACK_DIRS: [&str; 5] = [
+// Where an app started from Finder, the Dock or a desktop entry finds the
+// agent CLIs, Node and package managers, since it inherits the session's
+// minimal PATH. One list serves macOS and Linux; a dir that does not exist is
+// never matched, and `ordered_dirs` searches these last. The sidecar's
+// `USER_BIN_DIRS` and `SYSTEM_BIN_DIRS` must name the same dirs;
+// `sidecar/agent/cli.test.ts` reads this file to hold them together.
+const HOME_BIN_DIRS: [&str; 9] = [
+    ".local/bin",
+    ".bun/bin",
+    ".npm-global/bin",
+    ".volta/bin",
+    ".local/share/mise/shims",
+    ".asdf/shims",
+    ".local/share/pnpm",
+    ".yarn/bin",
+    "Library/pnpm",
+];
+const SYSTEM_BIN_DIRS: [&str; 5] = [
     "/opt/homebrew/bin",
     "/usr/local/bin",
     "/usr/bin",
@@ -50,10 +67,68 @@ pub fn resolve_bun() -> Result<PathBuf, String> {
         })
 }
 
+const SHIPPED_BUN: &str = "remocn-studio-bun";
+
 fn shipped_bun() -> Option<PathBuf> {
-    let beside = env::current_exe().ok()?.parent()?.join("bun");
+    let beside = env::current_exe().ok()?.parent()?.join(SHIPPED_BUN);
 
     beside.is_file().then_some(beside)
+}
+
+// The shipped runtime is `remocn-studio-bun`, so a `.deb` never claims
+// `/usr/bin/bun`. What the sidecar starts still asks for `bun` by name — a
+// turn's `bun add`, a project's own scripts — and before the rename found the
+// shipped copy first on the sidecar's PATH, beside the app binary. A `bun`
+// link in the data dir, first on that PATH, keeps answering with the runtime
+// the sidecar itself runs on.
+const BUN_LINK_DIR: &str = "bin";
+
+/// The dir to put first on the sidecar's PATH so that `bun` is the runtime
+/// that runs it: its own dir when it is already called `bun`, else a dir
+/// holding a `bun` link to it. The link is checked on every launch, because an
+/// AppImage mounts at a new path each time.
+pub fn bun_dir(bun: &Path, data_dir: &Path) -> Result<PathBuf, String> {
+    if bun.file_name() == Some(OsStr::new("bun")) {
+        return bun
+            .parent()
+            .filter(|dir| !dir.as_os_str().is_empty())
+            .map(Path::to_path_buf)
+            .ok_or_else(|| format!("{} has no parent dir", bun.display()));
+    }
+
+    let dir = data_dir.join(BUN_LINK_DIR);
+    link_bun(bun, &dir)?;
+    Ok(dir)
+}
+
+#[cfg(unix)]
+fn link_bun(bun: &Path, dir: &Path) -> Result<(), String> {
+    let target = std::path::absolute(bun)
+        .map_err(|err| format!("could not resolve {}: {err}", bun.display()))?;
+    let link = dir.join("bun");
+
+    if std::fs::read_link(&link).is_ok_and(|current| current == target) {
+        return Ok(());
+    }
+
+    std::fs::create_dir_all(dir)
+        .map_err(|err| format!("could not create {}: {err}", dir.display()))?;
+
+    // Made beside it and renamed over it, so a second instance starting at
+    // the same moment never finds the link missing.
+    let staged = dir.join(format!(".bun-{}", std::process::id()));
+    let _ = std::fs::remove_file(&staged);
+    std::os::unix::fs::symlink(&target, &staged)
+        .map_err(|err| format!("could not link {}: {err}", staged.display()))?;
+    std::fs::rename(&staged, &link).map_err(|err| {
+        let _ = std::fs::remove_file(&staged);
+        format!("could not link {}: {err}", link.display())
+    })
+}
+
+#[cfg(not(unix))]
+fn link_bun(_bun: &Path, _dir: &Path) -> Result<(), String> {
+    Err("the bun link is made on Unix only".to_string())
 }
 
 #[cfg(debug_assertions)]
@@ -164,6 +239,7 @@ pub fn resolve_library_dir(app: &AppHandle) -> Result<PathBuf, String> {
 
 pub struct Launch<'a> {
     pub bun: &'a Path,
+    pub bun_dir: Option<&'a Path>,
     // What `settings.json` said when this session started. The sidecar has to
     // be told *something* at spawn — a crash in its first seconds is exactly
     // the kind nobody writes in about, and no webview has connected yet to
@@ -183,6 +259,7 @@ pub struct Launch<'a> {
 pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
     let Launch {
         bun,
+        bun_dir,
         crash_consent,
         data_dir,
         library_dir,
@@ -229,7 +306,7 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
 
     command
         .arg(script)
-        .env("PATH", child_path(bun))
+        .env("PATH", child_path(bun_dir))
         .env(HOST_PID_ENV, std::process::id().to_string())
         .env(DATA_DIR_ENV, data_dir)
         .env(
@@ -255,32 +332,169 @@ pub fn launch(paths: Launch<'_>) -> Result<Child, String> {
         .map_err(|err| format!("could not start {}: {err}", bun.display()))
 }
 
-fn search_dirs() -> Vec<PathBuf> {
+pub(crate) fn search_dirs() -> Vec<PathBuf> {
+    let home = env::var_os("HOME").map(PathBuf::from);
+
+    ordered_dirs(
+        home.as_deref(),
+        env::var_os("PATH").as_deref(),
+        env::var_os("NVM_BIN").as_deref(),
+    )
+}
+
+/// `~/.bun/bin`, the PATH the app was given, then Homebrew and the system
+/// dirs — the order the studio has always searched — and only after them the
+/// home dirs of version and package managers. Those are appended, never put
+/// ahead: they find a tool nothing earlier had, but never shadow one that
+/// was found before, where an asdf or mise shim with no version set would
+/// fail in place of a working Homebrew node.
+fn ordered_dirs(home: Option<&Path>, path: Option<&OsStr>, nvm: Option<&OsStr>) -> Vec<PathBuf> {
     let mut dirs = Vec::new();
 
-    if let Some(home) = env::var_os("HOME") {
-        dirs.push(PathBuf::from(home).join(".bun/bin"));
+    if let Some(home) = home {
+        dirs.push(home.join(".bun/bin"));
     }
-    if let Some(path) = env::var_os("PATH") {
-        dirs.extend(env::split_paths(&path));
+    if let Some(path) = path {
+        dirs.extend(env::split_paths(path));
     }
-    dirs.extend(FALLBACK_DIRS.iter().map(PathBuf::from));
+    dirs.extend(SYSTEM_BIN_DIRS.iter().map(PathBuf::from));
+    if let Some(home) = home {
+        dirs.extend(HOME_BIN_DIRS.iter().map(|dir| home.join(dir)));
+    }
+    if let Some(nvm) = nvm.filter(|dir| !dir.is_empty()) {
+        dirs.push(PathBuf::from(nvm));
+    }
 
     let mut seen = HashSet::new();
     dirs.retain(|dir| seen.insert(dir.clone()));
     dirs
 }
 
-fn child_path(bun: &Path) -> OsString {
-    let mut dirs = Vec::new();
-
-    if let Some(parent) = bun.parent() {
-        dirs.push(parent.to_path_buf());
-    }
+fn child_path(bun_dir: Option<&Path>) -> OsString {
+    let mut dirs: Vec<PathBuf> = bun_dir.map(Path::to_path_buf).into_iter().collect();
     dirs.extend(search_dirs());
 
     let mut seen = HashSet::new();
     dirs.retain(|dir| seen.insert(dir.clone()));
 
     env::join_paths(dirs).unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn scratch(name: &str) -> PathBuf {
+        let root = env::temp_dir().join(format!(
+            "sidecar-spawn-{name}-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    fn runtime(dir: &Path) -> PathBuf {
+        let path = dir.join(SHIPPED_BUN);
+        std::fs::write(&path, "").unwrap();
+        path
+    }
+
+    #[test]
+    fn a_runtime_already_called_bun_lends_its_own_dir() {
+        let data = scratch("named");
+
+        assert_eq!(
+            bun_dir(Path::new("/home/a/.bun/bin/bun"), &data),
+            Ok(PathBuf::from("/home/a/.bun/bin"))
+        );
+        assert!(!data.join(BUN_LINK_DIR).exists());
+        assert!(
+            bun_dir(Path::new("bun"), &data).is_err(),
+            "a bare name puts no empty entry, the current dir, on the PATH"
+        );
+        let _ = std::fs::remove_dir_all(data);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_shipped_runtime_answers_to_bun_through_a_link() {
+        let root = scratch("linked");
+        let shipped = runtime(&root);
+        let data = root.join("data");
+
+        let dir = bun_dir(&shipped, &data).unwrap();
+
+        assert_eq!(dir, data.join(BUN_LINK_DIR));
+        assert_eq!(std::fs::read_link(dir.join("bun")).unwrap(), shipped);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_link_follows_the_runtime_to_its_new_mount() {
+        let root = scratch("moved");
+        let first = runtime(&scratch("mount-1"));
+        let second = runtime(&scratch("mount-2"));
+        let data = root.join("data");
+
+        bun_dir(&first, &data).unwrap();
+        let dir = bun_dir(&second, &data).unwrap();
+
+        assert_eq!(std::fs::read_link(dir.join("bun")).unwrap(), second);
+        let staged: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| entry.file_name() != "bun")
+            .collect();
+        assert!(staged.is_empty(), "no staged link is left behind");
+        for dir in [
+            root,
+            first.parent().unwrap().to_path_buf(),
+            second.parent().unwrap().to_path_buf(),
+        ] {
+            let _ = std::fs::remove_dir_all(dir);
+        }
+    }
+
+    #[test]
+    fn the_new_home_dirs_come_after_everything_searched_before() {
+        let dirs = ordered_dirs(
+            Some(Path::new("/home/a")),
+            Some(OsStr::new("/usr/bin:/home/a/.nvm/bin")),
+            Some(OsStr::new("/home/a/.nvm/bin")),
+        );
+        let at = |dir: &str| {
+            dirs.iter()
+                .position(|found| found == Path::new(dir))
+                .unwrap()
+        };
+
+        assert_eq!(dirs[0], PathBuf::from("/home/a/.bun/bin"));
+        assert_eq!(dirs[1], PathBuf::from("/usr/bin"));
+        assert_eq!(dirs[2], PathBuf::from("/home/a/.nvm/bin"));
+        assert!(at("/opt/homebrew/bin") < at("/home/a/.local/share/mise/shims"));
+        assert!(at("/usr/local/bin") < at("/home/a/.asdf/shims"));
+        assert!(at("/usr/sbin") < at("/home/a/.local/bin"));
+        assert_eq!(
+            dirs.iter()
+                .filter(|dir| *dir == Path::new("/home/a/.bun/bin"))
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn the_bun_dir_comes_first_on_the_sidecars_path() {
+        let path = child_path(Some(Path::new("/data/bin")));
+
+        assert_eq!(
+            env::split_paths(&path).next(),
+            Some(PathBuf::from("/data/bin"))
+        );
+    }
 }

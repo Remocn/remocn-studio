@@ -1,7 +1,13 @@
 "use client";
 
 import { open } from "@tauri-apps/plugin-dialog";
-import { type ChangeEvent, useCallback, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { errorMessage } from "@/lib/error-message";
 import { importProjectDesign } from "@/lib/studio/projects";
@@ -21,11 +27,15 @@ export function ProjectDesignImport({
   projectId,
   onChange,
   onBusyChange,
+  compact = false,
+  onReviewChange,
 }: {
   value: ProjectBrand | null;
   projectId: string;
   onChange: (brand: ProjectBrand) => void;
   onBusyChange: (busy: boolean) => void;
+  compact?: boolean;
+  onReviewChange?: (reviewing: boolean) => void;
 }) {
   const { run, error } = useAsyncAction();
   const [pending, setPending] = useState<{
@@ -34,6 +44,27 @@ export function ProjectDesignImport({
   } | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [imported, setImported] = useState(false);
+  const reviewing = pending !== null;
+  const container = useRef<HTMLFieldSetElement>(null);
+  const wasReviewing = useRef(false);
+  useEffect(() => {
+    onReviewChange?.(reviewing);
+  }, [reviewing, onReviewChange]);
+  useEffect(() => {
+    if (reviewing) {
+      container.current?.focus({ preventScroll: true });
+      container.current?.scrollIntoView({
+        behavior: "instant",
+        block: "start",
+      });
+    } else if (wasReviewing.current) {
+      container.current
+        ?.querySelector("button")
+        ?.focus({ preventScroll: true });
+    }
+    wasReviewing.current = reviewing;
+  }, [reviewing]);
   const busy = useRef(false);
   const load = useCallback(
     async (path?: string) => {
@@ -124,10 +155,16 @@ export function ProjectDesignImport({
       return;
     }
     onChange(applyDesignImport(value, pending.data, pending.selection));
+    setImported(true);
     setPending(null);
   }, [onChange, pending, value]);
   return (
-    <div className="grid min-w-0 gap-4">
+    <fieldset
+      className="grid min-w-0 gap-4 outline-none"
+      ref={container}
+      tabIndex={-1}
+    >
+      <legend className="sr-only">Design import</legend>
       {pending ? (
         <DesignImportReview
           current={value}
@@ -141,6 +178,7 @@ export function ProjectDesignImport({
         />
       ) : (
         <DesignDropZone
+          compact={compact || (imported && value?.design !== undefined)}
           filename={value?.design?.file.source}
           loading={loading}
           onChoose={choose}
@@ -153,6 +191,6 @@ export function ProjectDesignImport({
           {error ?? localError}
         </p>
       ) : null}
-    </div>
+    </fieldset>
   );
 }

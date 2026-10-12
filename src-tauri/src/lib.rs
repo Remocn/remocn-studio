@@ -103,6 +103,17 @@ pub fn run() {
             // before setup (Windows and Linux argv); on macOS a cold start
             // arrives through `on_open_url` once the run loop is up, so the
             // same listener covers both and the webview drains one queue.
+            // A .deb or .rpm installs a desktop entry that claims the scheme;
+            // an AppImage has none, so it registers one pointing at itself.
+            // A debug build never does, so the scheme is not claimed by
+            // whichever checkout last ran.
+            #[cfg(target_os = "linux")]
+            if app.env().appimage.is_some() {
+                if let Err(err) = app.deep_link().register_all() {
+                    eprintln!("deep links: the scheme was not registered: {err}");
+                }
+            }
+
             if let Ok(Some(urls)) = app.deep_link().get_current() {
                 links::receive(app.handle(), urls.into_iter().map(|url| url.to_string()));
             }

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import {
   advance,
+  checkFailure,
   type Download,
   downloadedLabel,
   downloadedShare,
+  NO_BUILD_HERE,
   NOTHING_DOWNLOADED,
 } from "./updates";
 
@@ -88,6 +90,27 @@ describe("downloadedLabel", () => {
   it("falls back to megabytes when it is not", () => {
     expect(downloadedLabel({ received: 2_500_000, total: null })).toBe(
       "Downloading — 2.5 MB"
+    );
+  });
+});
+
+// tauri-plugin-updater's own words, from its error.rs: the first when a target
+// was named, the second when it fell back through `{os}-{arch}-{installer}`
+// and `{os}-{arch}`.
+const TARGET_MISSING =
+  "the platform `linux-x86_64` was not found in the response `platforms` object";
+const TARGETS_MISSING =
+  'None of the fallback platforms `["linux-x86_64-deb", "linux-x86_64"]` were found in the response `platforms` object';
+
+describe("checkFailure", () => {
+  it("says a release without this system's build in a sentence", () => {
+    expect(checkFailure(TARGETS_MISSING).message).toBe(NO_BUILD_HERE);
+    expect(checkFailure(new Error(TARGET_MISSING)).message).toBe(NO_BUILD_HERE);
+  });
+
+  it("keeps every other failure's own words", () => {
+    expect(checkFailure("error sending request for url").message).toBe(
+      "error sending request for url"
     );
   });
 });

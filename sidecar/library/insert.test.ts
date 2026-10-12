@@ -619,3 +619,64 @@ describe("placeAssets with a bundled component", () => {
     expect(placed?.reason).toContain("not among the bundled");
   });
 });
+
+describe("selected caption styles", () => {
+  it("copies the trusted caption closure and gives a style-specific brief without demo timings", async () => {
+    const previous = process.env[REMOCN_DIR_ENV];
+    process.env[REMOCN_DIR_ENV] = join(import.meta.dirname, "../../remocn");
+    try {
+      const selected = {
+        name: "Untrusted client title",
+        preview: null,
+        slug: "remocn/caption-karaoke",
+        type: "component" as const,
+      };
+      const placements = await run(placeAssets(project, [selected]));
+      expect(placements[0]?.captionStyle).toBe("caption-karaoke");
+      expect(placements[0]?.copied).toContain("src/lib/remocn/caption-core.ts");
+      expect(
+        placements[0]?.copied.some((file) => file.includes("fixture"))
+      ).toBe(false);
+      const brief = assetBrief(placements, "bun add");
+      expect(brief).toContain("Selected caption style: caption-karaoke");
+      expect(brief).toContain("local transcription");
+      const component = join(
+        project,
+        "src/components/remocn/caption-karaoke.tsx"
+      );
+      writeFileSync(component, "user-authored caption renderer");
+      const second = await run(placeAssets(project, [selected]));
+      expect(second[0]?.skipped).toContain(
+        "src/components/remocn/caption-karaoke.tsx"
+      );
+      expect(readFileSync(component, "utf8")).toBe(
+        "user-authored caption renderer"
+      );
+    } finally {
+      if (previous === undefined) {
+        delete process.env[REMOCN_DIR_ENV];
+      } else {
+        process.env[REMOCN_DIR_ENV] = previous;
+      }
+    }
+  });
+  it("does not classify an arbitrary client title as a caption", () => {
+    const brief = assetBrief(
+      [
+        {
+          audiomap: null,
+          copied: ["title.tsx"],
+          missing: [],
+          name: "Caption Karaoke",
+          reason: null,
+          role: null,
+          skipped: [],
+          type: "component",
+        },
+      ],
+      "bun add"
+    );
+    expect(brief).not.toContain("Selected caption style");
+    expect(brief).not.toContain("local transcription");
+  });
+});

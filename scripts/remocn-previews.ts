@@ -3,6 +3,7 @@ import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { BASE_PIN, remocnSource, requiredSource } from "./remocn-sources";
 
 // Renders preview.mp4 and poster.png for every bundled remocn component, into
 // remocn/registry/<name>/ beside the vendored sources. Run after remocn:sync;
@@ -14,8 +15,7 @@ import { dirname, join, resolve } from "node:path";
 // child scenes) are rendered through that same example, fetched from the pin;
 // anything that cannot be mounted is skipped out loud and its card keeps the
 // icon.
-const PIN = "8ae853e4c08108105684d4b8cac7f22400840d2a";
-const RAW = `https://raw.githubusercontent.com/Remocn/remocn/${PIN}`;
+const PIN = BASE_PIN;
 
 const CLIP_SECONDS = 6;
 const CLIP_WIDTH = 640;
@@ -41,20 +41,13 @@ interface Manifest {
   readonly name: string;
   readonly preview: PreviewEntry | null;
   readonly registryDependencies: readonly string[];
+  readonly sourcePin?: string;
 }
 
 interface Mount {
   readonly exported: string;
   readonly importPath: string;
   readonly manifest: Manifest;
-}
-
-async function fetched(path: string): Promise<string> {
-  const answer = await fetch(`${RAW}/${path}`);
-  if (!answer.ok) {
-    throw new Error(`${path}: ${answer.status} ${answer.statusText}`);
-  }
-  return await answer.text();
 }
 
 async function manifestOf(name: string): Promise<Manifest> {
@@ -100,7 +93,36 @@ const INDEX_ENTRY =
   /"?([a-z0-9-]+)"?:\s*\{\s*load:\s*\(\)\s*=>\s*import\(\s*"(@\/[^"]+)",?\s*\)\.then\(\s*\(m\)\s*=>\s*\(\{\s*default:\s*m\.([A-Za-z0-9_]+)/g;
 
 async function mountsOf(names: readonly string[]): Promise<Map<string, Mount>> {
-  const source = await fetched("registry/__index__.tsx");
+  const manifests = await Promise.all(names.map(manifestOf));
+  const pins = [
+    ...new Set(manifests.map((manifest) => manifest.sourcePin ?? PIN)),
+  ];
+  const sources = new Map(
+    await Promise.all(
+      pins.map(
+        async (pin) =>
+          [pin, await requiredSource(pin, "registry/__index__.tsx")] as const
+      )
+    )
+  );
+
+  const mounts = new Map<string, Mount>();
+  for (const manifest of manifests) {
+    const entry = previewEntries(
+      sources.get(manifest.sourcePin ?? PIN) ?? ""
+    ).get(manifest.name);
+    if (entry === undefined) {
+      console.warn(`${manifest.name}: no mount in __index__.tsx, skipping`);
+      continue;
+    }
+    mounts.set(manifest.name, { ...entry, manifest });
+  }
+  return mounts;
+}
+
+export function previewEntries(
+  source: string
+): Map<string, { exported: string; importPath: string }> {
   const entries = new Map<string, { exported: string; importPath: string }>();
 
   for (const match of source.matchAll(INDEX_ENTRY)) {
@@ -114,26 +136,21 @@ async function mountsOf(names: readonly string[]): Promise<Map<string, Mount>> {
     }
   }
 
-  const mounts = new Map<string, Mount>();
-  for (const name of names) {
-    const entry = entries.get(name);
-    if (entry === undefined) {
-      console.warn(`${name}: no mount in __index__.tsx, skipping`);
-      continue;
-    }
-    // biome-ignore lint/performance/noAwaitInLoops: a build script, run once
-    mounts.set(name, { ...entry, manifest: await manifestOf(name) });
-  }
-  return mounts;
+  return entries;
 }
 
 const EXAMPLE_IMPORT = /"@\/components\/docs\/examples\/([a-z0-9-]+)"/g;
 
 // An example scene may pull sibling helpers (canvas-scenes and friends); the
 // closure is fetched flat into src/examples/.
-async function fetchExamples(
+export async function fetchExamples(
   first: readonly string[],
-  dir: string
+  dir: string,
+  pin = PIN,
+  readSource: (
+    pin: string,
+    path: string
+  ) => Promise<string | null> = remocnSource
 ): Promise<void> {
   const queue = [...first];
   const seen = new Set(queue);
@@ -145,8 +162,18 @@ async function fetchExamples(
     }
 
     // biome-ignore lint/performance/noAwaitInLoops: the queue grows while walking
-    const source = await fetched(`components/docs/examples/${name}.tsx`);
-    await writeFile(join(dir, `${name}.tsx`), source, "utf8");
+    const tsx = await readSource(pin, `components/docs/examples/${name}.tsx`);
+    const extension = tsx === null ? "ts" : "tsx";
+    const source =
+      tsx ?? (await readSource(pin, `components/docs/examples/${name}.ts`));
+    if (source === null) {
+      throw new Error(`Missing example helper: ${name}`);
+    }
+    await writeFile(
+      join(dir, `${name}.${extension}`),
+      source.replaceAll(EXAMPLE_IMPORT, '"./$1"'),
+      "utf8"
+    );
 
     for (const match of source.matchAll(EXAMPLE_IMPORT)) {
       const [, referenced] = match;
@@ -234,7 +261,7 @@ function importLineOf(mount: Mount): string {
 
   if (importPath.startsWith("@/components/docs/examples/")) {
     const example = importPath.slice("@/components/docs/examples/".length);
-    return `import { ${exported} as C_${identifier(manifest.name)} } from "../examples/${example}";`;
+    return `import { ${exported} as C_${identifier(manifest.name)} } from "../examples/${manifest.sourcePin ?? PIN}/${example}";`;
   }
 
   return `import { ${exported} as C_${identifier(manifest.name)} } from "../components/remocn/${manifest.name}";`;
@@ -331,11 +358,22 @@ async function main(): Promise<void> {
 
   const mounts = await mountsOf(wanted);
 
-  const examples = [...mounts.values()]
-    .map((mount) => mount.importPath)
-    .filter((path) => path.startsWith("@/components/docs/examples/"))
-    .map((path) => path.slice("@/components/docs/examples/".length));
-  await fetchExamples(examples, examplesDir);
+  await Promise.all(
+    [
+      ...new Set(
+        [...mounts.values()].map((mount) => mount.manifest.sourcePin ?? PIN)
+      ),
+    ].map(async (pin) => {
+      const examples = [...mounts.values()]
+        .filter((mount) => (mount.manifest.sourcePin ?? PIN) === pin)
+        .map((mount) => mount.importPath)
+        .filter((path) => path.startsWith("@/components/docs/examples/"))
+        .map((path) => path.slice("@/components/docs/examples/".length));
+      const pinnedDir = join(examplesDir, pin);
+      await mkdir(pinnedDir, { recursive: true });
+      await fetchExamples(examples, pinnedDir, pin);
+    })
+  );
 
   const mountable = [...mounts.values()].filter(
     (mount) =>
@@ -447,7 +485,12 @@ async function main(): Promise<void> {
       await renderer.renderStill({
         chromiumOptions,
         composition,
-        frame: Math.min(duration - 1, Math.round((duration * 2) / 3)),
+        frame: Math.min(
+          duration - 1,
+          mount.manifest.category === "Captions"
+            ? 30
+            : Math.round((duration * 2) / 3)
+        ),
         logLevel: "error",
         output: join(out, "poster.png"),
         overwrite: true,
@@ -467,9 +510,14 @@ async function main(): Promise<void> {
     (name) => !mountable.some((mount) => mount.manifest.name === name)
   );
 
+  if (failedNames.length > 0 || skipped.length > 0) {
+    process.exitCode = 1;
+  }
   console.log(
     `rendered ${done}/${mountable.length}; skipped (no mount): ${skipped.join(", ") || "none"}; failed: ${failedNames.join(", ") || "none"}`
   );
 }
 
-await main();
+if (import.meta.main) {
+  await main();
+}

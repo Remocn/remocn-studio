@@ -51,6 +51,13 @@ export function noBundle(reason: string): KnowledgeBundle {
   };
 }
 
+// Where the shipped bundle sits, as the app passed it in; the permission
+// gates let the read-only tools reach it.
+export function shippedBundleDir(): string | null {
+  const dir = process.env[PLUGIN_DIR_ENV];
+  return dir === undefined || dir === "" ? null : dir;
+}
+
 export function locateBundle(cwd: string): KnowledgeBundle {
   const dir = process.env[PLUGIN_DIR_ENV];
 

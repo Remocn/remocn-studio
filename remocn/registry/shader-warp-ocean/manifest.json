@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarpOcean",
+  "dependencies": [],
+  "description": "Glossy aqua currents traced with dark ink edges.",
+  "files": [
+    {
+      "file": "shader-warp-ocean.tsx",
+      "target": "src/components/remocn/shader-warp-ocean.tsx"
+    }
+  ],
+  "name": "shader-warp-ocean",
+  "presetOf": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.3,
+      "swirl": 0.5,
+      "softness": 0.8,
+      "proportion": 0.5
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Shader Warp Ocean"
+}

@@ -4,7 +4,7 @@
   "version": "../package.json",
   "identifier": "com.remocn.remocn-studio",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "bun run tauri:before-dev",
     "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "bun run tauri:before-build",
     "frontendDist": "../out"
@@ -14,7 +14,7 @@
       {
         "title": "Remocn Studio",
         "visible": false,
-        "backgroundColor": "#181818",
+        "backgroundColor": "#0a0a0a",
         "width": 1440,
         "height": 900,
         "minWidth": 640,
@@ -54,7 +54,7 @@
       }
     },
     "targets": "all",
-    "externalBin": ["binaries/bun"],
+    "externalBin": ["binaries/remocn-studio-bun"],
     "createUpdaterArtifacts": true,
     "resources": {
       "../LICENSE": "LICENSE",
@@ -66,6 +66,7 @@
       "../preview/player-runtime.tsx": "preview/player-runtime.tsx",
       "../preview/managed-transport.ts": "preview/managed-transport.ts",
       "../preview/managed-loader.cjs": "preview/managed-loader.cjs",
+      "../preview/shader-precision-loader.cjs": "preview/shader-precision-loader.cjs",
       "../preview/native-remotion.ts": "preview/native-remotion.ts",
       "../preview/native-style.ts": "preview/native-style.ts",
       "../preview/frame-clips.ts": "preview/frame-clips.ts",
@@ -106,7 +107,24 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
+      "deb": {
+        "depends": [
+          "gstreamer1.0-plugins-good",
+          "gstreamer1.0-plugins-bad",
+          "gstreamer1.0-libav"
+        ],
+        "desktopTemplate": "linux/remocn-studio.desktop"
+      },
+      "rpm": {
+        "depends": ["gstreamer1-plugins-good"],
+        "desktopTemplate": "linux/remocn-studio.desktop"
+      }
+    }
   },
   "plugins": {
     "deep-link": {

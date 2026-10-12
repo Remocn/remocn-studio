@@ -31,6 +31,15 @@ import {
   ProviderStep,
   ToolVerb,
 } from "./providers";
+import {
+  ShaderDescriptor,
+  ShaderInserted,
+  ShaderInsertionStatus,
+  ShaderInsertRequest,
+  ShaderProgress,
+  ShaderTargetReport,
+  ShaderTargets,
+} from "./shaders";
 import { AudioRequest, SoundOperation, SoundRef } from "./sound-effects";
 import {
   StudioDocumentRef,
@@ -40,7 +49,7 @@ import {
 } from "./studio-document";
 import { TemplateDraft } from "./templates";
 
-export const SIDECAR_PROTOCOL = 38;
+export const SIDECAR_PROTOCOL = 40;
 
 export const SIDECAR_STATUS_EVENT = "sidecar://status";
 export const SIDECAR_NOTIFY_EVENT = "sidecar://notify";
@@ -106,6 +115,10 @@ export const METHOD_NAMES = [
   "studio.read",
   "studio.patch",
   "studio.remove",
+  "shader.list",
+  "shader.targets",
+  "shader.insert",
+  "shader.insertionStatus",
   "project.check",
   "project.create",
   "project.move",
@@ -346,6 +359,9 @@ export const PromptParams = Schema.Struct({
   prompt: Schema.String,
   provider,
   sessionId: Schema.NullOr(Schema.NonEmptyString),
+  shaderPreparation: Schema.optionalKey(
+    Schema.Struct({ revision: Schema.NonEmptyString })
+  ),
   videoId: Schema.NonEmptyString,
 });
 
@@ -1508,6 +1524,31 @@ export const SIDECAR_METHODS = {
     result: Upgraded,
     stream: InstallEvent,
   },
+  "shader.insert": {
+    params: ShaderInsertRequest,
+    result: ShaderInserted,
+    stream: ShaderProgress,
+  },
+  "shader.insertionStatus": {
+    params: Schema.Struct({
+      ...StudioDocumentRef.fields,
+      operationId: Schema.NonEmptyString,
+    }),
+    result: ShaderInsertionStatus,
+    stream: Schema.Never,
+  },
+  "shader.list": {
+    params: Schema.Null,
+    result: Schema.Array(
+      Schema.Struct({ asset: Asset, descriptor: ShaderDescriptor })
+    ),
+    stream: Schema.Never,
+  },
+  "shader.targets": {
+    params: ShaderTargetReport,
+    result: ShaderTargets,
+    stream: Schema.Never,
+  },
   "sidecar.emit": { params: EmitParams, result: EmitResult, stream: EmitChunk },
   "sidecar.info": {
     params: Schema.Null,
@@ -1742,6 +1783,9 @@ export type AppEnvironment = (typeof AppEnvironment)["Type"];
 export const StudioBuild = Schema.Struct({
   environment: AppEnvironment,
   os: Schema.String,
+  // False for a Linux build installed some other way than a release's
+  // AppImage, .deb or .rpm, which the updater cannot replace.
+  updatesInPlace: Schema.Boolean,
   version: Schema.String,
 });
 

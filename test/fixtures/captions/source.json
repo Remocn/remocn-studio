@@ -1,0 +1,12 @@
+{
+  "source": {
+    "path": "speech.wav",
+    "sha256": "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e",
+    "audioTrack": 0
+  },
+  "startMs": 0,
+  "endMs": null,
+  "language": "en",
+  "backend": "whisper.cpp/1.5.5",
+  "model": "tiny.en"
+}

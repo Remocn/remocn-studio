@@ -10,6 +10,10 @@ import {
   useManagedObjects,
 } from "@/hooks/use-managed-objects";
 import { type PreviewControl, usePreviewMessage } from "@/hooks/use-preview";
+import {
+  type ShaderInsertion,
+  useShaderInsertion,
+} from "@/hooks/use-shader-insertion";
 import { type Snapshot, useSnapshot } from "@/hooks/use-snapshot";
 
 type Tool = "snapshot" | null;
@@ -20,6 +24,7 @@ export interface Tools {
   inspect: Inspection;
   managed?: ManagedObjects;
   preview: PreviewControl;
+  shaders?: ShaderInsertion;
   snapshot: Snapshot;
 }
 
@@ -31,6 +36,7 @@ export interface ToolSettings {
   isTurnRunning?: boolean;
   isWaiting: boolean;
   openedProjectId: string | null;
+  prepareShader?: (revision: string) => boolean;
   preview: PreviewControl;
   previewProjectId: string | null;
   projectPath?: string;
@@ -38,6 +44,7 @@ export interface ToolSettings {
 }
 
 export function useTools({
+  prepareShader,
   composer,
   isDocs,
   isMissing,
@@ -76,6 +83,17 @@ export function useTools({
     projectId: writeProjectId,
   });
   const openObjects = managed.open;
+  const shaders = useShaderInsertion({
+    enabled:
+      unavailable === null &&
+      !isTurnRunning &&
+      !managed.busy &&
+      managed.pending === 0,
+    managed,
+    prepare: prepareShader,
+    preview,
+    projectId: writeProjectId,
+  });
   const { focus, send } = preview.channel;
 
   const toggleInspect = useCallback(() => {
@@ -156,6 +174,7 @@ export function useTools({
     isServing: preview.isServing,
     managedPending:
       managed.pending +
+      (shaders.blockExport ? 1 : 0) +
       (managed.busy || managed.awaitingPreview || managed.editingText ? 1 : 0),
     metadata: preview.pick?.metadata ?? null,
     openedProjectId,
@@ -165,8 +184,16 @@ export function useTools({
   });
 
   return useMemo(
-    () => ({ deletion, exporting, inspect, managed, preview, snapshot }),
-    [deletion, exporting, inspect, preview, snapshot, managed]
+    () => ({
+      deletion,
+      exporting,
+      inspect,
+      managed,
+      preview,
+      shaders,
+      snapshot,
+    }),
+    [deletion, exporting, inspect, preview, snapshot, managed, shaders]
   );
 }
 

@@ -42,13 +42,15 @@ function stats(ok: boolean, messages: string[] = []) {
 function fakeCompile() {
   const calls: WebpackConfig[] = [];
   const closed: number[] = [];
+  const watched: unknown[] = [];
   let done:
     | ((error: Error | null, result?: ReturnType<typeof stats>) => void)
     | null = null;
   const compile = ((config: WebpackConfig) => {
     calls.push(config);
     return {
-      watch: (_options: unknown, callback: NonNullable<typeof done>) => {
+      watch: (options: unknown, callback: NonNullable<typeof done>) => {
+        watched.push(options);
         done = callback;
         callback(null, stats(true));
         return {
@@ -70,6 +72,7 @@ function fakeCompile() {
     compile,
     fire: (ok: boolean, messages?: string[]) =>
       done?.(null, stats(ok, messages)),
+    watched,
   };
 }
 
@@ -164,6 +167,31 @@ describe("messagesOf", () => {
 });
 
 describe("nativeBundle", () => {
+  it("rebuilds from a cache kept in memory, watching with the project's own options", async () => {
+    const { calls, compile, watched } = fakeCompile();
+    const watchOptions = {
+      aggregateTimeout: 0,
+      ignored: ["**/.git/**", "**/.turbo/**", "**/node_modules/**"],
+    };
+
+    await run(
+      Effect.gen(function* () {
+        const bundle = yield* nativeBundle(
+          compile,
+          Effect.succeed(baseConfig({ cache: false, watchOptions })),
+          baseOptions()
+        );
+        yield* bundle.prepare;
+      })
+    );
+
+    expect(firstConfig(calls).cache).toEqual({
+      maxGenerations: 1,
+      type: "memory",
+    });
+    expect(watched).toEqual([watchOptions]);
+  });
+
   it("appends the project's entry and the native runtime after the stack-trace setup", async () => {
     const { calls, compile } = fakeCompile();
 
@@ -266,17 +294,46 @@ describe("nativeBundle", () => {
     const modules = firstConfig(calls).module as {
       rules: Record<string, unknown>[];
     };
-    const managed = modules.rules.at(-1) as {
+    const managed = modules.rules.find(
+      (rule) =>
+        rule.test instanceof RegExp &&
+        rule.test.test("/r/src/studio-objects-v7/index.tsx")
+    ) as {
       test: RegExp;
       use: { loader: string; options: { transport: string } }[];
     };
     expect(managed.test.test("/r/src/studio-objects-v5/index.tsx")).toBe(true);
+    expect(managed.test.test("/r/src/studio-objects-v7/index.tsx")).toBe(true);
+    expect(managed.test.test("/r/src/studio-objects-v6/index.tsx")).toBe(false);
     expect(managed.use[0]?.loader).toBe(
       path.join(PREVIEW_DIR, "managed-loader.cjs")
     );
     expect(managed.use[0].options.transport).toBe(
       path.join(PREVIEW_DIR, "managed-transport.ts")
     );
+    const precision = modules.rules.find(
+      (rule) =>
+        rule.test instanceof RegExp &&
+        rule.test.test("/r/src/lib/studio-shaders-v1/caustics-fragment.ts")
+    ) as { test: RegExp; use: string[]; enforce: string };
+    expect(precision.enforce).toBe("pre");
+    expect(precision.use).toEqual([
+      path.join(PREVIEW_DIR, "shader-precision-loader.cjs"),
+    ]);
+    expect(
+      precision.test.test("/r/src/lib/studio-shaders-v1/strata-fragment.ts")
+    ).toBe(true);
+    expect(
+      precision.test.test(
+        "C:\\project\\src\\lib\\studio-shaders-v1\\weave-fragment.ts"
+      )
+    ).toBe(true);
+    expect(precision.test.test("/r/src/custom/caustics-fragment.ts")).toBe(
+      false
+    );
+    expect(
+      precision.test.test("/r/src/lib/studio-shaders-v1/tunnel-renderer.ts")
+    ).toBe(false);
   });
 
   it("aliases remotion to the native shim and keeps the project's own reachable", async () => {

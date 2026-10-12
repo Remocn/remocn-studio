@@ -1,6 +1,6 @@
 "use client";
 
-import { DownloadIcon, XIcon } from "lucide-react";
+import { DownloadIcon, XIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -36,6 +36,7 @@ export function ExportButton({
             exporting.unavailable ??
             "Pick a format and a place to save, then render"
           }
+          variant="key-action"
         >
           <DownloadIcon data-icon="inline-start" />
           Export
@@ -50,7 +51,7 @@ export function ExportButton({
   return (
     <fieldset
       aria-label="Export"
-      className="relative m-0 flex h-7 min-w-36 items-center overflow-hidden rounded-md border bg-popover p-0 text-xs sm:h-6"
+      className="relative m-0 flex h-7 min-w-36 items-center overflow-hidden rounded-lg bg-control p-0 text-xs"
     >
       {brief.percent === null ? null : (
         <span

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useCallback } from "react";
 import {
   ArrowUpIcon,
   ChevronDownIcon,
@@ -12,8 +13,7 @@ import {
   ShieldIcon,
   type SparklesIcon,
   SquareIcon,
-} from "lucide-react";
-import { memo, useCallback } from "react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -220,7 +220,7 @@ function ComposerBlock({
                   : "Describe the scene you want to build…"
               }
               ref={composer.caret.ref}
-              rows={2}
+              rows={1}
               value={composer.value}
             />
           </div>

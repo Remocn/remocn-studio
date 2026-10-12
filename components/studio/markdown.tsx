@@ -1,6 +1,20 @@
 "use client";
 
 import { createContext, use, useMemo } from "react";
+import type { IconMap } from "streamdown";
+import {
+  CheckIcon,
+  CopyIcon,
+  DownloadIcon,
+  ExternalLinkIcon,
+  type Icon,
+  Loader2Icon,
+  MaximizeIcon,
+  RotateCcwIcon,
+  XIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+} from "@/components/icons";
 import {
   type CodeHighlighting,
   NO_HIGHLIGHTING,
@@ -10,6 +24,30 @@ import {
 } from "@/hooks/use-code-highlighter";
 import { usePrefersReducedMotion } from "@/lib/dotmatrix-hooks";
 import { cn } from "@/lib/utils";
+
+function markdownIcon(Component: Icon): IconMap["CopyIcon"] {
+  return function MarkdownIcon({ strokeWidth, ...props }) {
+    return (
+      <Component
+        {...props}
+        strokeWidth={strokeWidth === undefined ? 1.5 : Number(strokeWidth)}
+      />
+    );
+  };
+}
+
+const MARKDOWN_ICONS = {
+  CheckIcon: markdownIcon(CheckIcon),
+  CopyIcon: markdownIcon(CopyIcon),
+  DownloadIcon: markdownIcon(DownloadIcon),
+  ExternalLinkIcon: markdownIcon(ExternalLinkIcon),
+  Loader2Icon: markdownIcon(Loader2Icon),
+  Maximize2Icon: markdownIcon(MaximizeIcon),
+  RotateCcwIcon: markdownIcon(RotateCcwIcon),
+  XIcon: markdownIcon(XIcon),
+  ZoomInIcon: markdownIcon(ZoomInIcon),
+  ZoomOutIcon: markdownIcon(ZoomOutIcon),
+} satisfies IconMap;
 
 const ANIMATION = {
   animation: "fadeIn",
@@ -60,6 +98,7 @@ export function Markdown({
     <renderer.Streamdown
       animated={reducedMotion || !isAnimated ? false : ANIMATION}
       className={classes}
+      icons={MARKDOWN_ICONS}
       isAnimating={isStreaming}
       lineNumbers={false}
       plugins={plugins}

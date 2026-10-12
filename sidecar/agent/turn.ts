@@ -51,6 +51,7 @@ export interface TurnPorts {
   readonly gateway: ToolGateway;
   readonly log: (line: string) => Effect.Effect<void>;
   readonly tools: (turn: TurnContext) => TurnTools;
+  readonly workspace?: { readonly path: string; readonly brief: string };
 }
 
 const STREAMED_FRAME = "24 millis";
@@ -131,7 +132,10 @@ export const runTurn = (
     const { emit, flush } = yield* coalescing(ports.emit, STREAMED_FRAME);
     yield* Effect.addFinalizer(() => flush);
     const turnId = yield* Effect.sync(() => crypto.randomUUID());
-    const project = yield* locate(params.projectId);
+    const located = yield* locate(params.projectId);
+    const project = ports.workspace
+      ? { ...located, path: ports.workspace.path }
+      : located;
     const adapter = ports.adapterFor(params.provider);
     const toolKey = adapter.toolKey({ chat: params.historyId, turn: turnId });
 
@@ -215,7 +219,7 @@ export const runTurn = (
 
         const briefs = {
           assets: assetBrief(placed, addCommandFor(project.path)),
-          brand,
+          brand: joined(brand, ports.workspace ? ports.workspace.brief : null),
           media: joined(mediaBrief(placedMedia), removals.brief(project.path)),
         };
 
@@ -235,7 +239,10 @@ export const runTurn = (
             Effect.andThen(
               adapter.turn(turnParams, {
                 cwd: project.path,
-                emit,
+                emit: (event) =>
+                  ports.workspace && event.type === "session"
+                    ? Effect.void
+                    : emit(event),
                 inProcess: Object.fromEntries(
                   TOOL_SERVERS.map((server) => [
                     server,
@@ -253,7 +260,10 @@ export const runTurn = (
                 log,
                 onMode: switcher.bind,
                 permissions,
-                record: recorder.event,
+                record: (event) =>
+                  ports.workspace && event.type === "session"
+                    ? Effect.void
+                    : recorder.event(event),
                 tools: Object.fromEntries(
                   TOOL_SERVERS.map((server) => [
                     server,
@@ -265,6 +275,11 @@ export const runTurn = (
             )
           )
         ).pipe(
+          Effect.map((result) =>
+            ports.workspace
+              ? { ...result, context: null, sessionId: null }
+              : result
+          ),
           Effect.ensuring(recorder.flush),
           Effect.ensuring(abandonSourceAssets(turnId))
         );

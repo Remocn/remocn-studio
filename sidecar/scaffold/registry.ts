@@ -62,6 +62,7 @@ const RUNTIMES = [
   "studio-objects-v4",
   "studio-objects-v5",
   "studio-objects-v6",
+  "studio-objects-v7",
 ] as const;
 
 export type Runtime = (typeof RUNTIMES)[number];

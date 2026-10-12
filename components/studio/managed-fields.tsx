@@ -28,9 +28,15 @@ import {
   propertyTab,
   readableLabel,
 } from "@/lib/studio/property-presentation";
-import type { StudioBezier, StudioValue } from "@/shared/studio-document";
+import {
+  fieldUnavailableReason,
+  isStudioPalette,
+  type StudioBezier,
+  type StudioValue,
+} from "@/shared/studio-document";
 import { GroupHeading } from "./prop-group-heading";
 import { PropertyDisclosure } from "./property-disclosure";
+import { ShaderPalette } from "./shader-palette";
 
 const EASING_FIELD = /((^|\.)ease|easing)$/i;
 const FRAMES_LABEL = /frames/gi;
@@ -75,7 +81,7 @@ export function ManagedFields({
         const isOpen = !(groups?.collapsed ?? collapsed).includes(group);
         return (
           <section
-            className="border-border border-t px-4 py-3 first:border-t-0 [&>h3]:pb-0"
+            className="px-4 py-3 [&>h3]:pb-0"
             data-open={isOpen}
             key={group}
           >
@@ -186,6 +192,12 @@ function FieldSection({
                   onChange={objects.change}
                   onCommit={objects.commit}
                   onContinuousChange={changed}
+                  reason={fieldUnavailableReason(
+                    field,
+                    Object.fromEntries(
+                      objects.fields.map((item) => [item.id, item.value])
+                    )
+                  )}
                 />
               </div>
             ))}
@@ -221,9 +233,11 @@ interface ControlProps {
   onChange: ManagedObjects["change"];
   onCommit: () => void;
   onContinuousChange: () => void;
+  reason: string | null;
 }
 
 function ManagedControl({
+  reason,
   field,
   fps,
   onChange,
@@ -232,7 +246,11 @@ function ManagedControl({
 }: ControlProps) {
   const frameUnit = field.type === "number" && field.unit === "frames";
   const scale = frameUnit && fps !== undefined && fps > 0 ? fps : 1;
-  const unavailable = frameUnit && !(fps !== undefined && fps > 0);
+  const unavailable =
+    reason ??
+    (frameUnit && !(fps !== undefined && fps > 0)
+      ? "Timing is available when the preview is ready."
+      : null);
   const toStored = useCallback(
     (value: number) => {
       if (!frameUnit) {
@@ -304,21 +322,19 @@ function ManagedControl({
       data-control-type={field.type}
       disabled={
         field.saving ||
-        unavailable ||
+        unavailable !== null ||
         (field.min !== undefined && field.min === field.max)
       }
       inert={
         field.saving ||
-        unavailable ||
+        unavailable !== null ||
         (field.min !== undefined && field.min === field.max)
       }
       ref={root}
     >
       {unavailable ? null : <Control change={change} field={displayField} />}
       {unavailable ? (
-        <p className="text-muted-foreground text-xs">
-          Timing is available when the preview is ready.
-        </p>
+        <p className="text-muted-foreground text-xs">{unavailable}</p>
       ) : null}
       {field.error ? (
         <p className="mt-1 text-destructive text-xs" role="alert">
@@ -336,6 +352,17 @@ function Control({
   field: Field;
   change: (value: StudioValue) => void;
 }) {
+  if (field.type === "palette" && isStudioPalette(field.value)) {
+    return (
+      <ShaderPalette
+        label={field.label}
+        max={field.maxItems}
+        min={field.minItems}
+        onChange={change}
+        value={field.value}
+      />
+    );
+  }
   if (field.type === "easing") {
     return <ManagedEasing change={change} field={field} />;
   }

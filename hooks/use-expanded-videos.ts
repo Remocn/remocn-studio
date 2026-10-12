@@ -9,6 +9,7 @@ export interface ExpandedVideos {
   expandedVideos: ReadonlySet<string>;
   expandVideo: (videoId: string) => void;
   onToggleVideo: (event: MouseEvent<HTMLButtonElement>) => void;
+  setVideosExpanded: (videoIds: readonly string[], expanded: boolean) => void;
 }
 
 export function useExpandedVideos(
@@ -47,6 +48,21 @@ export function useExpandedVideos(
     [keep, remembered]
   );
 
+  const setVideosExpanded = useCallback(
+    (videoIds: readonly string[], expanded: boolean) => {
+      const next = new Set(remembered);
+      for (const id of videoIds) {
+        if (expanded) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      }
+      keep([...next]);
+    },
+    [keep, remembered]
+  );
+
   useEffect(() => {
     if (activeVideoId === null || opened.current === activeVideoId) {
       return;
@@ -58,7 +74,7 @@ export function useExpandedVideos(
   const expandedVideos = useMemo(() => new Set(remembered), [remembered]);
 
   return useMemo(
-    () => ({ expandedVideos, expandVideo, onToggleVideo }),
-    [expandVideo, expandedVideos, onToggleVideo]
+    () => ({ expandedVideos, expandVideo, onToggleVideo, setVideosExpanded }),
+    [expandVideo, expandedVideos, onToggleVideo, setVideosExpanded]
   );
 }

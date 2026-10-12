@@ -1,33 +1,25 @@
 # Remocn Studio UI in Paper
 
-[Open the separate Paper design file](https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-1-0).
+Start with [the current handoff](handoff.md) and [00 · Handoff in Paper](https://app.paper.design/file/01M40EK8FFWZTW2G14NW9CXN69/p-1-0). Prepared 2026-10-04 after the Linear layout, flat surfaces, selective clean-fuchsia accent and welcome/project-dialog iterations.
 
-Created on 2026-10-03 from the current working tree. The existing **Remocn UI** Paper file was left untouched. Application source code was not changed for the transfer.
+## Current deliverables
 
-## Contents
+- Current pages 01–09 contain foundations, primitives, Studio components, 77 desktop screen states, interaction references and icons.
+- Desktop screen pairs are arranged Dark left / Light right. Seven detailed inspector boards are dark; shared component recipes include both themes.
+- Current welcome and project creation live on 09 · Onboarding & Project. S18–S19 on 03 · Studio Components define the shared project dialog's filled and empty/focused states.
+- Pages 90–91 preserve obsolete explorations and replaced screens. They are not implementation sources.
+- [paper-handoff.json](paper-handoff.json) is the current page/artboard/source index.
+- [paper-tokens.css](paper-tokens.css) is the current active-token export. It is not imported into the application.
+- [assets/README.md](assets/README.md) documents the exported welcome ribbon and social SVGs.
 
-- 154 design tokens for Light/Dark colors, font families, type sizes and weights, line heights, spacing, radii, opacity and dimensions.
-- 180 component specimens in Light and Dark (360 editable groups), covering primitives and Studio blocks such as Composer, Thinking, Preview, Inspector, permission cards, navigation, media, audio, settings, brand, documents, onboarding and system states.
-- Eight full-screen compositions at 1440 × 900 in both themes (16 artboards).
-- Four frozen shader states in both themes.
+## Original extraction
 
-Pages: **00 · Start here**, **01 · Foundations**, **02 · UI Primitives**, **03 · Studio Components**, **04 · Screens & Flows**. The Start page includes a coverage and editing guide. Component labels and layer names identify their source and rendering method.
+The library was first extracted from the working tree on 2026-10-03 into a separate file, leaving Remocn UI untouched. [paper-ui-library.json](paper-ui-library.json) preserves that historical inventory: 179 source files, 180 component specimens in two themes and eight original screen compositions. Its original counts and fidelity labels describe that extraction, not the current edited design.
 
-## Fidelity and editing
+The current source index overrides replaced Startup, New project and Appearance screen nodes. Application source was not migrated as part of this design handoff.
 
-The catalog contains 107 direct static React renders (106 component specimens and one settings screen), 74 source-guided reconstructions, and seven assembled screen states. Fixture data represents content and state; this is not an exhaustive capture of every runtime interaction. Source-guided specimens should be checked against the application before implementing a design change.
+## Implementation limits
 
-Components are named, editable groups, without linked instances or automatic synchronization with code. UI text, shapes and SVGs can be edited individually; shader frames are raster images. Color and typography tokens are bound where their source values match. Geometry was extracted at fixed sizes, so changing type or spacing requires checking wrapping and alignment.
+Paper uses named editable groups, not linked component instances or live application behavior. UI text, shapes and SVGs remain editable; shader frames and tour screenshots are image references. Build responsive flex/grid layouts from the semantic structure instead of copying fixed absolute positions. Verify focus, keyboard, accessibility, loading/error states, motion and resizing in the running application.
 
-Duplicate a group or screen to explore a variation. Compare both themes and related states, then use the source path in the specimen label to implement the chosen design.
-
-## Source map
-
-[paper-ui-library.json](paper-ui-library.json) maps all 179 source component files: 74 UI files and 105 Studio files. Of these, 163 are primary specimen sources, 12 are represented within other blocks/compositions, two are shader frame references, and two have no independent visual surface (ContextMenuGuard and StudioProvider). It also contains every specimen's Paper node IDs and fidelity classification.
-
-[paper-tokens.css](paper-tokens.css) is an exported reference snapshot of the Paper tokens. It is not imported into the application.
-
-## Verification
-
-All 188 catalog entries have Light and Dark variants. Each component group and all 16 screen artboards were visually inspected. Transfer artifacts in SVG paints, textarea alignment, static resizable/chart examples, shimmer, permission heading spacing and the new-chat Composer were corrected in Paper. Artboards are arranged without overlaps, with screen themes paired by scenario.
-
+See [component decisions](handoff-components.md) and [layout/state contracts](handoff-layout.md).

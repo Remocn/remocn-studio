@@ -178,7 +178,7 @@ export function defaultPathIn(folder: string, fileName: string): string {
     : `${folder}/${fileName}`;
 }
 
-const HOME = /^\/Users\/[^/]+/;
+const HOME = /^\/(?:Users|home)\/[^/]+/;
 
 const TRAILING_SLASH = /\/$/;
 

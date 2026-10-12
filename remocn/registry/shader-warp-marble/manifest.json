@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderWarpMarble",
+  "dependencies": [],
+  "description": "Cream and charcoal marble veins swirling together.",
+  "files": [
+    {
+      "file": "shader-warp-marble.tsx",
+      "target": "src/components/remocn/shader-warp-marble.tsx"
+    }
+  ],
+  "name": "shader-warp-marble",
+  "presetOf": "shader-warp",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.25,
+      "swirl": 0.9,
+      "softness": 0.4,
+      "proportion": 0.3
+    }
+  },
+  "registryDependencies": [
+    "shader-warp"
+  ],
+  "title": "Shader Warp Marble"
+}

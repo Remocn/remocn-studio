@@ -8,7 +8,9 @@ import { Effect, Exit, Fiber } from "effect";
 import { causeMessage } from "@/lib/error-message";
 import type { PackageManager } from "@/sidecar/package-manager";
 import {
+  checkPaperDependencies,
   installDependencies,
+  preparePaperDependencies,
   type Runner,
   type Spawner,
   upgradeArgs,
@@ -77,6 +79,99 @@ async function project(manager: PackageManager) {
 }
 
 const lines = () => Effect.void;
+
+async function installedPaper(version = "0.0.78") {
+  const packages = ["@paper-design/shaders", "@paper-design/shaders-react"];
+  await writeFile(
+    path.join(folder, "package.json"),
+    JSON.stringify({
+      dependencies: Object.fromEntries(packages.map((name) => [name, version])),
+    })
+  );
+  await Promise.all(
+    packages.map(async (name) => {
+      const directory = path.join(folder, "node_modules", name);
+      await mkdir(directory, { recursive: true });
+      await writeFile(
+        path.join(directory, "package.json"),
+        JSON.stringify({ name, version })
+      );
+    })
+  );
+}
+
+describe("Paper shader dependency preparation", () => {
+  it("reuses the tested version without running a package manager", async () => {
+    await installedPaper();
+    const calls: Call[] = [];
+    await Effect.runPromise(
+      preparePaperDependencies(folder, lines, runner(calls))
+    );
+    expect(calls).toHaveLength(0);
+  });
+  it("refuses incompatible installed and declared versions before making changes", async () => {
+    const calls: Call[] = [];
+    await installedPaper("0.0.77");
+    await expect(
+      Effect.runPromise(checkPaperDependencies(folder))
+    ).rejects.toThrow("requires 0.0.78");
+    await writeFile(
+      path.join(folder, "package.json"),
+      JSON.stringify({ dependencies: { "@paper-design/shaders": "*" } })
+    );
+    await expect(
+      Effect.runPromise(preparePaperDependencies(folder, lines, runner(calls)))
+    ).rejects.toThrow("will not replace");
+    expect(calls).toHaveLength(0);
+  });
+  it("reports an offline install failure and verifies a successful exit actually installed packages", async () => {
+    await project("npm");
+    const calls: Call[] = [];
+    await expect(
+      Effect.runPromise(
+        preparePaperDependencies(folder, lines, runner(calls, 1))
+      )
+    ).rejects.toThrow();
+    expect(calls[0].args).toEqual([
+      "install",
+      "@paper-design/shaders@0.0.78",
+      "@paper-design/shaders-react@0.0.78",
+    ]);
+    await expect(
+      Effect.runPromise(preparePaperDependencies(folder, lines, runner(calls)))
+    ).rejects.toThrow("without preparing");
+  });
+  it("shares the install lane and rechecks dependencies after waiting, so concurrent insertions install once", async () => {
+    await project("bun");
+    const calls: Call[] = [];
+    const lane = held(calls);
+    const install = Effect.runFork(
+      installDependencies(folder, lines, lane.runner)
+    );
+    const first = Effect.runFork(
+      preparePaperDependencies(folder, lines, lane.runner)
+    );
+    const second = Effect.runFork(
+      preparePaperDependencies(folder, lines, lane.runner)
+    );
+    await settle();
+    expect(calls).toHaveLength(1);
+    lane.children[0]?.emit("exit", 0, null);
+    await settle();
+    expect(calls).toHaveLength(2);
+    expect(calls[1].args).toEqual([
+      "add",
+      "@paper-design/shaders@0.0.78",
+      "@paper-design/shaders-react@0.0.78",
+    ]);
+    await installedPaper();
+    lane.children[1]?.emit("exit", 0, null);
+    await Effect.runPromise(Fiber.join(install));
+    await Effect.runPromise(Fiber.join(first));
+    await Effect.runPromise(Fiber.join(second));
+    expect(calls).toHaveLength(2);
+  });
+});
 
 describe("upgradeArgs", () => {
   it("pins every package with the version the fix names", () => {

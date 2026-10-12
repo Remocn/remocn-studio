@@ -494,3 +494,116 @@ describe("deleting an object", () => {
     expect(test.removeObject).not.toHaveBeenCalled();
   });
 });
+
+it("edits an ordered shader palette independently and resets all changed defaults in one undoable operation", async () => {
+  const { MESH_GRADIENT, shaderCreation } = await import("@/shared/shaders");
+  const { shaderTargetFixture } = await import("@/test/fixtures/shaders");
+  const first = shaderCreation(
+    MESH_GRADIENT,
+    shaderTargetFixture,
+    "insert-first",
+    "shader-first",
+    0
+  );
+  const second = shaderCreation(
+    MESH_GRADIENT,
+    shaderTargetFixture,
+    "insert-second",
+    "shader-second",
+    1
+  );
+  const data = applyStudioOperation(
+    applyStudioOperation(documentFixture, first, shaderTargetFixture),
+    second,
+    shaderTargetFixture
+  );
+  const test = setup(data);
+  test.ready();
+  await waitFor(() => expect(test.result.current.objects).toHaveLength(5));
+  act(() => test.result.current.select("shader-first"));
+  const colors = ["#ff0000", "#ff0000", "#0000ff80"];
+  act(() => {
+    test.result.current.change("colors", colors);
+    test.result.current.commit();
+  });
+  await waitFor(() => expect(test.result.current.pending).toBe(0));
+  expect(
+    test.saved().document.objects.find((object) => object.id === "shader-first")
+      ?.values.colors
+  ).toEqual(colors);
+  expect(
+    test
+      .saved()
+      .document.objects.find((object) => object.id === "shader-second")?.values
+      .colors
+  ).toEqual(second.object.values.colors);
+  act(() => {
+    test.result.current.change("distortion", 0.9);
+    test.result.current.commit();
+  });
+  await waitFor(() => expect(test.result.current.pending).toBe(0));
+  const before = test.saved().document.operations.length;
+  act(() => test.result.current.resetShader());
+  await waitFor(() => expect(test.result.current.pending).toBe(0));
+  expect(test.saved().document.operations).toHaveLength(before + 1);
+  expect(
+    test.saved().document.objects.find((object) => object.id === "shader-first")
+      ?.values
+  ).toEqual(first.object.values);
+  act(() => {
+    test.result.current.undo();
+  });
+  await waitFor(() =>
+    expect(
+      test
+        .saved()
+        .document.objects.find((object) => object.id === "shader-first")?.values
+        .colors
+    ).toEqual(colors)
+  );
+  expect(
+    test.saved().document.objects.find((object) => object.id === "shader-first")
+      ?.values.distortion
+  ).toBe(0.9);
+});
+
+it("resets a preset instance to the preset's look, not to its shader's defaults", async () => {
+  const { shaderCreation } = await import("@/shared/shaders");
+  const { shaderCatalogueEntry } = await import("@/shared/shader-presets");
+  const { shaderTargetFixture } = await import("@/test/fixtures/shaders");
+  const aurora = shaderCatalogueEntry("shader-mesh-gradient-aurora");
+  if (!aurora) {
+    throw new Error("Aurora is not described");
+  }
+  const created = shaderCreation(
+    aurora.descriptor,
+    shaderTargetFixture,
+    "insert-aurora",
+    "shader-aurora",
+    0,
+    aurora
+  );
+  const test = setup(
+    applyStudioOperation(documentFixture, created, shaderTargetFixture)
+  );
+  test.ready();
+  await waitFor(() => expect(test.result.current.objects).toHaveLength(4));
+  act(() => test.result.current.select("shader-aurora"));
+  act(() => {
+    test.result.current.change("colors", ["#ff0000", "#00ff00"]);
+    test.result.current.change("swirl", 0.1);
+    test.result.current.commit();
+  });
+  await waitFor(() => expect(test.result.current.pending).toBe(0));
+  act(() => test.result.current.resetShader());
+  await waitFor(() => expect(test.result.current.pending).toBe(0));
+  const values = test
+    .saved()
+    .document.objects.find((object) => object.id === "shader-aurora")?.values;
+  expect(values).toEqual(created.object.values);
+  expect(values?.swirl).toBe(0.8);
+  expect(values?.swirl).not.toBe(
+    aurora.descriptor.definition.fields.find((field) => field.id === "swirl")
+      ?.default
+  );
+});

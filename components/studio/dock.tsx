@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronUpIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { ChevronUpIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 export function DockStack({ children }: { children: ReactNode }) {
@@ -16,15 +16,7 @@ export function DockStack({ children }: { children: ReactNode }) {
       {/* `px-3` inside the composer's own column is what makes the strip
           narrower than it, so it reads as coming out from behind. */}
       <div className="mx-auto w-full max-w-2xl px-3">
-        {/* In dark, `bg-card` rather than a muted tint: the composer's own
-            surface is a translucent lift over the background, so anything
-            translucent there lands on the same colour and the two merge — the
-            colour is the whole separation, since the dark composer draws no
-            border. In light `--card` equals the background, so the drawer is a
-            muted well behind the composer's bordered field instead. The radius
-            is the stack's, not each section's, so two sections stack into one
-            drawer rather than leaving a notch where their corners meet. */}
-        <div className="divide-y divide-border/50 overflow-hidden rounded-t-lg bg-muted empty:hidden dark:bg-card">
+        <div className="overflow-hidden rounded-t-lg bg-muted empty:hidden dark:bg-card">
           {children}
         </div>
       </div>
@@ -64,7 +56,7 @@ export function DockSection({
       <button
         aria-expanded={isExpanded}
         aria-label={summary}
-        className="flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-foreground/5 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset active:bg-foreground/10"
+        className="flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:-outline-offset-2 active:bg-accent"
         onClick={onToggle}
         type="button"
       >

@@ -19,6 +19,7 @@ import {
   visibleRows,
   withAncestors,
 } from "@/lib/studio/layers";
+import { currentPlatform, isModKey } from "@/lib/studio/platform";
 import type { PreviewScene } from "@/lib/studio/preview";
 import type { Deletion } from "./use-deletion";
 import type { ManagedObjects } from "./use-managed-objects";
@@ -57,10 +58,12 @@ function deletes(event: KeyboardEvent): boolean {
 }
 
 function undoes(event: KeyboardEvent): boolean {
+  const other = currentPlatform() === "mac" ? event.ctrlKey : event.metaKey;
+
   return (
     event.key.toLowerCase() === "z" &&
-    event.metaKey &&
-    !(event.ctrlKey || event.altKey || event.shiftKey)
+    isModKey(event) &&
+    !(other || event.altKey || event.shiftKey)
   );
 }
 

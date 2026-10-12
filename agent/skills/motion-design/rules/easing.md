@@ -15,7 +15,8 @@ reconstructions of a reference. Keep their arrays editable through the Studio sc
 | Accelerating departure | `[0.32, 0, 0.67, 0]` | Useful when gathering speed out of frame |
 | Move between resting positions | `[0.65, 0, 0.35, 1]` | Useful for a deliberate reposition |
 | Constant-speed travel | `[0, 0, 1, 1]` | Mechanical or continuous motion, including a moving shot boundary |
-| Physical response | Tunable spring damping, stiffness and mass | Use when a spring response belongs to the object's behavior |
+| Slight overshoot on a fixed frame | `[0.38, 1.21, 0.22, 1]` | Lands with a ~1.4% overshoot and ends at rest; a bezier whose fourth value is not 1 ends still moving |
+| Physical response | Tunable spring damping, stiffness and mass; see [springs](springs.md) | Use when a spring response belongs to the object's behavior |
 
 A fall under gravity differs from a panel being placed downward. Let the intended
 force decide whether it accelerates, brakes or rebounds. Overshoot is an expressive
@@ -26,6 +27,13 @@ choice, not a required flourish or a once-per-film allowance.
 Separate position, opacity and blur timing when they have different jobs. Preserve
 spatial travel at full opacity when that keeps an object legible. Pure opacity can
 be sufficient for an appearance. Related elements may use the same curve.
+Give opacity, colour and blur their own non-overshooting driver that finishes no
+later than the move: overshooting opacity clips at 1 and dips back, overshooting
+colour passes through a third colour. A designed over-bright flash is the exception.
+A speed that jumps to or from full on one frame reads as a jolt; keep linear for
+mechanical, continuous or off-frame travel. Check the opacity driver's end frame
+against the move's settle frame, and the first and last per-frame deltas against
+the middle ones.
 
 For a physical toss, an intermediate pose or arc can carry weight. A flat UI update
 may need only its start and end. Use follow-through on parts that should flex or

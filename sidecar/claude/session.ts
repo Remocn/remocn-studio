@@ -7,7 +7,7 @@ import {
   type SDKMessage,
   type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-import { Data, Effect, Stream } from "effect";
+import { Data, type Duration, Effect, Stream } from "effect";
 import { errorMessage } from "@/lib/error-message";
 import type { ContextUsage, PromptParams } from "@/shared/ipc";
 import type { KnowledgeBundle } from "../agent/knowledge";
@@ -63,7 +63,7 @@ export function messages(
             return Effect.void;
           }
           finished = true;
-          return context(turn, callbacks.onContext).pipe(
+          return contextReading(turn.session, callbacks.onContext).pipe(
             Effect.andThen(Effect.sync(() => turn.close()))
           );
         })
@@ -72,12 +72,18 @@ export function messages(
   });
 }
 
-function context(
-  turn: Turn,
-  onContext: (usage: ContextUsage) => void
+// The meter needs a total and a ceiling. `summary` answers both from the last
+// response's usage; the default, `full`, counts every category through the
+// token-count API while the turn's result waits behind it.
+export function contextReading(
+  session: Pick<Query, "getContextUsage">,
+  onContext: (usage: ContextUsage) => void,
+  window: Duration.Input = "2 seconds"
 ): Effect.Effect<void> {
-  return Effect.tryPromise(() => turn.session.getContextUsage()).pipe(
-    Effect.timeout("2 seconds"),
+  return Effect.tryPromise(() =>
+    session.getContextUsage({ detail: "summary" })
+  ).pipe(
+    Effect.timeout(window),
     Effect.tap((usage) =>
       Effect.sync(() =>
         onContext({
@@ -113,7 +119,10 @@ function open(params: PromptParams, callbacks: TurnCallbacks): Turn {
   return { close: () => input.resolve(), session };
 }
 
-function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
+export function optionsOf(
+  params: PromptParams,
+  callbacks: TurnCallbacks
+): Options {
   const plugins = pluginsFor(callbacks.knowledge);
 
   const hooks = gateHooks(params.mode, callbacks.cwd);
@@ -129,9 +138,13 @@ function optionsOf(params: PromptParams, callbacks: TurnCallbacks): Options {
     plugins,
     settingSources: ["project"],
     stderr: (data) => callbacks.log(`claude: ${data.trimEnd()}`),
+    // Recorded on the chat's first turn and sent as recorded after that, so
+    // the prefix the provider caches survives every later turn. Nothing that
+    // changes between turns may ride here: the stage brief is in the message.
     systemPrompt: {
       append: callbacks.system,
       preset: "claude_code",
+      snapshot: true,
       type: "preset",
     },
     ...(params.effort === null ? {} : { effort: params.effort }),

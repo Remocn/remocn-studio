@@ -55,12 +55,17 @@ There SHALL be one dictionary of named behaviours for the three element roles, e
 - **THEN** it is not there
 
 ### Requirement: Every shipped component is classified, and nothing else is
-Every component the studio ships SHALL have a role, and the classification SHALL name only components the studio actually ships. A name the studio does not ship SHALL answer with no role rather than a guess.
+
+Every motion component the studio ships SHALL have a role, and the classification SHALL name only components the studio actually ships. Caption styles SHALL be classified by their Captions category and SHALL carry no motion role, because they render a timed transcript rather than one motion behaviour. A name the studio does not ship SHALL answer with no role rather than a guess.
 
 #### Scenario: The shipped set is listed
-- **WHEN** the bundled components are listed
-- **THEN** all ninety-nine of them carry a role — twenty-one entry, fifteen emphasis, four exit, thirty-six scene and twenty-three transition
-- **AND** none is shown as unclassified
+- **WHEN** the bundled motion components are listed
+- **THEN** every motion component retains its assigned role
+- **AND** none of those motion components is shown as unclassified
+
+#### Scenario: A caption style is listed
+- **WHEN** a bundled caption style is listed
+- **THEN** it belongs to Captions with no entry, emphasis, exit, scene or transition role
 
 #### Scenario: An unknown name is classified
 - **WHEN** a role is asked for a name nothing ships
@@ -82,7 +87,8 @@ The components that ship with the app SHALL be listed as assets, each carrying i
 - **THEN** it carries no Delete action
 
 ### Requirement: The components view groups by role, with a leading group for the unclassified
-The components view SHALL show one group per role in the taxonomy's order, each headed by its name and the number of components in it, and SHALL drop a group holding nothing. Inside a group, components the person saved SHALL lead, followed by the shipped ones ordered by category. Saved components carrying no role SHALL form one leading group of their own.
+
+The components view SHALL exclude bundled entries whose category is Shaders or Captions, which belong in their dedicated views, and SHALL show one group per role in the taxonomy's order, each headed by its name and the number of components in it, and SHALL drop a group holding nothing. Inside a group, components the person saved SHALL lead, followed by the shipped ones ordered by category. Saved components carrying no role SHALL form one leading group of their own.
 
 #### Scenario: A saved component carries a role
 - **WHEN** a component saved by the agent was given a role
@@ -97,6 +103,18 @@ The components view SHALL show one group per role in the taxonomy's order, each 
 - **WHEN** a query is typed
 - **THEN** the groups are rebuilt from what matched, with their counts following
 - **AND** a query that matches nothing says so by name
+
+#### Scenario: A component uses a shader internally
+- **WHEN** a bundled entry belongs to Typography or Transitions rather than Shaders
+- **THEN** it remains in Components with its existing role
+
+#### Scenario: A shipped shader is browsed
+- **WHEN** a bundled entry belongs to Shaders
+- **THEN** it appears in Shaders and not as a duplicate card in Components
+
+#### Scenario: A shipped caption is browsed
+- **WHEN** a bundled entry belongs to Captions
+- **THEN** it appears in Captions and not in a Components role or unclassified group
 
 ### Requirement: The view is a pinned control above a scroller, and the headings sit above the tiles
 The search field SHALL be pinned above the scrolling list rather than made sticky inside it, so that it is drawn and takes its clicks in the same place however far the list has scrolled. The role headings SHALL stick to the scroller's own top edge and SHALL paint above the tiles' own click targets and actions. The view SHALL draw no fade over the top of its scroller, where a stuck heading sits.

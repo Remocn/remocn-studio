@@ -30,7 +30,7 @@ export function NoticeCard({
   return (
     <section
       className={cn(
-        "flex flex-col gap-2 rounded-xl border border-dashed px-3 py-2.5",
+        "flex flex-col gap-2 rounded-xl bg-control px-3 py-2.5",
         className
       )}
       data-slot="notice-card"

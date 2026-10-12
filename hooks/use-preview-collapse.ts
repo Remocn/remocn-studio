@@ -7,7 +7,11 @@ import {
   useRef,
   useState,
 } from "react";
-import type { PanelImperativeHandle } from "react-resizable-panels";
+import type {
+  Layout,
+  LayoutChangedMeta,
+  PanelImperativeHandle,
+} from "react-resizable-panels";
 
 type Phase = "hidden" | "hiding" | "showing" | "shown";
 
@@ -16,7 +20,7 @@ const SETTLE_FALLBACK_MS = 400;
 export interface PreviewCollapse {
   isAnimating: boolean;
   isMounted: boolean;
-  onResize: () => void;
+  onLayoutChanged: (layout: Layout, meta: LayoutChangedMeta) => void;
   panelRef: React.RefObject<PanelImperativeHandle | null>;
 }
 
@@ -76,20 +80,25 @@ export function usePreviewCollapse(
     return () => clearTimeout(timer);
   }, [phase]);
 
-  // The panel is asked rather than the size measured: `isCollapsed()` is the
-  // group's own answer, where a pixel reading would need a threshold and would
-  // have to guess at a mid-drag frame. Reported while the preview is already
-  // hidden, it is our own `collapse()` echoing back.
-  const onResize = useCallback(() => {
-    if (isShown && panelRef.current?.isCollapsed() === true) {
-      onCollapsed();
-    }
-  }, [isShown, onCollapsed]);
+  // Automatic sizing can report zero while the sidebar gives the preview
+  // room. Only a divider interaction means the person chose to hide it.
+  const onLayoutChanged = useCallback(
+    (_layout: Layout, meta: LayoutChangedMeta) => {
+      if (
+        meta.isUserInteraction &&
+        isShown &&
+        panelRef.current?.isCollapsed() === true
+      ) {
+        onCollapsed();
+      }
+    },
+    [isShown, onCollapsed]
+  );
 
   return {
     isAnimating: phase === "hiding" || phase === "showing",
     isMounted: phase !== "hidden",
-    onResize,
+    onLayoutChanged,
     panelRef,
   };
 }

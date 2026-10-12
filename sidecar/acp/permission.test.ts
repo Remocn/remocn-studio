@@ -10,7 +10,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect } from "effect";
-import type { AgentEvent, SessionMode } from "@/shared/ipc";
+import {
+  type AgentEvent,
+  PLUGIN_DIR_ENV,
+  type SessionMode,
+} from "@/shared/ipc";
 import { makeGate } from "../agent/gate";
 import { makeModeSwitch } from "../agent/mode";
 import type { AcpPeer } from "./connection";
@@ -21,6 +25,7 @@ import { answerPermission, reviewAcp } from "./permission";
 let root = "";
 let project = "";
 let outside = "";
+let bundle = "";
 
 const OPTIONS = [
   { kind: "allow_once", name: "Allow", optionId: "allow" },
@@ -38,9 +43,20 @@ beforeAll(async () => {
   await writeFile(join(project, "src", "Main.tsx"), "");
   await writeFile(outside, "");
   await symlink(outside, join(project, "link.txt"));
+
+  bundle = join(root, "bundle");
+  await mkdir(join(bundle, "skills", "motion-design", "rules"), {
+    recursive: true,
+  });
+  await writeFile(
+    join(bundle, "skills", "motion-design", "rules", "foundations.md"),
+    "# foundations\n"
+  );
+  process.env[PLUGIN_DIR_ENV] = bundle;
 });
 
 afterAll(async () => {
+  delete process.env[PLUGIN_DIR_ENV];
   await rm(root, { force: true, recursive: true });
 });
 
@@ -76,8 +92,18 @@ function askedId(events: AgentEvent[]): string {
   return event.id;
 }
 
-async function settled() {
-  await new Promise((resolve) => setTimeout(resolve, 10));
+// The card is raised after the gate has resolved the path, which for a
+// symlink means a realpath on disk: on a loaded CI runner that outlasted a
+// fixed 10 ms, so wait for the card itself.
+async function raised(events: readonly AgentEvent[]) {
+  const deadline = Date.now() + 5000;
+  while (events.length === 0) {
+    if (Date.now() > deadline) {
+      throw new Error("No permission card was raised within 5 s.");
+    }
+    // biome-ignore lint/performance/noAwaitInLoops: polling for the card, one tick at a time
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
 }
 
 describe("reviewAcp", () => {
@@ -127,6 +153,68 @@ describe("reviewAcp", () => {
     ).toMatchObject({ reason: "outside" });
   });
 
+  it("reads and searches the shipped bundle without a card, as Claude does", async () => {
+    const page = join(
+      bundle,
+      "skills",
+      "motion-design",
+      "rules",
+      "foundations.md"
+    );
+
+    expect(await review({ kind: "read", locations: [{ path: page }] })).toEqual(
+      { kind: "allow" }
+    );
+    expect(
+      await review({ kind: "search", locations: [{ path: bundle }] })
+    ).toEqual({ kind: "allow" });
+  });
+
+  it("still asks before anything is written into the shipped bundle", async () => {
+    const page = join(
+      bundle,
+      "skills",
+      "motion-design",
+      "rules",
+      "foundations.md"
+    );
+
+    const verdicts = await Promise.all(
+      ["edit", "delete", "move"].map((kind) =>
+        review({ kind, locations: [{ path: page }] })
+      )
+    );
+
+    for (const verdict of verdicts) {
+      expect(verdict).toMatchObject({ reason: "outside" });
+    }
+  });
+
+  it("still asks about a read outside both the folder and the bundle", async () => {
+    expect(
+      await review({ kind: "read", locations: [{ path: outside }] })
+    ).toMatchObject({ reason: "outside" });
+  });
+
+  it("treats the bundle as any other outside path when the app shipped none", async () => {
+    const page = join(
+      bundle,
+      "skills",
+      "motion-design",
+      "rules",
+      "foundations.md"
+    );
+    delete process.env[PLUGIN_DIR_ENV];
+
+    try {
+      expect(
+        await review({ kind: "read", locations: [{ path: page }] })
+      ).toMatchObject({ reason: "outside" });
+    } finally {
+      process.env[PLUGIN_DIR_ENV] = bundle;
+    }
+  });
+
   it("asks about a kind it does not recognise, and a call with no locations", async () => {
     expect(
       await review({ kind: "other", title: "Do something" })
@@ -173,7 +261,7 @@ describe("answerPermission", () => {
       },
     });
 
-    await settled();
+    await raised(events);
     expect(events.at(0)).toMatchObject({ reason: "outside" });
     await Effect.runPromise(gate.answer(askedId(events), "deny", null));
 
@@ -195,7 +283,7 @@ describe("answerPermission", () => {
       },
     });
 
-    await settled();
+    await raised(events);
     await Effect.runPromise(gate.answer(askedId(events), "allow", null));
 
     expect((await pending).outcome).toEqual({
@@ -211,7 +299,7 @@ describe("answerPermission", () => {
       options: OPTIONS,
       toolCall: { kind: "execute", title: "Run bun install" },
     });
-    await settled();
+    await raised(events);
     await Effect.runPromise(gate.answer(askedId(events), "always", null));
     expect((await first).outcome).toEqual({
       optionId: "always",
@@ -237,7 +325,7 @@ describe("answerPermission", () => {
       toolCall: { kind: "execute", title: "Run rm -rf /" },
     });
 
-    await settled();
+    await raised(events);
     await Effect.runPromise(gate.answer(askedId(events), "deny", null));
 
     expect((await pending).outcome).toEqual({
@@ -258,7 +346,7 @@ describe("answerPermission", () => {
       },
     });
 
-    await settled();
+    await raised(events);
     expect(events.at(0)).toMatchObject({
       input: { plan: "1. Build the title card" },
       reason: "plan",
@@ -275,7 +363,7 @@ describe("answerPermission", () => {
       toolCall: { kind: "switch_mode", title: "Ready to code?" },
     });
 
-    await settled();
+    await raised(events);
     expect(events.at(0)).toMatchObject({
       input: { plan: "Ready to code?" },
       reason: "plan",
@@ -296,7 +384,7 @@ describe("answerPermission", () => {
       },
     });
 
-    await settled();
+    await raised(events);
     await Effect.runPromise(
       gate.answer(askedId(events), "allow", "acceptEdits")
     );
@@ -357,7 +445,7 @@ describe("answerPermission", () => {
       }
     );
 
-    await settled();
+    await raised(events);
     await Effect.runPromise(
       gate.answer(askedId(events), "allow", "acceptEdits")
     );

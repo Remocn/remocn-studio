@@ -4,16 +4,13 @@ import {
   CheckIcon,
   CircleCheckIcon,
   CircleDashedIcon,
-  type LucideIcon,
-} from "lucide-react";
+  type Icon,
+} from "@/components/icons";
 import { DotmSquare1 } from "@/components/ui/dotm-square-1";
 import type { TaskGlyph } from "@/lib/studio/tasks";
 import { cn } from "@/lib/utils";
 
-const ICONS: Record<
-  Exclude<TaskGlyph, "finished" | "in_progress">,
-  LucideIcon
-> = {
+const ICONS: Record<Exclude<TaskGlyph, "finished" | "in_progress">, Icon> = {
   completed: CircleCheckIcon,
   pending: CircleDashedIcon,
 };
@@ -72,10 +69,10 @@ export function TaskStatusIcon({
     );
   }
 
-  const Icon = ICONS[glyph];
+  const Glyph = ICONS[glyph];
 
   return (
-    <Icon
+    <Glyph
       aria-label={LABELS[glyph]}
       className={cn("size-4 shrink-0", STATES[glyph], className)}
     />

@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGrainGradientTide",
+  "dependencies": [],
+  "description": "Teal ripple ring pulsing out of a dark sea-green core.",
+  "files": [
+    {
+      "file": "shader-grain-gradient-tide.tsx",
+      "target": "src/components/remocn/shader-grain-gradient-tide.tsx"
+    }
+  ],
+  "name": "shader-grain-gradient-tide",
+  "presetOf": "shader-grain-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "softness": 0.6,
+      "intensity": 0.3,
+      "noise": 0.2,
+      "colorBack": "#021a1f"
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Shader Grain Gradient Tide"
+}

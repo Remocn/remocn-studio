@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, ClapperboardIcon, RotateCcwIcon } from "lucide-react";
+import { CheckIcon, ClapperboardIcon, RotateCcwIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useSoundResult } from "@/hooks/use-sound-result";
@@ -42,7 +42,7 @@ export function SoundResultView({
   return (
     <section
       aria-label={`Generated ${result.request.kind === "music" ? "music" : "sound"}: ${asset.name}`}
-      className="my-1 min-w-0 rounded-xl bg-card p-4 text-card-foreground ring-1 ring-border/60"
+      className="my-1 min-w-0 rounded-xl bg-secondary p-4 text-card-foreground"
     >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <p className="flex items-center gap-1.5 font-medium text-foreground text-xs">
@@ -53,9 +53,7 @@ export function SoundResultView({
           ElevenLabs · Saved to library
         </span>
       </div>
-      <h3 className="mb-1 break-words font-medium text-base tracking-tight">
-        {asset.name}
-      </h3>
+      <h3 className="mb-1 break-words font-medium text-sm">{asset.name}</h3>
       <p
         className="mb-4 line-clamp-2 whitespace-pre-wrap break-words text-muted-foreground text-sm"
         title={result.request.text}
@@ -70,18 +68,19 @@ export function SoundResultView({
       )}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button
-          className="h-11 min-w-36 focus-visible:ring-foreground/50 motion-safe:transition-transform motion-safe:active:scale-[0.96] sm:h-10"
+          className="min-w-28"
           disabled={disabled || action.state !== "idle"}
           onClick={onUse}
+          size="sm"
           type="button"
         >
           {action.state === "sending" ? <Spinner /> : <ClapperboardIcon />}
           {ACTION_LABELS[action.state]}
         </Button>
         <Button
-          className="h-11 focus-visible:ring-foreground/50 motion-safe:transition-transform motion-safe:active:scale-[0.96] sm:h-10"
           disabled={locked}
           onClick={onRegenerate}
+          size="sm"
           type="button"
           variant="ghost"
         >

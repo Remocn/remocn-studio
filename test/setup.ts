@@ -5,6 +5,8 @@ import { cleanup, configure } from "@testing-library/react";
 import { disposeSurfaces } from "./surface";
 
 interface Utils {
+  printExpected: (value: unknown) => string;
+  printReceived: (value: unknown) => string;
   stringify: (value: unknown) => string;
 }
 
@@ -21,7 +23,7 @@ const OUTER_HTML_LIMIT = 400;
 // assertion on an element took 2.6 s to word, measured with JSC's sampler —
 // which `waitFor` pays on every poll until the element goes away. Nodes are
 // printed as their markup instead, the way pretty-format's DOM plugin does.
-function printingNodes(stringify: Utils["stringify"]): Utils["stringify"] {
+function printingNodes(print: Utils["stringify"]): Utils["stringify"] {
   return (value) => {
     if (value instanceof Element) {
       const html = value.outerHTML;
@@ -32,7 +34,7 @@ function printingNodes(stringify: Utils["stringify"]): Utils["stringify"] {
     if (value instanceof Node) {
       return value.nodeName;
     }
-    return stringify(value);
+    return print(value);
   };
 }
 
@@ -43,6 +45,8 @@ function withCheapReceived(matcher: Matcher): Matcher {
     const { utils } = this;
     if (!patched.has(utils)) {
       utils.stringify = printingNodes(utils.stringify);
+      utils.printReceived = printingNodes(utils.printReceived);
+      utils.printExpected = printingNodes(utils.printExpected);
       patched.add(utils);
     }
     return matcher.apply(this, args);

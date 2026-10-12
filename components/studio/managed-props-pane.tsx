@@ -1,8 +1,8 @@
 "use client";
 
 import { SelectControl } from "dialkit";
-import { RotateCcwIcon, XIcon } from "lucide-react";
 import { useCallback, useState } from "react";
+import { RotateCcwIcon, XIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import type { DeletionTarget } from "@/hooks/use-deletion";
@@ -74,6 +74,16 @@ export function ManagedPropsPane({
               />
             </DialKitSurface>
             <PaneActions>
+              {objects.selected?.shader ? (
+                <Button
+                  disabled={objects.busy || objects.pending > 0}
+                  onClick={objects.resetShader}
+                  size="xs"
+                  variant="ghost"
+                >
+                  Reset shader
+                </Button>
+              ) : null}
               {onDelete === undefined ? null : (
                 <DeleteAction onDelete={onDelete} target={deletion} />
               )}

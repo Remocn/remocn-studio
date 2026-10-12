@@ -1,7 +1,7 @@
 "use client";
 
-import { Trash2Icon } from "lucide-react";
 import type { PointerEvent } from "react";
+import { Trash2Icon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,

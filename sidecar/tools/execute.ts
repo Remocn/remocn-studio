@@ -262,7 +262,7 @@ async function requestSource(
   const result = await pipeline.requestSource(
     args as { attempt: string; name: string; source: string }
   );
-  return JSON.stringify(result, null, 2);
+  return JSON.stringify(result);
 }
 
 async function designCheck(
@@ -331,7 +331,7 @@ async function designCheck(
         ),
       ],
     };
-    return JSON.stringify({ ...result, readiness }, null, 2);
+    return JSON.stringify({ ...result, readiness });
   }
   const merged: DesignResult = {
     ...result,
@@ -343,7 +343,7 @@ async function designCheck(
     },
   };
 
-  return JSON.stringify(merged, null, 2);
+  return JSON.stringify(merged);
 }
 
 function counted(
@@ -433,7 +433,7 @@ async function searchStock(
       ? ""
       : `\n\nMore results exist — pass page: ${page.nextPage} for the next ones.`;
 
-  return `${JSON.stringify(items, null, 2)}${tail}`;
+  return `${JSON.stringify(items)}${tail}`;
 }
 
 async function getMoodboard(moodboard: MoodboardCalls): Promise<string> {

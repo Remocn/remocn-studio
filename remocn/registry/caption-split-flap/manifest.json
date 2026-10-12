@@ -1,0 +1,40 @@
+{
+  "category": "Captions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/captions"
+  ],
+  "description": "Every letter sits on its own flap tile and clatters through a few characters before landing the moment the word is spoken, like a station departure board.",
+  "files": [
+    {
+      "file": "caption-split-flap.tsx",
+      "target": "src/components/remocn/caption-split-flap.tsx"
+    }
+  ],
+  "name": "caption-split-flap",
+  "preview": {
+    "durationInFrames": 279,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "defaults": {
+      "captions": "So here's the thing. Most demo videos lose people in the first three seconds. Captions keep them watching, even with the sound off.",
+      "fontSize": 56,
+      "fontWeight": 800,
+      "color": "#ffffff",
+      "tileColor": "#111111",
+      "combineTokensWithinMilliseconds": 1000,
+      "holdMs": 600
+    }
+  },
+  "registryDependencies": [
+    "caption-core"
+  ],
+  "sourcePin": "d6cd742fa4f3ab0a74fecf2ac93f1542fa2ea8f7",
+  "title": "Caption Split Flap"
+}

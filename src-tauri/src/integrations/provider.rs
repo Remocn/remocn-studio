@@ -171,7 +171,7 @@ pub mod fake {
     impl Secrets for Vault {
         fn store(&self, reference: &str, secret: &str) -> Result<(), String> {
             if *self.refuses.lock().expect("the fake is not poisoned") {
-                return Err("The keychain refused: it is locked.".to_string());
+                return Err("The system keyring refused: it is locked.".to_string());
             }
 
             let mut held = self.held();

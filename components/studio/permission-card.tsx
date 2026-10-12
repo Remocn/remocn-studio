@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+import { Button } from "@/components/ui/button";
 import { usePermissionCard } from "@/hooks/use-permission-card";
 import { toolTarget } from "@/lib/studio/activity";
 import { type PermissionAction, planText } from "@/lib/studio/permission";
@@ -26,6 +28,7 @@ export function PermissionCard({
   ) => void;
   permission: PendingPermission;
 }) {
+  const descriptionId = useId();
   const card = usePermissionCard(permission, asks, onAnswer);
   const plan = permission.reason === "plan" ? planText(permission.input) : null;
   const target =
@@ -34,7 +37,6 @@ export function PermissionCard({
   return (
     <Card
       aria-label={card.title}
-      className="bg-input/50 ring-none"
       data-slot="permission-card"
       onKeyDown={card.onKeyDown}
     >
@@ -88,30 +90,30 @@ export function PermissionCard({
       </CardHeader>
 
       <CardContent className="p-4">
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1.5">
           {card.choices.map((choice, index) => (
-            <button
-              className="-mx-1 flex items-baseline gap-2 rounded-md px-2 py-1.5 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted/80 disabled:pointer-events-none disabled:opacity-50"
+            <Button
+              aria-describedby={`${descriptionId}-${choice.id}`}
+              aria-label={choice.label}
+              className={cn(
+                "h-auto min-h-9 pointer-coarse:min-h-11 whitespace-normal px-2.5 py-2",
+                choice.action === "cancel" &&
+                  "mt-2.5 text-destructive-foreground"
+              )}
               disabled={choice.disabled === true}
               key={choice.id}
               onClick={card.onChoose}
               ref={index === 0 ? card.first : undefined}
+              title={choice.description}
               type="button"
               value={choice.id}
+              variant={index === 0 ? "default" : "ghost"}
             >
-              <span
-                className={cn(
-                  "shrink-0 text-sm",
-                  index === 0 && "font-medium",
-                  choice.action === "cancel" && "text-destructive"
-                )}
-              >
-                {choice.label}
-              </span>
-              <span className="min-w-0 text-pretty text-muted-foreground text-xs">
+              {choice.label}
+              <span className="sr-only" id={`${descriptionId}-${choice.id}`}>
                 {choice.description}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
       </CardContent>

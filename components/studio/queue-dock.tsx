@@ -1,7 +1,7 @@
 "use client";
 
-import { ClockIcon, XIcon } from "lucide-react";
 import { memo } from "react";
+import { ClockIcon, XIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import type { Queue } from "@/hooks/use-queue";
@@ -37,7 +37,7 @@ function QueueDockBlock({ queue }: { queue: Queue }) {
                 rows wrap: a queue you cannot read is not a queue you can edit,
                 and the block is free to grow downwards once it is open. */}
             <button
-              className="wrap-break-word min-w-0 flex-1 text-pretty rounded-md px-2 py-1.5 text-left text-sm leading-snug outline-none focus-visible:ring-2 focus-visible:ring-ring/50 enabled:active:bg-muted enabled:hover:bg-muted/60 disabled:cursor-default"
+              className="wrap-break-word min-w-0 flex-1 text-pretty rounded-md px-2 py-1.5 text-left text-sm leading-snug outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 enabled:active:bg-accent enabled:hover:bg-accent disabled:cursor-default"
               disabled={!queue.canEdit}
               onClick={queue.onEdit}
               title={editTitle(queue.canEdit)}

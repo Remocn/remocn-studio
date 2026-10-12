@@ -1,8 +1,9 @@
-import { describe, expect, it, mock } from "bun:test";
+import { afterEach, describe, expect, it, mock } from "bun:test";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useChatRowMenu, useVideoRowMenu } from "@/hooks/use-row-menus";
 import type { VideoMenu } from "@/hooks/use-video-menu";
 import type { Video } from "@/shared/ipc";
+import { LINUX, MAC, withAgent } from "@/test/user-agent";
 
 function ChatRow({
   canDelete,
@@ -90,6 +91,42 @@ describe("useVideoRowMenu", () => {
     expect(menu.openRename).toHaveBeenCalledTimes(1);
 
     fireEvent.keyDown(row, { key: "Backspace", metaKey: true });
+    expect(menu.openRemove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("the row shortcuts on Linux", () => {
+  afterEach(() => {
+    withAgent(MAC);
+  });
+
+  it("deletes a chat and asks to delete a video on Ctrl+Backspace", () => {
+    withAgent(LINUX);
+    const onDelete = mock();
+    const menu = videoMenu();
+    render(
+      <>
+        <ChatRow canDelete onDelete={onDelete} />
+        <VideoRow menu={menu} />
+      </>
+    );
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Chat" }), {
+      key: "Backspace",
+      metaKey: true,
+    });
+    expect(onDelete).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Chat" }), {
+      ctrlKey: true,
+      key: "Backspace",
+    });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Intro" }), {
+      ctrlKey: true,
+      key: "Delete",
+    });
+
+    expect(onDelete).toHaveBeenCalledTimes(1);
     expect(menu.openRemove).toHaveBeenCalledTimes(1);
   });
 });

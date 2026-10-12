@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderSwirlLilac",
+  "dependencies": [],
+  "description": "Dreamy lilac and baby-blue swirl around a dark eye.",
+  "files": [
+    {
+      "file": "shader-swirl-lilac.tsx",
+      "target": "src/components/remocn/shader-swirl-lilac.tsx"
+    }
+  ],
+  "name": "shader-swirl-lilac",
+  "presetOf": "shader-swirl",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "bandCount": 2,
+      "twist": 0.1,
+      "softness": 1,
+      "colorBack": "#2e1a47"
+    }
+  },
+  "registryDependencies": [
+    "shader-swirl"
+  ],
+  "title": "Shader Swirl Lilac"
+}

@@ -323,6 +323,9 @@ describe("executeTool", () => {
       frames: [30, 90],
     });
     expect(asked).toEqual([[]]);
+    // Every later request in the turn re-reads this text; indentation was a
+    // quarter to a half of it.
+    expect(answer.text).not.toContain("\n ");
   });
 
   it("passes typed motion assertions through to the design check", async () => {
@@ -541,9 +544,9 @@ describe("executeTool", () => {
 
     expect(answer.isError).toBe(false);
     expect(answer.text).toContain(
-      '"download": "https://images.pexels.com/photos/42/warm.jpeg"'
+      '"download":"https://images.pexels.com/photos/42/warm.jpeg"'
     );
-    expect(answer.text).toContain('"pageUrl": "https://pexels.com/photo/42"');
+    expect(answer.text).toContain('"pageUrl":"https://pexels.com/photo/42"');
     expect(answer.text).not.toContain("thumb.jpeg");
     expect(answer.text).toContain("pass page: 2");
   });

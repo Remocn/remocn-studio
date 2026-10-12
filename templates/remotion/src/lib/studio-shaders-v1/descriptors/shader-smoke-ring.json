@@ -1,0 +1,215 @@
+{
+  "adapter": "paper",
+  "definition": {
+    "fields": [
+      {
+        "id": "colorBack",
+        "label": "Color Back",
+        "type": "color",
+        "default": "#12121a",
+        "group": "Colors"
+      },
+      {
+        "id": "colors",
+        "label": "Colors",
+        "type": "palette",
+        "default": ["#c8c8d0"],
+        "group": "Colors",
+        "minItems": 1,
+        "maxItems": 10
+      },
+      {
+        "id": "noiseScale",
+        "label": "Noise Scale",
+        "type": "number",
+        "default": 3,
+        "min": 0.01,
+        "max": 5,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "thickness",
+        "label": "Thickness",
+        "type": "number",
+        "default": 0.65,
+        "min": 0.01,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "radius",
+        "label": "Radius",
+        "type": "number",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "innerShape",
+        "label": "Inner Shape",
+        "type": "number",
+        "default": 0.7,
+        "min": 0,
+        "max": 4,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "noiseIterations",
+        "label": "Noise Iterations",
+        "type": "number",
+        "default": 8,
+        "min": 1,
+        "max": 8,
+        "step": 1,
+        "group": "Appearance",
+        "integer": true
+      },
+      {
+        "default": 1,
+        "group": "Animation",
+        "id": "speed",
+        "label": "Speed",
+        "max": 5,
+        "min": -5,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0.8,
+        "group": "Pattern",
+        "id": "scale",
+        "label": "Scale",
+        "max": 4,
+        "min": 0.01,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Pattern",
+        "id": "rotation",
+        "label": "Rotation",
+        "max": 360,
+        "min": 0,
+        "step": 1,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Pattern",
+        "id": "offsetX",
+        "label": "Horizontal offset",
+        "max": 1,
+        "min": -1,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Pattern",
+        "id": "offsetY",
+        "label": "Vertical offset",
+        "max": 1,
+        "min": -1,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0.5,
+        "group": "Pattern",
+        "id": "originX",
+        "label": "Horizontal origin",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0.5,
+        "group": "Pattern",
+        "id": "originY",
+        "label": "Vertical origin",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": "cover",
+        "group": "Pattern",
+        "id": "fit",
+        "label": "Fit",
+        "options": ["none", "contain", "cover"],
+        "type": "enum"
+      },
+      {
+        "default": 1,
+        "group": "Layer",
+        "id": "opacity",
+        "label": "Opacity",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Layer",
+        "id": "order",
+        "integer": true,
+        "label": "Layer order",
+        "min": 0,
+        "step": 1,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Timing",
+        "id": "startFrame",
+        "integer": true,
+        "label": "Start",
+        "min": 0,
+        "step": 1,
+        "type": "number",
+        "unit": "frames"
+      },
+      {
+        "default": true,
+        "group": "Timing",
+        "id": "followSceneEnd",
+        "label": "Follow scene end",
+        "type": "boolean"
+      },
+      {
+        "availableWhen": {
+          "field": "followSceneEnd",
+          "operator": "equals",
+          "reason": "Turn off Follow scene end to trim the end.",
+          "value": false
+        },
+        "default": 1,
+        "group": "Timing",
+        "id": "endFrame",
+        "integer": true,
+        "label": "End",
+        "min": 1,
+        "step": 1,
+        "type": "number",
+        "unit": "frames"
+      }
+    ],
+    "id": "shader-smoke-ring-paper-0-0-78-v1",
+    "version": 1
+  },
+  "exportName": "SmokeRing",
+  "packageVersion": "0.0.78",
+  "revision": "paper-0-0-78-v1",
+  "slug": "shader-smoke-ring",
+  "title": "Smoke Ring",
+  "version": 1
+}

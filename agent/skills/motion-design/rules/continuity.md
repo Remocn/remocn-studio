@@ -26,6 +26,15 @@ before, during and after the handoff for duplicate objects, seams, unintended
 translucency and jumps. A crossfade between two opaque shapes may expose both;
 use ownership or masking when the intended object should remain solid.
 
+Two semi-transparent layouts over each other read as one muddy image with doubled
+text. Fade the outgoing layout out before the incoming fades in, or keep the overlap
+to a few frames in the fastest part of an accompanying move. `TransitionSeries`
+`fade()` lays the incoming scene over an outgoing one held at full opacity unless
+`shouldFadeOutExitingScene` is set, so text doubles either way; drive both opacities
+yourself when text is involved. Check for frames where the incoming layer sits
+between about 0.1 and 0.9 opacity while the outgoing one is still visible beneath.
+A dissolve whose blend is the meaning keeps its overlap.
+
 Mount a persistent bridge outside the Series boundaries it crosses. Matching DOM
 ids or a shared background alone does not prove perceptual continuity; the viewer
 must still understand the relationship between subjects.

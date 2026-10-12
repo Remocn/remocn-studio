@@ -1,14 +1,15 @@
 "use client";
 
+import type { MouseEvent } from "react";
+import { memo, useId } from "react";
 import {
   ChevronRight,
   CircleAlertIcon,
   CircleQuestionMarkIcon,
+  ClapperboardIcon,
   FileQuestionIcon,
   SquarePenIcon,
-} from "lucide-react";
-import type { MouseEvent } from "react";
-import { memo } from "react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { DotmSquare1 } from "@/components/ui/dotm-square-1";
 import {
@@ -33,6 +34,7 @@ import { VideoMenu } from "./video-menu";
 function VideoGroupBlock({
   activeSessionId,
   commands,
+  compact = false,
   group,
   isExpanded,
   now,
@@ -44,6 +46,7 @@ function VideoGroupBlock({
 }: {
   activeSessionId: string | null;
   commands: VideoCommands;
+  compact?: boolean;
   group: PaneGroup;
   isExpanded: boolean;
   now: number;
@@ -55,7 +58,10 @@ function VideoGroupBlock({
 }) {
   const { hidden, isFull, toggle, visible } = useVisibleSessions(group);
   const { video } = group;
-  const panelId = `video-${video.id}`;
+  const panelId = useId();
+  const rows = compact
+    ? group.rows.toSorted((a, b) => b.session.updatedAt - a.session.updatedAt)
+    : visible;
   const menu = useVideoMenu(video, commands);
   const rowMenu = useVideoRowMenu(video, menu);
 
@@ -68,7 +74,10 @@ function VideoGroupBlock({
           "the open chat determines everything" exists to prevent. */}
       <SidebarMenuButton
         aria-keyshortcuts="F2 Meta+Backspace"
-        className="pr-20 font-medium hover:bg-sidebar-accent/40 active:bg-sidebar-accent/40"
+        className={cn(
+          "pr-20 font-medium hover:bg-accent active:bg-accent",
+          compact && "h-7 gap-2 px-2 pr-20 font-normal"
+        )}
         data-row-action="open"
         onClick={onOpen}
         onContextMenu={rowMenu.onContextMenu}
@@ -78,6 +87,7 @@ function VideoGroupBlock({
         {/* Only the name dims for a video the bundle no longer names: its
             chats are still worth reading, so the chevron and the menu keep
             full contrast. */}
+        {compact ? <ClapperboardIcon className="size-4 shrink-0" /> : null}
         <span
           className={cn(
             "min-w-0 flex-1 truncate",
@@ -102,13 +112,18 @@ function VideoGroupBlock({
         {isExpanded ? null : <Rollup rollup={group.rollup} />}
       </SidebarMenuButton>
 
-      <div className="absolute top-1 right-1 flex items-center">
+      <div
+        className={cn(
+          "absolute top-1 right-1 flex items-center",
+          compact && "top-0.5 gap-0.5"
+        )}
+      >
         {/* `has-[[data-popup-open]]` keeps the cluster visible while its menu
             is open: the popup is portalled, so hover and focus-within both
             read false the moment it opens. The chevron sits outside it, at the
             row's own right edge, because it is not a hover affordance — it is
             the other half of the gesture. */}
-        <div className="flex items-center opacity-0 focus-within:opacity-100 group-hover/menu-item:opacity-100 has-[[data-popup-open]]:opacity-100">
+        <div className="flex items-center gap-[inherit] opacity-0 pointer-coarse:opacity-100 focus-within:opacity-100 group-hover/menu-item:opacity-100 has-[[data-popup-open]]:opacity-100">
           <Tooltip>
             <TooltipTrigger
               render={
@@ -152,18 +167,20 @@ function VideoGroupBlock({
       </div>
 
       {isExpanded ? (
-        // The sub-list keeps its semantics but drops its rail and indent: a
-        // chat title lines up with the video name above it, one level.
         // `role="list"` survives preflight's list-style:none, which WKWebView
         // otherwise takes as a reason to drop list semantics entirely.
         <SidebarMenuSub
-          className="mx-0 translate-x-0 gap-0.5 border-l-0 px-0"
+          className={cn(
+            "mx-0 translate-x-0 gap-0.5 border-l-0 px-0",
+            compact && "ml-3 gap-0 border-l pl-1"
+          )}
           id={panelId}
           role="list"
         >
-          {visible.map((row) => (
+          {rows.map((row) => (
             <SidebarMenuSubItem key={row.session.id}>
               <SessionItem
+                compact={compact}
                 isActive={row.session.id === activeSessionId}
                 now={now}
                 onRemove={onRemoveSession}
@@ -179,10 +196,10 @@ function VideoGroupBlock({
             </SidebarMenuSubItem>
           ) : null}
 
-          {hidden > 0 || isFull ? (
+          {!compact && (hidden > 0 || isFull) ? (
             <SidebarMenuSubItem>
               <Button
-                className="w-full justify-start pl-7 text-muted-foreground text-xs hover:bg-transparent hover:text-foreground"
+                className="w-full justify-start pl-7 text-muted-foreground text-xs hover:bg-accent hover:text-foreground"
                 onClick={toggle}
                 size="sm"
                 variant="ghost"

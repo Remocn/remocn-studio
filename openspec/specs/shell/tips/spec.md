@@ -1,139 +1,70 @@
 # shell/tips Specification
 
 ## Purpose
-Anchored one-card tips for the parts of the studio nobody finds on their own, each shown the first time its feature is genuinely usable rather than as a tour at first launch, one at a time, and never again once it is answered.
+A six-chapter feature overview for the parts of the studio nobody finds on their own: a modal of still pictures of the real interface that opens once, on a cover, when the workspace is idle, and can be replayed from Settings at any time.
 
 ## Requirements
 
-### Requirement: A tip appears when its feature does, not at first launch
+### Requirement: A six-chapter feature overview replaces tips
+The webview SHALL offer Inspect and properties, Snapshot, Assets and stock, Components, Brand and DESIGN.md, and Export, in that order, each with one bundled still of the real Studio interface — the parts the chapter is about in focus, the rest dimmed and blurred — and a short English chapter label, a benefit-first title and one or two sentences on how to use it. It SHALL NOT include project/chat tutorials, background work or unfinished integrations.
 
-Each tip SHALL become available only while the thing it points at is on screen and usable, which is also what guarantees its anchor exists. No tip SHALL be available before a project is open.
+#### Scenario: Choosing a chapter
+- **WHEN** a person chooses any chapter or uses Back/Next
+- **THEN** its still appears in place of the previous one and the chosen chapter is remembered
 
-#### Scenario: Nothing is open
+### Requirement: Introduction waits for an idle workspace
+The overview SHALL open automatically only after settings load, a working project opens, setup completes and no task or blocking surface needs attention. Closing via X, Escape, Skip or Done SHALL persist dismissal; an outside click SHALL NOT dismiss it.
 
-- **WHEN** no project is open
-- **THEN** no tip is available, whatever else is on screen
+#### Scenario: Setup or work in progress
+- **WHEN** the project is not ready, settings are loading, Settings is open, or a task/blocker is active
+- **THEN** the automatic overview is withheld until those conditions clear
 
-#### Scenario: The preview has not compiled yet
+#### Scenario: Returning after closing
+- **WHEN** the person closes the overview and restarts
+- **THEN** it does not automatically return, even if some chapters were not viewed
 
-- **WHEN** a project is open but the preview is not yet serving this chat's project
-- **THEN** the Inspect and Snapshot tips are withheld
-- **AND** they become available once the preview's tools are live
+#### Scenario: Persistence fails
+- **WHEN** saving an overview preference fails
+- **THEN** a plain-language notice and retry action remain available
 
-#### Scenario: A feature whose pane is hidden
+### Requirement: Replay is always available
+Settings SHALL offer Explore Studio regardless of previous viewing, project availability or setup problems; an explicit request takes precedence over automatic-show blockers. It SHALL reopen the last selected chapter. Old tip answers SHALL NOT mark this overview dismissed.
 
-- **WHEN** the sidebar is hidden
-- **THEN** the tips anchored inside it are withheld
+#### Scenario: Older installation
+- **WHEN** an installation has answered old tips but never dismissed the overview
+- **THEN** it receives the new overview once an idle workspace is ready
 
-#### Scenario: The plan strip
+#### Scenario: Unknown saved chapter
+- **WHEN** the stored chapter is unavailable
+- **THEN** the overview opens Inspect
 
-- **WHEN** the agent has written no plan
-- **THEN** the plan tip is withheld, and it becomes available once a plan is on screen
+### Requirement: A picture never blocks learning
+Each chapter SHALL show a single still, bundled for offline use, at the size the stills were made for. Nothing SHALL play, move on its own or advance chapters.
 
-### Requirement: One tip at a time, in catalog order
+#### Scenario: The picture fails to load
+- **WHEN** a chapter's still cannot load
+- **THEN** a short notice with Retry replaces it and chapter navigation remains usable
 
-The studio SHALL offer at most one tip at any moment. When several features become available together, the earlier entry in the catalog SHALL be the one shown, and the next SHALL only be offered once the one before it has been answered or dismissed.
+### Requirement: The first showing opens on a cover
+When the overview opens automatically, it SHALL first show a cover — the Studio mark, a welcome line and a fanned stack of chapter stills — with Take the tour and Skip. Opening it from Settings SHALL skip the cover and show the last chapter. Previous on the first chapter SHALL return to the cover.
 
-#### Scenario: Everything is available at once
+#### Scenario: First run
+- **WHEN** the overview opens automatically
+- **THEN** the cover is shown, and Take the tour opens chapter one
 
-- **WHEN** every feature a tip points at is on screen
-- **THEN** exactly one tip is shown, the first in the catalog
+#### Scenario: Replay from Settings
+- **WHEN** the person chooses Explore Studio in Settings
+- **THEN** the last selected chapter is shown without the cover
 
-#### Scenario: Answering one
+### Requirement: Overview is keyboard accessible and fits the window
+The modal SHALL use a wide layout: the chapter's position, title and explanation on one side and its still on the other, the whole dialog centred in the window and never scrolling sideways. Chapters SHALL be chosen from a row of six segments that also shows progress; there SHALL be no side list. Chapter labels SHALL remain readable in both themes with a neutral selected state and constant font weight. The modal SHALL hold focus, support keyboard navigation, restore focus when closed and provide compact chapter selection on narrow windows.
 
-- **WHEN** the shown tip is answered
-- **THEN** the next available tip in catalog order is offered
+#### Scenario: Closing from Settings
+- **WHEN** the person closes the overview opened from Settings
+- **THEN** focus returns to Explore Studio
 
-#### Scenario: A tip whose feature is not there
 
-- **WHEN** the next entry's feature is unavailable
-- **THEN** it is skipped and the one after it is offered, rather than nothing being offered at all
-
-### Requirement: Nothing competes with something already asking
-
-Every tip SHALL be withheld while something else is asking to be answered — a permission card, an asset-source ask, a blocking environment check, the new-project or new-video wizard, Settings, or the trial card.
-
-#### Scenario: A permission card is up
-
-- **WHEN** a turn is waiting on a permission card
-- **THEN** no tip is shown, whatever is available
-
-#### Scenario: Settings is open
-
-- **WHEN** Settings is open
-- **THEN** no tip is shown, and the first available one arrives after it is closed
-
-### Requirement: A tip points at its own anchor, or shows nothing
-
-A tip SHALL be positioned against the element that carries its own identifier, and SHALL show nothing at all when that element is not on the page rather than floating a card in the middle of the window. While a tip is shown, the rest of the window SHALL be dimmed behind it.
-
-#### Scenario: The anchor is on screen
-
-- **WHEN** a tip becomes available
-- **THEN** the card is placed against its anchor on the side the catalog names
-- **AND** the window behind it is dimmed
-
-#### Scenario: The anchor cannot be found
-
-- **WHEN** the element the tip names is not on the page
-- **THEN** no card and no dimming are drawn
-
-#### Scenario: The feature goes away while the tip is waiting
-
-- **WHEN** the feature becomes unavailable before its tip has appeared
-- **THEN** the tip is dropped rather than shown about something that is no longer there
-
-### Requirement: "Got it" is remembered, clicking away is not
-
-*Got it* SHALL record the tip as answered in `toursSeen` in `settings.json`, so it is never offered again. An outside press or Escape SHALL drop the tip for this launch only and SHALL write nothing.
-
-#### Scenario: Answering a tip
-
-- **WHEN** *Got it* is pressed
-- **THEN** the tip is written down as answered and is not offered on the next launch
-
-#### Scenario: Clicking away
-
-- **WHEN** the person presses outside the card or presses Escape
-- **THEN** the tip disappears for this launch and nothing is written
-- **AND** it is offered again on the next launch
-
-#### Scenario: A stored id the catalog no longer carries
-
-- **WHEN** the stored list names a tip this build does not ship
-- **THEN** it is ignored and the remaining tips are offered in order
-
-#### Scenario: The studio does not yet know what was answered
-
-- **WHEN** the stored settings have not been read yet
-- **THEN** no tip is shown
-
-### Requirement: "Show me" only reveals, and counts as an answer
-
-A tip's action SHALL be limited to revealing something the person could reach themselves in one click and undo the same way — opening the Assets or the Components view, or the plan drawer. It SHALL NOT arm a mode. Using it SHALL also count as answering the tip.
-
-#### Scenario: The library tip's action
-
-- **WHEN** *Show me* is pressed on the library tip
-- **THEN** the sidebar switches to Assets
-- **AND** the tip is recorded as answered
-
-#### Scenario: The Inspect tip
-
-- **WHEN** the Inspect tip is shown
-- **THEN** it offers no action at all, and arming Inspect is never offered from a tip
-
-### Requirement: Tips can be replayed from Settings
-
-Settings › Behavior SHALL offer *Replay tips*, which forgets every answered tip so each is offered again. It SHALL be unavailable while nothing has been answered.
-
-#### Scenario: Replaying
-
-- **WHEN** *Replay tips* is pressed
-- **THEN** the answered list is emptied and written empty
-- **AND** the first available tip is offered once Settings is closed
-
-#### Scenario: Nothing has been answered
-
-- **WHEN** no tip has ever been answered
-- **THEN** *Replay tips* is unavailable
+#### Scenario: Chapter transition
+- **WHEN** a person chooses another chapter with a pointer
+- **THEN** the selection highlight moves to the chapter and its still fades in with a small directional hint
+- **AND** keyboard chapter changes are instant and reduced motion removes positional movement

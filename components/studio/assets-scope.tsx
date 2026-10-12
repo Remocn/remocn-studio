@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderIcon, ImageIcon, VideoIcon } from "lucide-react";
+import { FolderIcon, ImageIcon, VideoIcon } from "@/components/icons";
 import type { AssetScope, AssetsScope } from "@/hooks/use-assets-scope";
 import { cn } from "@/lib/utils";
 
@@ -16,20 +16,31 @@ const SCOPE_ICONS = {
   video: VideoIcon,
 } as const;
 
-// One three-way control instead of two stacked toggles: where assets come
-// from and which stock kind are a single choice, and the control shares the
-// search field's height and ring so the header reads as one family.
-export function AssetsScopeSwitch({ scope }: { scope: AssetsScope }) {
+// Keep source selection compact; search below owns the available width.
+export function AssetsScopeSwitch({
+  scope,
+  vertical = false,
+}: {
+  scope: AssetsScope;
+  vertical?: boolean;
+}) {
   return (
-    <div className="px-1">
-      <div className="flex h-9 rounded-md bg-input/30 p-0.5 ring-1 ring-border ring-inset sm:h-8">
+    <nav aria-label="Asset sources" className={vertical ? "" : "px-1"}>
+      <div
+        className={
+          vertical
+            ? "flex flex-col"
+            : "grid min-h-7 grid-cols-3 items-center gap-1"
+        }
+      >
         {(["library", "photo", "video"] as const).map((entry) => {
           const Icon = SCOPE_ICONS[entry];
           return (
             <button
               aria-pressed={scope.scope === entry}
               className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-sm text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
+                "flex h-7 pointer-coarse:h-11 items-center justify-center gap-1 rounded-md px-1 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2",
+                vertical && "justify-start! w-full gap-2",
                 scope.scope === entry
                   ? "bg-accent text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -45,6 +56,6 @@ export function AssetsScopeSwitch({ scope }: { scope: AssetsScope }) {
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

@@ -148,3 +148,10 @@ describe("canvas settings", () => {
     expect(readCanvasCamera("video-10")).toEqual({ x: 5, y: 5, zoom: 3 });
   });
 });
+
+it("restores Captions and discards an unsupported pane value", async () => {
+  store([["paneView", "captions"]]);
+  expect((await Effect.runPromise(hydrateSettings)).paneView).toBe("captions");
+  store([["paneView", "unknown-pane"]]);
+  expect((await Effect.runPromise(hydrateSettings)).paneView).toBeNull();
+});

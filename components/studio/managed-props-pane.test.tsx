@@ -7,6 +7,7 @@ import { ManagedPropsPane } from "./managed-props-pane";
 
 function fixture(): ManagedObjects {
   return {
+    acceptInserted: () => true,
     acceptsPreview: () => true,
     awaitingPreview: false,
     busy: false,
@@ -34,6 +35,7 @@ function fixture(): ManagedObjects {
     pending: 0,
     reload: mock(),
     remove: mock(() => Promise.resolve(null)),
+    resetShader: () => undefined,
     retry: mock(),
     select: mock(),
     selected: documentFixture.objects[2],
@@ -463,4 +465,54 @@ it("keeps focus in the field when Delete is pressed, so a draft is dropped rathe
     screen.getByRole("button", { name: "Delete" })
   );
   expect(pressed).toBe(false);
+});
+
+it("explains a dependent shader control and resets through the managed action", () => {
+  const objects = fixture();
+  objects.resetShader = mock();
+  objects.selected = {
+    ...documentFixture.objects[0],
+    shader: {
+      revision: "v1",
+      slotId: "root-shaders",
+      slug: "shader-mesh-gradient",
+    },
+  };
+  objects.fields = [
+    {
+      default: true,
+      error: null,
+      group: "Timing",
+      id: "followSceneEnd",
+      label: "Follow scene end",
+      saving: false,
+      type: "boolean",
+      value: true,
+    },
+    {
+      availableWhen: {
+        field: "followSceneEnd",
+        operator: "equals",
+        reason: "Turn off Follow scene end to trim the end.",
+        value: false,
+      },
+      default: 150,
+      error: null,
+      group: "Timing",
+      id: "endFrame",
+      label: "End",
+      saving: false,
+      type: "number",
+      unit: "frames",
+      value: 150,
+    },
+  ];
+  render(<ManagedPropsPane fps={30} objects={objects} />);
+  fireEvent.click(screen.getByRole("tab", { name: "Animation" }));
+  expect(
+    screen.getByText("Turn off Follow scene end to trim the end.")
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("End property")).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Reset shader" }));
+  expect(objects.resetShader).toHaveBeenCalledTimes(1);
 });

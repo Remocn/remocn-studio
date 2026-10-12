@@ -1,8 +1,12 @@
 "use client";
 
-import { FileCode2Icon, MousePointerClickIcon, XIcon } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useCallback } from "react";
+import {
+  FileCode2Icon,
+  MousePointerClickIcon,
+  XIcon,
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -94,7 +98,7 @@ function SelectionChip({
   );
 
   return (
-    <span className="flex items-center rounded-md border bg-muted pr-0.5 text-xs">
+    <span className="flex items-center rounded-md bg-muted pr-0.5 text-xs">
       <Tooltip>
         <TooltipTrigger
           render={

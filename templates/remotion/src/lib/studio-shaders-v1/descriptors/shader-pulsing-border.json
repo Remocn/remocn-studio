@@ -1,0 +1,319 @@
+{
+  "adapter": "paper",
+  "definition": {
+    "fields": [
+      {
+        "id": "colorBack",
+        "label": "Color Back",
+        "type": "color",
+        "default": "#12121a",
+        "group": "Colors"
+      },
+      {
+        "id": "colors",
+        "label": "Colors",
+        "type": "palette",
+        "default": ["#52527a", "#8a8a95", "#3a3a5c"],
+        "group": "Colors",
+        "minItems": 1,
+        "maxItems": 5
+      },
+      {
+        "id": "roundness",
+        "label": "Roundness",
+        "type": "number",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "thickness",
+        "label": "Thickness",
+        "type": "number",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "marginLeft",
+        "label": "Margin Left",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "marginRight",
+        "label": "Margin Right",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "marginTop",
+        "label": "Margin Top",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "marginBottom",
+        "label": "Margin Bottom",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "aspectRatio",
+        "label": "Aspect Ratio",
+        "type": "enum",
+        "default": "auto",
+        "group": "Appearance",
+        "options": ["auto", "square"]
+      },
+      {
+        "id": "softness",
+        "label": "Softness",
+        "type": "number",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "intensity",
+        "label": "Intensity",
+        "type": "number",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "bloom",
+        "label": "Bloom",
+        "type": "number",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "spots",
+        "label": "Spots",
+        "type": "number",
+        "default": 5,
+        "min": 1,
+        "max": 20,
+        "step": 1,
+        "group": "Appearance",
+        "integer": true
+      },
+      {
+        "id": "spotSize",
+        "label": "Spot Size",
+        "type": "number",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "pulse",
+        "label": "Pulse",
+        "type": "number",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "smoke",
+        "label": "Smoke",
+        "type": "number",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "smokeSize",
+        "label": "Smoke Size",
+        "type": "number",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "group": "Appearance",
+        "availableWhen": {
+          "field": "smoke",
+          "operator": "greaterThan",
+          "value": 0,
+          "reason": "Increase Smoke to adjust its size."
+        }
+      },
+      {
+        "default": 1,
+        "group": "Animation",
+        "id": "speed",
+        "label": "Speed",
+        "max": 5,
+        "min": -5,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0.6,
+        "group": "Pattern",
+        "id": "scale",
+        "label": "Scale",
+        "max": 4,
+        "min": 0.01,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Pattern",
+        "id": "rotation",
+        "label": "Rotation",
+        "max": 360,
+        "min": 0,
+        "step": 1,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Pattern",
+        "id": "offsetX",
+        "label": "Horizontal offset",
+        "max": 1,
+        "min": -1,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Pattern",
+        "id": "offsetY",
+        "label": "Vertical offset",
+        "max": 1,
+        "min": -1,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0.5,
+        "group": "Pattern",
+        "id": "originX",
+        "label": "Horizontal origin",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0.5,
+        "group": "Pattern",
+        "id": "originY",
+        "label": "Vertical origin",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": "cover",
+        "group": "Pattern",
+        "id": "fit",
+        "label": "Fit",
+        "options": ["none", "contain", "cover"],
+        "type": "enum"
+      },
+      {
+        "default": 1,
+        "group": "Layer",
+        "id": "opacity",
+        "label": "Opacity",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Layer",
+        "id": "order",
+        "integer": true,
+        "label": "Layer order",
+        "min": 0,
+        "step": 1,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Timing",
+        "id": "startFrame",
+        "integer": true,
+        "label": "Start",
+        "min": 0,
+        "step": 1,
+        "type": "number",
+        "unit": "frames"
+      },
+      {
+        "default": true,
+        "group": "Timing",
+        "id": "followSceneEnd",
+        "label": "Follow scene end",
+        "type": "boolean"
+      },
+      {
+        "availableWhen": {
+          "field": "followSceneEnd",
+          "operator": "equals",
+          "reason": "Turn off Follow scene end to trim the end.",
+          "value": false
+        },
+        "default": 1,
+        "group": "Timing",
+        "id": "endFrame",
+        "integer": true,
+        "label": "End",
+        "min": 1,
+        "step": 1,
+        "type": "number",
+        "unit": "frames"
+      }
+    ],
+    "id": "shader-pulsing-border-paper-0-0-78-v1",
+    "version": 1
+  },
+  "exportName": "PulsingBorder",
+  "packageVersion": "0.0.78",
+  "revision": "paper-0-0-78-v1",
+  "slug": "shader-pulsing-border",
+  "title": "Pulsing Border",
+  "version": 1
+}

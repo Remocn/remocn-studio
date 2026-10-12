@@ -1,23 +1,21 @@
 "use client";
 
+import type { MouseEvent, ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
-  ClapperboardIcon,
-  ComponentIcon,
-  LibraryBigIcon,
+  ArrowLeftIcon,
+  FilesIcon,
+  FoldersIcon,
+  type Icon,
   MessageSquareIcon,
-  PanelLeftCloseIcon,
+  PackageIcon,
   PlusIcon,
+  PrismIcon,
+  ScrollTextIcon,
+  SearchIcon,
   SettingsIcon,
-} from "lucide-react";
-import type { MouseEvent } from "react";
-import { useCallback, useMemo } from "react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import {
   Sidebar,
   SidebarFooter,
@@ -25,105 +23,256 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSkeleton,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { stockKindOf, useAssetsScope } from "@/hooks/use-assets-scope";
+import { stockKindOf } from "@/hooks/use-assets-scope";
 
-import { useNow } from "@/hooks/use-now";
 import { usePickAsset } from "@/hooks/use-pick-asset";
-import type { ScaffoldState } from "@/hooks/use-scaffold";
-import type { VideoCommands } from "@/hooks/use-video-menu";
-import { type PaneGroup, paneSections } from "@/lib/studio/groups";
-import { isPaneView, type PaneView } from "@/lib/studio/pane-view";
-import { runningTime } from "@/lib/studio/time";
-import { cn } from "@/lib/utils";
+import {
+  captionSelectionUnavailable,
+  isPaneView,
+  type PaneView,
+} from "@/lib/studio/pane-view";
 import { isMediaAsset } from "@/shared/library";
 import { AssetsPane } from "./assets-pane";
 import { AssetsScopeSwitch } from "./assets-scope";
+import { CaptionsPane } from "./captions-pane";
 import { ComponentsPane } from "./components-pane";
-import { FailureDetails, FailureText } from "./failure-text";
 import { LogoWordmark } from "./logo-mark";
-import { PaneScreen } from "./pane-screen";
+import { ProjectBrowser } from "./project-browser";
+import { ShadersPane } from "./shaders-pane";
+import { SidebarSlide } from "./sidebar-slide";
 import { StockPane } from "./stock-pane";
-import { useStudio } from "./studio-provider";
-import { VideoGroup } from "./video-group";
-
-const PLACEHOLDERS = ["one", "two", "three", "four"];
+import { useStudio, useStudioTurn } from "./studio-provider";
+import { WorkspaceLists } from "./workspace-lists";
 
 const VIEW_ITEMS: readonly {
-  icon: typeof ComponentIcon;
+  icon: Icon;
   label: string;
   view: PaneView;
 }[] = [
+  { icon: FoldersIcon, label: "Projects", view: "projects" },
+  { icon: FilesIcon, label: "Assets", view: "assets" },
   {
-    icon: ClapperboardIcon,
-    label: "Videos",
-    view: "videos",
-  },
-  { icon: LibraryBigIcon, label: "Assets", view: "assets" },
-  {
-    icon: ComponentIcon,
+    icon: PackageIcon,
     label: "Components",
     view: "components",
   },
+  { icon: PrismIcon, label: "Shaders", view: "shaders" },
+  { icon: ScrollTextIcon, label: "Captions", view: "captions" },
 ];
 
 export function ProjectsPane() {
+  const { isLibraryOpen, paneView, libraryAnimate } = useStudio();
+  const replaced = isLibraryOpen && paneView !== "videos";
+  return (
+    <div className="relative h-full overflow-hidden">
+      <SidebarSlide
+        animate={libraryAnimate}
+        inactive={replaced}
+        offset={replaced ? -1 : 0}
+      >
+        <WorkspaceSidebar />
+      </SidebarSlide>
+      <div className="pointer-events-none absolute inset-0">
+        <SidebarSlide
+          animate={libraryAnimate}
+          inactive={!replaced}
+          offset={replaced ? 0 : 1}
+        >
+          <LibrarySidebar active={replaced} />
+        </SidebarSlide>
+      </div>
+    </div>
+  );
+}
+
+function LibrarySidebar({ active }: { active: boolean }) {
+  const {
+    assetsScope,
+    closeLibrary,
+    componentScope,
+    setComponentScope,
+    newProject,
+    paneView,
+    activeProject,
+  } = useStudio();
+  const title =
+    VIEW_ITEMS.find((item) => item.view === paneView)?.label ?? "Library";
+  const pickScope = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const scope = event.currentTarget.value;
+      if (scope === "all" || scope === "saved" || scope === "bundled") {
+        setComponentScope(scope);
+      }
+    },
+    [setComponentScope]
+  );
+  const back = useRef<HTMLButtonElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (active) {
+      opener.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      back.current?.focus({ preventScroll: true });
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      if (opener.current?.isConnected) {
+        opener.current.focus({ preventScroll: true });
+      }
+      opener.current = null;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [active]);
+  return (
+    <aside
+      aria-label={`${title} navigation`}
+      className="pointer-events-auto flex h-full min-h-0 flex-col bg-sidebar pt-2 pb-4"
+    >
+      <Button
+        aria-label="Back to chat"
+        className="mx-3 mb-3 shrink-0 justify-start gap-2 px-2 text-muted-foreground"
+        onClick={closeLibrary}
+        ref={back}
+        size="sm"
+        variant="ghost"
+      >
+        <ArrowLeftIcon data-icon="inline-start" />
+        Back
+      </Button>
+      <div className="mb-1 flex h-6 shrink-0 items-center justify-between pr-3 pl-5">
+        <h1 className="text-muted-foreground text-xs">{title}</h1>
+        {paneView === "projects" ? (
+          <Button
+            aria-label="Create project"
+            onClick={newProject.open}
+            size="icon-xs"
+            title="Create project"
+            variant="ghost"
+          >
+            <PlusIcon />
+          </Button>
+        ) : null}
+      </div>
+      {paneView === "components" ? (
+        <nav
+          aria-label="Component sources"
+          className="mx-3 grid shrink-0 grid-cols-3 gap-1"
+        >
+          {(["all", "saved", "bundled"] as const).map((scope) => (
+            <Button
+              aria-pressed={componentScope === scope}
+              className="h-7 px-1 font-normal text-xs"
+              key={scope}
+              onClick={pickScope}
+              size="sm"
+              value={scope}
+              variant={componentScope === scope ? "secondary" : "ghost"}
+            >
+              {{ all: "All", bundled: "Built-in", saved: "Saved" }[scope]}
+            </Button>
+          ))}
+        </nav>
+      ) : null}
+      {paneView === "assets" ? (
+        <div className="shrink-0 px-3">
+          <AssetsScopeSwitch scope={assetsScope} />
+        </div>
+      ) : null}
+      {paneView === "projects" ? (
+        <ProjectBrowser />
+      ) : (
+        <WorkspaceLibrary active={active} />
+      )}
+      <p className="shrink-0 truncate px-5 pt-3 text-muted-foreground text-xs">
+        {activeProject?.name ?? "Library"}
+      </p>
+    </aside>
+  );
+}
+
+function WorkspaceSidebar() {
+  const {
+    drops,
+    feedback,
+    isLibraryOpen,
+    openLibrary,
+    paneView,
+    settingsView,
+  } = useStudio();
+  return (
+    <SidebarProvider className="h-full min-h-0">
+      <Sidebar
+        className="w-full bg-transparent"
+        collapsible="none"
+        ref={isLibraryOpen ? undefined : drops.library.ref}
+      >
+        <SidebarHeader className="gap-0 p-0">
+          <SidebarBrand />
+          <PaneViewMenu
+            onShow={openLibrary}
+            view={isLibraryOpen ? paneView : null}
+          />
+        </SidebarHeader>
+        <WorkspaceLists />
+        <SidebarFooter className="gap-0 px-3 pb-4">
+          <SidebarMenu className="gap-0">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className="h-7 text-muted-foreground"
+                onClick={settingsView.open}
+              >
+                <SettingsIcon />
+                Settings
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className="h-7 text-muted-foreground"
+                onClick={feedback.send}
+              >
+                <MessageSquareIcon />
+                Feedback
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+    </SidebarProvider>
+  );
+}
+
+function WorkspaceLibrary({ active }: { active: boolean }) {
   const {
     actionError,
-    activeProject,
-    activeSession,
+    openedProject,
+    openedVideo,
+    environment,
+    folderError,
+    assetsScope,
+    componentScope,
     composerActions,
     drops,
-    expandedVideos,
-    feedback,
-    folderError,
-    groups,
-    isLoadingProjects,
-    isLoadingVideos,
     library,
-    newVideo,
-    onNewSession,
-    onOpenVideo,
-    onCancelScaffold,
-    onRemoveSession,
-    onRetryScaffold,
-    onSelectSession,
-    onToggleVideo,
-    paneSlide,
     paneView,
-    projectsError,
-    registerVideo,
-    reloadVideos,
-    removeVideo,
-    renameVideo,
-    scaffolds,
-    sessionsError,
-    settingsView,
-    showPane,
-    toggleProjects,
-    videosError,
+    tools,
   } = useStudio();
-
-  const now = useNow();
+  const turn = useStudioTurn();
+  const captionUnavailable = captionSelectionUnavailable({
+    blocked: environment.isBlocking,
+    hasProject: Boolean(openedProject && openedVideo),
+    missing: openedProject?.missing ?? false,
+    waiting: Boolean(turn.permission ?? turn.source),
+  });
   const paneError = actionError ?? folderError;
-  const videoCommands: VideoCommands = useMemo(
-    () => ({ registerVideo, removeVideo, renameVideo }),
-    [registerVideo, removeVideo, renameVideo]
-  );
   const pickable = useMemo(
     () => [...library.assets, ...library.bundled],
     [library.assets, library.bundled]
   );
-  const onPickAsset = usePickAsset(pickable, composerActions.pick);
-  const assetsScope = useAssetsScope();
+  const pickAsset = usePickAsset(pickable, composerActions.pick);
   const stockKind = stockKindOf(assetsScope.scope);
 
   const media = useMemo(
@@ -135,157 +284,101 @@ export function ProjectsPane() {
     [library.assets]
   );
 
-  // Pinned above the scroller rather than scrolled with the list: the one
-  // action that starts a video must not be the first thing a long list takes
-  // off screen.
-  let content = (
-    <PaneScreen
-      pinned={
-        <NewVideoAction
-          isDisabled={activeProject === null || activeProject.missing}
-          onNewVideo={newVideo.open}
-        />
-      }
-    >
-      <h2 className="sr-only">Videos</h2>
-      {activeProject === null ? null : (
-        <Scaffolding
-          onCancel={onCancelScaffold}
-          onRetry={onRetryScaffold}
-          projectId={activeProject.id}
-          scaffold={scaffolds.get(activeProject.id)}
-        />
-      )}
-      <VideosBody
-        activeSessionId={activeSession?.id ?? null}
-        commands={videoCommands}
-        error={projectsError ?? videosError ?? sessionsError}
-        expanded={expandedVideos}
-        groups={groups}
-        hasProject={activeProject !== null}
-        isLoading={isLoadingProjects || isLoadingVideos}
-        now={now}
-        onNewSession={onNewSession}
-        onOpen={onOpenVideo}
-        onRemoveSession={onRemoveSession}
-        onRetry={reloadVideos}
-        onSelectSession={onSelectSession}
-        onToggle={onToggleVideo}
-      />
-    </PaneScreen>
-  );
-
-  if (paneView === "assets") {
+  let content: ReactNode = null;
+  if (paneView === "shaders" && tools.shaders) {
     content = (
-      <>
-        <h2 className="sr-only">Assets</h2>
-        {/* Above the pane rather than inside it, so the switch sits over the
-            search field the pane pins and neither of them scrolls. */}
-        <div className="px-2 pt-2">
-          <AssetsScopeSwitch scope={assetsScope} />
-        </div>
-        {stockKind === null ? (
-          <AssetsPane
-            assets={media}
-            error={library.error}
-            isLoading={library.isLoading}
-            isOver={drops.library.isOver}
-            onPick={onPickAsset}
-            onRemove={library.onRemove}
-            onRetry={library.reload}
-          />
-        ) : (
-          <StockPane kind={stockKind} onSaved={library.refresh} />
-        )}
-      </>
+      <ShadersPane
+        assets={library.bundled}
+        error={library.error}
+        insertion={tools.shaders}
+        isLoading={library.isLoading}
+        onRetry={library.reload}
+      />
+    );
+  }
+  if (paneView === "assets") {
+    content =
+      stockKind === null ? (
+        <AssetsPane
+          assets={media}
+          error={library.error}
+          isLoading={library.isLoading}
+          isOver={drops.library.isOver}
+          onPick={pickAsset}
+          onRemove={library.onRemove}
+          onRetry={library.reload}
+        />
+      ) : (
+        <StockPane kind={stockKind} onSaved={library.refresh} />
+      );
+  }
+
+  if (paneView === "captions") {
+    content = (
+      <CaptionsPane
+        assets={library.bundled}
+        error={library.bundledError}
+        isLoading={library.bundledLoading}
+        onPick={pickAsset}
+        onRetry={library.reloadBundled}
+        unavailable={captionUnavailable}
+      />
     );
   }
 
   if (paneView === "components") {
     content = (
-      <>
-        <h2 className="sr-only">Components</h2>
-        <ComponentsPane
-          assets={components}
-          bundled={library.bundled}
-          error={library.error}
-          isLoading={library.isLoading}
-          onPick={onPickAsset}
-          onRemove={library.onRemove}
-          onRetry={library.reload}
-        />
-      </>
+      <ComponentsPane
+        assets={componentScope === "bundled" ? [] : components}
+        bundled={componentScope === "saved" ? [] : library.bundled}
+        error={library.error}
+        isLoading={library.isLoading}
+        onPick={pickAsset}
+        onRemove={library.onRemove}
+        onRetry={library.reload}
+      />
     );
   }
 
-  const footer = (
-    <>
-      {paneError === null ? null : (
-        <p className="shrink-0 break-words px-3 py-2 text-destructive text-xs">
-          {paneError}
-        </p>
-      )}
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="text-muted-foreground"
-              onClick={feedback.send}
-            >
-              <MessageSquareIcon />
-              Send feedback
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="text-muted-foreground"
-              onClick={settingsView.open}
-            >
-              <SettingsIcon />
-              Settings
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </>
-  );
-
   return (
-    // `collapsible="none"` is what makes this a sidebar inside a resizable
-    // panel rather than one fixed to the window: it drops the off-canvas gap
-    // element and the mobile Sheet, and renders a plain flex column. The
-    // provider is still required — every menu part reads its context.
-    <SidebarProvider className="h-full min-h-0">
-      {/* The shell owns the titlebar band, so the pane must not paint over
-          it: the shell's background is already the sidebar colour, and the
-          band fades away behind the brand row instead of being cut at the
-          pane's top edge. */}
-      <Sidebar
-        className="w-full bg-transparent"
-        collapsible="none"
-        ref={drops.library.ref}
-      >
-        <SidebarHeader className="gap-0 p-0">
-          <SidebarBrand onHide={toggleProjects} />
-          <PaneViewMenu onShow={showPane} view={paneView} />
-        </SidebarHeader>
+    <LibraryFrame active={active} error={paneError}>
+      {content}
+    </LibraryFrame>
+  );
+}
 
-        {/* The view is one column: what is pinned stays put and only the
-            list below it scrolls, so the slide animation belongs to the
-            column rather than to the scrolling half of it. */}
+function LibraryFrame({
+  active,
+  children,
+  error,
+}: {
+  active: boolean;
+  children: ReactNode;
+  error: string | null;
+}) {
+  const { drops, paneView } = useStudio();
+  return (
+    <SidebarProvider
+      aria-label="Library"
+      className="min-h-0 flex-1"
+      role="region"
+    >
+      <Sidebar
+        className="w-full bg-sidebar"
+        collapsible="none"
+        ref={active ? drops.library.ref : undefined}
+      >
         <div
-          className={cn(
-            "flex min-h-0 flex-1 flex-col",
-            paneSlide === "push" && "animate-screen-in",
-            paneSlide === "pop" && "animate-screen-back"
-          )}
-          data-pane-slide
+          className="@container flex min-h-0 flex-1 flex-col px-1"
           key={paneView}
         >
-          {content}
+          {children}
         </div>
-
-        {footer}
+        {error === null ? null : (
+          <p className="shrink-0 break-words px-6 py-2 text-destructive text-xs">
+            {error}
+          </p>
+        )}
       </Sidebar>
     </SidebarProvider>
   );
@@ -299,7 +392,7 @@ function PaneViewMenu({
   view,
 }: {
   onShow: (view: PaneView) => void;
-  view: PaneView;
+  view: PaneView | null;
 }) {
   const onSelect = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -311,27 +404,17 @@ function PaneViewMenu({
     [onShow]
   );
 
-  // The active view carries a thin rail at the pane's edge and full-contrast
-  // text — no filled background, so the menu reads as chrome rather than a
-  // selected row. The weight never changes between states, or the labels
-  // would shift as the selection moves.
-  // Hover is a soft tint — the accent at 40% with full-contrast text — so
-  // pointing at an item answers quietly while the rail stays the only mark
-  // of the view that is actually open.
   return (
-    <nav aria-label="Library views" className="px-2 pt-6 pb-4">
-      <SidebarMenu>
+    <nav aria-label="Library views" className="px-3 pt-2 pb-4">
+      <SidebarMenu className="gap-0">
         {VIEW_ITEMS.map((item) => (
           <SidebarMenuItem key={item.view}>
             <SidebarMenuButton
-              className="relative pl-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground active:bg-sidebar-accent/40 active:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground dark:text-muted-foreground"
+              className="h-7 px-2 text-sidebar-foreground hover:bg-accent hover:text-foreground data-active:bg-sidebar-accent data-active:font-normal data-active:text-foreground"
               isActive={view === item.view}
               onClick={onSelect}
               value={item.view}
             >
-              {view === item.view ? (
-                <span className="absolute top-1/2 left-0 h-4 w-0.5 -translate-y-1/2 rounded-full bg-sidebar-primary" />
-              ) : null}
               <item.icon />
               {item.label}
             </SidebarMenuButton>
@@ -345,281 +428,22 @@ function PaneViewMenu({
 // The traffic lights are cleared by the header's top inset, above this row, so
 // the wordmark can sit on the same left edge as the group label and the project
 // names below it rather than being pushed out of the column.
-function SidebarBrand({ onHide }: { onHide: () => void }) {
+function SidebarBrand() {
+  const { openSearch } = useStudio();
   return (
     <div
-      className="flex h-10 shrink-0 items-center justify-between gap-2 pr-2 pl-4"
+      className="flex h-11 shrink-0 items-center gap-1 pr-3 pl-5"
       data-tauri-drag-region="deep"
     >
-      <LogoWordmark className="pointer-events-none shrink-0" />
-      <div className="flex shrink-0 items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                aria-label="Hide the project list"
-                className="text-muted-foreground"
-                onClick={onHide}
-                size="icon-sm"
-                variant="ghost"
-              />
-            }
-          >
-            <PanelLeftCloseIcon />
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Hide the project list</TooltipContent>
-        </Tooltip>
-      </div>
-    </div>
-  );
-}
-// One primary action, and it is the only place a video is born by hand: the
-// first video of a project comes with the project wizard, and a new chat under
-// an existing video is a single click on its row.
-function NewVideoAction({
-  isDisabled,
-  onNewVideo,
-}: {
-  isDisabled: boolean;
-  onNewVideo: () => void;
-}) {
-  return (
-    <div className="px-1">
+      <LogoWordmark className="pointer-events-none mr-auto shrink-0 text-[14px] leading-[18px]" />
       <Button
-        className="w-full"
-        disabled={isDisabled}
-        onClick={onNewVideo}
-        variant="default"
-      >
-        <PlusIcon data-icon="inline-start" />
-        New Video…
-      </Button>
-    </div>
-  );
-}
-
-function VideosBody({
-  activeSessionId,
-  commands,
-  error,
-  expanded,
-  groups,
-  hasProject,
-  isLoading,
-  now,
-  onNewSession,
-  onOpen,
-  onRemoveSession,
-  onRetry,
-  onSelectSession,
-  onToggle,
-}: {
-  activeSessionId: string | null;
-  commands: VideoCommands;
-  error: string | null;
-  expanded: ReadonlySet<string>;
-  groups: readonly PaneGroup[];
-  hasProject: boolean;
-  isLoading: boolean;
-  now: number;
-  onNewSession: (event: MouseEvent<HTMLButtonElement>) => void;
-  onOpen: (event: MouseEvent<HTMLButtonElement>) => void;
-  onRemoveSession: (event: MouseEvent<HTMLButtonElement>) => void;
-  onRetry: () => void;
-  onSelectSession: (event: MouseEvent<HTMLButtonElement>) => void;
-  onToggle: (event: MouseEvent<HTMLButtonElement>) => void;
-}) {
-  if (error !== null) {
-    return (
-      <Empty className="px-4 py-8">
-        <EmptyHeader>
-          <EmptyTitle className="text-balance">
-            History is unavailable
-          </EmptyTitle>
-          <EmptyDescription>
-            <FailureText
-              align="center"
-              fallback="Something went wrong while reading the history."
-              text={error}
-            />
-          </EmptyDescription>
-        </EmptyHeader>
-        <Button onClick={onRetry} size="sm" variant="outline">
-          Try again
-        </Button>
-      </Empty>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <SidebarMenu>
-        {PLACEHOLDERS.map((placeholder) => (
-          <SidebarMenuItem key={placeholder}>
-            <SidebarMenuSkeleton showIcon />
-          </SidebarMenuItem>
-        ))}
-      </SidebarMenu>
-    );
-  }
-
-  if (!hasProject) {
-    return (
-      <Empty className="px-4 py-8">
-        <EmptyHeader>
-          <EmptyTitle className="text-balance">No project open</EmptyTitle>
-          <EmptyDescription>
-            Create one, or open a folder you already have.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
-  }
-
-  const { active, gone } = paneSections(groups);
-
-  const item = (group: PaneGroup) => (
-    <VideoGroup
-      activeSessionId={activeSessionId}
-      commands={commands}
-      group={group}
-      isExpanded={expanded.has(group.video.id)}
-      key={group.video.id}
-      now={now}
-      onNewSession={onNewSession}
-      onOpen={onOpen}
-      onRemoveSession={onRemoveSession}
-      onSelectSession={onSelectSession}
-      onToggle={onToggle}
-    />
-  );
-
-  return (
-    <>
-      {active.length === 0 ? null : (
-        <SidebarMenu className="gap-1">{active.map(item)}</SidebarMenu>
-      )}
-
-      {active.length === 0 && gone.length === 0 ? (
-        <p className="px-3 py-2 text-muted-foreground text-xs">
-          No videos yet.
-        </p>
-      ) : null}
-
-      {gone.length === 0 ? null : (
-        <>
-          <h3
-            className="mt-2 flex h-8 shrink-0 items-center px-2 font-medium text-sidebar-foreground/70 text-xs dark:text-muted-foreground"
-            title="Nothing in this project renders these anymore. Their chats are still here."
-          >
-            Not in the code
-          </h3>
-          <SidebarMenu>{gone.map(item)}</SidebarMenu>
-        </>
-      )}
-    </>
-  );
-}
-
-const DOING: Record<ScaffoldState["step"], string> = {
-  install: "Installing dependencies…",
-  template: "Copying the template…",
-};
-
-const FAILED: Record<ScaffoldState["step"], string> = {
-  install: "Could not install the dependencies.",
-  template: "Could not copy the template.",
-};
-
-const CANCELLED: Record<ScaffoldState["step"], string> = {
-  install: "The install was cancelled.",
-  template: "Setting up the project was cancelled.",
-};
-
-// Scaffolding belongs to the project, so it reports under the switcher rather
-// than on a video: the template and the install are what the whole folder is
-// waiting for, not one composition in it.
-function Scaffolding({
-  onCancel,
-  onRetry,
-  projectId,
-  scaffold,
-}: {
-  onCancel: (event: MouseEvent<HTMLButtonElement>) => void;
-  onRetry: (event: MouseEvent<HTMLButtonElement>) => void;
-  projectId: string;
-  scaffold: ScaffoldState | undefined;
-}) {
-  if (scaffold === undefined) {
-    return null;
-  }
-
-  if (scaffold.isRunning) {
-    return (
-      <ScaffoldRunning
-        onCancel={onCancel}
-        projectId={projectId}
-        scaffold={scaffold}
-      />
-    );
-  }
-
-  return (
-    <div className="flex animate-fade-in flex-col gap-1.5 px-3 py-1">
-      <p
-        className={cn(
-          "text-xs",
-          scaffold.cancelled ? "text-muted-foreground" : "text-destructive"
-        )}
-        role={scaffold.cancelled ? "status" : "alert"}
-      >
-        {scaffold.cancelled ? CANCELLED[scaffold.step] : FAILED[scaffold.step]}
-      </p>
-      {scaffold.error === null ? null : (
-        <FailureDetails details={scaffold.error} />
-      )}
-      <Button
-        className="self-start text-xs"
-        onClick={onRetry}
-        size="sm"
-        value={projectId}
-        variant="outline"
-      >
-        Try again
-      </Button>
-    </div>
-  );
-}
-
-function ScaffoldRunning({
-  onCancel,
-  projectId,
-  scaffold,
-}: {
-  onCancel: (event: MouseEvent<HTMLButtonElement>) => void;
-  projectId: string;
-  scaffold: ScaffoldState;
-}) {
-  const now = useNow("1 second");
-
-  return (
-    <div
-      className="flex animate-fade-in items-center gap-2 px-3 py-1 text-muted-foreground text-xs"
-      role="status"
-    >
-      <Spinner className="size-3 shrink-0" />
-      <span className="min-w-0 flex-1 truncate">{DOING[scaffold.step]}</span>
-      <span className="shrink-0 tabular-nums">
-        {runningTime(scaffold.startedAt, now)}
-      </span>
-      <Button
-        className="-my-1 shrink-0 text-xs"
-        onClick={onCancel}
-        size="xs"
-        value={projectId}
+        aria-label="Search"
+        className="text-muted-foreground"
+        onClick={openSearch}
+        size="icon-sm"
         variant="ghost"
       >
-        Cancel
+        <SearchIcon />
       </Button>
     </div>
   );

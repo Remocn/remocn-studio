@@ -1,7 +1,7 @@
 "use client";
 
-import { CornerDownLeftIcon, FolderIcon } from "lucide-react";
 import { memo } from "react";
+import { CornerDownLeftIcon, FolderIcon } from "@/components/icons";
 import { Spinner } from "@/components/ui/spinner";
 import { useKeptInView } from "@/hooks/use-kept-in-view";
 import type { MentionItem, Mentions } from "@/hooks/use-mentions";

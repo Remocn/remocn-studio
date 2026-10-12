@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AssetsPane } from "@/components/studio/assets-pane";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -96,7 +96,8 @@ describe("AssetsPane", () => {
     expect(screen.getByText("Neon Title")).toBeInTheDocument();
     expect(screen.getByText("Logo")).toBeInTheDocument();
 
-    // The kind is no longer a second line on the card — the tile shows it.
+    expect(screen.getByText("Component")).toBeInTheDocument();
+    expect(screen.getByText("Image")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Neon Title, Component" })
     ).toBeInTheDocument();
@@ -105,15 +106,13 @@ describe("AssetsPane", () => {
     ).toBeInTheDocument();
   });
 
-  it("lays the cards out in two columns", () => {
-    const { container } = pane({
+  it("keeps every card in the responsive library list", () => {
+    pane({
       assets: [asset(), asset({ name: "Logo", slug: "logo", type: "img" })],
     });
 
-    const grid = container.querySelector(".columns-2");
-
-    expect(grid).not.toBeNull();
-    expect(grid?.querySelectorAll('[data-slot="attachment"]')).toHaveLength(2);
+    const grid = screen.getByRole("list", { name: "Asset library" });
+    expect(grid.querySelectorAll("li")).toHaveLength(2);
   });
 
   it("renders each tile through the image media variant", () => {
@@ -229,6 +228,60 @@ describe("AssetsPane", () => {
     expect(removed).toEqual(["neon-title"]);
     // The trigger covers the card, so deleting must not also insert the asset.
     expect(picked).toEqual([]);
+  });
+
+  it("keeps audio playback controls separate from picking and deleting the asset", async () => {
+    const { picked, removed } = pane({
+      assets: [
+        asset({
+          duration: 8,
+          files: ["door.wav"],
+          name: "Door",
+          slug: "door",
+          type: "audio",
+        }),
+      ],
+    });
+    const audio = screen.getByLabelText("Listen to Door") as HTMLAudioElement;
+    Object.defineProperties(audio, {
+      duration: { value: 8 },
+      paused: { value: true },
+      play: { value: mock(async () => fireEvent.play(audio)) },
+    });
+    fireEvent.loadedMetadata(audio);
+    await userEvent.click(screen.getByRole("button", { name: "Play Door" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Pause Door" })).toBeEnabled()
+    );
+    expect(picked).toEqual([]);
+    expect(removed).toEqual([]);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Audio controls for Door" })
+    );
+    fireEvent.change(screen.getByRole("slider", { name: "Seek Door" }), {
+      target: { value: "3" },
+    });
+    expect(audio.currentTime).toBe(3);
+    fireEvent.change(screen.getByRole("slider", { name: "Volume for Door" }), {
+      target: { value: "0.25" },
+    });
+    expect(audio.volume).toBe(0.25);
+    await userEvent.click(screen.getByRole("button", { name: "Mute Door" }));
+    expect(audio.muted).toBe(true);
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: "Playback speed" }),
+      "1.5"
+    );
+    expect(audio.playbackRate).toBe(1.5);
+    expect(
+      screen.getByRole("link", { name: "Download audio" })
+    ).toHaveAttribute("download");
+    await userEvent.click(screen.getByRole("button", { name: "Delete Door" }));
+    expect(removed).toEqual(["door"]);
+    expect(picked).toEqual([]);
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: "Door, Audio" }));
+    expect(picked).toEqual(["door"]);
   });
 
   it("offers a way back when the library could not be read", () => {

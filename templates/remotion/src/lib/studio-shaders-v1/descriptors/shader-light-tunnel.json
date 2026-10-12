@@ -1,0 +1,170 @@
+{
+  "adapter": "custom",
+  "definition": {
+    "fields": [
+      {
+        "id": "twist",
+        "label": "Twist",
+        "type": "number",
+        "default": 0.7,
+        "min": 0,
+        "max": 2,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "spirals",
+        "label": "Spirals",
+        "type": "number",
+        "default": 3,
+        "min": 1,
+        "max": 6,
+        "step": 1,
+        "group": "Appearance",
+        "integer": true
+      },
+      {
+        "id": "glow",
+        "label": "Glow",
+        "type": "number",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "depth",
+        "label": "Depth",
+        "type": "number",
+        "default": 1,
+        "min": 0.5,
+        "max": 2,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "timeOffset",
+        "label": "Time Offset",
+        "type": "number",
+        "default": 0,
+        "min": -10000,
+        "max": 10000,
+        "step": 0.01,
+        "group": "Appearance"
+      },
+      {
+        "id": "speed",
+        "label": "Speed",
+        "type": "number",
+        "default": 1,
+        "min": -5,
+        "max": 5,
+        "step": 0.01,
+        "group": "Animation"
+      },
+      {
+        "id": "patternScale",
+        "label": "Pattern Scale",
+        "type": "number",
+        "default": 1,
+        "min": 0.1,
+        "max": 4,
+        "step": 0.01,
+        "group": "Pattern"
+      },
+      {
+        "id": "rotation",
+        "label": "Rotation",
+        "type": "number",
+        "default": 0,
+        "min": 0,
+        "max": 360,
+        "step": 0.01,
+        "group": "Pattern"
+      },
+      {
+        "id": "offsetX",
+        "label": "Offset X",
+        "type": "number",
+        "default": 0,
+        "min": -1,
+        "max": 1,
+        "step": 0.01,
+        "group": "Pattern"
+      },
+      {
+        "id": "offsetY",
+        "label": "Offset Y",
+        "type": "number",
+        "default": 0,
+        "min": -1,
+        "max": 1,
+        "step": 0.01,
+        "group": "Pattern"
+      },
+      {
+        "default": 1,
+        "group": "Layer",
+        "id": "opacity",
+        "label": "Opacity",
+        "max": 1,
+        "min": 0,
+        "step": 0.01,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Layer",
+        "id": "order",
+        "integer": true,
+        "label": "Layer order",
+        "min": 0,
+        "step": 1,
+        "type": "number"
+      },
+      {
+        "default": 0,
+        "group": "Timing",
+        "id": "startFrame",
+        "integer": true,
+        "label": "Start",
+        "min": 0,
+        "step": 1,
+        "type": "number",
+        "unit": "frames"
+      },
+      {
+        "default": true,
+        "group": "Timing",
+        "id": "followSceneEnd",
+        "label": "Follow scene end",
+        "type": "boolean"
+      },
+      {
+        "availableWhen": {
+          "field": "followSceneEnd",
+          "operator": "equals",
+          "reason": "Turn off Follow scene end to trim the end.",
+          "value": false
+        },
+        "default": 1,
+        "group": "Timing",
+        "id": "endFrame",
+        "integer": true,
+        "label": "End",
+        "min": 1,
+        "step": 1,
+        "type": "number",
+        "unit": "frames"
+      }
+    ],
+    "id": "shader-light-tunnel-remocn-8ae853e-v1",
+    "version": 1
+  },
+  "exportName": "LightTunnel",
+  "revision": "remocn-8ae853e-v1",
+  "slug": "shader-light-tunnel",
+  "title": "Light Tunnel",
+  "version": 1
+}

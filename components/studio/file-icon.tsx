@@ -16,6 +16,7 @@ import SiSvg from "@icons-pack/react-simple-icons/icons/SiSvg";
 import SiToml from "@icons-pack/react-simple-icons/icons/SiToml";
 import SiTypescript from "@icons-pack/react-simple-icons/icons/SiTypescript";
 import SiYaml from "@icons-pack/react-simple-icons/icons/SiYaml";
+import type { ComponentType } from "react";
 import {
   FileArchiveIcon,
   FileAudioIcon,
@@ -24,8 +25,7 @@ import {
   FileTextIcon,
   FileTypeIcon,
   FileVideoIcon,
-} from "lucide-react";
-import type { ComponentType } from "react";
+} from "@/components/icons";
 import { type FileIconKind, fileIconKind } from "@/lib/studio/file-icons";
 import { cn } from "@/lib/utils";
 

@@ -8,8 +8,8 @@ import { FileIcon } from "./file-icon";
 
 /**
  * A file manager's tab strip: a flat band under the pane header, tabs pushed
- * left, the open one wearing the document's own background and no bottom rule
- * so the two read as one surface.
+ * left, the open one wearing the document's own background so the two read
+ * as one surface.
  *
  * It is built on the Base UI primitive rather than on `components/ui/tabs.tsx`
  * — a `shadcn add` re-add rewrites that file, and this shape is not the
@@ -24,7 +24,7 @@ export function DocTabs({ tabs }: { tabs: readonly DocumentTab[] }) {
 
   return (
     <div
-      className="shrink-0 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="shrink-0 overflow-x-auto overflow-y-hidden bg-muted [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       ref={strip.ref}
     >
       <div className="flex min-w-full items-stretch">
@@ -32,10 +32,10 @@ export function DocTabs({ tabs }: { tabs: readonly DocumentTab[] }) {
           {tabs.map((tab) => (
             <TabsPrimitive.Tab
               className={cn(
-                "relative -mb-px flex h-8 shrink-0 cursor-pointer select-none items-center gap-1.5 whitespace-nowrap border-pane-border border-r border-b px-3 text-muted-foreground text-xs outline-none transition-[color,background-color] duration-fast ease-out",
-                "hover:bg-muted/40 hover:text-foreground",
-                "focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2",
-                "data-active:border-b-transparent data-active:bg-background data-active:text-foreground"
+                "relative flex h-8 shrink-0 cursor-pointer select-none items-center gap-1.5 whitespace-nowrap px-3 text-muted-foreground text-xs outline-none transition-[color,background-color] duration-fast ease-out",
+                "hover:bg-accent hover:text-foreground",
+                "focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:-outline-offset-2",
+                "data-active:bg-background data-active:text-foreground"
               )}
               key={tab.file.path}
               title={tab.title ?? tab.file.name}
@@ -46,14 +46,6 @@ export function DocTabs({ tabs }: { tabs: readonly DocumentTab[] }) {
             </TabsPrimitive.Tab>
           ))}
         </TabsPrimitive.List>
-
-        {/* The rule the open tab breaks has to run on to the pane's right
-            edge, so it is a filler rather than a border on the strip itself.
-            `min-w-full` above is what makes it fill when the tabs do not. */}
-        <div
-          aria-hidden="true"
-          className="-mb-px min-w-6 flex-1 border-pane-border border-b"
-        />
       </div>
     </div>
   );

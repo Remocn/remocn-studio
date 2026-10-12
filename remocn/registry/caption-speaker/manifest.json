@@ -1,0 +1,40 @@
+{
+  "category": "Captions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/captions"
+  ],
+  "description": "Dialogue captions where every phrase takes its speaker's colour, so a conversation reads like a script.",
+  "files": [
+    {
+      "file": "caption-speaker.tsx",
+      "target": "src/components/remocn/caption-speaker.tsx"
+    }
+  ],
+  "name": "caption-speaker",
+  "preview": {
+    "durationInFrames": 282,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "defaults": {
+      "captions": "So what made you add captions? Most people watch with the sound off. Really? Almost everyone. Captions keep them watching.",
+      "fontSize": 64,
+      "fontWeight": 800,
+      "upcomingOpacity": 0.4,
+      "combineTokensWithinMilliseconds": 1200,
+      "holdMs": 600,
+      "shadow": true
+    }
+  },
+  "registryDependencies": [
+    "caption-core"
+  ],
+  "sourcePin": "d6cd742fa4f3ab0a74fecf2ac93f1542fa2ea8f7",
+  "title": "Caption Speaker"
+}

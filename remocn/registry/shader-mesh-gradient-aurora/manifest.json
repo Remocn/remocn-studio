@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderMeshGradientAurora",
+  "dependencies": [],
+  "description": "Cyan and violet ribbons swirling out of a near-black sky.",
+  "files": [
+    {
+      "file": "shader-mesh-gradient-aurora.tsx",
+      "target": "src/components/remocn/shader-mesh-gradient-aurora.tsx"
+    }
+  ],
+  "name": "shader-mesh-gradient-aurora",
+  "presetOf": "shader-mesh-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 1,
+      "swirl": 0.8
+    }
+  },
+  "registryDependencies": [
+    "shader-mesh-gradient"
+  ],
+  "title": "Shader Mesh Gradient Aurora"
+}

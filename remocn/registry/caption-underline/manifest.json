@@ -1,0 +1,43 @@
+{
+  "category": "Captions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/captions"
+  ],
+  "description": "A bar slides under the word being spoken, travelling from word to word while the text itself stays untouched.",
+  "files": [
+    {
+      "file": "caption-underline.tsx",
+      "target": "src/components/remocn/caption-underline.tsx"
+    }
+  ],
+  "name": "caption-underline",
+  "preview": {
+    "durationInFrames": 279,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "defaults": {
+      "captions": "So here's the thing. Most demo videos lose people in the first three seconds. Captions keep them watching, even with the sound off.",
+      "fontSize": 64,
+      "fontWeight": 800,
+      "color": "#ffffff",
+      "underlineColor": "#facc15",
+      "thickness": 0.08,
+      "underlineOffset": 0.02,
+      "combineTokensWithinMilliseconds": 1200,
+      "holdMs": 600,
+      "shadow": true
+    }
+  },
+  "registryDependencies": [
+    "caption-core"
+  ],
+  "sourcePin": "d6cd742fa4f3ab0a74fecf2ac93f1542fa2ea8f7",
+  "title": "Caption Underline"
+}

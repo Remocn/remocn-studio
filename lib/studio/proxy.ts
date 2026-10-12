@@ -117,7 +117,7 @@ export function sourceFor(url: string): Effect.Effect<Blob, ProxyError> {
 // of the app.
 export function proxyFor(source: Blob): Effect.Effect<Blob, ProxyError> {
   return Effect.tryPromise({
-    catch: (cause) => new ProxyError({ message: errorMessage(cause) }),
+    catch: (cause) => new ProxyError({ message: reasonOf(cause) }),
     try: async () => {
       const { convertMedia } = await import("@remotion/webcodecs");
 
@@ -131,6 +131,30 @@ export function proxyFor(source: Blob): Effect.Effect<Blob, ProxyError> {
       return await converted.save();
     },
   });
+}
+
+const MAX_CAUSES = 5;
+
+// A conversion fails as "Video encoder of track 1 failed (see .cause of this
+// error)", with what the encoder actually said in `.cause` — so the message
+// alone names the part that broke and never why, and the why is the one thing
+// the console line exists to keep. A WebCodecs `DOMException` can carry an
+// empty message, where its name is the reason.
+export function reasonOf(cause: unknown): string {
+  const reasons: string[] = [];
+  let current = cause;
+
+  while (current !== undefined && current !== null) {
+    const said = errorMessage(current);
+    reasons.push(said === "" && current instanceof Error ? current.name : said);
+
+    if (!(current instanceof Error) || reasons.length === MAX_CAUSES) {
+      break;
+    }
+    current = current.cause;
+  }
+
+  return reasons.join(": ");
 }
 
 // The bytes reach disk as a raw body, for the same reason a pasted image does —

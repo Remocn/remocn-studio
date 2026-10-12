@@ -45,7 +45,7 @@ function DiffLines({ lines }: { lines: DiffLine[] }) {
     <Frame>
       <div
         aria-label="Diff"
-        className="overflow-x-auto py-1 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="overflow-x-auto py-1 outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
         role="region"
         tabIndex={0}
       >
@@ -85,7 +85,7 @@ function CommandOutput({
       {visible.shown.length > 0 ? (
         <pre
           aria-label="Command output"
-          className="overflow-x-auto border-t px-2 py-1 text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="overflow-x-auto px-2 py-1 text-muted-foreground outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
           role="region"
           tabIndex={0}
         >
@@ -104,7 +104,7 @@ function OutputText({ text }: { text: string }) {
     <Frame>
       <pre
         aria-label="Tool output"
-        className="overflow-x-auto px-2 py-1 text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="overflow-x-auto px-2 py-1 text-muted-foreground outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
         role="region"
         tabIndex={0}
       >
@@ -121,7 +121,7 @@ function OutputText({ text }: { text: string }) {
 function Frame({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="overflow-hidden rounded-md border bg-muted/40 font-mono text-2xs leading-relaxed"
+      className="overflow-hidden rounded-md bg-control font-mono text-2xs leading-relaxed"
       data-slot="activity-detail"
     >
       {children}
@@ -142,7 +142,7 @@ function MoreLines({
 
   return (
     <button
-      className="w-full border-t px-2 py-1 text-left text-muted-foreground underline decoration-dotted underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+      className="w-full px-2 py-1 text-left text-muted-foreground underline decoration-dotted underline-offset-2 outline-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
       onClick={onExpand}
       type="button"
     >

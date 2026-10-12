@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon } from "lucide-react";
+import { CheckIcon } from "@/components/icons";
 import {
   Command,
   CommandCollection,

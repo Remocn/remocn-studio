@@ -42,6 +42,7 @@ export interface OpenTurnSettings {
   playing: () => PromptFrame | null;
   projectId: string | null;
   session: HistorySession | null;
+  startSession?: (id?: string) => void;
   states: ReadonlyMap<string, TurnState>;
   turns: TurnActions;
   videoId: string | null;
@@ -72,6 +73,7 @@ export interface OpenTurn {
   onProviderChange: (value: string) => void;
   openId: string;
   permission: PendingPermission | null;
+  prepareShader?: (revision: string) => boolean;
   provider: AgentProvider;
   queue: readonly QueuedMessage[];
   removeQueued: (id: string) => void;
@@ -95,6 +97,7 @@ export interface OpenTurn {
 
 export function useOpenTurn({
   changeMode,
+  startSession,
   draftId,
   effort,
   models,
@@ -221,6 +224,47 @@ export function useOpenTurn({
     ]
   );
 
+  const prepareShader = useCallback(
+    (revision: string) => {
+      if (!(projectId && videoId && startSession) || isVideoBusy(videoId)) {
+        return false;
+      }
+      const historyId = crypto.randomUUID();
+      const sent = sendTurn({
+        assets: [],
+        attachments: [],
+        effort,
+        elements: [],
+        historyId,
+        media: [],
+        mode: turn.mode,
+        model: models[turn.provider] || null,
+        playing: playing(),
+        projectId,
+        prompt:
+          "Prepare this video for scene shaders. Preserve its content, timing, transitions and Inspect properties. Do not insert a shader yet.",
+        shaderPreparation: { provider: turn.provider, revision },
+        videoId,
+      });
+      if (sent) {
+        startSession(historyId);
+      }
+      return sent;
+    },
+    [
+      projectId,
+      videoId,
+      startSession,
+      isVideoBusy,
+      sendTurn,
+      effort,
+      turn.mode,
+      turn.provider,
+      models,
+      playing,
+    ]
+  );
+
   const stop = useCallback(() => stopTurn(openId), [openId, stopTurn]);
 
   const removeQueued = useCallback(
@@ -287,6 +331,7 @@ export function useOpenTurn({
       onProviderChange,
       openId,
       permission: turn.permissions[0] ?? null,
+      prepareShader,
       provider: turn.provider,
       queue: turn.queue,
       removeQueued,
@@ -309,6 +354,7 @@ export function useOpenTurn({
       openId,
       removeQueued,
       send,
+      prepareShader,
       stop,
       turn,
       writes,

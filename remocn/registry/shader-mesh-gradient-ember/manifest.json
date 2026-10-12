@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderMeshGradientEmber",
+  "dependencies": [],
+  "description": "Molten orange and amber pooling in dark oxblood.",
+  "files": [
+    {
+      "file": "shader-mesh-gradient-ember.tsx",
+      "target": "src/components/remocn/shader-mesh-gradient-ember.tsx"
+    }
+  ],
+  "name": "shader-mesh-gradient-ember",
+  "presetOf": "shader-mesh-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 0.8,
+      "swirl": 0.5
+    }
+  },
+  "registryDependencies": [
+    "shader-mesh-gradient"
+  ],
+  "title": "Shader Mesh Gradient Ember"
+}

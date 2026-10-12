@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   MaximizeIcon,
   MinimizeIcon,
@@ -9,8 +10,7 @@ import {
   StepForwardIcon,
   Volume2Icon,
   VolumeXIcon,
-} from "lucide-react";
-import type { ReactNode } from "react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { SliderPrimitive } from "@/components/ui/slider";
 import { Spinner } from "@/components/ui/spinner";
@@ -60,7 +60,7 @@ export function PreviewControls({
   return (
     <fieldset
       aria-label="Playback controls"
-      className="@container flex min-w-0 shrink-0 flex-col gap-2"
+      className="@container flex min-w-0 shrink-0 flex-col gap-0.5"
     >
       <SeekBar transport={transport} />
       <div className={cn(DOCK_ACTIONS, "shrink-0 gap-1")}>
@@ -235,7 +235,7 @@ function SeekBar({ transport }: { transport: PreviewTransport }) {
             <button
               aria-label={`Go to ${segment.name}`}
               className={cn(
-                "absolute inset-y-0 truncate px-2 text-left text-muted-foreground text-xs outline-none transition-colors hover:text-foreground focus-visible:text-foreground disabled:pointer-events-none",
+                "absolute inset-y-0 truncate px-2 text-left text-muted-foreground text-xs outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:-outline-offset-2 disabled:pointer-events-none",
                 segment.id === sceneBar.current && "text-foreground"
               )}
               disabled={!ready}
@@ -314,7 +314,7 @@ function PlaybackSlider({
       value={value}
     >
       <SliderPrimitive.Control
-        className="group relative flex h-8 w-full touch-none select-none overflow-hidden rounded-md bg-foreground/5 has-focus-visible:ring-2 has-focus-visible:ring-ring data-disabled:pointer-events-none data-disabled:opacity-40"
+        className="group relative flex h-8 w-full touch-none select-none overflow-hidden rounded-md bg-foreground/5 has-focus-visible:outline-2 has-focus-visible:outline-ring has-focus-visible:outline-solid has-focus-visible:outline-offset-2 data-disabled:pointer-events-none data-disabled:opacity-45"
         title={title}
       >
         <SliderPrimitive.Track className="relative h-full w-full">
@@ -379,7 +379,7 @@ function PillSlider({
       value={value}
     >
       <SliderPrimitive.Control
-        className="group flex h-5 w-full touch-none select-none items-center overflow-hidden rounded-md bg-foreground/5 has-focus-visible:ring-2 has-focus-visible:ring-ring data-disabled:pointer-events-none data-disabled:opacity-40"
+        className="group flex h-5 w-full touch-none select-none items-center overflow-hidden rounded-md bg-foreground/5 has-focus-visible:outline-2 has-focus-visible:outline-ring has-focus-visible:outline-solid has-focus-visible:outline-offset-2 data-disabled:pointer-events-none data-disabled:opacity-45"
         title={`${label}: ${valueText}`}
       >
         <SliderPrimitive.Track className="relative h-full w-full">

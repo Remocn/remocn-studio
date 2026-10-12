@@ -12,8 +12,8 @@ import {
   TextControl as DialTextControl,
   Toggle as DialToggle,
 } from "dialkit";
-import { MinusIcon, PlusIcon, RotateCcwIcon } from "lucide-react";
 import { useCallback, useId } from "react";
+import { MinusIcon, PlusIcon, RotateCcwIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   NumberField,
@@ -66,10 +66,9 @@ export interface AssetOptions {
 const ROW =
   "grid min-h-7.5 grid-cols-[minmax(2.5rem,30%)_minmax(0,1fr)_1.25rem] items-center gap-x-2";
 const LABEL = "truncate text-muted-foreground text-xs";
-// Focus is an outline, not a ring: `control-surface` *is* a box-shadow, and a
-// ring utility would replace it and take the elevation with it.
+// Keep keyboard focus consistent with the flat Inspector controls.
 const FOCUS =
-  "focus-within:outline-2 focus-within:outline-ring focus-within:outline-offset-1";
+  "focus-within:outline-2 focus-within:outline-solid focus-within:outline-ring focus-within:outline-offset-1";
 const FIELD = `flex h-7.5 w-full flex-row items-center gap-1.5 overflow-hidden rounded-md control-surface px-2 text-xs ${FOCUS}`;
 const VALUE =
   "min-w-0 flex-1 truncate bg-transparent text-left text-foreground text-xs outline-none";
@@ -112,7 +111,7 @@ export function TuningRow({
           changed ? (
             <Button
               aria-label={`Reset ${field.label}`}
-              className="relative size-5 text-muted-foreground opacity-0 transition-opacity after:absolute after:-inset-2 focus-visible:opacity-100 group-hover/row:opacity-100"
+              className="relative size-5 text-muted-foreground opacity-0 pointer-coarse:opacity-100 transition-opacity after:absolute after:-inset-2 focus-visible:opacity-100 group-hover/row:opacity-100"
               onClick={() => onReset([field.path])}
               size="icon-xs"
               variant="ghost"
@@ -139,8 +138,8 @@ export function TuningRow({
 
       {animated === true ? (
         <p className="flex items-center gap-1.5 px-3 pt-1 text-2xs text-muted-foreground">
-          <span className="shrink-0 rounded-sm bg-muted px-1 py-px font-medium text-2xs uppercase tracking-wide">
-            animated
+          <span className="shrink-0 rounded-sm bg-muted px-1 py-px font-medium text-2xs">
+            Animated
           </span>
           a change here moves the value at this frame; the animation keeps
           running

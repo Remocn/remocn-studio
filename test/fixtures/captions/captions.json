@@ -1,0 +1,163 @@
+[
+  {
+    "text": "And",
+    "startMs": 320,
+    "endMs": 400,
+    "timestampMs": 760,
+    "confidence": 0.658831
+  },
+  {
+    "text": " so",
+    "startMs": 400,
+    "endMs": 690,
+    "timestampMs": 1060,
+    "confidence": 0.971994
+  },
+  {
+    "text": " my",
+    "startMs": 690,
+    "endMs": 940,
+    "timestampMs": 1460,
+    "confidence": 0.552834
+  },
+  {
+    "text": " fellow",
+    "startMs": 940,
+    "endMs": 1750,
+    "timestampMs": 1760,
+    "confidence": 0.999134
+  },
+  {
+    "text": " Americans",
+    "startMs": 1750,
+    "endMs": 3290,
+    "timestampMs": 2260,
+    "confidence": 0.856019
+  },
+  {
+    "text": " ask",
+    "startMs": 3290,
+    "endMs": 4000,
+    "timestampMs": 3880,
+    "confidence": 0.587741
+  },
+  {
+    "text": " not",
+    "startMs": 4000,
+    "endMs": 5410,
+    "timestampMs": 4580,
+    "confidence": 0.815501
+  },
+  {
+    "text": " what",
+    "startMs": 5410,
+    "endMs": 5650,
+    "timestampMs": 5680,
+    "confidence": 0.751315
+  },
+  {
+    "text": " your",
+    "startMs": 5650,
+    "endMs": 5970,
+    "timestampMs": 6020,
+    "confidence": 0.970973
+  },
+  {
+    "text": " country",
+    "startMs": 5970,
+    "endMs": 6340,
+    "timestampMs": 6360,
+    "confidence": 0.983222
+  },
+  {
+    "text": " can",
+    "startMs": 6340,
+    "endMs": 6670,
+    "timestampMs": 6760,
+    "confidence": 0.950539
+  },
+  {
+    "text": " do",
+    "startMs": 6670,
+    "endMs": 6880,
+    "timestampMs": 7020,
+    "confidence": 0.988864
+  },
+  {
+    "text": " for",
+    "startMs": 6880,
+    "endMs": 7010,
+    "timestampMs": 7260,
+    "confidence": 0.912496
+  },
+  {
+    "text": " you",
+    "startMs": 7010,
+    "endMs": 7960,
+    "timestampMs": 8020,
+    "confidence": 0.962129
+  },
+  {
+    "text": " ask",
+    "startMs": 7960,
+    "endMs": 8240,
+    "timestampMs": 8660,
+    "confidence": 0.89588
+  },
+  {
+    "text": " what",
+    "startMs": 8240,
+    "endMs": 8630,
+    "timestampMs": 8940,
+    "confidence": 0.990187
+  },
+  {
+    "text": " you",
+    "startMs": 8630,
+    "endMs": 8910,
+    "timestampMs": 9280,
+    "confidence": 0.993972
+  },
+  {
+    "text": " can",
+    "startMs": 8910,
+    "endMs": 9180,
+    "timestampMs": 9500,
+    "confidence": 0.997447
+  },
+  {
+    "text": " do",
+    "startMs": 9180,
+    "endMs": 9370,
+    "timestampMs": 9720,
+    "confidence": 0.998331
+  },
+  {
+    "text": " for",
+    "startMs": 9370,
+    "endMs": 9650,
+    "timestampMs": 9920,
+    "confidence": 0.998254
+  },
+  {
+    "text": " your",
+    "startMs": 9650,
+    "endMs": 10030,
+    "timestampMs": 10220,
+    "confidence": 0.99625
+  },
+  {
+    "text": " country",
+    "startMs": 10030,
+    "endMs": 10730,
+    "timestampMs": 10740,
+    "confidence": 0.999165
+  },
+  {
+    "text": ".",
+    "startMs": 10730,
+    "endMs": 10760,
+    "timestampMs": 10740,
+    "confidence": 0.56613
+  }
+]

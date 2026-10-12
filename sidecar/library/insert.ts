@@ -14,6 +14,7 @@ import {
 } from "@/shared/library";
 import type { MotionRole } from "@/shared/motion";
 import { referenceOf } from "@/shared/references";
+import { CAPTION_BRIEF } from "../agent/captions";
 import { isInstalled } from "../environment";
 import { addCommand, pmOf } from "../package-manager";
 import { remotionRootOf } from "../preview/project";
@@ -25,6 +26,7 @@ export const COMPONENT_FOLDER = "src/library";
 
 export interface Placement {
   readonly audiomap: Audiomap | null;
+  readonly captionStyle?: string;
   readonly copied: readonly string[];
   readonly missing: readonly string[];
   readonly name: string;
@@ -205,6 +207,12 @@ function describe(placement: Placement, index: number, add: string): string {
   }
 
   const lines = [head];
+  if (placement.captionStyle) {
+    lines.push(
+      `Selected caption style: ${placement.captionStyle}.`,
+      CAPTION_BRIEF
+    );
+  }
 
   if (placement.copied.length > 0) {
     lines.push(`copied into the project: ${placement.copied.join(", ")}`);
@@ -272,6 +280,7 @@ function placeBundled(
       try: () => copyPlanned(root, plan.files),
     }).pipe(
       Effect.map((landed) => ({
+        ...(plan.captionStyle ? { captionStyle: plan.captionStyle } : {}),
         audiomap: null,
         copied: landed.copied,
         missing: plan.dependencies.filter((name) => !isInstalled(root, name)),

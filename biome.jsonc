@@ -42,6 +42,15 @@
   },
   "overrides": [
     {
+      // This versioned, hash-checked runtime intentionally redraws on prop
+      // changes through a callback ref. Removing the trigger dependencies
+      // stops frame/uniform updates. Keep the copied runtime's bytes stable.
+      "includes": ["templates/remotion/src/lib/studio-shaders-v1/paper.tsx"],
+      "linter": {
+        "rules": { "correctness": { "useExhaustiveDependencies": "off" } }
+      }
+    },
+    {
       // Output of `bunx shadcn add …`. We do not author these files and any
       // re-add overwrites them, so hand-fixing lint findings here is work that
       // reappears on the next component install. 90 of the 93 findings on first

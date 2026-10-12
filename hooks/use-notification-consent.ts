@@ -11,6 +11,7 @@ import {
   readPermission,
   requestPermission,
 } from "@/lib/studio/notifications";
+import { currentPlatform } from "@/lib/studio/platform";
 import {
   type StudioSettings,
   saveNotifications,
@@ -58,8 +59,12 @@ export function useNotificationConsent(
     });
   }, []);
 
+  // macOS keeps a refusal and only System Settings can undo it. A Linux
+  // desktop's notification service has no per-app settings row to open, so
+  // a refusal there can only be asked about again.
   const grant = useCallback(() => {
-    if (permission === "denied") {
+    const isMac = currentPlatform() === "mac";
+    if (isMac && permission === "denied") {
       openSystemSettings();
       return;
     }
@@ -69,7 +74,7 @@ export function useNotificationConsent(
         return;
       }
       setPermission(exit.value);
-      if (exit.value === "denied") {
+      if (isMac && exit.value === "denied") {
         openSystemSettings();
       }
     });

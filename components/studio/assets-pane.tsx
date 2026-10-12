@@ -1,7 +1,7 @@
 "use client";
 
-import { SearchIcon } from "lucide-react";
 import type { ChangeEvent, MouseEvent } from "react";
+import { SearchIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Empty,

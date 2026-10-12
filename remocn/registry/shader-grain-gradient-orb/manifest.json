@@ -1,0 +1,31 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderGrainGradientOrb",
+  "dependencies": [],
+  "description": "Large grainy sphere in periwinkle, violet and pink.",
+  "files": [
+    {
+      "file": "shader-grain-gradient-orb.tsx",
+      "target": "src/components/remocn/shader-grain-gradient-orb.tsx"
+    }
+  ],
+  "name": "shader-grain-gradient-orb",
+  "presetOf": "shader-grain-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "softness": 0.6,
+      "intensity": 0.3,
+      "noise": 0.15,
+      "colorBack": "#0a0a12"
+    }
+  },
+  "registryDependencies": [
+    "shader-grain-gradient"
+  ],
+  "title": "Shader Grain Gradient Orb"
+}

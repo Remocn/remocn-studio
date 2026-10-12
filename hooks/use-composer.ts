@@ -485,6 +485,11 @@ export function useComposer({
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
+      // WebKit may report the final composition key with keyCode 229.
+      if (event.nativeEvent?.isComposing || event.keyCode === 229) {
+        return;
+      }
+
       if (mentions.onKeyDown(event)) {
         return;
       }

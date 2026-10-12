@@ -25,6 +25,7 @@ const SESSION: HistorySession = {
 
 const IDLE_ROW: SessionRow = {
   askedAt: null,
+  completed: false,
   error: null,
   progress: null,
   session: SESSION,
@@ -35,11 +36,14 @@ const IDLE_ROW: SessionRow = {
   unread: false,
 };
 
-function renderItem(shape: Partial<SessionRow> & { isActive?: boolean } = {}) {
-  const { isActive, ...row } = shape;
+function renderItem(
+  shape: Partial<SessionRow> & { isActive?: boolean; compact?: boolean } = {}
+) {
+  const { isActive, compact, ...row } = shape;
 
   return render(
     <SessionItem
+      compact={compact}
       isActive={isActive ?? false}
       now={NOW}
       onRemove={mock()}
@@ -70,11 +74,24 @@ describe("SessionItem", () => {
   });
 
   it("runs the loader while the session is running", () => {
-    renderItem({ status: "running" });
+    renderItem({ compact: true, status: "running" });
 
-    expect(
-      screen.getByRole("img", { name: "A promo for the launch is running" })
-    ).toBeVisible();
+    const marker = screen.getByRole("img", {
+      name: "A promo for the launch is running",
+    });
+    expect(marker).toBeVisible();
+    expect(marker.getAttribute("style")).toContain("color: var(--key-action)");
+    expect(marker.querySelector(".dmx-diagonal-alt-sweep")).not.toBeNull();
+  });
+
+  it("keeps a successful turn green and still after it has been read", () => {
+    renderItem({ compact: true, completed: true, unread: false });
+    const marker = screen.getByRole("img", {
+      name: "A promo for the launch completed successfully",
+    });
+    expect(marker.getAttribute("style")).toContain("color: var(--success)");
+    expect(marker.querySelector(".dmx-grid")).not.toBeNull();
+    expect(marker.querySelector(".dmx-diagonal-alt-sweep")).toBeNull();
   });
 
   it("says how long a running turn has been going, instead of the time", () => {
@@ -105,11 +122,18 @@ describe("SessionItem", () => {
   });
 
   it("marks a session whose turn failed", () => {
-    renderItem({ error: "the sidecar is not running", status: "failed" });
+    renderItem({
+      compact: true,
+      error: "the sidecar is not running",
+      status: "failed",
+    });
 
-    expect(
-      screen.getByRole("img", { name: "A promo for the launch failed" })
-    ).toBeVisible();
+    const marker = screen.getByRole("img", {
+      name: "A promo for the launch failed",
+    });
+    expect(marker.getAttribute("style")).toContain("color: var(--destructive)");
+    expect(marker.querySelector(".dmx-grid")).not.toBeNull();
+    expect(marker.querySelector(".dmx-diagonal-alt-sweep")).toBeNull();
   });
 
   it("shows the first line of the error a turn failed with", () => {

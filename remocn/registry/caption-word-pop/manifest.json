@@ -1,0 +1,41 @@
+{
+  "category": "Captions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/captions"
+  ],
+  "description": "One large word at a time, each popping in on a spring the moment it is spoken.",
+  "files": [
+    {
+      "file": "caption-word-pop.tsx",
+      "target": "src/components/remocn/caption-word-pop.tsx"
+    }
+  ],
+  "name": "caption-word-pop",
+  "preview": {
+    "durationInFrames": 279,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "defaults": {
+      "captions": "So here's the thing. Most demo videos lose people in the first three seconds. Captions keep them watching, even with the sound off.",
+      "fontSize": 96,
+      "fontWeight": 800,
+      "color": "#ffffff",
+      "popScale": 0.6,
+      "combineTokensWithinMilliseconds": 0,
+      "holdMs": 600,
+      "shadow": true
+    }
+  },
+  "registryDependencies": [
+    "caption-core"
+  ],
+  "sourcePin": "d6cd742fa4f3ab0a74fecf2ac93f1542fa2ea8f7",
+  "title": "Caption Word Pop"
+}

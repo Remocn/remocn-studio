@@ -49,12 +49,12 @@ export function ProjectBrandColor({
   return (
     <div
       className={cn(
-        "min-w-0 border-border/60 border-b py-2 last:border-b-0",
-        "[&_.dialkit-color-control]:h-auto! [&_.dialkit-color-control]:min-h-10 [&_.dialkit-color-control]:rounded-none! [&_.dialkit-color-control]:bg-transparent! [&_.dialkit-color-control]:px-0! [&_.dialkit-color-control]:shadow-none!",
-        "[&_.dialkit-color-label]:shrink! [&_.dialkit-color-label]:min-w-0 [&_.dialkit-color-label]:translate-y-0! [&_.dialkit-color-label]:break-words [&_.dialkit-color-label]:font-normal! [&_.dialkit-color-label]:text-foreground! [&_.dialkit-color-label]:text-sm!",
-        "[&_.dialkit-color-inputs]:flex-none! [&_.dialkit-color-inputs]:gap-4!",
-        "[&_.dialkit-color-value]:w-24! [&_.dialkit-color-value]:font-normal! [&_.dialkit-color-value]:text-muted-foreground! [&_.dialkit-color-value]:text-xs! [&_.dialkit-color-value]:tabular-nums",
-        "[&_.dialkit-color-swatch]:relative [&_.dialkit-color-swatch]:size-7! [&_.dialkit-color-swatch]:basis-7! [&_.dialkit-color-swatch]:rounded-md! [&_.dialkit-color-swatch]:before:absolute [&_.dialkit-color-swatch]:before:-inset-1.5 [&_.dialkit-color-swatch]:before:content-['']"
+        "min-w-0 rounded-md p-[9px]",
+        "[&_.dialkit-color-control]:grid! [&_.dialkit-color-control]:h-auto! [&_.dialkit-color-control]:grid-cols-[32px_minmax(0,1fr)] [&_.dialkit-color-control]:gap-x-[9px]! [&_.dialkit-color-control]:gap-y-0! [&_.dialkit-color-control]:bg-transparent! [&_.dialkit-color-control]:p-0! [&_.dialkit-color-control]:shadow-none!",
+        "[&_.dialkit-color-label]:col-start-2 [&_.dialkit-color-label]:row-start-1 [&_.dialkit-color-label]:min-w-0 [&_.dialkit-color-label]:translate-y-0! [&_.dialkit-color-label]:truncate [&_.dialkit-color-label]:font-normal! [&_.dialkit-color-label]:text-foreground! [&_.dialkit-color-label]:text-sm! [&_.dialkit-color-label]:leading-[18px]!",
+        "[&_.dialkit-color-inputs]:contents!",
+        "[&_.dialkit-color-value]:col-start-2 [&_.dialkit-color-value]:row-start-2 [&_.dialkit-color-value]:w-full! [&_.dialkit-color-value]:rounded-sm [&_.dialkit-color-value]:p-0! [&_.dialkit-color-value]:font-normal! [&_.dialkit-color-value]:text-left! [&_.dialkit-color-value]:text-muted-foreground! [&_.dialkit-color-value]:text-xs! [&_.dialkit-color-value]:tabular-nums [&_.dialkit-color-value]:leading-5 [&_.dialkit-color-value]:focus-visible:outline-2 [&_.dialkit-color-value]:focus-visible:outline-ring [&_.dialkit-color-value]:focus-visible:outline-solid",
+        "[&_.dialkit-color-swatch]:hover:transform-none! [&_.dialkit-color-swatch]:col-start-1 [&_.dialkit-color-swatch]:row-span-2 [&_.dialkit-color-swatch]:row-start-1 [&_.dialkit-color-swatch]:h-7! [&_.dialkit-color-swatch]:w-8! [&_.dialkit-color-swatch]:rounded-md! [&_.dialkit-color-swatch]:shadow-none! [&_.dialkit-color-swatch]:focus-visible:outline-2 [&_.dialkit-color-swatch]:focus-visible:outline-ring [&_.dialkit-color-swatch]:focus-visible:outline-solid [&_.dialkit-color-swatch]:focus-visible:outline-offset-2"
       )}
     >
       <ColorControl

@@ -24,6 +24,7 @@ import {
   type WriteParams,
   type WriteResult,
 } from "@/shared/ipc";
+import { ShaderIdentifier, ShaderSlotReport } from "@/shared/shader-target";
 import { StudioValue } from "@/shared/studio-document";
 
 export type {
@@ -255,6 +256,30 @@ export const PreviewMessage = Schema.Union([
   }),
   Schema.Struct({ source: from, type: Schema.Literal("inspect.ready") }),
   Schema.Struct({ source: from, type: Schema.Literal("inspect.clear") }),
+  Schema.Struct({
+    generation: Schema.NonEmptyString,
+    source: from,
+    targets: Schema.Array(ShaderSlotReport),
+    type: Schema.Literal("shader.targets"),
+    video: ShaderIdentifier,
+  }),
+  Schema.Struct({
+    generation: Schema.NonEmptyString,
+    objectId: ShaderIdentifier,
+    operationId: Schema.NonEmptyString,
+    slotId: ShaderIdentifier,
+    source: from,
+    type: Schema.Literal("shader.ready"),
+    video: ShaderIdentifier,
+  }),
+  Schema.Struct({
+    generation: Schema.NonEmptyString,
+    message: Schema.NonEmptyString,
+    objectId: ShaderIdentifier,
+    source: from,
+    type: Schema.Literal("shader.error"),
+    video: ShaderIdentifier,
+  }),
   Schema.Struct({
     generation: Schema.NonEmptyString,
     lastOperationId: Schema.NullOr(Schema.NonEmptyString),

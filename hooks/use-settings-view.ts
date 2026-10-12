@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AgentProvider } from "@/shared/providers";
+import { useNavigationMotion } from "./use-navigation-motion";
 
 export const SETTINGS_SECTIONS = [
   "project",
@@ -24,6 +25,7 @@ export function isSettingsSection(value: unknown): value is SettingsSection {
 }
 
 export interface SettingsView {
+  animate: boolean;
   blocked: boolean;
   close: () => void;
   isOpen: boolean;
@@ -47,6 +49,15 @@ export function useSettingsView(
   activeProjectId: string | null = null
 ): SettingsView {
   const [isOpen, setIsOpen] = useState(false);
+  const [animate, setAnimate] = useState(false);
+  const shouldAnimate = useNavigationMotion();
+  const changeOpen = useCallback(
+    (next: boolean) => {
+      setAnimate(shouldAnimate());
+      setIsOpen(next);
+    },
+    [shouldAnimate]
+  );
   const [section, setSectionState] = useState<SettingsSection>("appearance");
   const [provider, setProvider] = useState<AgentProvider | null>(null);
 
@@ -72,39 +83,45 @@ export function useSettingsView(
     },
     [activeProjectId]
   );
-  const openProject = useCallback((id: string) => {
-    if (dirty.current) {
-      setBlocked(true);
-      return;
-    }
-    setProjectId(id);
-    setSectionState("project");
-    setIsOpen(true);
-  }, []);
+  const openProject = useCallback(
+    (id: string) => {
+      if (dirty.current) {
+        setBlocked(true);
+        return;
+      }
+      setProjectId(id);
+      setSectionState("project");
+      changeOpen(true);
+    },
+    [changeOpen]
+  );
 
   const open = useCallback(() => {
-    setIsOpen(true);
-  }, []);
+    changeOpen(true);
+  }, [changeOpen]);
 
   const openAccounts = useCallback(
     (target: AgentProvider) => {
       setSection("integrations");
       setProvider(target);
-      setIsOpen(true);
+      changeOpen(true);
     },
-    [setSection]
+    [changeOpen, setSection]
   );
 
-  const setOpen = useCallback((next: boolean) => {
-    if (!next && dirty.current) {
-      setBlocked(true);
-      return;
-    }
-    setIsOpen(next);
-    if (!next) {
-      setProvider(null);
-    }
-  }, []);
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (!next && dirty.current) {
+        setBlocked(true);
+        return;
+      }
+      changeOpen(next);
+      if (!next) {
+        setProvider(null);
+      }
+    },
+    [changeOpen]
+  );
 
   const close = useCallback(() => {
     setOpen(false);
@@ -125,6 +142,7 @@ export function useSettingsView(
 
   return useMemo(
     () => ({
+      animate,
       blocked,
       close,
       isOpen,
@@ -139,6 +157,7 @@ export function useSettingsView(
       setSection,
     }),
     [
+      animate,
       projectId,
       openProject,
       setProjectDirty,

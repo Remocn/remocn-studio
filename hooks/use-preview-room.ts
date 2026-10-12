@@ -47,7 +47,12 @@ export function usePreviewRoom({
     const panel = panelRef.current;
     const group = groupRef.current;
 
-    if (panel === null || group === null || panel.isCollapsed()) {
+    if (panel === null || group === null) {
+      return;
+    }
+
+    if (panel.isCollapsed()) {
+      panel.expand();
       return;
     }
 
@@ -63,9 +68,15 @@ export function usePreviewRoom({
   }, [panelRef]);
 
   useLayoutEffect(() => {
-    if (isShown && !isSliding) {
-      makeRoom();
+    const group = groupRef.current;
+    if (!isShown || isSliding || group === null) {
+      return;
     }
+
+    makeRoom();
+    const observer = new ResizeObserver(makeRoom);
+    observer.observe(group);
+    return () => observer.disconnect();
   }, [isShown, isSliding, makeRoom]);
 
   const onChanged = useCallback(

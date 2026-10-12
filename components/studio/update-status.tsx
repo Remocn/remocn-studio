@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleArrowUpIcon, RefreshCwIcon, TagIcon } from "lucide-react";
+import { CircleArrowUpIcon, RefreshCwIcon, TagIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -143,6 +143,12 @@ export function updateSummary(updates: Updates): string {
 
   if (updates.release !== null) {
     return `${updates.release.version} is out, and this build is older`;
+  }
+
+  // A check that failed has checked nothing; the error under this line says
+  // why.
+  if (updates.error !== null) {
+    return "Could not tell whether a newer build is out";
   }
 
   return updates.hasChecked

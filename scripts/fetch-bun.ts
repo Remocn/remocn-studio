@@ -14,10 +14,13 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BINARIES = join(ROOT, "src-tauri", "binaries");
+const SIDECAR_NAME = "remocn-studio-bun";
 
 const TARGETS = [
   { asset: "bun-darwin-aarch64", triple: "aarch64-apple-darwin" },
   { asset: "bun-darwin-x64", triple: "x86_64-apple-darwin" },
+  { asset: "bun-linux-x64-baseline", triple: "x86_64-unknown-linux-gnu" },
+  { asset: "bun-linux-aarch64", triple: "aarch64-unknown-linux-gnu" },
 ] as const;
 
 async function pinnedVersion(): Promise<string> {
@@ -52,7 +55,7 @@ async function fetchTarget(
   asset: string,
   triple: string
 ): Promise<void> {
-  const binary = join(BINARIES, `bun-${triple}`);
+  const binary = join(BINARIES, `${SIDECAR_NAME}-${triple}`);
 
   if (installedVersion(binary) === version) {
     process.stdout.write(`bun ${version} for ${triple} is already here\n`);
@@ -93,10 +96,14 @@ async function fetchTarget(
 const pinned = await pinnedVersion();
 await mkdir(BINARIES, { recursive: true });
 
+// The Tauri CLI names the one triple it builds. Run by hand, every build for
+// this machine's operating system is fetched — both architectures, since a
+// release bundles for each.
 const only = process.env.TAURI_ENV_TARGET_TRIPLE;
+const hostOs = process.platform === "darwin" ? "apple-darwin" : "linux-gnu";
 const wanted =
   only === undefined
-    ? TARGETS
+    ? TARGETS.filter((target) => target.triple.endsWith(hostOs))
     : TARGETS.filter((target) => target.triple === only);
 
 if (wanted.length === 0) {

@@ -1,0 +1,42 @@
+{
+  "category": "Captions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/captions"
+  ],
+  "description": "Classic broadcast subtitles, a whole phrase on a translucent plate, with no word-level animation at all.",
+  "files": [
+    {
+      "file": "caption-subtitle.tsx",
+      "target": "src/components/remocn/caption-subtitle.tsx"
+    }
+  ],
+  "name": "caption-subtitle",
+  "preview": {
+    "durationInFrames": 279,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "defaults": {
+      "captions": "So here's the thing. Most demo videos lose people in the first three seconds. Captions keep them watching, even with the sound off.",
+      "fontSize": 44,
+      "fontWeight": 600,
+      "color": "#ffffff",
+      "combineTokensWithinMilliseconds": 2500,
+      "holdMs": 600,
+      "box": true,
+      "boxColor": "#000000",
+      "boxOpacity": 0.72
+    }
+  },
+  "registryDependencies": [
+    "caption-core"
+  ],
+  "sourcePin": "d6cd742fa4f3ab0a74fecf2ac93f1542fa2ea8f7",
+  "title": "Caption Subtitle"
+}

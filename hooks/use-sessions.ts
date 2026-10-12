@@ -30,7 +30,7 @@ export interface StudioSessions {
   selectSession: (session: HistorySession) => void;
   sessions: readonly HistorySession[];
   sessionsError: string | null;
-  startSession: () => void;
+  startSession: (id?: string) => void;
   undoRemoveSession: (sessionId: string) => void;
 }
 
@@ -77,10 +77,10 @@ export function useSessions(
     };
   }, []);
 
-  const startSession = useCallback(() => {
+  const startSession = useCallback((id?: string) => {
     setActiveId(null);
     setOpenedId(null);
-    setDraftId(crypto.randomUUID());
+    setDraftId(id ?? crypto.randomUUID());
   }, []);
 
   const selectSession = useCallback((session: HistorySession) => {

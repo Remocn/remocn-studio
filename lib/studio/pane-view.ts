@@ -1,7 +1,14 @@
 import type { Asset } from "@/shared/library";
 import { MOTION_ROLES, type MotionRole, ROLE_LABELS } from "@/shared/motion";
 
-export const PANE_VIEWS = ["videos", "assets", "components"] as const;
+export const PANE_VIEWS = [
+  "videos",
+  "projects",
+  "assets",
+  "components",
+  "shaders",
+  "captions",
+] as const;
 
 export type PaneView = (typeof PANE_VIEWS)[number];
 
@@ -70,14 +77,53 @@ export function componentGroups(
   saved: readonly Asset[],
   bundled: readonly Asset[]
 ): readonly ComponentGroup[] {
-  const unsorted = saved.filter((asset) => asset.role === null);
+  const savedComponents = saved.filter(
+    (asset) => asset.category !== "Shaders" && asset.category !== "Captions"
+  );
+  const bundledComponents = bundled.filter(
+    (asset) => asset.category !== "Shaders" && asset.category !== "Captions"
+  );
+  const unsorted = savedComponents.filter((asset) => asset.role === null);
 
   const groups: ComponentGroup[] = MOTION_ROLES.map((role) => ({
-    assets: [...inRole(saved, role), ...byCategory(inRole(bundled, role))],
+    assets: [
+      ...inRole(savedComponents, role),
+      ...byCategory(inRole(bundledComponents, role)),
+    ],
     label: ROLE_LABELS[role],
   }));
 
   return [{ assets: unsorted, label: SAVED_LABEL }, ...groups].filter(
     (group) => group.assets.length > 0
   );
+}
+
+export function captionAssets(assets: readonly Asset[]): readonly Asset[] {
+  return assets.filter((asset) => asset.category === "Captions");
+}
+
+export function captionSelectionUnavailable({
+  hasProject,
+  missing,
+  blocked,
+  waiting,
+}: {
+  hasProject: boolean;
+  missing: boolean;
+  blocked: boolean;
+  waiting: boolean;
+}): string | null {
+  if (!hasProject) {
+    return "Open a video to add a caption style.";
+  }
+  if (missing) {
+    return "Locate the project folder to add a caption style.";
+  }
+  if (blocked) {
+    return "Complete the project setup to add a caption style.";
+  }
+  if (waiting) {
+    return "Answer the request in chat to add a caption style.";
+  }
+  return null;
 }

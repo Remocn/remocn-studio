@@ -1,12 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   ChevronRightIcon,
   ClipboardCheckIcon,
   InfoIcon,
   WrenchIcon,
-} from "lucide-react";
-import type { ReactNode } from "react";
+} from "@/components/icons";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import {
   type FindingGroup,
@@ -63,7 +63,7 @@ export function DesignReview({
   return (
     <section
       aria-label={`Video review: ${review.composition}`}
-      className="min-w-0 overflow-hidden rounded-xl border bg-card text-card-foreground text-xs"
+      className="min-w-0 overflow-hidden rounded-xl bg-secondary text-card-foreground text-xs"
     >
       <div className="space-y-4 px-4 py-3">
         <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
@@ -130,11 +130,11 @@ export function DesignReview({
           </Disclosure>
         ) : null}
       </div>
-      <footer className="space-y-1 border-t bg-muted/20 px-3 py-2">
+      <footer className="space-y-1 px-3 pt-0 pb-2">
         {findings.length > 3 ? (
           <button
             aria-expanded={disclosure.isOpen}
-            className="flex min-h-8 w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-start font-medium outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="flex min-h-8 w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-start font-medium outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
             onClick={disclosure.toggle}
             type="button"
           >
@@ -167,7 +167,7 @@ function Disclosure({
 }) {
   return (
     <details className="group/review-disclosure min-w-0">
-      <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-3 rounded-md px-2 py-1.5 text-foreground/75 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-3 rounded-md px-2 py-1.5 text-foreground/75 outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
         <span className="wrap-break-word min-w-0">{label}</span>
         <ChevronRightIcon
           aria-hidden="true"
@@ -183,7 +183,7 @@ function Finding({ finding }: { finding: FindingGroup }) {
   return (
     <li>
       <details className="group/finding">
-        <summary className="-mx-2 flex cursor-pointer list-none items-start gap-3 rounded-md px-2 py-2 text-sm leading-relaxed outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
+        <summary className="-mx-2 flex cursor-pointer list-none items-start gap-3 rounded-md px-2 py-2 text-sm leading-relaxed outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
           <span className="wrap-break-word min-w-0 flex-1 text-pretty group-open/finding:font-medium">
             {finding.message}
             {finding.occurrences > 1 ? (
@@ -195,7 +195,7 @@ function Finding({ finding }: { finding: FindingGroup }) {
             className="mt-1 size-3.5 shrink-0 text-foreground/75 group-open/finding:rotate-90"
           />
         </summary>
-        <div className="wrap-break-word ms-1 mt-1 mb-3 space-y-4 rounded-e-lg border-s-2 bg-muted/40 px-3 py-3 leading-relaxed">
+        <div className="wrap-break-word mt-1 mb-3 space-y-3 rounded-lg bg-field px-3 py-3 leading-relaxed">
           {finding.fix ? (
             <div className="space-y-1">
               <p className="font-medium text-foreground/75 text-xs">

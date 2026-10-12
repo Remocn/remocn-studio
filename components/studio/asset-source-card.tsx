@@ -68,7 +68,6 @@ export function AssetSourceCard({
   return (
     <Card
       aria-label="Choose the source for this brand asset"
-      className="bg-input/50 ring-none"
       data-slot="asset-source-card"
       onKeyDown={onKeyDown}
     >
@@ -89,30 +88,30 @@ export function AssetSourceCard({
       <CardContent className="p-4">
         <div className="flex flex-col">
           <button
-            className="-mx-1 rounded-md px-2 py-1.5 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="-mx-1 flex min-h-9 pointer-coarse:min-h-11 flex-col items-start gap-0.5 rounded-md px-2 py-2 text-left outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-45"
             disabled={busy}
             onClick={upload}
             ref={first}
             type="button"
           >
             <span className="font-medium text-sm">Upload original</span>
-            <span className="ml-2 text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-xs">
               Choose the authoritative image file
             </span>
           </button>
           <button
-            className="-mx-1 rounded-md px-2 py-1.5 text-left outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="-mx-1 flex min-h-9 pointer-coarse:min-h-11 flex-col items-start gap-0.5 rounded-md px-2 py-2 text-left outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-45"
             disabled={busy}
             onClick={screenshot}
             type="button"
           >
             <span className="text-sm">Use site screenshot</span>
-            <span className="ml-2 text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-xs">
               Capture the supplied page without redrawing it
             </span>
           </button>
           <button
-            className="-mx-1 rounded-md px-2 py-1.5 text-left text-destructive text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="-mx-1 flex min-h-9 pointer-coarse:min-h-11 flex-col items-start gap-0.5 rounded-md px-2 py-2 text-left text-destructive-foreground text-sm outline-none hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-45"
             disabled={busy}
             onClick={cancel}
             type="button"

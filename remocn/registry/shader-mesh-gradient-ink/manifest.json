@@ -1,0 +1,29 @@
+{
+  "category": "Shaders",
+  "componentName": "ShaderMeshGradientInk",
+  "dependencies": [],
+  "description": "Monochrome ink folds in charcoal and silver with grain.",
+  "files": [
+    {
+      "file": "shader-mesh-gradient-ink.tsx",
+      "target": "src/components/remocn/shader-mesh-gradient-ink.tsx"
+    }
+  ],
+  "name": "shader-mesh-gradient-ink",
+  "presetOf": "shader-mesh-gradient",
+  "preview": {
+    "durationInFrames": 150,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "defaults": {
+      "speed": 1,
+      "distortion": 1,
+      "swirl": 0.25
+    }
+  },
+  "registryDependencies": [
+    "shader-mesh-gradient"
+  ],
+  "title": "Shader Mesh Gradient Ink"
+}

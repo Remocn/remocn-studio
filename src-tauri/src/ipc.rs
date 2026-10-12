@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-pub const PROTOCOL: u32 = 38;
+pub const PROTOCOL: u32 = 40;
 pub const STATUS_EVENT: &str = "sidecar://status";
 pub const NOTIFY_EVENT: &str = "sidecar://notify";
 pub const QUIT_EVENT: &str = "app://quit-requested";
@@ -91,5 +91,6 @@ pub enum AppEnvironment {
 pub struct StudioBuild {
     pub environment: AppEnvironment,
     pub os: String,
+    pub updates_in_place: bool,
     pub version: String,
 }

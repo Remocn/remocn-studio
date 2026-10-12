@@ -1,6 +1,7 @@
 "use client";
 
 import { SpringVisualization } from "dialkit";
+import { useCallback } from "react";
 import {
   ChevronRightIcon,
   CornerDownLeftIcon,
@@ -8,8 +9,7 @@ import {
   PlayIcon,
   RotateCcwIcon,
   XIcon,
-} from "lucide-react";
-import { useCallback } from "react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -271,13 +271,8 @@ export function PropsPanel({
               {card.text === null || card.text === undefined ? null : (
                 <TextSection onChange={onChangeText} text={card.text} />
               )}
-              {/* Full-width rules between sections, so the divider is a property
-                  of the pane rather than an inset line inside the content. */}
               {groups.map(([group, grouped]) => (
-                <section
-                  className="border-border border-t px-4 py-3 first:border-t-0"
-                  key={group}
-                >
+                <section className="px-4 py-3" key={group}>
                   <GroupHeading
                     count={grouped.length}
                     group={group}
@@ -408,7 +403,7 @@ function TextSection({
   );
 
   return (
-    <section className="border-border border-t px-4 py-3 first:border-t-0">
+    <section className="px-4 py-3">
       <h3 className="pb-2 font-medium text-foreground text-sm">Text</h3>
       <Textarea
         {...VERBATIM_INPUT}
@@ -448,7 +443,7 @@ function TimeStripRow({
       {strip.span === null ? null : (
         <input
           aria-label="Frame"
-          className="control-surface h-1.5 min-w-0 flex-1 cursor-pointer appearance-none rounded-full"
+          className="control-surface h-1.5 min-w-0 flex-1 cursor-pointer appearance-none rounded-full accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:outline-offset-2"
           max={strip.max}
           min={strip.min}
           onChange={strip.onSeek}

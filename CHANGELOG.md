@@ -1,5 +1,52 @@
 # remocn-studio
 
+## 1.1.0
+
+### Minor Changes
+
+- 118ce30: Remocn Studio now runs on Linux as well as macOS.
+
+  - **Install it your way.** Each release adds an AppImage, a `.deb` and an `.rpm`,
+    for x86_64 and aarch64, beside the macOS `.dmg`. The AppImage carries the
+    codecs that footage in the preview needs.
+  - **It updates itself on Linux too**, whichever of the three you installed.
+  - **The window draws its own frame on Linux.** Close, minimise and maximise sit
+    at the top left of the title bar band, where macOS puts its traffic lights.
+    Drag the band to move the window, double-click it to maximise, and drag any
+    edge to resize.
+  - **No menu bar on Linux.** Every action is in the command palette (Ctrl+K), and
+    every shortcut uses Ctrl.
+  - **Integration keys live in your system keyring** on Linux (GNOME Keyring or
+    KWallet) and stay there across restarts.
+  - **Open in Terminal opens your terminal** on Linux: the one `$TERMINAL` names,
+    or the first common one installed. Paste with Ctrl+Shift+V.
+  - **Install Node.js opens the Node.js download page** on Linux. Your
+    distribution's package manager works too.
+  - **Your agent's command-line tool is found** in `~/.local/bin`, mise or asdf
+    shims, Volta and pnpm, even when the studio starts from your app launcher.
+  - **Export folders in your home folder read as `~/…`** on Linux, as on macOS.
+
+- 67b3123: Add any of the 23 bundled shaders from the Shaders library directly to a video scene and edit its colors, motion, timing, pattern and individual parameters in Inspect. The catalogue includes 19 Paper shaders and Caustics, Strata, Weave and Light Tunnel. Image-capable shaders currently use procedural shapes. Insertions show progress, support retry and Undo, and wait for the preview before Export becomes available.
+
+  Videos created with Studio 1.0.0 can prepare their scene structure without a creation-version file. Recognised scene layouts update automatically when adding a shader. Other managed videos offer a separate Prepare video action using the selected agent, with an isolated working copy, source checks, compilation, preview validation and recovery. Recorded creation versions older than 1.0.0 remain unsupported. Preparation preserves existing Inspect values and does not create a shader instance.
+
+  Agent preparation can repair structural and compilation errors through up to three checked attempts, including videos that use custom scene wrappers.
+
+  Fix native WebKit preview and GPU-backed export for Caustics, Strata and Weave, including copies already saved in projects. Both compilers align shared uniform precision without changing saved shader files or values.
+
+  Allow shader insertion when an existing descriptor has identical JSON data with different formatting or key order. Preserve the file and continue rejecting changed controls, defaults and implementation versions.
+
+- 2e811ac: Shaders gains 35 ready-made presets of Mesh Gradient, Grain Gradient, Swirl and Warp, each its own card. A preset is added as its shader with the preset's look, so its controls are the shader's own, and Reset shader returns to the preset.
+- 67b3123: Add a Captions library with 31 remocn styles, searchable cards and animated previews. Select styles to add references to the composer. After Send, the agent uses the selected component and prepares or reuses source-matched caption timings. Reduced-motion previews wait for explicit playback.
+
+### Patch Changes
+
+- 6e03ed2: Quitting the app, or the studio's helper stopping, no longer files a "broken pipe" crash report. A helper process whose parent has gone now stops on its own straight away instead of carrying on with no one listening.
+- b96d8da: A background preview proxy that fails to convert no longer files an "Aborted" crash report, and the console line it leaves now says what the video encoder or decoder actually reported.
+- 9b07099: Agent turns waste less time. After each agent edit, the preview rebuilds only what changed instead of recompiling the whole project. A Claude chat keeps one system prompt from turn to turn, so the provider can reuse its cached prompt even when the pipeline moves to a new stage; the stage's instructions now travel with the message. A Snapshot no longer deletes the design check's report, so the review stage can close without running the check again. Loading a skill no longer asks for permission, and Copilot and Grok read the studio's bundled skills without a card. While the pipeline is mid-stage, a single pointed change is made and the turn ends, rather than the agent carrying on through the remaining stages. Chats started before this update keep their current conventions until Claude compacts them.
+- d0acec5: The agent's motion guides now describe how Remotion springs, crossfades and zooms actually behave: a spring is given a chosen config instead of the overshooting default, a redirected move keeps its speed, a layout fades out before the next fades in, and a click in a product demo answers on the frame it lands.
+- bfa15a6: The inspector's show/hide button now stays in one place, at the end of the canvas toolbar, whether the inspector is open or closed. It carries the Inspect sliders icon, reads as pressed while the inspector is open, and its hint says it shows the layers and properties. The inspector's bar now lines up with the toolbar, with rulers on or off.
+
 ## 1.0.1
 
 ### Patch Changes

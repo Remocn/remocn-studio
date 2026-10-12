@@ -220,6 +220,25 @@ describe("review", () => {
 
     expect(verdicts).toEqual(tools.map(() => ({ kind: "allow" })));
   });
+
+  it("never asks to load a skill or to look up a deferred tool", async () => {
+    expect(await verdict("Skill", { skill: "motion-design" })).toEqual({
+      kind: "allow",
+    });
+    expect(await verdict("ToolSearch", { query: "select:WebFetch" })).toEqual({
+      kind: "allow",
+    });
+  });
+
+  it("still asks for the command or the fetch a skill leads to", async () => {
+    expect(
+      (await verdict("Bash", { command: "npx remotion still" })).kind
+    ).toBe("ask");
+    expect(
+      (await verdict("WebFetch", { url: "https://remocn.dev" })).kind
+    ).toBe("ask");
+    expect((await verdict("NotAKnownTool", {})).kind).toBe("ask");
+  });
 });
 
 const ALWAYS_OUTWARD = () => true;

@@ -107,20 +107,16 @@ Appearance SHALL offer Dark, Light and System as three tiles with the current on
 - **THEN** the sample above the switches goes plain
 - **AND** *Animate it* becomes unusable
 
-### Requirement: Behavior offers suggestions and privacy
-
-Behavior SHALL offer a *Suggestions* group — a switch for offering to save a turn's pictures and clips to the library, and a *Replay tips* button that forgets every answered tip — and a *Privacy* group holding the crash-report consent. *Replay tips* SHALL be unavailable when no tip has ever been answered.
+### Requirement: Behavior offers library suggestions, feature overview and privacy
+Behavior SHALL offer a Suggestions group with the library-offer switch and an always-available Explore Studio button, and a Privacy group holding crash-report consent.
 
 #### Scenario: Turning library suggestions off
-
 - **WHEN** the switch is turned off
 - **THEN** the preference is written down and a turn that ends no longer offers its media
 
-#### Scenario: Replaying the tips
-
-- **WHEN** *Replay tips* is pressed
-- **THEN** every answered tip is forgotten
-- **AND** no tip appears while Settings is open
+#### Scenario: Opening the overview
+- **WHEN** Explore Studio is pressed
+- **THEN** the feature overview opens above Settings at its remembered chapter without resetting dismissal
 
 ### Requirement: Behavior says what a crash report carries before asking for it
 
@@ -139,7 +135,7 @@ The crash-report row SHALL be off unless it is switched on, SHALL say what is se
 
 ### Requirement: Notifications is a section with one master switch, a way to permission, and a switch per event
 
-Notifications SHALL offer a master switch that turns every notification on or off, a *Grant permission* button shown whenever macOS has not allowed the studio to notify, and one switch per event — a turn that ended, the agent waiting for an answer, an export that finished or failed, the studio's helper stopping — each on until turned off and shown as off while the master switch is off. The master switch and every event switch SHALL be remembered, so turning the master switch back on restores each event's own choice. *Grant permission* SHALL ask macOS when it has never been asked and SHALL open the studio's row in System Settings when macOS has already refused; see `shell/attention`.
+Notifications SHALL offer a master switch that turns every notification on or off, a *Grant permission* button shown whenever the operating system has not allowed the studio to notify, and one switch per event — a turn that ended, the agent waiting for an answer, an export that finished or failed, the studio's helper stopping — each on until turned off and shown as off while the master switch is off. The master switch and every event switch SHALL be remembered, so turning the master switch back on restores each event's own choice. On macOS, *Grant permission* SHALL ask macOS when it has never been asked and SHALL open the studio's row in System Settings when macOS has already refused. On Linux, notifications are posted through the desktop's own notification service, which keeps no per-app row to open, so *Grant permission* SHALL ask again and the line SHALL say notifications must be allowed in the desktop's own settings; see `shell/attention`.
 
 #### Scenario: Turning notifications on for the first time
 
@@ -155,6 +151,11 @@ Notifications SHALL offer a master switch that turns every notification on or of
 
 - **WHEN** *Grant permission* is pressed and macOS has already refused
 - **THEN** the studio's row in System Settings opens, and the line says notifications are off there
+
+#### Scenario: The Linux desktop has not allowed it
+
+- **WHEN** the section opens on Linux and the desktop reports that the studio may not notify
+- **THEN** *Grant permission* is shown with a line saying nothing will arrive until notifications are allowed for the studio in the desktop's own settings, and pressing it asks again rather than opening anything
 
 #### Scenario: The master switch goes off
 
@@ -173,21 +174,21 @@ Notifications SHALL offer a master switch that turns every notification on or of
 
 ### Requirement: Hotkeys lists every shortcut and changes none
 
-Hotkeys SHALL list every keyboard shortcut the studio binds, grouped as Studio, Project, View and Video, each row naming the command and showing its keys in the platform's glyphs. The section SHALL be read-only: no shortcut can be changed, cleared or added from it, and the list SHALL be the same table the palette and the menus read.
+Hotkeys SHALL list every keyboard shortcut the studio binds, grouped as Studio, Project, View and Video, each row naming the command and showing its keys as key caps in the platform's glyphs — `⌘`, `⇧` and `⌥` on macOS, `Ctrl`, `Shift` and `Alt` on Linux. The section SHALL be read-only: no shortcut can be changed, cleared or added from it, and the list SHALL be the same table the palette and the keyboard read.
 
 #### Scenario: Reading the list
 
 - **WHEN** the person opens Hotkeys
-- **THEN** Export is listed under Video with ⌘E, and the next video with ⌥⌘↓
+- **THEN** Export is listed under Video with ⌘E on macOS and Ctrl+E on Linux, and the next video with ⌥⌘↓ or Ctrl+Alt+↓
 
 #### Scenario: Nothing to edit
 
 - **WHEN** the person looks for a way to change a shortcut
 - **THEN** there is none; the rows carry no control
 
-### Requirement: Stock media holds a Pexels key on this Mac
+### Requirement: Stock media holds a Pexels key on this computer
 
-Stock media SHALL take a Pexels API key, SHALL say that it is kept in the studio's data folder on this Mac and goes nowhere but Pexels, and SHALL offer to remove a key that is saved. It SHALL say plainly when there is no key that stock search stays empty until there is one.
+Stock media SHALL take a Pexels API key, SHALL say that it is kept in the studio's data folder on this computer and goes nowhere but Pexels, and SHALL offer to remove a key that is saved. It SHALL say plainly when there is no key that stock search stays empty until there is one.
 
 #### Scenario: Saving a key
 
@@ -234,7 +235,7 @@ AI Accounts SHALL list every provider the studio knows with the answer of that p
 
 ### Requirement: Feedback is an email the person sends themselves
 
-Feedback SHALL open the person's own mail client with a message addressed to the studio's intake address, a subject, a prompt for what happened, a reminder to attach screenshots, and — below a rule — the facts it carries: the studio's version, whether the build is development or production, the macOS version, and the agent the open chat is on. Nothing SHALL be sent by the app itself, and the same four facts SHALL be listed on the page so what leaves is readable before the button is pressed.
+Feedback SHALL open the person's own mail client with a message addressed to the studio's intake address, a subject, a prompt for what happened, a reminder to attach screenshots, and — below a rule — the facts it carries: the studio's version, whether the build is development or production, the operating system's name and version, and the agent the open chat is on. Nothing SHALL be sent by the app itself, and the same four facts SHALL be listed on the page so what leaves is readable before the button is pressed.
 
 #### Scenario: Sending feedback
 

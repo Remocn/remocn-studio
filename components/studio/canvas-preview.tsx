@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { type CSSProperties, memo, type ReactNode } from "react";
 import {
   CameraIcon,
   ChevronRightIcon,
@@ -10,15 +12,11 @@ import {
   LayersIcon,
   MaximizeIcon,
   MinusIcon,
-  PanelRightCloseIcon,
-  PanelRightOpenIcon,
   PlusIcon,
   RulerIcon,
   SlidersHorizontalIcon,
   SquareDashedIcon,
-} from "lucide-react";
-import dynamic from "next/dynamic";
-import { type CSSProperties, memo, type ReactNode } from "react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +32,7 @@ import type { Tools } from "@/hooks/use-tools";
 import { formatShortcut, SHORTCUTS } from "@/lib/studio/command-registry";
 import type { LayerRow } from "@/lib/studio/layers";
 import { INSPECTOR_WIDTH } from "@/lib/studio/panes";
+import { modKeyCombo } from "@/lib/studio/platform";
 import { cn } from "@/lib/utils";
 import { CanvasFrameLabel } from "./canvas-frame-label";
 import { CanvasRulers } from "./canvas-rulers";
@@ -41,7 +40,7 @@ import { DOCK_SURFACE } from "./dock-layout";
 import { FailureText } from "./failure-text";
 import { HintTooltip } from "./hint-tooltip";
 import { InspectOverlay } from "./inspect-overlay";
-import { PaneHeader, PREVIEW_LEADING } from "./pane";
+import { PaneHeader } from "./pane";
 import { PreviewControls } from "./preview-controls";
 import { useStudio } from "./studio-provider";
 
@@ -62,7 +61,7 @@ function inspectorWidth(watching: boolean, layers: CanvasLayers): string {
   if (watching) {
     return "0px";
   }
-  return isDocked(layers) ? INSPECTOR_OPEN : "3rem";
+  return isDocked(layers) ? INSPECTOR_OPEN : "0px";
 }
 
 function isDocked(layers: CanvasLayers): boolean {
@@ -122,7 +121,7 @@ export function CanvasPreview({
     >
       <div
         aria-label="Video canvas. Click to select; double-click text to edit; arrow keys nudge the selection. Space and drag to pan; pinch to zoom; Shift 1 fits, Shift 2 zooms to the selection; Shift R shows or hides the rulers; K to play; F to watch full screen."
-        className="relative min-h-0 flex-1 touch-none overflow-hidden outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset"
+        className="relative min-h-0 flex-1 touch-none overflow-clip outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-solid focus-visible:-outline-offset-2"
         ref={camera.viewport}
         role="application"
         style={{ cursor: camera.cursor }}
@@ -185,7 +184,6 @@ export function CanvasPreview({
         <CanvasHeader
           actions={actions}
           canvas={canvas}
-          isLeftmost={!isChatShown}
           leading={leading}
           watching={watching}
         />
@@ -196,7 +194,6 @@ export function CanvasPreview({
             hasSelection={canvas.hasSelection}
             layers={canvas.layers}
             metadata={metadata}
-            tools={tools}
             videoName={openedVideo?.name ?? null}
           />
         </div>
@@ -206,7 +203,7 @@ export function CanvasPreview({
         <div
           className={cn(
             DOCK_SURFACE,
-            "absolute right-[calc(var(--canvas-inspector-width)+16px)] bottom-4 left-[calc(var(--canvas-ruler)+16px)] z-20 flex min-h-0 flex-col p-[11px]",
+            "absolute right-[calc(var(--canvas-inspector-width)+16px)] bottom-4 left-[calc(var(--canvas-ruler)+16px)] z-20 flex flex-col p-[11px]",
             watching &&
               "inset-x-0 bottom-6 mx-auto w-[min(56rem,calc(100%-2rem))] transition-opacity duration-base ease-out",
             viewing.controlsHidden && "pointer-events-none opacity-0"
@@ -229,13 +226,11 @@ export function CanvasPreview({
 function CanvasHeader({
   actions,
   canvas,
-  isLeftmost,
   leading,
   watching,
 }: {
   actions: ReactNode;
   canvas: Canvas;
-  isLeftmost: boolean;
   leading: ReactNode;
   watching: boolean;
 }) {
@@ -248,10 +243,7 @@ function CanvasHeader({
       data-canvas-chrome
       data-canvas-occludes="top"
     >
-      <PaneHeader
-        className={cn(isLeftmost && PREVIEW_LEADING)}
-        data-tauri-drag-region="deep"
-      >
+      <PaneHeader data-tauri-drag-region="deep">
         {leading}
         <CanvasToolbar canvas={canvas} />
         {actions}
@@ -277,10 +269,9 @@ export function CanvasStage({
     <>
       <div
         className={cn(
-          "absolute top-0 left-0 origin-top-left bg-black shadow-lg transition-[opacity,visibility] duration-base ease-out",
+          "absolute top-0 left-0 origin-top-left bg-black transition-[opacity,visibility] duration-base ease-out",
           shown ? "visible opacity-100" : "invisible opacity-0",
-          (camera.outside === "hide" || watching) && "overflow-clip",
-          watching && "shadow-none"
+          (camera.outside === "hide" || watching) && "overflow-clip"
         )}
         ref={camera.stage}
         style={{
@@ -368,16 +359,19 @@ function ZoomReadout({ camera }: { camera: PreviewCameraControl }) {
   return <>{Math.round(zoom * 100)}%</>;
 }
 
-const NARROW = "@max-[19.5rem]/canvas-toolbar:hidden";
-const NARROWER = "@max-[14rem]/canvas-toolbar:hidden";
+const NARROW = "@max-[23rem]/canvas-toolbar:hidden";
+const NARROWER = "@max-[16rem]/canvas-toolbar:hidden";
 
 function CanvasToolbar({ canvas }: { canvas: Canvas }) {
-  const { camera, hasSelection, metadata, rulers, viewing } = canvas;
+  const { camera, hasSelection, metadata, rulers, viewing, layers } = canvas;
+  const {
+    tools: { snapshot },
+  } = useStudio();
   const dimmed = camera.outside === "dim";
 
   return (
     <div className="@container/canvas-toolbar flex min-w-0 flex-1 items-center">
-      <div className="flex items-center gap-0.5 rounded-lg border border-border bg-field p-0.5">
+      <div className="flex items-center gap-1 rounded-xl bg-control p-1">
         <HintTooltip
           label="Pan tool — or hold"
           render={
@@ -385,7 +379,7 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               aria-label="Pan tool"
               aria-pressed={camera.hand}
               onClick={camera.toggleHand}
-              size="icon-sm"
+              size="icon"
               variant={camera.hand ? "secondary" : "ghost"}
             />
           }
@@ -399,7 +393,7 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
             <Button
               disabled={metadata === null}
               onClick={camera.fit}
-              size="sm"
+              size="default"
               variant="ghost"
             />
           }
@@ -415,7 +409,7 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               className={NARROWER}
               disabled={!hasSelection}
               onClick={camera.zoomToSelection}
-              size="icon-sm"
+              size="icon"
               variant="ghost"
             />
           }
@@ -430,11 +424,11 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               aria-label="Zoom out"
               className={NARROW}
               onClick={camera.zoomOut}
-              size="icon-sm"
+              size="icon"
               variant="ghost"
             />
           }
-          shortcut="⌘−"
+          shortcut={modKeyCombo("−")}
         >
           <MinusIcon />
         </HintTooltip>
@@ -445,11 +439,11 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               aria-label="Zoom to 100%"
               className="w-14 tabular-nums"
               onClick={camera.zoomReset}
-              size="sm"
+              size="default"
               variant="ghost"
             />
           }
-          shortcut="⌘0"
+          shortcut={modKeyCombo("0")}
         >
           <ZoomReadout camera={camera} />
         </HintTooltip>
@@ -460,11 +454,11 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               aria-label="Zoom in"
               className={NARROW}
               onClick={camera.zoomIn}
-              size="icon-sm"
+              size="icon"
               variant="ghost"
             />
           }
-          shortcut="⌘+"
+          shortcut={modKeyCombo("+")}
         >
           <PlusIcon />
         </HintTooltip>
@@ -479,7 +473,7 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               aria-label="Show content outside the frame"
               aria-pressed={dimmed}
               onClick={camera.toggleOutside}
-              size="icon-sm"
+              size="icon"
               variant={dimmed ? "secondary" : "ghost"}
             />
           }
@@ -494,7 +488,7 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               aria-pressed={rulers.shown}
               className={NARROWER}
               onClick={rulers.toggle}
-              size="icon-sm"
+              size="icon"
               variant={rulers.shown ? "secondary" : "ghost"}
             />
           }
@@ -510,7 +504,7 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
               className={NARROW}
               disabled={!viewing.canEnter}
               onClick={viewing.toggle}
-              size="icon-sm"
+              size="icon"
               variant="ghost"
             />
           }
@@ -518,46 +512,87 @@ function CanvasToolbar({ canvas }: { canvas: Canvas }) {
         >
           <MaximizeIcon />
         </HintTooltip>
+        <HintTooltip
+          label={snapshot.unavailable ?? "Capture the frame, or part of it"}
+          render={
+            <Button
+              aria-disabled={!snapshot.canSnapshot}
+              aria-label="Snapshot"
+              aria-pressed={snapshot.isArmed}
+              className="aria-disabled:opacity-50"
+              onClick={snapshot.toggle}
+              size="icon"
+              variant={snapshot.isArmed ? "secondary" : "ghost"}
+            />
+          }
+          shortcut={formatShortcut(SHORTCUTS.snapshot)}
+          side="bottom"
+        >
+          {snapshot.isBusy ? (
+            <Spinner aria-hidden="true" className="size-4" />
+          ) : (
+            <CameraIcon className="size-4" />
+          )}
+        </HintTooltip>
+        <InspectorToggle layers={layers} />
       </div>
     </div>
   );
 }
 
-function InspectorPanel({
+export function InspectorToggle({ layers }: { layers: CanvasLayers }) {
+  return (
+    <HintTooltip
+      label={
+        layers.shown
+          ? "Hide layers and properties"
+          : "Show layers and properties"
+      }
+      render={
+        <Button
+          aria-label="Inspector"
+          aria-pressed={layers.shown}
+          onClick={layers.toggle}
+          size="icon"
+          variant={layers.shown ? "secondary" : "ghost"}
+        />
+      }
+    >
+      <SlidersHorizontalIcon />
+    </HintTooltip>
+  );
+}
+
+export function InspectorPanel({
   duration,
   hasSelection,
   layers,
   metadata,
-  tools,
   videoName,
 }: {
   duration: string;
   hasSelection: boolean;
   layers: CanvasLayers;
   metadata: Metadata;
-  tools: Tools;
   videoName: string | null;
 }) {
-  const { snapshot } = tools;
-
   return (
     <aside
       aria-label="Inspector"
       className={cn(
-        "absolute inset-y-0 right-0 z-20 flex w-(--canvas-inspector-panel) flex-row-reverse overflow-hidden border-pane-border border-l bg-background",
-        layers.floating && "z-30 shadow-xl"
+        "absolute inset-y-0 right-0 z-20 flex w-(--canvas-inspector-panel) flex-col overflow-hidden bg-muted",
+        !layers.shown && "hidden",
+        layers.floating
+          ? "top-[calc(var(--canvas-ruler)+3.5rem)] z-30 rounded-tl-xl"
+          : "top-(--canvas-ruler)"
       )}
       data-canvas-chrome
       data-canvas-occludes="right"
     >
-      <InspectorBar
-        hasSelection={hasSelection}
-        layers={layers}
-        snapshot={snapshot}
-      />
+      <InspectorBar hasSelection={hasSelection} layers={layers} />
       <div
         className={cn(
-          "flex min-w-0 flex-1 flex-col border-pane-border border-r",
+          "flex min-h-0 min-w-0 flex-1 flex-col",
           !layers.shown && "hidden"
         )}
       >
@@ -585,106 +620,54 @@ function InspectorPanel({
 function InspectorBar({
   hasSelection,
   layers,
-  snapshot,
 }: {
   hasSelection: boolean;
   layers: CanvasLayers;
-  snapshot: Tools["snapshot"];
 }) {
   const firstView = layers.enabled ? "Layers" : "Video details";
-
   return (
     <nav
       aria-label="Inspector views"
-      className="flex w-12 shrink-0 flex-col items-center gap-1.5 py-2"
+      className={cn(
+        "box-content flex h-10 shrink-0 items-center gap-1 px-3",
+        !layers.floating && "pt-2"
+      )}
     >
-      <HintTooltip
-        label={firstView}
-        render={
-          <Button
-            aria-label={firstView}
-            aria-pressed={layers.active === "layers"}
-            onClick={layers.onView}
-            size="icon-lg"
-            value="layers"
-            variant={layers.active === "layers" ? "secondary" : "ghost"}
-          />
-        }
-        side="left"
+      <Button
+        aria-pressed={layers.active === "layers"}
+        onClick={layers.active === "layers" ? undefined : layers.onView}
+        size="sm"
+        value="layers"
+        variant={layers.active === "layers" ? "secondary" : "ghost"}
       >
         {layers.enabled ? (
-          <LayersIcon className="size-5" />
+          <LayersIcon data-icon="inline-start" />
         ) : (
-          <InfoIcon className="size-5" />
+          <InfoIcon data-icon="inline-start" />
         )}
-      </HintTooltip>
+        {firstView}
+      </Button>
       <HintTooltip
         label={
           hasSelection
-            ? "Properties"
-            : "Properties — select something on the canvas"
+            ? "Inspect selection"
+            : "Select something on the canvas to inspect"
         }
         render={
           <Button
-            aria-disabled={!hasSelection}
-            aria-label="Properties"
+            aria-label="Inspect"
             aria-pressed={layers.active === "properties"}
-            className="aria-disabled:opacity-50"
-            onClick={hasSelection ? layers.onView : undefined}
-            size="icon-lg"
+            disabled={!hasSelection}
+            onClick={layers.active === "properties" ? undefined : layers.onView}
+            size="sm"
             value="properties"
             variant={layers.active === "properties" ? "secondary" : "ghost"}
           />
         }
-        side="left"
       >
-        <SlidersHorizontalIcon className="size-5" />
+        <SlidersHorizontalIcon data-icon="inline-start" />
+        Inspect
       </HintTooltip>
-      <div className="mt-auto flex flex-col items-center gap-1.5">
-        <HintTooltip
-          label={snapshot.unavailable ?? "Capture the frame, or part of it"}
-          render={
-            <Button
-              aria-disabled={!snapshot.canSnapshot}
-              aria-label="Snapshot"
-              aria-pressed={snapshot.isArmed}
-              className="aria-disabled:opacity-50"
-              onClick={snapshot.toggle}
-              size="icon-lg"
-              variant={snapshot.isArmed ? "secondary" : "ghost"}
-            />
-          }
-          shortcut={formatShortcut(SHORTCUTS.snapshot)}
-          side="left"
-        >
-          {snapshot.isBusy ? (
-            <Spinner aria-hidden="true" className="size-5" />
-          ) : (
-            <CameraIcon className="size-5" />
-          )}
-        </HintTooltip>
-        <HintTooltip
-          label={layers.shown ? "Collapse inspector" : "Expand inspector"}
-          render={
-            <Button
-              aria-expanded={layers.shown}
-              aria-label={
-                layers.shown ? "Collapse inspector" : "Expand inspector"
-              }
-              onClick={layers.toggle}
-              size="icon-lg"
-              variant="ghost"
-            />
-          }
-          side="left"
-        >
-          {layers.shown ? (
-            <PanelRightCloseIcon className="size-5" />
-          ) : (
-            <PanelRightOpenIcon className="size-5" />
-          )}
-        </HintTooltip>
-      </div>
     </nav>
   );
 }
@@ -714,7 +697,7 @@ function VideoLayers({
         <LayerList layers={layers} />
       </div>
       {metadata === null ? null : (
-        <p className="shrink-0 border-pane-border border-t px-4 py-2.5 text-muted-foreground tabular-nums">
+        <p className="shrink-0 px-4 py-2.5 text-muted-foreground tabular-nums">
           {metadata.width} × {metadata.height} · {metadata.fps} fps · {duration}
         </p>
       )}
@@ -786,7 +769,7 @@ function LayerItem({ layers, row }: { layers: CanvasLayers; row: LayerRow }) {
         <button
           aria-expanded={open}
           aria-label={`${open ? "Collapse" : "Expand"} ${row.label}`}
-          className="grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:bg-muted"
+          className="grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:bg-accent"
           onClick={layers.onToggle}
           type="button"
           value={row.id}
@@ -804,7 +787,7 @@ function LayerItem({ layers, row }: { layers: CanvasLayers; row: LayerRow }) {
       <button
         aria-current={row.id === layers.selectedId ? "true" : undefined}
         className={cn(
-          "flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 text-left outline-none hover:bg-muted focus-visible:bg-muted aria-[current]:bg-muted aria-[current]:font-medium",
+          "flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 text-left outline-none hover:bg-accent focus-visible:bg-accent aria-[current]:bg-accent",
           row.isScene && "font-medium",
           !present && "text-muted-foreground/60"
         )}

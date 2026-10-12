@@ -1,6 +1,7 @@
 import { Effect, Exit } from "effect";
 import type { PermissionReason } from "@/shared/ipc";
 import type { AskAnswer, TurnGate } from "../agent/gate";
+import { shippedBundleDir } from "../agent/knowledge";
 import { type PermissionVerdict, signatureOf } from "../agent/verdict";
 import { escapee } from "../contained";
 import { type AcpUpdate, toolText } from "./events";
@@ -44,7 +45,7 @@ export function reviewAcp(
   );
 
   if (FILE_KINDS.has(kind) && paths.length > 0) {
-    return Effect.promise(() => escapee(cwd, [], paths)).pipe(
+    return Effect.promise(() => escapee(cwd, readRootsFor(kind), paths)).pipe(
       Effect.map((escaped) =>
         escaped === null ? ALLOW : ask("outside", kind, escaped)
       )
@@ -55,6 +56,15 @@ export function reviewAcp(
 }
 
 const FILE_KINDS = new Set(["delete", "edit", "move", "read", "search"]);
+
+// A skill's own references sit in the shipped bundle, outside the folder:
+// reading them is what following a skill means, writing them never is.
+const READ_KINDS = new Set(["read", "search"]);
+
+function readRootsFor(kind: string): readonly string[] {
+  const dir = shippedBundleDir();
+  return READ_KINDS.has(kind) && dir !== null ? [dir] : [];
+}
 
 const SWITCH_MODE = "switch_mode";
 

@@ -24,9 +24,12 @@ A tilted product view can be an intentional composition.
 
 Choose curve and duration for the gesture. A camera can stop before a cut, cross
 a cut while moving, or remain locked. For continuous movement, inspect the joins
-for unintended position or velocity jumps. For a large zoom, comparing arithmetic
-scale interpolation with log-scale interpolation can help tune perceived speed;
-neither is a universal requirement.
+for unintended position or velocity jumps. A large zoom has three useful scale
+interpolations: log scale gives a constant perceived zoom between two non-zero
+sizes; `1/scale` matches an object approaching at constant speed; Remotion's
+`output: "perceptual-scale"` interpolates area, which suits growth from zero but
+front-loads a large zoom (1→4 is at 2.9 halfway, against 2.0 for log). None is
+universal; compare them on the actual move.
 
 ## Inspect the actual render
 

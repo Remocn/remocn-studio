@@ -1,0 +1,44 @@
+{
+  "category": "Captions",
+  "componentName": null,
+  "dependencies": [
+    "remotion",
+    "@remotion/captions"
+  ],
+  "description": "The whole transcript scrolls smoothly through a short window with the current line centred, past lines fading above and the next line waiting below.",
+  "files": [
+    {
+      "file": "caption-teleprompter.tsx",
+      "target": "src/components/remocn/caption-teleprompter.tsx"
+    }
+  ],
+  "name": "caption-teleprompter",
+  "preview": {
+    "durationInFrames": 279,
+    "fps": 30,
+    "compositionWidth": 1280,
+    "compositionHeight": 720,
+    "previewBackdrop": {
+      "type": "color",
+      "value": "#262626"
+    },
+    "defaults": {
+      "captions": "So here's the thing. Most demo videos lose people in the first three seconds. Captions keep them watching, even with the sound off.",
+      "fontSize": 64,
+      "fontWeight": 800,
+      "color": "#ffffff",
+      "visibleLines": 3,
+      "pastOpacity": 0.35,
+      "futureOpacity": 0.35,
+      "upcomingOpacity": 0.55,
+      "combineTokensWithinMilliseconds": 1500,
+      "holdMs": 600,
+      "shadow": true
+    }
+  },
+  "registryDependencies": [
+    "caption-core"
+  ],
+  "sourcePin": "d6cd742fa4f3ab0a74fecf2ac93f1542fa2ea8f7",
+  "title": "Caption Teleprompter"
+}

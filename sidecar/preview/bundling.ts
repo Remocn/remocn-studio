@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import type { WebpackConfig } from "./project";
 
 // The flags handed to Remotion's `webpackConfig`, apart from the values the
@@ -23,6 +24,33 @@ export const BUNDLE_FLAGS = {
   keyboardShortcutsEnabled: false,
   maxTimelineTracks: 15,
 } as const;
+
+// The watch compilers' cache is the other kind: in memory, written nowhere,
+// gone with the host. Without it webpack has nothing to restore a module
+// from, so every rebuild after an agent's edit compiled the whole project
+// again. One generation is kept, so it holds what the last build used and not
+// the history of every edit.
+export const WATCH_CACHE = { maxGenerations: 1, type: "memory" } as const;
+
+export interface Watched {
+  readonly config: WebpackConfig;
+  readonly options: Record<string, unknown>;
+}
+
+// `Compiler.watch(options, …)` reads only the options it is handed, never the
+// config's `watchOptions`, so Remotion's (ignore `node_modules`, `.git`; its
+// polling choice) are passed on explicitly.
+export function watched(config: WebpackConfig): Watched {
+  const options = config.watchOptions;
+
+  return {
+    config: { ...config, cache: WATCH_CACHE },
+    options:
+      typeof options === "object" && options !== null
+        ? (options as Record<string, unknown>)
+        : {},
+  };
+}
 
 const WATCH_ONLY_PLUGINS = new Set([
   "HotModuleReplacementPlugin",
@@ -69,7 +97,21 @@ function withoutRefresh(rules: Rule[]): Rule[] {
   });
 }
 
-export function renderOnly(config: WebpackConfig): WebpackConfig {
+const CUSTOM_SHADER_FRAGMENT =
+  /[/\\]studio-shaders-v1[/\\](?:caustics|strata|weave)-fragment\.ts$/;
+
+export function shaderPrecisionRule(directory: string) {
+  return {
+    enforce: "pre",
+    test: CUSTOM_SHADER_FRAGMENT,
+    use: [join(directory, "shader-precision-loader.cjs")],
+  };
+}
+
+export function renderOnly(
+  config: WebpackConfig,
+  directory: string
+): WebpackConfig {
   const plugins = (config.plugins ?? []) as {
     constructor?: { name?: string };
   }[];
@@ -84,7 +126,10 @@ export function renderOnly(config: WebpackConfig): WebpackConfig {
       : config.entry,
     module: {
       ...modules,
-      rules: withoutRefresh((modules.rules ?? []) as Rule[]),
+      rules: [
+        ...withoutRefresh((modules.rules ?? []) as Rule[]),
+        shaderPrecisionRule(directory),
+      ],
     },
     output: { ...(config.output as object), clean: true },
     plugins: plugins.filter(

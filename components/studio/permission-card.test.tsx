@@ -121,9 +121,14 @@ describe("PermissionCard", () => {
       reason: "outside",
     });
 
-    expect(
-      screen.getByText("Don’t ask again for this path until the studio quits")
-    ).toBeVisible();
+    const always = screen.getByRole("button", { name: ALWAYS });
+    expect(always).toHaveAccessibleDescription(
+      "Don’t ask again for this path until the studio quits"
+    );
+    expect(always).toHaveAttribute(
+      "title",
+      "Don’t ask again for this path until the studio quits"
+    );
   });
 });
 

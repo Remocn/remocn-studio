@@ -1,30 +1,36 @@
 "use client";
 
+import { CheckIcon } from "@/components/icons";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { VIDEO_FORMATS, type VideoFormat } from "@/lib/studio/formats";
 import { cn } from "@/lib/utils";
+import { PlatformLogo } from "./platform-logo";
 
-// The ratio belongs to a video, not to a project — three TikToks and one
-// full-size film is one project — so the same picker serves the project
-// wizard's first video and every video created after it.
 export function FormatPicker({
   id,
+  layout = "project",
   onChange,
   value,
 }: {
   id: string;
+  layout?: "project" | "video";
   onChange: (id: string) => void;
   value: VideoFormat;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <span className="font-medium text-sm leading-none" id={id}>
+    <div className="flex min-w-0 flex-col gap-3">
+      <span className="font-medium text-sm" id={id}>
         Aspect ratio
       </span>
       <RadioGroup
         aria-labelledby={id}
-        className="grid @lg:grid-cols-4 grid-cols-2 gap-2"
+        className={cn(
+          "grid grid-cols-2 gap-3",
+          layout === "video"
+            ? "@min-[584px]:grid-cols-4"
+            : "@min-[632px]:grid-cols-4"
+        )}
         onValueChange={onChange}
         value={value.id}
       >
@@ -36,31 +42,60 @@ export function FormatPicker({
   );
 }
 
+const SHAPES: Record<string, string> = {
+  landscape: "h-9 w-16",
+  portrait: "h-[45px] w-9",
+  square: "size-[42px]",
+  vertical: "h-12 w-[27px]",
+};
+
+const PLATFORMS = {
+  landscape: ["youtube"],
+  portrait: ["instagram"],
+  square: ["instagram"],
+  vertical: ["youtubeshorts", "tiktok", "instagram"],
+} as const;
+
 function FormatCard({ format }: { format: VideoFormat }) {
+  const platforms = PLATFORMS[format.id as keyof typeof PLATFORMS];
   return (
-    <Label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border bg-card p-3 text-center font-normal leading-normal transition-colors has-[:focus-visible]:border-ring has-[[data-checked]]:border-primary has-[[data-checked]]:bg-primary/5 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50">
+    <Label className="group relative flex h-44 min-w-0 cursor-pointer flex-col items-center gap-1.5 rounded-xl bg-field p-4 text-center font-normal leading-normal transition-colors hover:bg-accent has-[[data-checked]]:bg-accent has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring has-[:focus-visible]:outline-offset-2">
       <span className="sr-only">
         <RadioGroupItem value={format.id} />
       </span>
-
-      <span className="flex h-9 w-full items-center justify-center">
+      <CheckIcon
+        aria-hidden="true"
+        className="absolute top-2.5 right-2.5 hidden size-3.5 group-has-[[data-checked]]:block"
+      />
+      <span
+        aria-hidden="true"
+        className="flex h-12 w-full shrink-0 items-center justify-center"
+      >
         <span
           className={cn(
-            "rounded-sm border-2 border-muted-foreground/60",
-            format.width >= format.height ? "w-9" : "h-9"
+            "rounded-[2px] border-[1.5px] border-muted-foreground",
+            SHAPES[format.id]
           )}
-          style={{ aspectRatio: `${format.width} / ${format.height}` }}
         />
       </span>
-
-      <span className="flex flex-col gap-0.5">
-        <span className="font-medium text-sm">{format.label}</span>
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {format.width}×{format.height}
-        </span>
-        <span className="text-balance text-muted-foreground text-xs">
-          {format.note}
-        </span>
+      <span className="font-medium text-lg leading-6">{format.label}</span>
+      <span className="text-muted-foreground text-xs tabular-nums">
+        {format.width}×{format.height}
+      </span>
+      <span
+        aria-label={format.note}
+        className="mt-1 flex h-8 shrink-0 -space-x-1.5"
+        role="img"
+        title={format.note}
+      >
+        {platforms.map((platform) => (
+          <span
+            className="flex size-8 items-center justify-center rounded-full bg-popover"
+            key={platform}
+          >
+            <PlatformLogo className="size-4" platform={platform} />
+          </span>
+        ))}
       </span>
     </Label>
   );

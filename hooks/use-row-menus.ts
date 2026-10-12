@@ -8,6 +8,7 @@ import {
   type ContextAction,
   popupContextMenu,
 } from "@/lib/studio/context-menu";
+import { isModKey } from "@/lib/studio/platform";
 import type { Video } from "@/shared/ipc";
 
 export interface RowMenu {
@@ -27,7 +28,7 @@ function presser(row: Element | null) {
 
 function isDelete(event: KeyboardEvent<HTMLElement>): boolean {
   return (
-    event.metaKey &&
+    isModKey(event) &&
     !event.altKey &&
     !event.shiftKey &&
     (event.key === "Backspace" || event.key === "Delete")

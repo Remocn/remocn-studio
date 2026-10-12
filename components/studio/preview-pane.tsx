@@ -1,14 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   ArrowLeftIcon,
   FolderOpenIcon,
   MessageSquareIcon,
-  PanelRightCloseIcon,
   RotateCwIcon,
   XIcon,
-} from "lucide-react";
-import dynamic from "next/dynamic";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -25,7 +24,7 @@ import type { Exported } from "@/shared/ipc";
 import { DocsView } from "./docs-view";
 import { ExportButton } from "./export-button";
 import { FailureText } from "./failure-text";
-import { Pane, PaneActions, PaneHeader, PREVIEW_LEADING } from "./pane";
+import { Pane, PaneActions, PaneHeader } from "./pane";
 import { useStudio } from "./studio-provider";
 
 const ROW =
@@ -36,15 +35,8 @@ const CanvasPreview = dynamic(() =>
 );
 
 export function PreviewPane() {
-  const {
-    activeProject,
-    docs,
-    isChatPeeking,
-    isChatShown,
-    toggleChat,
-    togglePreview,
-    tools,
-  } = useStudio();
+  const { activeProject, docs, isChatPeeking, isChatShown, toggleChat, tools } =
+    useStudio();
   const isDocs = docs.mode === "docs";
 
   const leading = isChatShown ? null : (
@@ -73,32 +65,13 @@ export function PreviewPane() {
         composition={tools.preview.composition}
         exporting={tools.exporting}
       />
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              aria-label="Hide the preview"
-              className="text-muted-foreground"
-              onClick={togglePreview}
-              size="icon-sm"
-              variant="ghost"
-            />
-          }
-        >
-          <PanelRightCloseIcon />
-        </TooltipTrigger>
-        <TooltipContent side="bottom">Hide the preview</TooltipContent>
-      </Tooltip>
     </PaneActions>
   );
 
   return (
     <Pane>
       {isDocs ? (
-        <PaneHeader
-          className={cn(!isChatShown && PREVIEW_LEADING)}
-          data-tauri-drag-region="deep"
-        >
+        <PaneHeader data-tauri-drag-region="deep">
           {leading}
           <Button
             className="text-muted-foreground"

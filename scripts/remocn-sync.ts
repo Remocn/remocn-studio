@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
+import { BASE_PIN, CAPTIONS_PIN } from "./remocn-sources";
 
 // The pin is the whole contract: registry-artifacts/*.json are committed
 // upstream, so one commit names every file this script will ever fetch.
-// Updating the set is a deliberate bump of this constant, never a side effect
-// of running the script.
-const PIN = "8ae853e4c08108105684d4b8cac7f22400840d2a";
+// Updating the set is a deliberate bump of BASE_PIN, never a side effect of
+// running the script; the preview renderer reads the same constant.
+const PIN = BASE_PIN;
 
 const REPO = "Remocn/remocn";
 const RAW = `https://raw.githubusercontent.com/${REPO}/${PIN}`;
@@ -37,6 +38,7 @@ interface Artifact {
   readonly dependencies?: readonly string[];
   readonly description?: string;
   readonly files: readonly ArtifactFile[];
+  readonly meta?: { readonly presetOf?: string };
   readonly name: string;
   readonly registryDependencies?: readonly string[];
   readonly title?: string;
@@ -59,35 +61,91 @@ async function fetched(path: string): Promise<string> {
   return await answer.text();
 }
 
-// The category assignment lives nowhere in the registry itself — it is the
-// docs tree: content/docs/<category>/<name>.mdx, one page per component.
-async function componentsOf(slug: string): Promise<string[]> {
-  const listing = await fetch(
-    `https://api.github.com/repos/${REPO}/contents/content/docs/${slug}?ref=${PIN}`,
-    { headers: { accept: "application/vnd.github+json" } }
-  );
-  if (!listing.ok) {
-    throw new Error(`docs/${slug}: ${listing.status} ${listing.statusText}`);
-  }
+interface DocsEntry {
+  readonly name: string;
+  readonly type: string;
+}
 
-  const entries = (await listing.json()) as readonly {
-    name: string;
-    type: string;
-  }[];
+export interface DocsTree {
+  readonly list: (path: string) => Promise<readonly DocsEntry[]>;
+  readonly read: (path: string) => Promise<string>;
+}
+
+const githubDocs: DocsTree = {
+  list: async (path) => {
+    const listing = await fetch(
+      `https://api.github.com/repos/${REPO}/contents/${path}?ref=${PIN}`,
+      { headers: { accept: "application/vnd.github+json" } }
+    );
+    if (!listing.ok) {
+      throw new Error(`${path}: ${listing.status} ${listing.statusText}`);
+    }
+    return (await listing.json()) as readonly DocsEntry[];
+  },
+  read: fetched,
+};
+
+const COMPONENT_FRONTMATTER =
+  /^---\n[\s\S]*?^component:\s*"?([a-z0-9-]+)"?\s*$/m;
+
+// A family folder holds one component and its variants: index.mdx is the
+// component named after the folder, and every other page names its own
+// component in frontmatter (shader-warp/silk.mdx is shader-warp-silk). A
+// folder with no index.mdx (getting-started/) is prose, not a family.
+async function familyOf(
+  path: string,
+  folder: string,
+  docs: DocsTree
+): Promise<string[]> {
+  const entries = await docs.list(path);
+  const pages = entries
+    .map((entry) => entry.name)
+    .filter((name) => name.endsWith(".mdx"));
+  if (!pages.includes("index.mdx")) {
+    return [];
+  }
+  const variants = await Promise.all(
+    pages
+      .filter((name) => name !== "index.mdx")
+      .map(async (name) => {
+        const page = await docs.read(`${path}/${name}`);
+        const component = COMPONENT_FRONTMATTER.exec(page)?.[1];
+        if (component === undefined) {
+          throw new Error(`${path}/${name} names no component in frontmatter`);
+        }
+        return component;
+      })
+  );
+  return [folder, ...variants];
+}
+
+// The category assignment lives nowhere in the registry itself — it is the
+// docs tree: content/docs/<category>/<name>.mdx, one page per component, or
+// a family folder of them.
+export async function componentsOf(
+  slug: string,
+  docs: DocsTree = githubDocs
+): Promise<string[]> {
+  const path = `content/docs/${slug}`;
+  const entries = await docs.list(path);
 
   const names = entries
+    .filter((entry) => entry.type !== "dir")
     .map((entry) => entry.name)
     .filter((name) => name.endsWith(".mdx") && name !== "index.mdx")
     .map((name) => name.slice(0, -".mdx".length));
 
-  // Some categories keep their pages one level down, in components/.
-  const nested = entries.some(
-    (entry) => entry.type === "dir" && entry.name === "components"
-  )
-    ? await componentsOf(`${slug}/components`)
-    : [];
+  const folders = entries.filter((entry) => entry.type === "dir");
+  const nested = await Promise.all(
+    folders.map((entry) =>
+      // Some categories keep their pages one level down, in components/.
+      entry.name === "components"
+        ? componentsOf(`${slug}/components`, docs)
+        : familyOf(`${path}/${entry.name}`, entry.name, docs)
+    )
+  );
 
-  return [...names, ...nested];
+  return [...names, ...nested.flat()];
 }
 
 // `@/components/remocn/x` in a file that will land at
@@ -148,6 +206,7 @@ interface VendoredManifest {
   readonly description: string;
   readonly files: readonly VendoredFile[];
   readonly name: string;
+  readonly presetOf?: string;
   readonly preview: PreviewEntry | null;
   readonly registryDependencies: readonly string[];
   readonly title: string;
@@ -239,6 +298,7 @@ async function vendorItem(name: string, ctx: VendorContext): Promise<void> {
     description: artifact.description ?? "",
     files,
     name,
+    ...(artifact.meta?.presetOf ? { presetOf: artifact.meta.presetOf } : {}),
     preview: ctx.previews[name] ?? null,
     registryDependencies,
     title: artifact.title ?? name,
@@ -332,12 +392,23 @@ async function check(): Promise<void> {
   const lock = JSON.parse(await readFile(LOCK, "utf8")) as {
     files: Record<string, string>;
     pin: string;
+    captionsPin?: string;
   };
 
   const wrong: string[] = [];
 
   if (lock.pin !== PIN) {
     wrong.push(`lock pin ${lock.pin} does not match the script's ${PIN}`);
+  }
+
+  if (lock.captionsPin !== CAPTIONS_PIN) {
+    wrong.push("Caption source pin differs from the vendored caption batch.");
+  }
+
+  const { shaderPresetsDrift } = await import("./shader-presets");
+  const drift = await shaderPresetsDrift();
+  if (drift !== null) {
+    wrong.push(drift);
   }
 
   const found = new Set<string>();
@@ -385,8 +456,14 @@ async function check(): Promise<void> {
 }
 
 const { 2: mode } = process.argv;
-if (mode === "--check") {
+if (import.meta.main && mode === "--check") {
   await check();
 } else if (import.meta.main) {
-  await sync();
+  if (mode !== "--captions") {
+    await sync();
+  }
+  const { syncCaptions } = await import("./remocn-captions");
+  await syncCaptions();
+  const { writeShaderPresets } = await import("./shader-presets");
+  await writeShaderPresets();
 }
