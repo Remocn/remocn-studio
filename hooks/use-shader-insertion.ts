@@ -87,6 +87,8 @@ export function useShaderInsertion({
   const scope = projectId && video ? storageKey(projectId, video) : null;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
+  const sidecar = useRef({ insert, status, targets });
+  sidecar.current = { insert, status, targets };
   const [capabilities, setCapabilities] = useState<ShaderTargets>({
     adaptation: false,
     reason: "Open a video to add a shader.",
@@ -124,30 +126,30 @@ export function useShaderInsertion({
       }
       const owned = scope;
       setRecovery({ error: null, id });
-      Effect.runPromiseExit(status({ operationId: id, projectId, video })).then(
-        (result) => {
-          if (scopeRef.current !== owned) {
-            return;
-          }
-          if (Exit.isFailure(result)) {
-            setRecovery({
-              error:
-                causeMessage(result.cause) ??
-                "Could not check the previous shader insertion. Retry before exporting.",
-              id,
-            });
-            return;
-          }
-          setRecovery(null);
-          if (result.value.state === "unknown") {
-            remember(owned, null);
-            return;
-          }
-          publish(recoveredState(result.value, id));
+      Effect.runPromiseExit(
+        sidecar.current.status({ operationId: id, projectId, video })
+      ).then((result) => {
+        if (scopeRef.current !== owned) {
+          return;
         }
-      );
+        if (Exit.isFailure(result)) {
+          setRecovery({
+            error:
+              causeMessage(result.cause) ??
+              "Could not check the previous shader insertion. Retry before exporting.",
+            id,
+          });
+          return;
+        }
+        setRecovery(null);
+        if (result.value.state === "unknown") {
+          remember(owned, null);
+          return;
+        }
+        publish(recoveredState(result.value, id));
+      });
     },
-    [scope, projectId, video, status, publish]
+    [scope, projectId, video, publish]
   );
 
   const refresh = useCallback(
@@ -164,7 +166,7 @@ export function useShaderInsertion({
         targets: [],
       });
       const result = await Effect.runPromiseExit(
-        targets({
+        sidecar.current.targets({
           generation: report?.generation ?? generation.current,
           projectId,
           video,
@@ -191,7 +193,7 @@ export function useShaderInsertion({
         targets: [],
       });
     },
-    [projectId, video, scope, targets]
+    [projectId, video, scope]
   );
 
   const onTargets = useCallback(
@@ -290,7 +292,9 @@ export function useShaderInsertion({
         }
       };
       const work = Effect.gen(function* () {
-        const result = yield* Effect.exit(insert(request, progress));
+        const result = yield* Effect.exit(
+          sidecar.current.insert(request, progress)
+        );
         if (scopeRef.current !== requestScope) {
           return;
         }
@@ -298,7 +302,7 @@ export function useShaderInsertion({
           publish({ ...initial, phase: "preview", result: result.value });
         } else {
           const reconciled = yield* Effect.exit(
-            status({
+            sidecar.current.status({
               operationId: request.operationId,
               projectId: request.target.projectId,
               video: request.target.video,
@@ -338,7 +342,7 @@ export function useShaderInsertion({
       );
       running.current = Effect.runFork(work);
     },
-    [insert, publish, scope, status]
+    [publish, scope]
   );
 
   useEffect(
@@ -562,7 +566,7 @@ export function useShaderInsertion({
     const cancelAndCheck = Effect.gen(function* () {
       yield* Fiber.interrupt(fiber);
       for (let attempt = 0; attempt < 25; attempt += 1) {
-        const result = yield* status({
+        const result = yield* sidecar.current.status({
           operationId: owner.request.operationId,
           projectId: owner.request.target.projectId,
           video: owner.request.target.video,
@@ -609,7 +613,7 @@ export function useShaderInsertion({
         });
       }
     });
-  }, [publish, scope, status]);
+  }, [publish, scope]);
   const undo = useCallback(() => {
     const owner = pending.current;
     const operation = owner?.result?.snapshot.document.operations.find(

@@ -127,6 +127,8 @@ export function useDeletion({
   restore = restoreCode,
   undoWindow = UNDO_WINDOW,
 }: Options) {
+  const sidecar = useRef({ popup, restore });
+  sidecar.current = { popup, restore };
   const notify = useMemo(() => given ?? toast(undoWindow), [given, undoWindow]);
   const [present, setPresent] = useState<ReadonlySet<string> | null>(null);
   const [menuAsked, askMenu] = useState(0);
@@ -180,7 +182,7 @@ export function useDeletion({
         return;
       }
       Effect.runPromiseExit(
-        restore({ projectId, removal: entry.removal })
+        sidecar.current.restore({ projectId, removal: entry.removal })
       ).then((exit) => {
         if (Exit.isFailure(exit)) {
           notify({
@@ -191,7 +193,7 @@ export function useDeletion({
         }
       });
     },
-    [journal, notify, projectId, restore]
+    [journal, notify, projectId]
   );
 
   const refused = useCallback(
@@ -287,7 +289,7 @@ export function useDeletion({
       if (row === null) {
         return;
       }
-      popup([
+      sidecar.current.popup([
         {
           enabled: row.reason === null,
           id: "delete",
@@ -296,7 +298,7 @@ export function useDeletion({
         },
       ]);
     },
-    [popup, removeObject, targetFor]
+    [removeObject, targetFor]
   );
 
   const latest = useRef({ popup, remove, target });

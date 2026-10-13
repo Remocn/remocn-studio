@@ -51,6 +51,8 @@ export function useCodeWrites({
   projectId,
   write = writeCode,
 }: CodeWriteSettings): CodeWrites {
+  const sidecar = useRef({ write });
+  sidecar.current = { write };
   const [card, setCard] = useState<WriteFailureCard | null>(null);
   const [isWriting, setIsWriting] = useState(false);
   const waiting = useRef<((accept: boolean) => void) | null>(null);
@@ -118,7 +120,7 @@ export function useCodeWrites({
         // whole-or-nothing, so a card is a question about a disk that has not
         // been touched.
         const first = await Effect.runPromiseExit(
-          write({
+          sidecar.current.write({
             edits,
             partial: false,
             projectId,
@@ -145,7 +147,7 @@ export function useCodeWrites({
 
         return await asked(selections, first.value.results, async () => {
           const second = await Effect.runPromiseExit(
-            write({ edits, partial: true, projectId })
+            sidecar.current.write({ edits, partial: true, projectId })
           );
 
           return Exit.isFailure(second) ? null : second.value.results;
@@ -154,7 +156,7 @@ export function useCodeWrites({
         setIsWriting(false);
       }
     },
-    [asked, projectId, write]
+    [asked, projectId]
   );
 
   return useMemo(

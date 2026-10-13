@@ -574,3 +574,59 @@ it("does not carry preparation state or export blocking into another video scope
   );
   expect(test.result.current.insertion.blockExport).toBe(false);
 });
+it("checks the scene once when its sidecar calls are new functions on every render", async () => {
+  const { preview, surface } = previewControl({
+    composition: "intro",
+    restart: mock(),
+  });
+  const snapshot: StudioSnapshot = {
+    document: structuredClone(documentFixture),
+    revision: "initial",
+  };
+  const read = mock(() => Effect.succeed(snapshot));
+  const targets = mock(() =>
+    Effect.succeed<ShaderTargets>({
+      adaptation: false,
+      reason: null,
+      targets: [shaderTargetFixture],
+    })
+  );
+  const status = mock(() =>
+    Effect.succeed<ShaderInsertionStatus>({ state: "unknown" })
+  );
+  let renders = 0;
+  const hook = renderHook(() => {
+    renders += 1;
+    if (renders > 100) {
+      throw new Error("The hooks re-render without end.");
+    }
+    const managed = useManagedObjects({
+      armed: false,
+      enabled: true,
+      preview,
+      projectId: "project-1",
+      read: () => read(),
+    });
+    return useShaderInsertion({
+      enabled: true,
+      insert: () => Effect.never,
+      managed,
+      preview,
+      projectId: "project-1",
+      status: () => status(),
+      targets: () => targets(),
+    });
+  });
+  act(() =>
+    surface.emit({
+      generation: "build-1",
+      lastOperationId: null,
+      type: "studio.ready",
+      video: "intro",
+    })
+  );
+  await waitFor(() => expect(hook.result.current.unavailable).toBeNull());
+  await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+  expect(targets.mock.calls.length).toBeLessThanOrEqual(2);
+  expect(read).toHaveBeenCalledTimes(1);
+});
