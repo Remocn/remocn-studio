@@ -209,6 +209,8 @@ export function useInspect({
   unavailable,
   undoWindow = UNDO_WINDOW,
 }: InspectSettings): Inspection {
+  const sidecar = useRef({ readStatuses, removeElement });
+  sidecar.current = { readStatuses, removeElement };
   const [card, setCard] = useState<PendingComment | null>(null);
   const [drawn, setDrawn] = useState<readonly string[]>([]);
   const [asked, setAsked] = useState<number | null>(null);
@@ -348,7 +350,11 @@ export function useInspect({
       statusFiber.current = Effect.runFork(
         Effect.andThen(
           Effect.exit(
-            readStatuses({ projectId: target, targets: asking, video })
+            sidecar.current.readStatuses({
+              projectId: target,
+              targets: asking,
+              video,
+            })
           ),
           (exit) =>
             Effect.sync(() => {
@@ -383,7 +389,7 @@ export function useInspect({
         )
       );
     },
-    [readStatuses, send]
+    [send]
   );
 
   const onSelection = useCallback(
@@ -791,7 +797,7 @@ export function useInspect({
     cardRef.current = null;
     setCard(null);
     const exit = await Effect.runPromiseExit(
-      removeElement({
+      sidecar.current.removeElement({
         component: target.componentName,
         projectId: writing,
         target: {
@@ -820,7 +826,7 @@ export function useInspect({
       send(tuneResetCommand(nextRequestId(minted), owner, owned));
     }
     return { label: titleOf(target), ok: true, removal: exit.value.removal };
-  }, [removeElement, send]);
+  }, [send]);
 
   const openSelection = useCallback(
     (index: number) => {

@@ -146,6 +146,8 @@ export function useExport({
   projectPath,
   selections = [],
 }: ExportOptions): Exporting {
+  const sidecar = useRef({ pick });
+  sidecar.current = { pick };
   const [state, setState] = useState<ExportState>(IDLE);
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useState<ExportSettings>(
@@ -323,7 +325,7 @@ export function useExport({
 
   const chooseFolder = useCallback(() => {
     Effect.runFork(
-      pick("Choose where to save the video").pipe(
+      sidecar.current.pick("Choose where to save the video").pipe(
         Effect.catch(() => Effect.succeed(null)),
         Effect.tap((picked) =>
           Effect.sync(() => {
@@ -334,7 +336,7 @@ export function useExport({
         )
       )
     );
-  }, [pick]);
+  }, []);
 
   const close = useCallback(() => setIsOpen(false), []);
 

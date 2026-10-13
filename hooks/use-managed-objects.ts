@@ -145,6 +145,8 @@ export function useManagedObjects({
   write = writeManagedObject,
 }: Options) {
   const [localRevision, repaint] = useState(0);
+  const sidecar = useRef({ read, removeObject, write });
+  sidecar.current = { read, removeObject, write };
   const sessions = useRef(new Map<string, Session>());
   const active = useRef<Session | null>(null);
   const commitRef = useRef<(owner: Session | null) => void>(() => undefined);
@@ -264,7 +266,7 @@ export function useManagedObjects({
     owner.loading = true;
     publish();
     Effect.runPromiseExit(
-      read({ projectId: owner.projectId, video: owner.video })
+      sidecar.current.read({ projectId: owner.projectId, video: owner.video })
     ).then((result) => {
       if (epoch !== owner.epoch) {
         return;
@@ -290,7 +292,7 @@ export function useManagedObjects({
       }
       publish();
     });
-  }, [publish, read, replay]);
+  }, [publish, replay]);
 
   const owned = useCallback(
     () => active.current !== null && allowed.current,
@@ -549,7 +551,7 @@ export function useManagedObjects({
           ([address, draft]) =>
             Effect.gen(function* () {
               const result = yield* Effect.exit(
-                write({
+                sidecar.current.write({
                   operation: draft.operation,
                   projectId: owner.projectId,
                   video: owner.video,
@@ -585,7 +587,7 @@ export function useManagedObjects({
         }
       });
     },
-    [publish, write]
+    [publish]
   );
   commitRef.current = commitOwner;
   const geometryResult = (requestId: string, error: string | null) =>
@@ -982,7 +984,7 @@ export function useManagedObjects({
       publish();
       const operation = inverseStudioOperation(target, crypto.randomUUID());
       return Effect.runPromiseExit(
-        write({
+        sidecar.current.write({
           operation,
           projectId: owner.projectId,
           video: owner.video,
@@ -1015,7 +1017,7 @@ export function useManagedObjects({
         return null;
       });
     },
-    [broadcast, publish, write]
+    [broadcast, publish]
   );
   const undo = useCallback(
     (): Promise<string | null> =>
@@ -1113,7 +1115,7 @@ export function useManagedObjects({
       owner.error = null;
       publish();
       return Effect.runPromiseExit(
-        removeObject({
+        sidecar.current.removeObject({
           operation,
           projectId: owner.projectId,
           video: owner.video,
@@ -1154,7 +1156,7 @@ export function useManagedObjects({
         };
       });
     },
-    [cancelGeometry, cancelInline, publish, removeObject, replay, send]
+    [cancelGeometry, cancelInline, publish, replay, send]
   );
 
   const close = useCallback(() => {
