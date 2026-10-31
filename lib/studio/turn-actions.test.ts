@@ -47,7 +47,7 @@ it("preserves music intent and vocals when reusing or regenerating", async () =>
   expect(prompt).toContain("Instrumental only: yes");
 });
 
-it("uses OpenRouter narration in a video and preserves its model and voice on regeneration", async () => {
+it("reuses historical Turbo narration but regenerates with Eleven v4 and the same voice", async () => {
   const result = {
     ...SOUND_RESULT,
     asset: {
@@ -85,6 +85,7 @@ it("uses OpenRouter narration in a video and preserves its model and voice on re
   );
   const prompt = regenerateSoundPrompt(result);
   expect(prompt).toContain("OpenRouter, cn_or");
-  expect(prompt).toContain("elevenlabs/eleven-v4-turbo");
+  expect(prompt).toContain("Model: elevenlabs/eleven-v4.");
+  expect(prompt).not.toContain("eleven-v4-turbo");
   expect(prompt).toContain("sarah");
 });

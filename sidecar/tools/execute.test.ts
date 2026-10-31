@@ -955,12 +955,17 @@ it("routes narration to paid generation with Eleven v4 defaults and rejects unsu
       voice: "george",
     },
   ]);
-  const invalid = await executeTool(
-    "remocn-library",
-    "generate_speech",
-    { ...input, model: "made-up-model" },
-    calls
+  const invalid = await Promise.all(
+    ["elevenlabs/eleven-v4-turbo", "elevenlabs/eleven-v3", "made-up-model"].map(
+      (model) =>
+        executeTool(
+          "remocn-library",
+          "generate_speech",
+          { ...input, model },
+          calls
+        )
+    )
   );
-  expect(invalid.isError).toBe(true);
+  expect(invalid.every((result) => result.isError)).toBe(true);
   expect(requests).toHaveLength(1);
 });

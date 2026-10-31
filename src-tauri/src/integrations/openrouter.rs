@@ -127,6 +127,9 @@ fn prompt(request: &SoundRequest) -> String {
 
 pub fn validate_request(request: &SoundRequest) -> Result<(), String> {
     request.validate()?;
+    if request.is_speech() && request.model.as_deref() != Some(SPEECH_MODEL) {
+        return Err("New narration uses Eleven v4. Choose elevenlabs/eleven-v4; no speech model substitution is allowed.".to_string());
+    }
     if !request.is_speech() && request.format != "mp3_44100_128" {
         return Err("OpenRouter selects the MP3 bitrate. Use the default format; 192 kbps is not supported here.".to_string());
     }
@@ -181,7 +184,12 @@ pub async fn generate(
         .await
         .map_err(|_| UNCERTAIN.to_string())?;
     if !response.status().is_success() {
-        return Err(refusal(response.status().as_u16()));
+        return Err(format!(
+            "{} Model: {}. HTTP {}. No replacement was generated.",
+            refusal(response.status().as_u16()),
+            model(request),
+            response.status().as_u16()
+        ));
     }
     let mime = response
         .headers()
@@ -295,9 +303,10 @@ fn decode_music(bytes: &[u8]) -> Result<Audio, String> {
 
 fn refusal(status: u16) -> String {
     match status {
-        401 | 403 => "OpenRouter rejected access. Check the API key and model permissions in Settings > Integrations.".to_string(),
+        401 | 403 => "OpenRouter rejected access. Check the API key and model permissions in Settings > Integrations, and enable the model provider and accept its terms in OpenRouter provider settings.".to_string(),
         402 => "OpenRouter has insufficient credits for this request.".to_string(),
-        400 | 404 | 422 => "OpenRouter refused the model, voice, or audio parameters. Check the model's current availability and input limits.".to_string(),
+        404 => "OpenRouter could not route this audio model. Check the model availability and your OpenRouter provider settings. For Seed Audio, enable Seed and accept its provider terms.".to_string(),
+        400 | 422 => "OpenRouter refused the model, voice, or audio parameters. Check the model's current availability and input limits.".to_string(),
         429 => "OpenRouter is rate-limiting this key. No automatic generation retry will be made.".to_string(),
         _ => format!("OpenRouter answered with HTTP {status}. {UNCERTAIN}"),
     }
@@ -360,7 +369,9 @@ mod tests {
     fn speech_limits_and_voices_are_checked_before_dispatch() {
         let mut input = speech();
         input.model = Some(TURBO_MODEL.into());
-        assert!(validate_request(&input).is_ok());
+        assert!(validate_speech(&input).is_ok());
+        assert!(validate_request(&input).is_err());
+        input.model = Some(SPEECH_MODEL.into());
         input.text = "😀".repeat(10000);
         assert!(validate_request(&input).is_ok());
         input.text.push('a');
@@ -395,6 +406,28 @@ mod tests {
             .unwrap();
         worker.join().unwrap();
         assert!(error.contains("credits"));
+        assert!(error.contains("HTTP 402"));
+        assert!(error.contains(SPEECH_MODEL));
+        assert!(!error.contains("test-key"));
+        assert_eq!(received.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn unavailable_seed_route_explains_provider_settings_without_echoing_the_body() {
+        let (base, received, worker) = server(
+            "404 Not Found",
+            "application/json",
+            br#"{"error":{"message":"private-prompt test-key"}}"#.to_vec(),
+        );
+        let error = generate(&client().unwrap(), &base, "test-key", &request())
+            .await
+            .err()
+            .unwrap();
+        worker.join().unwrap();
+        assert!(error.contains("HTTP 404"));
+        assert!(error.contains(SOUND_MODEL));
+        assert!(error.contains("enable Seed and accept its provider terms"));
+        assert!(!error.contains("private-prompt"));
         assert!(!error.contains("test-key"));
         assert_eq!(received.lock().unwrap().len(), 1);
     }

@@ -460,18 +460,18 @@ describe("versioned instruction snapshots", () => {
   it("keeps the conventions with the skills byte for byte", () => {
     const text = conventionsFor(true, "intro");
 
-    expect(text).toHaveLength(23_943);
+    expect(text).toHaveLength(25_818);
     expect(sha256(text)).toBe(
-      "58bf5c5546dff802473d67edea55e2d75e65a809830fa62f7680861648b021da"
+      "182cbe90c956933ac20dfa93b2157c82b51e97823cc6546e00f5bd47168bb91b"
     );
   });
 
   it("keeps the conventions alone byte for byte", () => {
     const text = conventionsFor(false, null);
 
-    expect(text).toHaveLength(21_960);
+    expect(text).toHaveLength(23_835);
     expect(sha256(text)).toBe(
-      "52cf3888918be68d5434aeb997d08386c2452ff1cd03e182fbf980e530385e5b"
+      "3aa0e12e3ac5ce83ed647304a253f2bc34ff1b042cdd83d61c6b6740e4fb9f3d"
     );
   });
 
@@ -691,5 +691,19 @@ it("routes Studio narration through the connected OpenRouter tool", () => {
     expect(text).toContain("mcp__remocn-library__generate_speech");
     expect(text).toContain("Settings > Integrations > OpenRouter");
     expect(text).toContain("Never ask for an API key in chat");
+    expect(text).toContain("Always use elevenlabs/eleven-v4");
+    expect(text).toContain(
+      "actual scene plan, script, visible actions and timing"
+    );
+    expect(text).toContain("[curious]");
+    expect(text).toContain(
+      "visible event, timestamp, duration, texture and level"
+    );
+    expect(text).toContain(
+      "Seed is enabled and its provider terms are accepted"
+    );
+    expect(text).toContain(
+      "visual frame inspection does not verify audio quality"
+    );
   }
 });

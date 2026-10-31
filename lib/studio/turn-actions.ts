@@ -47,7 +47,7 @@ export function regenerateSoundPrompt({ asset, request }: SoundResult): string {
   return [
     `Generate a new version of the ${audioKind(request)} “${request.name}” using my ${connection} connection (${asset.source?.provider === "openrouter" ? "OpenRouter" : "ElevenLabs"}, ${request.connectionId}).`,
     ...(request.kind === "speech"
-      ? [`Model: ${request.model}. Voice: ${request.voice}.`]
+      ? [`Model: elevenlabs/eleven-v4. Voice: ${request.voice}.`]
       : []),
     `Description: ${request.text}`,
     `Duration: ${request.durationSeconds === null ? "Automatic" : `${request.durationSeconds} seconds`}`,

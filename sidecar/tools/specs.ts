@@ -7,7 +7,7 @@ import {
   type PipelineStageId,
   type PipelineStatus,
 } from "@/shared/pipeline";
-import { SOUND_FORMATS, SPEECH_MODELS } from "@/shared/sound-effects";
+import { SOUND_FORMATS } from "@/shared/sound-effects";
 
 export const LIBRARY_SERVER = "remocn-library";
 export const PIPELINE_SERVER = "remocn-pipeline";
@@ -253,13 +253,15 @@ export const TOOL_SPECS: Record<ToolServer, readonly ToolSpec[]> = {
   [LIBRARY_SERVER]: [
     {
       description:
-        "Generate requested narration using an OpenRouter connection. Default to Eleven v4; use v4 Turbo when speed matters. Supply the exact script, with optional ElevenLabs audio tags. Studio asks before spending credits and saves the MP3 to the library. Check sound_effect_status to recover an existing operation instead of repeating it.",
+        "Generate requested narration using an OpenRouter connection and always elevenlabs/eleven-v4. Never substitute Turbo or an older model. Read the video's scene plan and script first. Choose vocal emotion and pacing for each scene, then place concise square-bracket delivery tags where delivery changes. Keep sound effects in separate cues when they need precise timing. Studio asks before spending credits and saves the MP3 to the library. Check sound_effect_status to recover an existing operation instead of repeating it.",
       name: GENERATE_SPEECH,
       shape: {
         connectionId: z.string().min(1),
         durationSeconds: z.null().default(null),
         format: z.literal("mp3").default("mp3"),
-        model: z.enum(SPEECH_MODELS).default("elevenlabs/eleven-v4"),
+        model: z
+          .literal("elevenlabs/eleven-v4")
+          .default("elevenlabs/eleven-v4"),
         name: z.string().trim().min(1).max(5000),
         text: z
           .string()
@@ -317,7 +319,7 @@ export const TOOL_SPECS: Record<ToolServer, readonly ToolSpec[]> = {
     },
     {
       description:
-        "Generate sound effects only when the person asks for them. List connections first and use the chosen OpenRouter or ElevenLabs connection ID. OpenRouter uses Seed Audio 1.0, accepts up to 3,000 characters including duration direction, and requests duration through the prompt. Use the default format for OpenRouter. Put every sound the person wants in `sounds` and make one call: the studio shows all of them on one card, with exact parameters, and asks before spending credits; the person may approve all or some. Do not split sounds into separate calls. It saves audio to the library without editing the project, and answers with the outcome of each sound. Never repeat an uncertain or declined generation: use sound_effect_status with its operation ID instead. Each new generation spends credits and requires new approval.",
+        "Generate sound effects only when the person asks for them. List connections first and use the chosen OpenRouter or ElevenLabs connection ID. Plan each cue from the actual scene action and timing; describe its texture and keep it below narration. OpenRouter requires Seed to be enabled and its provider terms accepted in the account settings. OpenRouter uses Seed Audio 1.0, accepts up to 3,000 characters including duration direction, and requests duration through the prompt. Use the default format for OpenRouter. Put every sound the person wants in `sounds` and make one call: the studio shows all of them on one card, with exact parameters, and asks before spending credits; the person may approve all or some. Do not split sounds into separate calls. It saves audio to the library without editing the project, and answers with the outcome of each sound. Never repeat an uncertain or declined generation: use sound_effect_status with its operation ID instead. Each new generation spends credits and requires new approval.",
       name: GENERATE_SOUND,
       shape: {
         connectionId: z.string().min(1),
