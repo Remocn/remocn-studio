@@ -253,20 +253,29 @@ function PlayState({ player }: { player: AudioPlayer }) {
 }
 
 function soundKind({ source }: Asset) {
-  if (source?.provider !== "elevenlabs") {
+  if (source?.provider !== "elevenlabs" && source?.provider !== "openrouter") {
     return "Audio";
+  }
+  if (source.provider === "openrouter") {
+    return { music: "Music", sound: "Sound effect", speech: "Narration" }[
+      source.kind
+    ];
   }
   return "forceInstrumental" in source ? "Music" : "Sound effect";
 }
 
 function SoundSource({ asset }: { asset: Asset }) {
   const { source } = asset;
-  if (source?.provider !== "elevenlabs") {
+  if (source?.provider !== "elevenlabs" && source?.provider !== "openrouter") {
     return null;
   }
   return (
     <div className="space-y-1 text-muted-foreground text-xs">
-      <p>ElevenLabs · {source.connectionName}</p>
+      <p>
+        {source.provider === "openrouter" ? "OpenRouter" : "ElevenLabs"} ·{" "}
+        {source.connectionName}
+      </p>
+      <p>{source.model}</p>
       <p className="whitespace-pre-wrap break-words">{source.text}</p>
       <p className="break-words">
         {source.format} ·{" "}

@@ -3,6 +3,8 @@ import type { AgentEvent } from "@/shared/ipc";
 import type { Asset } from "@/shared/library";
 import {
   type AudioRequest,
+  audioKind,
+  audioProvider,
   type SoundOperation,
   soundSummary,
 } from "@/shared/sound-effects";
@@ -55,7 +57,8 @@ function describeResult(
         const asset =
           assets.find(
             (item) =>
-              item.source?.provider === "elevenlabs" &&
+              (item.source?.provider === "elevenlabs" ||
+                item.source?.provider === "openrouter") &&
               item.source.id === operation.id
           ) ?? null;
         return (asset === null ? Effect.void : publish(asset)).pipe(
@@ -98,7 +101,7 @@ function approval(operation: SoundOperation, context: SoundContext) {
   return context.permissions.ask({
     id,
     input: { description: soundSummary(operation) },
-    name: request.kind === "music" ? "Generate music" : "Generate sound effect",
+    name: `Generate ${audioKind(request)}`,
     verdict: { kind: "ask", reason: "outward", signature: `sound:${id}` },
   });
 }
@@ -110,7 +113,7 @@ function dispatch(
   return Effect.gen(function* () {
     const { id, request } = operation;
     yield* context.emit({
-      message: `Generating ${request.kind === "music" ? "music" : "sound"} with ElevenLabs. Operation: ${id}. If waiting stops, check this operation; do not generate again automatically.`,
+      message: `Generating ${audioKind(request)} with ${audioProvider(operation)}. Operation: ${id}. If waiting stops, check this operation; do not generate again automatically.`,
       type: "notice",
     });
     let current = yield* context.ask("sounds.commit", { id });

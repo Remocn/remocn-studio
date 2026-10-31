@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useSoundResult } from "@/hooks/use-sound-result";
 import type { SoundResult } from "@/shared/ipc";
+import { audioKind } from "@/shared/sound-effects";
 import { AudioTransport } from "./audio-transport";
 import { useStudio, useStudioTurn } from "./studio-provider";
 
@@ -41,16 +42,19 @@ export function SoundResultView({
   const error = player.error ?? action.error;
   return (
     <section
-      aria-label={`Generated ${result.request.kind === "music" ? "music" : "sound"}: ${asset.name}`}
+      aria-label={`Generated ${audioKind(result.request)}: ${asset.name}`}
       className="my-1 min-w-0 rounded-xl bg-secondary p-4 text-card-foreground"
     >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <p className="flex items-center gap-1.5 font-medium text-foreground text-xs">
           <CheckIcon aria-hidden="true" className="size-3.5" />
-          {result.request.kind === "music" ? "Music ready" : "Sound ready"}
+          {result.request.kind === "speech" ? "Narration ready" : "Audio ready"}
         </p>
         <span className="text-muted-foreground text-xs">
-          ElevenLabs · Saved to library
+          {asset.source?.provider === "openrouter"
+            ? "OpenRouter"
+            : "ElevenLabs"}{" "}
+          · Saved to library
         </span>
       </div>
       <h3 className="mb-1 break-words font-medium text-sm">{asset.name}</h3>

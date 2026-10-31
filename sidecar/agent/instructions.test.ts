@@ -460,18 +460,18 @@ describe("versioned instruction snapshots", () => {
   it("keeps the conventions with the skills byte for byte", () => {
     const text = conventionsFor(true, "intro");
 
-    expect(text).toHaveLength(23_203);
+    expect(text).toHaveLength(25_818);
     expect(sha256(text)).toBe(
-      "2b4e469c2ff08f484428a94ad9238c6227c2841d8697becce42d61ceab23a5e4"
+      "182cbe90c956933ac20dfa93b2157c82b51e97823cc6546e00f5bd47168bb91b"
     );
   });
 
   it("keeps the conventions alone byte for byte", () => {
     const text = conventionsFor(false, null);
 
-    expect(text).toHaveLength(21_220);
+    expect(text).toHaveLength(23_835);
     expect(sha256(text)).toBe(
-      "4bdf332382bc1a93b8da62c1e80dd12bd743bd7d19d8e1fc24a1f21fd507ac1d"
+      "3aa0e12e3ac5ce83ed647304a253f2bc34ff1b042cdd83d61c6b6740e4fb9f3d"
     );
   });
 
@@ -683,4 +683,27 @@ it("preserves inserted shader identities and keeps scene slots below foreground 
   expect(text).toContain("never invent their creation version");
   expect(text).toContain("sourceRevision is the SHA-256");
   expect(text).toContain("never mix v5/v6 hooks");
+});
+
+it("routes Studio narration through the connected OpenRouter tool", () => {
+  for (const hasSkills of [true, false]) {
+    const text = conventionsFor(hasSkills);
+    expect(text).toContain("mcp__remocn-library__generate_speech");
+    expect(text).toContain("Settings > Integrations > OpenRouter");
+    expect(text).toContain("Never ask for an API key in chat");
+    expect(text).toContain("Always use elevenlabs/eleven-v4");
+    expect(text).toContain(
+      "actual scene plan, script, visible actions and timing"
+    );
+    expect(text).toContain("[curious]");
+    expect(text).toContain(
+      "visible event, timestamp, duration, texture and level"
+    );
+    expect(text).toContain(
+      "Seed is enabled and its provider terms are accepted"
+    );
+    expect(text).toContain(
+      "visual frame inspection does not verify audio quality"
+    );
+  }
 });

@@ -1,4 +1,5 @@
 import { isAbsolute, resolve } from "node:path";
+import { Schema } from "effect";
 import { z } from "zod";
 import { errorMessage } from "@/lib/error-message";
 import type { Asset, AssetDraft, StockPage } from "@/shared/library";
@@ -9,6 +10,7 @@ import type {
   PipelineStageId,
   PipelineStatus,
 } from "@/shared/pipeline";
+import { SpeechRequest } from "@/shared/sound-effects";
 import { type ConnectionCalls, listConnections } from "../integrations/tools";
 import type { MoodboardDraft, MoodboardRecord } from "../library/moodboard";
 import { moodboardBrief } from "../library/moodboard";
@@ -26,6 +28,7 @@ import {
   DESIGN_SERVER,
   GENERATE_MUSIC,
   GENERATE_SOUND,
+  GENERATE_SPEECH,
   GET_MOODBOARD,
   LIBRARY_SERVER,
   LIST_ASSETS,
@@ -145,13 +148,21 @@ export function executeTool(
     const args = z.object(spec.shape).parse(params ?? {});
     if (
       server === LIBRARY_SERVER &&
-      (tool === GENERATE_SOUND ||
+      (tool === GENERATE_SPEECH ||
+        tool === GENERATE_SOUND ||
         tool === GENERATE_MUSIC ||
         tool === SOUND_STATUS ||
         tool === MUSIC_STATUS)
     ) {
       if (tools.sounds === undefined) {
         throw new Error("Sound generation is not available in this turn.");
+      }
+      if (tool === GENERATE_SPEECH) {
+        const request = Schema.decodeUnknownSync(SpeechRequest)({
+          ...args,
+          kind: "speech",
+        });
+        return tools.sounds.generate([request], execution);
       }
       if (tool === GENERATE_MUSIC) {
         return tools.sounds.generate(

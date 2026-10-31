@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager};
 
-use super::{sound_http, store, ConnectionState, Integrations};
+use super::{openrouter, sound_http, store, ConnectionState, Integrations};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -20,6 +20,10 @@ pub struct SoundRequest {
     pub kind: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub force_instrumental: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voice: Option<String>,
     pub connection_id: String,
     pub duration_seconds: Option<f64>,
     pub format: String,
@@ -32,7 +36,17 @@ impl SoundRequest {
         self.kind.as_deref() == Some("music")
     }
 
+    pub fn is_speech(&self) -> bool {
+        self.kind.as_deref() == Some("speech")
+    }
+
     pub fn validate(&self) -> Result<(), String> {
+        if self.is_speech() {
+            return openrouter::validate_speech(self);
+        }
+        if self.model.is_some() || self.voice.is_some() {
+            return Err("Model and voice apply only to narration.".to_string());
+        }
         if !matches!(self.kind.as_deref(), None | Some("sound") | Some("music")) {
             return Err("Choose music or sound generation.".to_string());
         }
@@ -80,6 +94,10 @@ impl SoundRequest {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Operation {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
     pub id: String,
     pub request: SoundRequest,
     pub account: Option<String>,
@@ -202,11 +220,11 @@ fn connection(
 ) -> Result<(store::Record, String), String> {
     let record = store::find(&store::read(app)?, id)
         .ok_or_else(|| "That connection no longer exists.".to_string())?;
-    if record.provider != "elevenlabs"
+    if !matches!(record.provider.as_str(), "elevenlabs" | "openrouter")
         || record.disabled
         || integrations.seen(id).state != ConnectionState::Connected
     {
-        return Err("Check and enable this ElevenLabs connection in Settings → Integrations before generating sound.".to_string());
+        return Err("Check and enable this audio connection in Settings → Integrations before generating sound.".to_string());
     }
     let key = record
         .secret_reference
@@ -214,7 +232,7 @@ fn connection(
         .map(super::keychain::read)
         .transpose()?
         .flatten()
-        .ok_or_else(|| "This ElevenLabs connection needs an API key.".to_string())?;
+        .ok_or_else(|| "This audio connection needs an API key.".to_string())?;
     Ok((record, key))
 }
 
@@ -229,12 +247,28 @@ pub async fn answer(app: AppHandle, method: &str, params: Value) -> Result<Value
         let (record, key) = connection(&app, &integrations, &request.connection_id)?;
         let revision = integrations.revision(&request.connection_id);
         let client = sound_http::client()?;
-        let account = sound_http::account(&client, sound_http::BASE, &key).await?;
-        sound_http::check_format(&request, &account)?;
+        if record.provider == "openrouter" {
+            openrouter::validate_request(&request)?;
+            openrouter::account(&client, openrouter::BASE, &key).await?;
+        } else {
+            if request.is_speech() {
+                return Err("Choose an OpenRouter connection for narration.".to_string());
+            }
+            let account = sound_http::account(&client, sound_http::BASE, &key).await?;
+            sound_http::check_format(&request, &account)?;
+        }
         if revision != integrations.revision(&request.connection_id) {
             return Err(STALE.to_string());
         }
         let operation = Operation {
+            provider: Some(record.provider.clone()),
+            model: Some(if record.provider == "openrouter" {
+                openrouter::model(&request).to_string()
+            } else if request.is_music() {
+                sound_http::MUSIC_MODEL.to_string()
+            } else {
+                sound_http::MODEL.to_string()
+            }),
             id: format!("sound_{}", integrations.next_id()),
             request,
             account: record.account.clone(),
@@ -302,7 +336,7 @@ pub async fn answer(app: AppHandle, method: &str, params: Value) -> Result<Value
                 write_operation(&root, &operation)?;
                 held.prepared.remove(&id);
             } else if operation.state == "generating" {
-                operation.detail = Some("Waiting was cancelled after dispatch. ElevenLabs may use credits; check this operation for its result.".to_string());
+                operation.detail = Some("Waiting was cancelled after dispatch. The provider may use credits; check this operation for its result.".to_string());
                 write_operation(&root, &operation)?;
             }
         }
@@ -316,13 +350,23 @@ pub async fn answer(app: AppHandle, method: &str, params: Value) -> Result<Value
             let task_jobs = Arc::clone(&jobs);
             let task_app = app.clone();
             tauri::async_runtime::spawn(async move {
-                let result = sound_http::generate(
-                    &client,
-                    sound_http::BASE,
-                    &prepared.key,
-                    &task_operation.request,
-                )
-                .await;
+                let result = if prepared.record.provider == "openrouter" {
+                    openrouter::generate(
+                        &client,
+                        openrouter::BASE,
+                        &prepared.key,
+                        &task_operation.request,
+                    )
+                    .await
+                } else {
+                    sound_http::generate(
+                        &client,
+                        sound_http::BASE,
+                        &prepared.key,
+                        &task_operation.request,
+                    )
+                    .await
+                };
                 finish(&task_root, &task_jobs, task_operation, result);
                 let _ = task_app.emit(
                     crate::ipc::NOTIFY_EVENT,
@@ -408,7 +452,7 @@ fn finish(
                 }
                 Err(_) => {
                     operation.state = "uncertain".to_string();
-                    operation.detail = Some("ElevenLabs generated sound, but the local audio write failed. Credits may have been used. No generation retry will be made.".to_string());
+                    operation.detail = Some("The provider generated audio, but the local audio write failed. Credits may have been used. No generation retry will be made.".to_string());
                 }
             }
         }
@@ -451,6 +495,8 @@ mod tests {
             secret_reference: Some("test-ref".to_string()),
         };
         let operation = Operation {
+            provider: None,
+            model: None,
             id: "sound_test".to_string(),
             request: sound_http::tests::request(),
             account: None,

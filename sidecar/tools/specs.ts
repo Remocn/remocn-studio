@@ -42,6 +42,7 @@ export function isOutwardTool(name: string): boolean {
 
 export const LIST_ASSETS = "list_assets";
 export const LIST_CONNECTIONS = "list_connections";
+export const GENERATE_SPEECH = "generate_speech";
 export const GENERATE_MUSIC = "generate_music";
 export const MUSIC_STATUS = "music_status";
 export const GENERATE_SOUND = "generate_sound_effect";
@@ -252,7 +253,54 @@ export const TOOL_SPECS: Record<ToolServer, readonly ToolSpec[]> = {
   [LIBRARY_SERVER]: [
     {
       description:
-        "Generate music only when requested. List connections first and choose an ElevenLabs connection ID. Use instrumental music by default; allow vocals only when requested. Studio asks for approval before spending credits and saves the result to the library without editing the project. Never repeat an uncertain generation: check music_status with its operation ID. Each new generation needs new approval.",
+        "Generate requested narration using an OpenRouter connection and always elevenlabs/eleven-v4. Never substitute Turbo or an older model. Read the video's scene plan and script first. Choose vocal emotion and pacing for each scene, then place concise square-bracket delivery tags where delivery changes. Keep sound effects in separate cues when they need precise timing. Studio asks before spending credits and saves the MP3 to the library. Check sound_effect_status to recover an existing operation instead of repeating it.",
+      name: GENERATE_SPEECH,
+      shape: {
+        connectionId: z.string().min(1),
+        durationSeconds: z.null().default(null),
+        format: z.literal("mp3").default("mp3"),
+        model: z
+          .literal("elevenlabs/eleven-v4")
+          .default("elevenlabs/eleven-v4"),
+        name: z.string().trim().min(1).max(5000),
+        text: z
+          .string()
+          .trim()
+          .min(1)
+          .refine(
+            (value) => Array.from(value).length <= 10_000,
+            "Speech is limited to 10,000 characters."
+          ),
+        voice: z
+          .enum([
+            "george",
+            "sarah",
+            "adam",
+            "alice",
+            "bella",
+            "bill",
+            "brian",
+            "callum",
+            "charlie",
+            "chris",
+            "daniel",
+            "eric",
+            "harry",
+            "jessica",
+            "laura",
+            "liam",
+            "lily",
+            "matilda",
+            "river",
+            "roger",
+            "will",
+          ])
+          .default("george"),
+      },
+    },
+    {
+      description:
+        "Generate music only when requested. List connections first and choose an OpenRouter or ElevenLabs connection ID. OpenRouter uses Lyria 3 Pro, with duration and instrumental preferences requested through the prompt rather than guaranteed. OpenRouter music is limited to 600 seconds. Use instrumental music by default; allow vocals only when requested. Studio asks for approval before spending credits and saves the result to the library without editing the project. Never repeat an uncertain generation: check music_status with its operation ID. Each new generation needs new approval.",
       name: GENERATE_MUSIC,
       shape: {
         connectionId: z.string().min(1),
@@ -271,7 +319,7 @@ export const TOOL_SPECS: Record<ToolServer, readonly ToolSpec[]> = {
     },
     {
       description:
-        "Generate sound effects only when the person asks for them. List connections first and use the chosen ElevenLabs connection ID. Put every sound the person wants in `sounds` and make one call: the studio shows all of them on one card, with exact parameters, and asks before spending credits; the person may approve all or some. Do not split sounds into separate calls. It saves audio to the library without editing the project, and answers with the outcome of each sound. Never repeat an uncertain or declined generation: use sound_effect_status with its operation ID instead. Each new generation spends credits and requires new approval.",
+        "Generate sound effects only when the person asks for them. List connections first and use the chosen OpenRouter or ElevenLabs connection ID. Plan each cue from the actual scene action and timing; describe its texture and keep it below narration. OpenRouter requires Seed to be enabled and its provider terms accepted in the account settings. OpenRouter uses Seed Audio 1.0, accepts up to 3,000 characters including duration direction, and requests duration through the prompt. Use the default format for OpenRouter. Put every sound the person wants in `sounds` and make one call: the studio shows all of them on one card, with exact parameters, and asks before spending credits; the person may approve all or some. Do not split sounds into separate calls. It saves audio to the library without editing the project, and answers with the outcome of each sound. Never repeat an uncertain or declined generation: use sound_effect_status with its operation ID instead. Each new generation spends credits and requires new approval.",
       name: GENERATE_SOUND,
       shape: {
         connectionId: z.string().min(1),

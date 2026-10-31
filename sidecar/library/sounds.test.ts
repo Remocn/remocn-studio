@@ -166,3 +166,32 @@ it("saves and recovers music with its model and vocal preference", async () => {
     model: "music_v1",
   });
 });
+
+it("imports and recovers OpenRouter narration with its model and voice", async () => {
+  const narration: SoundOperation = {
+    ...operation,
+    model: "elevenlabs/eleven-v4",
+    provider: "openrouter",
+    request: {
+      connectionId: "cn_openrouter",
+      durationSeconds: null,
+      format: "mp3",
+      kind: "speech",
+      model: "elevenlabs/eleven-v4",
+      name: "Narration",
+      text: "Welcome to the film.",
+      voice: "george",
+    },
+  };
+  const saved = await Effect.runPromise(importSound(narration));
+  expect(saved.source).toMatchObject({
+    kind: "speech",
+    model: "elevenlabs/eleven-v4",
+    provider: "openrouter",
+    voice: "george",
+  });
+  expect(saved.description).toContain("OpenRouter");
+  const recovered = await Effect.runPromise(importSound(narration));
+  expect(recovered.slug).toBe(saved.slug);
+  expect(await Effect.runPromise(listAssets())).toHaveLength(1);
+});

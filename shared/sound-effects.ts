@@ -36,7 +36,30 @@ export const MusicRequest = Schema.Struct({
   ),
 });
 export type MusicRequest = typeof MusicRequest.Type;
-export const AudioRequest = Schema.Union([MusicRequest, SoundRequest]);
+export const SPEECH_MODELS = [
+  "elevenlabs/eleven-v4",
+  "elevenlabs/eleven-v4-turbo",
+] as const;
+export const SpeechRequest = Schema.Struct({
+  connectionId: Schema.NonEmptyString,
+  durationSeconds: Schema.Null,
+  format: Schema.Literal("mp3"),
+  kind: Schema.Literal("speech"),
+  model: Schema.Literals(SPEECH_MODELS),
+  name: text,
+  text: Schema.String.check(
+    Schema.makeFilter(
+      (value) => value.trim().length > 0 && Array.from(value).length <= 10_000
+    )
+  ),
+  voice: Schema.NonEmptyString,
+});
+export type SpeechRequest = typeof SpeechRequest.Type;
+export const AudioRequest = Schema.Union([
+  SpeechRequest,
+  MusicRequest,
+  SoundRequest,
+]);
 export type AudioRequest = typeof AudioRequest.Type;
 
 export const SoundRef = Schema.Struct({ id: Schema.NonEmptyString });
@@ -48,6 +71,8 @@ export const SoundOperation = Schema.Struct({
   detail: Schema.NullOr(Schema.String),
   file: Schema.NullOr(Schema.NonEmptyString),
   id: Schema.NonEmptyString,
+  model: Schema.optionalKey(Schema.NonEmptyString),
+  provider: Schema.optionalKey(Schema.Literals(["elevenlabs", "openrouter"])),
   providerRequestId: Schema.NullOr(Schema.String),
   request: AudioRequest,
   state: Schema.Literals([
@@ -84,16 +109,54 @@ export const GeneratedMusicSource = Schema.Struct({
   model: Schema.Literal(MUSIC_MODEL),
 });
 
+export const GeneratedOpenRouterSource = Schema.Struct({
+  ...GeneratedSoundSource.fields,
+  durationSeconds: Schema.NullOr(Schema.Finite),
+  forceInstrumental: Schema.optionalKey(Schema.Boolean),
+  format: Schema.String,
+  kind: Schema.Literals(["sound", "music", "speech"]),
+  model: Schema.NonEmptyString,
+  provider: Schema.Literal("openrouter"),
+  text: Schema.String,
+  voice: Schema.optionalKey(Schema.String),
+});
+
+export function audioProvider(operation: SoundOperation): string {
+  return operation.provider === "openrouter" ? "OpenRouter" : "ElevenLabs";
+}
+
+export function audioFormat(operation: SoundOperation): string {
+  return operation.provider === "openrouter" ? "mp3" : operation.request.format;
+}
+
+export function audioKind(request: AudioRequest): string {
+  return { music: "music", sound: "sound effect", speech: "narration" }[
+    request.kind ?? "sound"
+  ];
+}
+
+function requestSummary(request: AudioRequest): string {
+  if (request.kind === "music") {
+    return `Music · ${request.forceInstrumental ? "Instrumental" : "Vocals allowed"}`;
+  }
+  if (request.kind === "speech") {
+    return `Narration · ${request.model} · ${request.voice}`;
+  }
+  return "Sound effect";
+}
+
 export function soundSummary(operation: SoundOperation): string {
   const { request } = operation;
   return [
-    `ElevenLabs · ${operation.connectionName}${operation.account === null ? "" : ` (${operation.account})`}`,
-    request.kind === "music"
-      ? `Music · ${request.forceInstrumental ? "Instrumental" : "Vocals allowed"}`
-      : "Sound effect",
+    `${audioProvider(operation)} · ${operation.connectionName}${operation.account === null ? "" : ` (${operation.account})`}`,
+    requestSummary(request),
     request.text,
     `Duration: ${request.durationSeconds === null ? "Automatic" : `${request.durationSeconds} seconds`}`,
-    `Format: ${request.format}`,
-    "This request spends credits on your ElevenLabs account. Send once; no automatic paid retry.",
+    `Format: ${audioFormat(operation)}`,
+    ...(operation.model ? [`Model: ${operation.model}`] : []),
+    ...(operation.provider === "openrouter" && request.durationSeconds !== null
+      ? ["Duration is a prompt request, not a guaranteed output length."]
+      : []),
+    `This request spends credits on your ${audioProvider(operation)} account. Send once; no automatic paid retry.`,
   ].join("\n");
 }

@@ -50,7 +50,7 @@ export function useSoundPrompt(
       if (
         connections.some(
           (connection) =>
-            connection.provider === "elevenlabs" &&
+            ["elevenlabs", "openrouter"].includes(connection.provider) &&
             hasCapability(connection, "audio")
         )
       ) {

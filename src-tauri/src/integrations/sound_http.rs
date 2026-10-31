@@ -7,7 +7,7 @@ use super::sounds::SoundRequest;
 
 pub const BASE: &str = "https://api.elevenlabs.io";
 pub const MODEL: &str = "eleven_text_to_sound_v2";
-pub const UNCERTAIN: &str = "ElevenLabs may have used credits, but the result could not be confirmed. Check this operation before approving another generation; it will not be retried automatically.";
+pub const UNCERTAIN: &str = "The audio provider may have used credits, but the result could not be confirmed. Check this operation before approving another generation; it will not be retried automatically.";
 const LIMIT: usize = 8 * 1024 * 1024;
 pub const MUSIC_MODEL: &str = "music_v1";
 
@@ -18,7 +18,7 @@ pub fn client() -> Result<Client, String> {
         .redirect(reqwest::redirect::Policy::none())
         .retry(reqwest::retry::never())
         .build()
-        .map_err(|_| "The studio could not prepare its ElevenLabs connection.".to_string())
+        .map_err(|_| "The studio could not prepare its audio connection.".to_string())
 }
 
 pub async fn account(client: &Client, base: &str, key: &str) -> Result<Value, String> {
@@ -154,7 +154,7 @@ pub async fn generate(
     })
 }
 
-async fn bounded(mut response: Response, limit: usize) -> Result<Vec<u8>, String> {
+pub(super) async fn bounded(mut response: Response, limit: usize) -> Result<Vec<u8>, String> {
     if response
         .content_length()
         .is_some_and(|size| size > limit as u64)
@@ -203,7 +203,8 @@ async fn refused(response: Response, music: bool) -> String {
 }
 
 pub fn validate_mp3(bytes: &[u8]) -> Result<(), String> {
-    let invalid = || format!("ElevenLabs returned incomplete or unreadable MP3 audio. {UNCERTAIN}");
+    let invalid =
+        || format!("The audio provider returned incomplete or unreadable MP3 audio. {UNCERTAIN}");
     let mut offset = 0;
     if bytes.starts_with(b"ID3") {
         if bytes.len() < 10 || bytes[6..10].iter().any(|value| value & 128 != 0) {
@@ -224,16 +225,35 @@ pub fn validate_mp3(bytes: &[u8]) -> Result<(), String> {
             break;
         }
         let h = &bytes[offset..offset + 4];
-        if h[0] != 255 || h[1] & 0xfe != 0xfa || h[2] & 12 != 0 {
+        let version = (h[1] >> 3) & 3;
+        let sample_index = ((h[2] >> 2) & 3) as usize;
+        if h[0] != 255 || h[1] & 0xe0 != 0xe0 || h[1] & 6 != 2 || version == 1 || sample_index == 3
+        {
             return Err(invalid());
         }
-        let kbps = [
-            0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0,
-        ][(h[2] >> 4) as usize];
+        let rates = if version == 3 {
+            [
+                0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0,
+            ]
+        } else {
+            [
+                0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0,
+            ]
+        };
+        let kbps = rates[(h[2] >> 4) as usize];
+        let sample_rate = [44100, 48000, 32000][sample_index]
+            / if version == 3 {
+                1
+            } else if version == 2 {
+                2
+            } else {
+                4
+            };
         if kbps == 0 {
             return Err(invalid());
         }
-        let length = 144000 * kbps / 44100 + ((h[2] >> 1) & 1) as usize;
+        let length = (if version == 3 { 144000 } else { 72000 }) * kbps / sample_rate
+            + ((h[2] >> 1) & 1) as usize;
         offset += length;
         if offset > bytes.len() {
             return Err(invalid());
@@ -266,6 +286,8 @@ pub mod tests {
 
     pub fn request() -> SoundRequest {
         SoundRequest {
+            model: None,
+            voice: None,
             kind: None,
             force_instrumental: None,
             connection_id: "cn_test".to_string(),
@@ -276,7 +298,7 @@ pub mod tests {
         }
     }
 
-    fn server(
+    pub fn server(
         status: &str,
         mime: &str,
         body: Vec<u8>,
