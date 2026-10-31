@@ -460,18 +460,18 @@ describe("versioned instruction snapshots", () => {
   it("keeps the conventions with the skills byte for byte", () => {
     const text = conventionsFor(true, "intro");
 
-    expect(text).toHaveLength(23_203);
+    expect(text).toHaveLength(23_943);
     expect(sha256(text)).toBe(
-      "2b4e469c2ff08f484428a94ad9238c6227c2841d8697becce42d61ceab23a5e4"
+      "58bf5c5546dff802473d67edea55e2d75e65a809830fa62f7680861648b021da"
     );
   });
 
   it("keeps the conventions alone byte for byte", () => {
     const text = conventionsFor(false, null);
 
-    expect(text).toHaveLength(21_220);
+    expect(text).toHaveLength(21_960);
     expect(sha256(text)).toBe(
-      "4bdf332382bc1a93b8da62c1e80dd12bd743bd7d19d8e1fc24a1f21fd507ac1d"
+      "52cf3888918be68d5434aeb997d08386c2452ff1cd03e182fbf980e530385e5b"
     );
   });
 
@@ -683,4 +683,13 @@ it("preserves inserted shader identities and keeps scene slots below foreground 
   expect(text).toContain("never invent their creation version");
   expect(text).toContain("sourceRevision is the SHA-256");
   expect(text).toContain("never mix v5/v6 hooks");
+});
+
+it("routes Studio narration through the connected OpenRouter tool", () => {
+  for (const hasSkills of [true, false]) {
+    const text = conventionsFor(hasSkills);
+    expect(text).toContain("mcp__remocn-library__generate_speech");
+    expect(text).toContain("Settings > Integrations > OpenRouter");
+    expect(text).toContain("Never ask for an API key in chat");
+  }
 });

@@ -46,3 +46,45 @@ it("preserves music intent and vocals when reusing or regenerating", async () =>
   expect(prompt).toContain("version of the music");
   expect(prompt).toContain("Instrumental only: yes");
 });
+
+it("uses OpenRouter narration in a video and preserves its model and voice on regeneration", async () => {
+  const result = {
+    ...SOUND_RESULT,
+    asset: {
+      ...SOUND_RESULT.asset,
+      source: {
+        author: "OpenRouter",
+        authorUrl: "",
+        connectionId: "cn_or",
+        connectionName: "My OpenRouter",
+        durationSeconds: null,
+        format: "mp3",
+        id: SOUND_RESULT.operationId,
+        kind: "speech" as const,
+        model: "elevenlabs/eleven-v4-turbo",
+        provider: "openrouter" as const,
+        text: "Hello.",
+        url: "https://openrouter.ai/activity",
+        voice: "sarah",
+      },
+    },
+    request: {
+      connectionId: "cn_or",
+      durationSeconds: null,
+      format: "mp3" as const,
+      kind: "speech" as const,
+      model: "elevenlabs/eleven-v4-turbo" as const,
+      name: "Narration",
+      text: "Hello.",
+      voice: "sarah",
+    },
+  };
+  mockIPC(() => [result.asset]);
+  expect((await Effect.runPromise(prepareSoundUse(result))).prompt).toContain(
+    "as narration"
+  );
+  const prompt = regenerateSoundPrompt(result);
+  expect(prompt).toContain("OpenRouter, cn_or");
+  expect(prompt).toContain("elevenlabs/eleven-v4-turbo");
+  expect(prompt).toContain("sarah");
+});

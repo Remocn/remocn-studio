@@ -1,6 +1,7 @@
 pub mod browser;
 pub mod commands;
 pub mod elevenlabs;
+pub mod openrouter;
 pub mod figma;
 pub mod keychain;
 pub mod lifecycle;

@@ -1,7 +1,11 @@
 import { Effect, Schema } from "effect";
 import { Audiomap } from "./audiomap";
 import { MotionRole } from "./motion";
-import { GeneratedMusicSource, GeneratedSoundSource } from "./sound-effects";
+import {
+  GeneratedMusicSource,
+  GeneratedOpenRouterSource,
+  GeneratedSoundSource,
+} from "./sound-effects";
 
 export const ASSET_TYPES = ["img", "video", "audio", "component"] as const;
 
@@ -65,6 +69,7 @@ export const AssetSource = Schema.Union([
   StockSource,
   GeneratedSoundSource,
   GeneratedMusicSource,
+  GeneratedOpenRouterSource,
 ]);
 
 export type AssetSource = (typeof AssetSource)["Type"];

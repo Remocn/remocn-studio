@@ -377,6 +377,9 @@ function Authorizing({
         >
           Use a {label.toLowerCase()} from your {provider.name} account. The
           studio will verify access before saving this connection.
+          {provider.id === "openrouter"
+            ? " Supports Eleven v4 narration, Seed Audio sound effects, and Lyria 3 music. Your key is stored in the system keychain. Generation uses your OpenRouter credits."
+            : null}
           {provider.id === "elevenlabs"
             ? " Enable User read and the generation permissions you need for sound or music. Account access is checked now; generation access is checked when you approve a request that spends credits."
             : null}

@@ -1,6 +1,7 @@
 import { Data, Effect } from "effect";
 import type { SoundResult } from "@/shared/ipc";
 import { type PromptAsset, promptAssetOf } from "@/shared/library";
+import { audioKind } from "@/shared/sound-effects";
 import { listAssets } from "./library";
 
 export interface TurnAction {
@@ -17,7 +18,8 @@ export function prepareSoundUse(result: SoundResult) {
     Effect.flatMap((assets) => {
       const asset = assets.find(
         (item) =>
-          item.source?.provider === "elevenlabs" &&
+          (item.source?.provider === "elevenlabs" ||
+            item.source?.provider === "openrouter") &&
           item.source.id === result.operationId
       );
       if (asset === undefined) {
@@ -30,10 +32,7 @@ export function prepareSoundUse(result: SoundResult) {
       }
       return Effect.succeed({
         assets: [promptAssetOf(asset)],
-        prompt:
-          result.request.kind === "music"
-            ? "Use [Asset #1] as music in this video. Adjust its timing and volume to suit the video."
-            : "Use [Asset #1] as a sound effect in this video. Place it where it fits the scene and adjust its timing and volume to suit the video.",
+        prompt: soundUsePrompt(result),
       } satisfies TurnAction);
     })
   );
@@ -41,11 +40,15 @@ export function prepareSoundUse(result: SoundResult) {
 
 export function regenerateSoundPrompt({ asset, request }: SoundResult): string {
   const connection =
-    asset.source?.provider === "elevenlabs"
+    asset.source?.provider === "elevenlabs" ||
+    asset.source?.provider === "openrouter"
       ? asset.source.connectionName
       : "ElevenLabs";
   return [
-    `Generate a new version of the ${request.kind === "music" ? "music" : "sound effect"} “${request.name}” using my ${connection} connection (ElevenLabs, ${request.connectionId}).`,
+    `Generate a new version of the ${audioKind(request)} “${request.name}” using my ${connection} connection (${asset.source?.provider === "openrouter" ? "OpenRouter" : "ElevenLabs"}, ${request.connectionId}).`,
+    ...(request.kind === "speech"
+      ? [`Model: ${request.model}. Voice: ${request.voice}.`]
+      : []),
     `Description: ${request.text}`,
     `Duration: ${request.durationSeconds === null ? "Automatic" : `${request.durationSeconds} seconds`}`,
     `Format: ${request.format}`,
@@ -53,4 +56,14 @@ export function regenerateSoundPrompt({ asset, request }: SoundResult): string {
       ? [`Instrumental only: ${request.forceInstrumental ? "yes" : "no"}`]
       : []),
   ].join("\n");
+}
+
+function soundUsePrompt(result: SoundResult): string {
+  if (result.request.kind === "music") {
+    return "Use [Asset #1] as music in this video. Adjust its timing and volume to suit the video.";
+  }
+  if (result.request.kind === "speech") {
+    return "Use [Asset #1] as narration in this video. Match the scenes to the spoken timing and adjust its volume.";
+  }
+  return "Use [Asset #1] as a sound effect in this video. Place it where it fits the scene and adjust its timing and volume to suit the video.";
 }

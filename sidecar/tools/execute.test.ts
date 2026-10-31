@@ -921,3 +921,46 @@ it("hands every sound of one call to paid generation on the chosen connection", 
   expect(refused.isError).toBe(true);
   expect(batches).toHaveLength(1);
 });
+
+it("routes narration to paid generation with Eleven v4 defaults and rejects unsupported models", async () => {
+  const requests: unknown[] = [];
+  const calls = tools({
+    sounds: {
+      generate: (batch) => {
+        requests.push(...batch);
+        return Promise.resolve("prepared");
+      },
+      status: () => Promise.resolve("completed"),
+    },
+  });
+  const input = {
+    connectionId: "cn_openrouter",
+    name: "Voiceover",
+    text: "Hello.",
+  };
+  const answer = await executeTool(
+    "remocn-library",
+    "generate_speech",
+    input,
+    calls
+  );
+  expect(answer.isError).toBe(false);
+  expect(requests).toEqual([
+    {
+      ...input,
+      durationSeconds: null,
+      format: "mp3",
+      kind: "speech",
+      model: "elevenlabs/eleven-v4",
+      voice: "george",
+    },
+  ]);
+  const invalid = await executeTool(
+    "remocn-library",
+    "generate_speech",
+    { ...input, model: "made-up-model" },
+    calls
+  );
+  expect(invalid.isError).toBe(true);
+  expect(requests).toHaveLength(1);
+});

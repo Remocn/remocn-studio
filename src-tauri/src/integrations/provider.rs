@@ -82,6 +82,7 @@ impl Registry {
 pub fn shipped() -> Registry {
     Registry::of(vec![
         Box::new(super::elevenlabs::ElevenLabs),
+        Box::new(super::openrouter::OpenRouter),
         Box::new(super::figma::Figma),
     ])
 }
@@ -215,7 +216,7 @@ mod tests {
             .map(|one| one.id)
             .collect();
 
-        assert_eq!(offered, vec!["elevenlabs", "figma"]);
+        assert_eq!(offered, vec!["elevenlabs", "openrouter", "figma"]);
         assert!(shipped().find("youtube").is_none());
         assert!(shipped().find("paper").is_none());
     }

@@ -244,7 +244,11 @@ Studio stamps studio-origin.json when creating a video. Preserve its original cr
 Preserve user-created shader records, palettes, definitions, creation receipts and copied implementation revisions. Never drop these records when regenerating a scene or insert them through the ordinary field patch endpoint. Preserve slots for their live records; explicitly map moved objects to the correct scene instead of silently orphaning them. Removed IDs stay reserved. The manifest binds each scene source and shader-registry.ts by SHA-256 of the exact saved bytes; sourceRevision is the SHA-256 of JSON.stringify(Object.entries(sources).sort(([a], [b]) => a.localeCompare(b))). Recompute these bindings after intentional source edits, excluding the manifest itself. New structured scenes must declare their slots and bound source paths explicitly; duplicate or missing slots block insertion. Do not modify dependency constraints or overwrite authored runtimes to force compatibility. Shader-on-text and arbitrary GLSL input are outside this feature.
 The properties panel saves directly. Keep ordinary property changes independent of chat Add/Send.`;
 
+const AUDIO_GENERATION =
+  "For requested narration, list connected services and use an OpenRouter connection with mcp__remocn-library__generate_speech. Default to Eleven v4; use Eleven v4 Turbo when requested. The tool saves MP3 audio in the library after approval. Use the library asset in the video only when requested and measure its actual duration. For sound effects and music, the existing generation tools also accept OpenRouter connections. Never ask for an API key in chat or write direct provider API scripts for this workflow, even if a general voiceover guide suggests one. If needed, direct the person to Settings > Integrations > OpenRouter. Recover interrupted generations with sound_effect_status or music_status instead of repeating a paid request.";
+
 export const STUDIO_CONVENTIONS = [
+  AUDIO_GENERATION,
   STRUCTURE,
   MANAGED_OBJECTS,
   CRAFT,
